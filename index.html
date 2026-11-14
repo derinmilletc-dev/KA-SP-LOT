@@ -4909,6 +4909,7 @@ const AI_Q = { patron: ['Bu hafta neye dikkat etmeliyim?', 'Kârlılığı en d�
 function viewKaisAI() {
   const r = S.user.role; const ok = sbOK() && SBS.user && SBS.biz;
   return `<div class="stack-lg"><div><h2>Kais AI</h2><p class="muted small" style="margin-top:4px">İşletmenin stok, satış ve kayıtlarına bakarak soruları yanıtlar. Rolünün göremediği veriyi görmez.</p></div>
+  ${AIC.mode === 'sayim' ? `<div class="callout info">${ic('camera')}<div><b>Fotoğrafla sayım</b><p style="margin-top:2px">Aşağıdan rafın fotoğrafını ekleyip gönder. Net göremediği ürünü saymaz.</p></div></div>` : ''}
   ${!ok ? `<div class="callout warn">${ic('alert')}<div>Kais AI için bulut hesabıyla giriş yapmış olman gerekir.</div></div>` : ''}
   <div class="stack">${AIC.msgs.length ? AIC.msgs.map((m, i) => `<div class="card" style="${m.role === 'user' ? 'margin-left:32px' : 'margin-right:32px'}"><div class="small muted">${m.role === 'user' ? 'Sen' : 'Kais AI'}</div><div style="white-space:pre-wrap;margin-top:4px">${esc(m.content).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s+/gm, '')}</div>${m.att && m.att.length ? `<div class="small muted" style="margin-top:6px">Ek: ${m.att.map(esc).join(', ')}</div>` : ''}</div>${m.acts && m.acts.length ? m.acts.map((a, j) => aiActCard(a, i, j)).join('') : ''}`).join('') : `<div class="stack">${(AI_Q[r] || AI_Q.calisan).map((q) => `<button class="btn sec" style="justify-content:flex-start;text-align:left" data-a="aiq" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`}
   ${AIC.busy ? `<div class="card muted small">Kais AI düşünüyor…</div>` : ''}${AIC.err ? `<div class="callout warn">${ic('alert')}<div>${esc(AIC.err)}</div></div>` : ''}<span id="ai-end"></span></div>
@@ -4936,7 +4937,7 @@ async function aiPrepFile(f) {
 }
 const _och29 = onChange;
 onChange = function (e) {
-  const el = e.target; if (el && el.dataset && el.dataset.ch === 'aifile') {
+  const el = e.target; if (el && el.dataset && el.dataset.ch === 'kfile') {
     const fl = Array.from(el.files || []).slice(0, 3 - AIC.files.length); if (!fl.length) return;
     Promise.all(fl.map(aiPrepFile)).then((r) => { AIC.files = AIC.files.concat(r).slice(0, 3); AIC.err = ''; render(); }, (er) => { AIC.err = er.message || 'Dosya okunamadı.'; render(); });
     try { el.value = ''; } catch (x) {} return;
@@ -4944,20 +4945,20 @@ onChange = function (e) {
   return _och29(e);
 };
 async function aiAsk(text) {
-  const c = sbClient(); AIC.err = ''; const atts = AIC.files.slice(); AIC.files = [];
+  const mode = AIC.mode; AIC.mode = null; const c = sbClient(); AIC.err = ''; const atts = AIC.files.slice(); AIC.files = [];
   AIC.msgs.push({ role: 'user', content: text, att: atts.map((a) => a.name) }); AIC.busy = true; render();
   try {
     if (!c || !SBS.user || !SBS.biz) throw new Error('Kais AI için bulut hesabına giriş yapmalısın.');
-    const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, messages: AIC.msgs.slice(-12).map((m) => ({ role: m.role, content: m.content })), context: aiContext(), attachments: atts.map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
+    const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode: mode || undefined, messages: AIC.msgs.slice(-12).map((m) => ({ role: m.role, content: m.content })), context: aiContext(), attachments: atts.map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
     if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'Kais AI sunucusu kurulmamış. Kurulum adımlarını uygula.' : 'Kais AI şu an yanıt vermedi.')); }
     if (r.data && r.data.error) throw new Error(r.data.error);
     const acts = ((r.data && r.data.actions) || []).filter((a) => a && ['fatura_kaydet', 'excel_indir', 'siparis_olustur', 'stok_guncelle'].includes(a.type)).map((a) => ({ type: a.type, args: a.args || {}, st: 'open' }));
     AIC.msgs.push({ role: 'assistant', content: (r.data && r.data.reply) || 'Yanıt gelmedi.', acts });
-  } catch (e) { AIC.err = e.message || 'Hata'; AIC.msgs.pop(); AIC.draft = text; AIC.files = atts; }
+  } catch (e) { AIC.err = e.message || 'Hata'; AIC.msgs.pop(); AIC.draft = text; AIC.files = atts; AIC.mode = mode || null; }
   AIC.busy = false; render(); const el = document.getElementById('ai-end'); if (el && el.scrollIntoView) el.scrollIntoView();
 }
 function aiAttachBar() {
-  return `<div class="field"><label>Fatura ya da belge ekle</label><div class="row wrap">${AIC.files.map((f, k) => `<span class="chip">${esc(f.name)} <button class="btn sm sec" data-a="aifrm" data-k="${k}" style="padding:0 6px">×</button></span>`).join('')}${AIC.files.length < 3 ? `<label class="btn sm sec" for="ai-file" style="cursor:pointer">${ic('camera', 16)} Fotoğraf / PDF seç</label><input id="ai-file" type="file" accept="image/*,application/pdf" multiple data-ch="aifile" style="position:absolute;opacity:0;width:1px;height:1px">` : ''}</div></div>`;
+  return `<div class="field"><label>Fatura ya da belge ekle</label><div class="row wrap">${AIC.files.map((f, k) => `<span class="chip">${esc(f.name)} <button class="btn sm sec" data-a="aifrm" data-k="${k}" style="padding:0 6px">×</button></span>`).join('')}${AIC.files.length < 3 ? `<label class="btn sm sec" for="ai-file" style="cursor:pointer">${ic('camera', 16)} Fotoğraf / PDF seç</label><input id="ai-file" type="file" accept="image/*,application/pdf" multiple data-ch="kfile" style="position:absolute;opacity:0;width:1px;height:1px">` : ''}</div></div>`;
 }
 const aiStock = (x) => STOCK.find((t) => t.id === x.stok_id) || STOCK.find((t) => t.name.toLowerCase() === String(x.stok_ad || x.ad || '').toLowerCase());
 function aiOrderLines(args) {
@@ -5047,8 +5048,105 @@ H.aiact = async (el) => {
   render(); toast('Gider kaydedildi.', 'ok');
 };
 H.aifrm = (el) => { AIC.files.splice(+el.dataset.k, 1); render(); };
-H.aisend = () => { const el = document.getElementById('ai-q'); let t = ((el && el.value) || '').trim(); if (AIC.busy) return; if (!t && AIC.files.length) t = 'Bu belgeyi incele ve gider olarak kaydet.'; if (!t) return; AIC.draft = ''; aiAsk(t); };
-if (typeof window !== 'undefined') { window.__K = { AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+H.aisend = () => { const el = document.getElementById('ai-q'); let t = ((el && el.value) || '').trim(); if (AIC.busy) return; if (AIC.mode === 'sayim' && !AIC.files.length) { toast('Önce raf fotoğrafı ekle.', 'warn'); return; } if (!t && AIC.files.length) t = AIC.mode === 'sayim' ? 'Bu fotoğraftaki ürünleri say ve sayım olarak güncelle.' : 'Bu belgeyi incele ve gider olarak kaydet.'; if (!t) return; AIC.draft = ''; aiAsk(t); };
+/* v30: Claude ile fiş okuma, fotoğrafla sayım, sözleşme okuma, belge bilgisi ayıklama */
+const aiReady = () => !S.noAI && !!(sbOK() && SBS.user && SBS.biz);
+async function aiCall(mode, text, atts) {
+  const c = sbClient(); if (!c || !SBS.user || !SBS.biz) throw new Error('nocloud');
+  const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode, messages: [{ role: 'user', content: text }], context: {}, attachments: (atts || []).map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
+  if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} const x = new Error(m || 'ai_fail'); x.kind = m ? 'user' : (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'nofn' : 'fail'); throw x; }
+  if (r.data && r.data.error) { const x = new Error(r.data.error); x.kind = 'user'; throw x; }
+  return (r.data && r.data.data) || {};
+}
+const _och30 = onChange;
+onChange = function (e) {
+  const el = e.target; const ch = el.dataset && el.dataset.ch;
+  if (ch === 'file' && S.modal && S.modal.type === 'upload' && S.modal.step === 'pick' && aiReady()) {
+    const f = el.files && el.files[0]; if (!f) return;
+    const m0 = { type: 'upload', step: 'reading', ocr: true, claude: true }; S.modal = m0; renderModal();
+    (async () => {
+      try {
+        const a = await aiPrepFile(f); const d = await aiCall('fis', 'Bu belgeyi oku.', [a]); if (S.modal !== m0) return;
+        const total = Number(d.toplam); if (!(total > 0)) { const x = new Error('Belgeden toplam tutar okunamadı. Daha net bir fotoğraf dene.'); x.kind = 'user'; throw x; }
+        const dm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d.tarih || ''));
+        const date = dm ? dm[3] + ' ' + MON[parseInt(dm[2], 10) - 1] : String(new Date().getDate()).padStart(2, '0') + ' ' + MON[new Date().getMonth()];
+        const bank = (ROWS.find((r) => r.kind === 'gider' && Math.abs(Math.abs(r.amt) - total) < 0.01) || {}).id || null;
+        const cat = CATS.includes(d.kategori) ? d.kategori : 'Diğer'; const rate = [0, 1, 10, 20].includes(Number(d.kdv_orani)) ? Number(d.kdv_orani) : 10;
+        const sample = { seller: String(d.satici || 'Satıcı okunamadı'), date, total, rate, cat, bank, conf: d.guven === 'yuksek' ? 0.95 : d.guven === 'dusuk' ? 0.55 : 0.8, ocr: true, rateGuess: false, dateGuess: !dm, ai: true };
+        S.modal = { type: 'upload', step: 'result', sample, cat };
+      } catch (err) {
+        if (S.modal !== m0) return;
+        const img = !/pdf/i.test(f.type) && !/\.pdf$/i.test(f.name);
+        if (img && err && err.kind !== 'user') { toast('Yapay zekâ okuyamadı, yedek okuma deneniyor.', 'warn'); S.modal = { type: 'upload', step: 'pick' }; S.noAI = true; try { onChange({ target: { dataset: { ch: 'file' }, files: [f] } }); } finally { S.noAI = false; } return; }
+        S.modal = { type: 'upload', step: 'pick', err: err && err.kind === 'user' ? err.message : 'Belge okunamadı. Daha net bir fotoğraf ya da PDF dene.' };
+      }
+      renderModal();
+    })();
+    return;
+  }
+  if (ch === 'aifile' && S.modal && S.modal.type === 'ai' && aiReady()) {
+    const f = el.files && el.files[0]; const m0 = S.modal; const r = _och30(e);
+    if (f) aiPrepFile(f).then((a) => { if (S.modal === m0) m0.att = a; }, (er) => { toast(er.message || 'Dosya okunamadı.', 'warn'); });
+    return r;
+  }
+  return _och30(e);
+};
+const renderModalV30 = renderModal;
+renderModal = function () {
+  renderModalV30(); const m = S.modal; const root = $('#modal-root'); if (!m || !root || typeof root.innerHTML !== 'string') return;
+  if (m.type === 'upload' && m.step === 'pick' && aiReady()) root.innerHTML = root.innerHTML.replace('Fotoğraftan okunur (deneysel). Okunan bilgileri kaydetmeden önce kontrol et. Örnek fiş sadece denemek içindir.', 'Fiş ya da fatura yapay zekâ ile okunur (fotoğraf veya PDF). Kaydetmeden önce bilgileri kontrol et.');
+  if (m.type === 'upload' && m.step === 'reading' && m.claude) root.innerHTML = root.innerHTML.replace('<span id="oc-prog">Okuma motoru hazırlanıyor</span>.', 'Kais AI okuyor.');
+  if (m.type === 'ai') root.innerHTML = root.innerHTML.replace('Prototipte okuma sonucu örnektir. Gerçek sürümde sözleşme görüntüsünden okunur ve her alanı sen onaylarsın.', aiReady() ? 'Sözleşme yapay zekâ ile okunur. Kaydetmeden önce her alanı kontrol et.' : 'Bulut hesabıyla giriş yapınca sözleşme gerçekten okunur. Şimdilik örnek sonuç gösterilir.').replace('Prototipte okuma sonucu örnektir. Hukuki değerleri iş hukukçusu ya da muhasebeciyle teyit et.', 'Hukuki değerleri iş hukukçusu ya da muhasebeciyle teyit et.');
+};
+const aiExtractV29 = aiExtract;
+aiExtract = function (m) { const x = aiExtractV29(m); const a = m.ai; if (!a) return x; if (a.maas > 0) x.salary = a.maas; if (/^\d{4}-\d{2}-\d{2}$/.test(a.ise_giris || '')) x.hire = a.ise_giris; if (a.haftalik_saat > 0) x.hours = a.haftalik_saat; if (a.deneme_ay != null && a.deneme_ay !== '' && Number(a.deneme_ay) >= 0) x.trial = Number(a.deneme_ay); if (a.gorev) x.pos = a.gorev; return x; };
+const _aigo30 = H.aigo;
+H.aigo = () => {
+  aiSnap(); const m = S.modal;
+  if (!aiReady() || !m.file || !m.att) return _aigo30();
+  const t = ' ' + norm(m.text) + ' '; const m0 = m; m.step = 'reading'; renderModal();
+  aiCall('sozlesme', m.text || 'Bu iş sözleşmesini oku.', [m.att]).then((d) => {
+    if (S.modal !== m0) return; m0.ai = d;
+    m0.stype = d.maas_turu === 'net' ? 'net' : d.maas_turu === 'brut' ? 'brut' : (/ brüt | brut /.test(t) ? 'brut' : / net /.test(t) ? 'net' : null);
+    const who = aiWho(d.calisan_adi || '') || aiWho(m0.text) || m0.uid;
+    if (!who) { m0.step = 'who'; renderModal(); return; }
+    m0.uid = who; m0.step = m0.stype ? 'result' : 'ask'; renderModal();
+  }, (er) => { if (S.modal !== m0) return; m0.step = 'input'; m0.att = null; m0.file = false; toast(er && er.kind === 'nofn' ? 'Kais AI sunucusu güncel değil. Fonksiyonu güncelle.' : (er && er.kind === 'user' ? er.message : 'Sözleşme okunamadı. Daha net bir fotoğraf dene.'), 'warn'); renderModal(); });
+};
+const _aiwho30 = H.aiwho;
+H.aiwho = (el) => { const m = S.modal; if (m && m.ai) { m.uid = el.dataset.id; m.step = m.stype ? 'result' : 'ask'; renderModal(); return; } return _aiwho30(el); };
+const _aisave30 = H.aisave;
+H.aisave = () => {
+  const m = S.modal; const a = m && m.ai;
+  if (a && m.uid && PROFILES[m.uid]) { const p = PROFILES[m.uid]; const y = aiExtract(m); p.salary = y.salary; p.hire = y.hire; p.hours = y.hours; p.trial = y.trial; }
+  return _aisave30();
+};
+const _dfgo30 = H.dfgo;
+H.dfgo = () => {
+  const kind = (document.getElementById('df-kind') || {}).value; const text = ((document.getElementById('df-text') || {}).value || '').trim();
+  if (kind !== 'is' || !aiReady() || text.length < 4) return _dfgo30();
+  const fail = (e) => { S.modal = { type: 'df', step: 'input', text, err: e }; renderModal(); };
+  const done = (d) => { if (!d.name) return fail('Çalışanın adını yaz.'); S.modal = { type: 'df', step: 'result', kind, name: d.name, warn: d.warn, body: contractText(d) }; renderModal(); };
+  S.modal = { type: 'df', step: 'wait', text }; renderModal();
+  aiCall('belge', text, []).then((x) => {
+    const warn = []; const name = String(x.ad_soyad || '').trim();
+    const pos = String(x.gorev || '').trim(); const hire = /^\d{4}-\d{2}-\d{2}$/.test(x.baslangic || '') ? x.baslangic : ''; const salary = Number(x.maas) > 0 ? Number(x.maas) : 0;
+    const stype = x.maas_turu === 'brut' ? 'brut' : 'net'; const hours = Number(x.haftalik_saat) > 0 ? Number(x.haftalik_saat) : 45; const trial = x.deneme_ay != null && x.deneme_ay !== '' && Number(x.deneme_ay) >= 0 ? Number(x.deneme_ay) : 2;
+    if (!pos) warn.push('Görev yazılmamış, boş bıraktım.'); if (!hire) warn.push('Başlangıç tarihi yazılmamış, boş bıraktım.');
+    if (!salary) warn.push('Maaş yazılmamış, boş bıraktım.'); else if (x.maas_turu !== 'net' && x.maas_turu !== 'brut') warn.push('Maaşın net mi brüt mü olduğu yazılmamış, net varsaydım. Kontrol et.');
+    if (!(Number(x.haftalik_saat) > 0)) warn.push('Haftalık saat yazılmamış, 45 saat yazdım.'); if (x.deneme_ay == null || x.deneme_ay === '') warn.push('Deneme süresi yazılmamış, 2 ay yazdım.');
+    done({ name, pos, hire, salary, stype, hours, trial, payday: 30, warn });
+  }, (er) => { if (er && er.kind === 'user') return fail(er.message); done(dfParse(text)); });
+};
+const dfModalV30 = dfModal; dfModal = function (m) { return m.step === 'wait' ? sheet('Taslak hazırlanıyor', '<div class="spin" role="status" aria-label="Hazırlanıyor"></div><p class="muted" style="text-align:center">Kais AI bilgileri okuyor.</p>') : dfModalV30(m); };
+const stokSayimV30 = stokSayim;
+stokSayim = function () {
+  const h = stokSayimV30(); if (!['patron', 'mudur', 'calisan'].includes(S.user.role) || !aiReady()) return h;
+  const card = `<div class="card stack"><div><h3>Fotoğrafla say</h3><p class="muted small" style="margin-top:2px">Rafın ya da deponun fotoğrafını çek. Kais AI gördüğü ürünleri sayıp sana onay kartı çıkarır. Emin olmadıklarını eklemez.</p></div><button class="btn sec" data-a="cntphoto">${ic('camera', 18)} Fotoğraf ekle</button></div>`;
+  const i = h.indexOf('<div class="card stack">'); return i < 0 ? h + card : h.slice(0, i) + card + h.slice(i);
+};
+H.cntphoto = () => { AIC.mode = 'sayim'; AIC.draft = ''; AIC.err = ''; S.view = 'kaisai'; render(); };
+if (typeof window !== 'undefined') { window.__K = { aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
