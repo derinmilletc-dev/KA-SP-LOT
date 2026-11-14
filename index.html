@@ -430,6 +430,37 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .lx-box{padding:14px;gap:10px}
 @media(max-width:360px){.lx-card{padding:18px 14px 16px!important}.lx-tabs button span{font-size:9.5px!important}}
 @media(min-width:900px){.lx-card{margin:0!important;border-radius:0!important;box-shadow:none!important;padding:48px!important}.lx-hero::after{aspect-ratio:1065/326}}
+
+/* v38: son rötuşlar */
+@media(max-width:899px){
+ .lx-hero{position:relative;aspect-ratio:1065/288!important;background:linear-gradient(180deg,#14406A,#1C4972)!important}
+ .lx-hero::after{content:"";position:absolute;inset:0;background:url(/login-hero.jpg) center/88.3% auto no-repeat;-webkit-mask-image:linear-gradient(90deg,transparent 5.9%,#000 9%,#000 91%,transparent 94.1%);mask-image:linear-gradient(90deg,transparent 5.9%,#000 9%,#000 91%,transparent 94.1%)}
+ .login.lx{background:linear-gradient(180deg,#1C4972 0,#1D4A73 calc(27vw),#9DB5CF calc(27vw + 160px),#E6EDF5 calc(27vw + 320px),#F2F6FB 100%)!important}
+}
+.lx-card h1{font-size:27px;line-height:1.08}
+.lx-sub{margin-top:2px;font-size:14.5px}
+.lx-tabs{margin:12px 0 12px!important}
+.lx-tabs button{padding:8px 2px 7px!important}
+.lx-tabs button svg{width:19px;height:19px;margin-bottom:2px}
+.lx-tabs button b{font-size:13.5px;line-height:1.25}
+.lx-form{gap:10px}
+.lx-f{gap:5px}
+.lx-lr .lx-link{min-height:24px;padding:2px 0}
+.lx-go{margin-top:2px}
+.lx-or{margin:-2px 10px}
+.lx-alt{padding:7px 12px!important}
+.lx-alt span{font-size:11.5px}
+.lx-demo{border:0!important;background:transparent;padding:4px 12px!important}
+.lx-demo b{font-size:14px;font-weight:600;color:var(--ink-2)}
+.lx-demo svg{width:15px;height:15px;color:var(--ink-2)}
+.lx-demo span{font-size:11.5px}
+.lx-more{margin-top:-6px;text-align:center}
+.lx-more summary{list-style:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:12.5px;color:var(--muted);padding:4px 10px;min-height:28px;border-radius:8px}
+.lx-more summary::-webkit-details-marker{display:none}
+.lx-more summary span{font-size:10px;transition:transform .15s}
+.lx-more[open] summary span{transform:rotate(180deg)}
+.lx-more .lx-roles{margin-top:0}
+@media(prefers-reduced-motion:reduce){.lx-more summary span{transition:none}}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -5455,7 +5486,7 @@ function lxLogin() {
         ? `<div class="lx-box"><p class="small muted">İşvereninin verdiği kodu yaz. Yukarıya e-postanı ve kendi belirlediğin en az 8 karakterlik şifreni yaz.</p><div class="lx-f"><label for="id-code">Davet kodu</label><div class="lx-in"><input id="id-code" type="text" autocapitalize="characters" placeholder="Örn. K7M2QX" style="text-transform:uppercase"></div></div><button type="button" class="btn block" data-a="idnew">Hesap oluştur ve katıl</button></div>`
         : `<div class="lx-box"><p class="small muted">Yukarıya e-postanı ve en az 8 karakterlik şifreni yaz, buraya işletmeni. Yeni işletme boş başlar.</p><div class="lx-f"><label for="id-biz">İşletme adı</label><div class="lx-in"><input id="id-biz" type="text" autocomplete="organization"></div></div><div class="lx-f"><label for="id-name">Adın soyadın</label><div class="lx-in"><input id="id-name" type="text" autocomplete="name"></div></div><label class="small" style="display:flex;gap:8px;align-items:center;margin:2px 0 4px"><input type="checkbox" id="id-demo"> Örnek verilerle başla (denemek için)</label><button type="button" class="btn block" data-a="idnew">İşletmemi oluştur</button></div>`;
     }
-    const demoBox = AUTH.demo === false ? '' : `<button type="button" class="lx-demo" data-a="demo" data-id="u1">${LXI.play}<b>Demo hesabını dene</b><span>Örnek verilerle sistemi keşfedin</span></button><div class="lx-roles">Diğer roller: ${[['u2', 'Müdür'], ['u3', 'Muhasebeci'], ['u4', 'Çalışan']].map((x) => `<button type="button" data-a="demo" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+    const demoBox = AUTH.demo === false ? '' : `<button type="button" class="lx-demo" data-a="demo" data-id="u1">${LXI.play}<b>Demo hesabını dene</b><span>Örnek verilerle sistemi keşfedin</span></button><details class="lx-more"><summary>Diğer roller <span aria-hidden="true">▾</span></summary><div class="lx-roles">${[['u2', 'Müdür'], ['u3', 'Muhasebeci'], ['u4', 'Çalışan']].map((x) => `<button type="button" data-a="demo" data-id="${x[0]}">${x[1]}</button>`).join('')}</div></details>`;
     body = `${note}${fields}${err}${forgot}${go}${extra}${demoBox}`;
   }
   const inner = (cloud && tab !== 'sup' && !(SBS.user && ID.mems.length > 1 && !ID.active)) ? `<form id="${create ? 'idform' : 'idform'}" class="lx-form" novalidate>${body}</form>` : (cloud ? `<div class="lx-form">${body}</div>` : `<form id="login" class="lx-form" novalidate>${body}</form>`);
