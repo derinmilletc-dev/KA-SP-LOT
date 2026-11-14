@@ -4817,7 +4817,63 @@ renderModal = function () {
 const _save26 = H.savereceipt;
 H.savereceipt = () => { const m = S.modal; if (m && m.sample && m.sample.ocr) { const g = (id) => (document.getElementById(id) || {}).value; const sp = m.sample; if (g('oc-seller')) sp.seller = g('oc-seller').trim() || sp.seller; if (g('oc-date')) sp.date = g('oc-date').trim() || sp.date; if (g('oc-rate') != null && g('oc-rate') !== '') sp.rate = Number(g('oc-rate')); const t = trNum(g('oc-total')); if (t > 0) sp.total = t; } return _save26(); };
 
-if (typeof window !== 'undefined') { window.__K = { ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v27: Kasa/POS satış gelen kutusu */
+const POS = { token: '', n: 0, err: '', busy: false, at: '', last: 0 };
+const posMsg = (e) => { const m = String((e && e.message) || e || ''); return /pos_tokens|sales_inbox|schema cache|relation/i.test(m) ? 'POS tabloları kurulmamış. kaispilot_pos.sql dosyasını Supabase\'de çalıştır.' : m; };
+const posCan = () => sbOK() && SBS.user && SBS.biz && canSup();
+function posRow(p) {
+  if (!p || typeof p !== 'object') return null;
+  const g = (...k) => { for (const x of k) if (p[x] != null && p[x] !== '') return p[x]; return null; };
+  const prod = String(g('urun', 'product', 'name', 'prod', 'item') || '').trim();
+  const qty = Number(String(g('adet', 'qty', 'quantity', 'miktar') == null ? 1 : g('adet', 'qty', 'quantity', 'miktar')).replace(',', '.'));
+  const total = Number(String(g('tutar', 'total', 'amount', 'fiyat', 'price') == null ? NaN : g('tutar', 'total', 'amount', 'fiyat', 'price')).replace(',', '.'));
+  let d = String(g('tarih', 'date', 'time') || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { const m = d.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/); d = m ? m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0') : REF_ISO; }
+  if (!prod || !(qty > 0) || !isFinite(total) || total < 0) return null;
+  return { date: d, prod, qty, total };
+}
+async function posNewToken() {
+  const c = sbClient(); const b = SBS.biz.id; const tk = 'kp_' + Array.from(crypto.getRandomValues(new Uint8Array(18))).map((x) => x.toString(16).padStart(2, '0')).join('');
+  const r = await c.from('pos_tokens').upsert({ business_id: b, token: tk }, { onConflict: 'business_id' }); if (r.error) throw r.error; POS.token = tk;
+}
+async function posPoll(manual) {
+  if (!posCan() || POS.busy) return 0; POS.busy = true; let added = 0;
+  try {
+    const c = sbClient(); const b = SBS.biz.id;
+    const t = await c.from('pos_tokens').select('token').eq('business_id', b).maybeSingle(); if (t.error) throw t.error; POS.token = (t.data && t.data.token) || '';
+    if (!POS.token) { POS.err = ''; return 0; }
+    const r = await c.from('sales_inbox').select('id,payload').eq('business_id', b).eq('imported', false).order('id').limit(500); if (r.error) throw r.error;
+    const rows = []; const ids = (r.data || []).map((x) => x.id); (r.data || []).forEach((x) => { const o = posRow(x.payload); if (o) rows.push(o); });
+    if (ids.length) {
+      if (rows.length) { const imp = importSales(rows, 'Kasa (otomatik)'); added = imp.n; }
+      const u = await c.from('sales_inbox').update({ imported: true }).in('id', ids); if (u.error) throw u.error;
+      POS.n += ids.length; POS.last = ids.length;
+      if (added && !manual) toast('Kasadan ' + added + ' satış geldi.', 'ok');
+    }
+    POS.err = ''; POS.at = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) { POS.err = posMsg(e); } finally { POS.busy = false; }
+  if (added && typeof pFlush === 'function') pFlush(); if (manual || added) render(); return added;
+}
+function posCard() {
+  if (!sbOK() || !SBS.user) return `<div class="card stack"><div><h3>Kasa bağlantısı</h3><p class="muted small" style="margin-top:2px">Kasa programından satışların otomatik gelmesi için önce bulut hesabına giriş yapmalısın (Ayarlar).</p></div></div>`;
+  if (!posCan()) return '';
+  const url = SB_URL + '/rest/v1/rpc/pos_push';
+  return `<div class="card stack"><div><h3>Kasa bağlantısı</h3><p class="muted small" style="margin-top:2px">Kasan ya da bir otomasyon aracı (Zapier, Make, n8n) satış gönderince burada otomatik görünür, stok düşer. Hazır bir kasa markası bağlayıcısı yok; kasanın "web kancası" ya da dışa aktarma seçeneği varsa bu adres kullanılır.</p></div>
+  ${POS.err ? `<div class="callout warn">${ic('alert')}<div>${esc(POS.err)}</div></div>` : ''}
+  ${POS.token ? `<div class="field"><label>Kasa anahtarı</label><input readonly value="${esc(POS.token)}" onclick="this.select()"></div>
+  <details><summary class="small" style="cursor:pointer">Gönderme örneği (teknik)</summary><pre class="small" style="white-space:pre-wrap;word-break:break-all;margin-top:8px">POST ${esc(url)}
+apikey: ${esc(SB_KEY)}
+Content-Type: application/json
+
+{"p_token":"${esc(POS.token)}","p_rows":[{"tarih":"2026-11-14","urun":"Latte","adet":2,"tutar":180}]}</pre></details>
+  <p class="small muted">${POS.n ? POS.n + ' satır alındı. ' : ''}${POS.at ? 'Son kontrol ' + esc(POS.at) + '.' : ''} Anahtarı bilen herkes satış ekleyebilir; sızarsa yenile.</p>
+  <div class="row wrap"><button class="btn sm sec" data-a="pospoll">Şimdi kontrol et</button><button class="btn sm sec" data-a="posnew">Anahtarı yenile</button></div>` : `<button class="btn" data-a="posnew">Kasa bağlantısı oluştur</button>`}</div>`;
+}
+H.posnew = async () => { try { await posNewToken(); POS.err = ''; toast('Kasa anahtarı hazır.', 'ok'); } catch (e) { POS.err = posMsg(e); } render(); };
+H.pospoll = () => { posPoll(true); };
+const viewSatisV27 = viewSatis; viewSatis = function () { const h = viewSatisV27(); const i = h.indexOf('<div class="card stack"><div><h3>Satış dosyası yükle'); return i < 0 ? h : h.slice(0, i) + posCard() + h.slice(i); };
+if (typeof setInterval === 'function' && typeof window !== 'undefined' && !window.__noPosTimer) setInterval(() => { if (posCan() && POS.token) posPoll(false); }, 30000);
+const sbLoadBizV27 = sbLoadBiz; sbLoadBiz = async function () { await sbLoadBizV27(); POS.token = ''; if (posCan()) posPoll(false); };
+if (typeof window !== 'undefined') { window.__K = { POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
