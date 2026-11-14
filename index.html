@@ -329,6 +329,18 @@ details.chk .cbody{padding:2px 0 8px 38px}
 input[type=date],input[type=time],input[type=datetime-local]{width:100%;min-height:44px;border:1px solid #C7D0DD;border-radius:10px;padding:10px 12px;font:inherit;background:#fff;color:var(--ink)}
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{font-size:16px}
 .sw::before{content:"";position:absolute;inset:-8px -4px}
+@media(max-width:899px){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{font-size:16px!important}}
+.xbtn.sm{min-width:38px;min-height:38px}
+.top{min-width:0}.top>*{flex:none}.top>.ptitle{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabbar{grid-auto-columns:minmax(0,1fr)}.tab{min-width:0}.tab>span{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:380px){.top{gap:8px;padding:10px 12px}.top .pill{display:none}.tab{font-size:11px}}
+.tab{position:relative}
+.tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
+@media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
+.emp>.grow{min-width:0}.emp>.grow .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.emp>select{flex:none;width:auto;max-width:136px}
+input[type=file]{width:100%;font-size:14px;color:var(--muted)}
+input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding:8px 14px;border:1px solid #C7D0DD;border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-weight:600}
 </style>
 </head>
 <body>
