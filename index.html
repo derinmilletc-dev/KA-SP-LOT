@@ -388,8 +388,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 }
 
 /* v36: giriş üstü birebir görsel */
-.login.lx{background:linear-gradient(180deg,#1D4A73 0,#1D4A73 calc(35.5vw),#9DB5CF calc(35.5vw + 180px),#E6EDF5 calc(35.5vw + 360px),#F2F6FB 100%)}
-.lx-hero{padding:0!important;min-height:0!important;aspect-ratio:1065/378;background:url(/login-hero.jpg) top center/100% auto no-repeat}
+.login.lx{background:linear-gradient(180deg,#1D4A73 0,#1D4A73 calc(30.6vw),#9DB5CF calc(30.6vw + 160px),#E6EDF5 calc(30.6vw + 320px),#F2F6FB 100%)}
+.lx-hero{padding:0!important;min-height:0!important;aspect-ratio:1065/326;background:url(/login-hero.jpg) top center/100% auto no-repeat}
 .lx-hero::before{display:none}
 .lx-hero>*{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0);white-space:nowrap}
 .lx-card{margin:0 7.4%!important;border-radius:24px}
@@ -399,8 +399,37 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .lx-alt,.lx-demo{display:flex!important;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 10px}
 .lx-alt span,.lx-demo span{flex-basis:100%}
 @media(min-width:900px){.login.lx{background:#1A456F}.lx-hero{position:relative;aspect-ratio:auto;min-height:100vh!important;background:#1A456F}
- .lx-hero::after{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);aspect-ratio:1065/378;background:url(/login-hero.jpg) center/100% auto no-repeat;-webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent)}
+ .lx-hero::after{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);aspect-ratio:1065/326;background:url(/login-hero.jpg) center/100% auto no-repeat;-webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent)}
  .lx-card{margin:0!important;border-radius:0}}
+
+/* v37: kompakt giriş kartı */
+.lx-card{margin-top:-12px!important;padding:22px 22px 20px!important;border-radius:22px!important;box-shadow:0 10px 30px rgba(9,40,80,.16)!important}
+.lx-card h1{font-size:28px;letter-spacing:-.4px}
+.lx-sub{margin-top:4px;font-size:15px}
+.lx-tabs{margin:16px 0 14px!important;gap:8px!important}
+.lx-tabs button{min-height:0!important;padding:10px 2px 9px!important;gap:1px!important;border-radius:14px;box-shadow:none}
+.lx-tabs button svg{width:22px;height:22px;margin-bottom:3px}
+.lx-tabs button b{font-size:14px}
+.lx-tabs button span{font-size:10.5px!important;white-space:nowrap}
+.lx-form{gap:12px}
+.lx-f{gap:6px}
+.lx-f>label,.lx-lr>label{font-size:14px;font-weight:600;color:var(--ink)}
+.lx-lr{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lx-lr .lx-link{font-size:13.5px;padding:4px 0;min-height:32px}
+.lx-in{min-height:54px;border-radius:14px;border-width:1px;border-color:#D3DCE8}
+.lx-in>svg{width:20px;height:20px}
+.lx-go{min-height:54px;border-radius:14px;font-size:17px;margin-top:4px;box-shadow:0 4px 10px rgba(9,63,122,.2)}
+.lx-or{margin:0 10px;font-size:13.5px}
+.lx-alt,.lx-demo{min-height:0!important;padding:9px 12px!important;border-radius:14px;gap:0 8px!important}
+.lx-alt{border-width:1px}
+.lx-alt svg,.lx-demo svg{width:18px;height:18px}
+.lx-alt b,.lx-demo b{font-size:15px}
+.lx-alt span,.lx-demo span{font-size:12px;color:var(--muted)}
+.lx-demo{background:transparent;border:1px solid #D3DCE8!important}
+.lx-roles{margin-top:-4px;font-size:12px}.lx-roles button{font-size:12.5px;min-height:30px;padding:4px 5px}
+.lx-box{padding:14px;gap:10px}
+@media(max-width:360px){.lx-card{padding:18px 14px 16px!important}.lx-tabs button span{font-size:9.5px!important}}
+@media(min-width:900px){.lx-card{margin:0!important;border-radius:0!important;box-shadow:none!important;padding:48px!important}.lx-hero::after{aspect-ratio:1065/326}}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -5409,9 +5438,9 @@ function lxLogin() {
   const tabs = cloud ? `<div class="lx-tabs" role="group" aria-label="Giriş türü">${[['own', 'İşveren', 'İşletmeni yönet', LXI.store], ['emp', 'Çalışan', 'Görevlerine eriş', LXI.users], ['sup', 'Tedarikçi', 'Siparişlerini yönet', LXI.truck]].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[3]}<b>${x[1]}</b><span>${x[2]}</span></button>`).join('')}</div>` : '';
   const eid = cloud ? 'id-em' : 'em', pid = cloud ? 'id-pw' : 'pw', errId = cloud ? 'id-err' : 'lerr';
   const fields = `<div class="lx-f"><label for="${eid}">E-posta</label><div class="lx-in">${LXI.mail}<input id="${eid}" type="email" autocomplete="username" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com" value="${em}"></div></div>
-   <div class="lx-f"><label for="${pid}">Şifre</label><div class="lx-in">${LXI.lock}<input id="${pid}" type="password" autocomplete="${create ? 'new-password' : 'current-password'}" placeholder="Şifre"><button type="button" class="lx-eye" data-a="pwtog" aria-label="Şifreyi göster veya gizle">${LXI.eye}</button></div></div>`;
+   <div class="lx-f"><div class="lx-lr"><label for="${pid}">Şifre</label>${cloud ? '<button type="button" class="lx-link" data-a="idforgot">Şifremi unuttum?</button>' : ''}</div><div class="lx-in">${LXI.lock}<input id="${pid}" type="password" autocomplete="${create ? 'new-password' : 'current-password'}" placeholder="Şifre"><button type="button" class="lx-eye" data-a="pwtog" aria-label="Şifreyi göster veya gizle">${LXI.eye}</button></div></div>`;
   const err = `<div class="err" id="${errId}" role="alert">${esc(S.loginErr)}</div>`;
-  const forgot = cloud ? `<div class="lx-r"><button type="button" class="lx-link" data-a="idforgot">Şifremi unuttum?</button></div>` : '';
+  const forgot = '';
   const go = `<button class="lx-go" type="${cloud ? 'button' : 'submit'}" ${cloud ? 'data-a="idin"' : ''}><span>Giriş yap</span>${LXI.arrow}</button>`;
   let body;
   if (cloud && SBS.user && ID.mems.length > 1 && !ID.active) body = `<div class="stack"><p class="lbl">Hangi işletmeye girmek istiyorsun?</p>${ID.mems.map((m) => `<button type="button" class="btn sec block" data-a="idpick" data-id="${m.business_id}">${esc(m.businesses.name)} · ${esc(ROLE_LABEL[m.role])}</button>`).join('')}<button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div>`;
