@@ -765,6 +765,23 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .cm-hr{border:0;border-top:1px solid #E6ECF4;margin:0}
 .cm-n.warn{border-left:3px solid #E7A21A;border-radius:6px 14px 14px 6px}
 .cm-c{margin-top:0}
+/* v54 şablon rayı */
+.tpl-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tpl-h .cm-l{margin-bottom:0}
+.tpl-ai{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:1px solid #C9DBF5;border-radius:999px;background:linear-gradient(135deg,#EAF2FD,#fff);color:var(--cini);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.tpl-ai:disabled{opacity:.6}
+.tpl-n{margin:4px 0 10px;font-size:13px;color:var(--muted)}
+.tpl-rail{display:flex;gap:10px;overflow-x:auto;margin:0 -14px;padding:2px 14px 8px;scroll-snap-type:x mandatory;scroll-padding:0 14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tpl-rail::-webkit-scrollbar{display:none}
+.tpl-c{position:relative;flex:0 0 158px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;min-height:112px;text-align:left;border:1px solid #D9E3F0;border-radius:16px;background:#fff;color:var(--ink);font:inherit;cursor:pointer;box-shadow:0 2px 6px rgba(20,60,120,.06)}
+.tpl-c b{font-size:15px;line-height:1.2}
+.tpl-s{font-size:12.5px;line-height:1.35;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tpl-i{width:34px;height:34px;border-radius:10px;background:#E6F0FC;color:var(--cini);display:grid;place-items:center}
+.tpl-c.on{border:1.5px solid var(--cini);background:linear-gradient(160deg,#EAF3FE,#fff);box-shadow:0 4px 12px rgba(14,75,151,.18)}
+.tpl-c.on .tpl-i{background:var(--cini);color:#fff}
+.tpl-k{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--cini);color:#fff;display:grid;place-items:center;font-style:normal}
+.tpl-k svg{width:13px;height:13px}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6465,13 +6482,11 @@ function kampanyaHTML() {
   const prev = (c.body || '').replace(/\{ad\}/g, first ? first.name.split(' ')[0] : 'Müşterimiz');
   const env = '<svg class="cm-art" viewBox="0 0 90 70" aria-hidden="true"><defs><linearGradient id="cme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6FA8F2"/><stop offset="1" stop-color="#2F68C8"/></linearGradient></defs><path d="M12 30 45 52 78 30v26a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6z" fill="url(#cme)"/><rect x="24" y="8" width="42" height="34" rx="4" fill="#fff" stroke="#BCD3F2" transform="rotate(-6 45 25)"/><g transform="rotate(-6 45 25)"><rect x="31" y="16" width="28" height="3" rx="1.5" fill="#6FA0E6"/><rect x="31" y="23" width="24" height="3" rx="1.5" fill="#9DBDEB"/><rect x="31" y="30" width="26" height="3" rx="1.5" fill="#9DBDEB"/></g><path d="M12 30 45 52 78 30" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.5"/></svg>';
   const hero = '<svg class="cmh-art" viewBox="0 0 150 80" aria-hidden="true"><defs><linearGradient id="cmh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3F82DA"/><stop offset="1" stop-color="#1B55B0"/></linearGradient></defs><ellipse cx="86" cy="44" rx="58" ry="26" fill="none" stroke="#7FB2F0" stroke-opacity=".45" stroke-width="1.5" transform="rotate(-8 86 44)"/><path d="M26 6 52 14 36 18z" fill="#9CC4F7"/><path d="M26 6 36 18 33 24 30 15z" fill="#6FA0E6"/><path d="M62 38 96 58 130 38v26a6 6 0 0 1-6 6H68a6 6 0 0 1-6-6z" fill="url(#cmh)"/><rect x="72" y="14" width="48" height="40" rx="5" fill="#fff"/><rect x="80" y="24" width="32" height="4" rx="2" fill="#4B87DE"/><rect x="80" y="33" width="28" height="4" rx="2" fill="#9DBDEB"/><rect x="80" y="42" width="30" height="4" rx="2" fill="#9DBDEB"/><path d="M62 38 96 58 130 38" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/></svg>';
-  const sel = TPL.findIndex((t) => t.subj === c.subj);
-  const tic = ['tag', 'gift', 'megaphone'];
   const lab = (ico, t, f) => `<${f ? 'label for="' + f + '"' : 'span'} class="cm-l">${ic(ico, 22)}<b>${t}</b></${f ? 'label' : 'span'}>`;
   return `<div class="stack-lg cm">
   <div class="cm-hero"><div><h3>Yeni kampanya</h3><p>Müşterilerinize toplu e-posta gönderin.</p></div>${hero}</div>
   <div class="card cm-c">
-    <div class="cm-s">${lab('layers', 'Şablon')}<div class="cm-ch">${TPL.map((t, i) => `<button type="button" class="cm-p${sel === i ? ' tp-on' : ''}" data-a="camptpl" data-i="${i}">${ic(tic[i] || 'tag', 20)}${esc(t.n)}</button>`).join('')}</div></div>
+    ${tplRail(lab)}
     <hr class="cm-hr">
     <div class="cm-s">${lab('users', 'Kime')}<div class="cm-ch">${[['all', 'Tüm müşteriler', 'users'], ['recent', 'Son 30 gün gelenler', 'cal'], ['loyal', 'Sadık müşteriler (8+ ziyaret)', 'userplus']].map((x) => `<button type="button" class="cm-p" data-a="campseg" data-v="${x[0]}" aria-pressed="${c.seg === x[0]}">${ic(c.seg === x[0] ? 'check' : x[2], 20)}${x[1]}</button>`).join('')}</div></div>
     <div class="cm-n ${out ? 'warn' : ''}">${ic('users', 26)}<div><b>${ok.length} kişiye gidecek</b>${out ? `<p>${out} kişi e-posta izni vermediği ya da listeden çıktığı için hariç tutuldu.</p>` : ''}</div></div>
@@ -6485,6 +6500,77 @@ function kampanyaHTML() {
   <div class="card cm-g"><div class="cm-gh"><span class="cm-gi">${ic('layers', 22)}</span><h3>Gönderilen kampanyalar</h3></div>${CAMPAIGNS.length ? CAMPAIGNS.slice().reverse().map((x) => `<div class="cm-r"><div><b>${esc(x.subj)}</b><span>${esc(x.date)} · ${x.sent} kişiye gitti · açılma ${esc(x.open)}</span></div>${ic('chevron', 18)}</div>`).join('') : '<p class="muted" style="padding:4px 14px 14px">Henüz kampanya göndermedin.</p>'}</div></div>`;
 }
 const _vmu52 = viewMusteri; viewMusteri = function () { return _vmu52().replace('<div class="seg"', '<div class="seg seg-b seg-i"').replace(/(data-v="kampanya" aria-pressed="(?:true|false)">)Toplu e-posta/, '$1' + ic('mail', 22) + '<span>Toplu e-posta</span>').replace(/(data-v="liste" aria-pressed="(?:true|false)">)Müşteri listesi/, '$1' + ic('users', 22) + '<span>Müşteri listesi</span>'); };
+
+/* ===== v54: kampanya şablonları: işletmeye göre 10 davet, yatay kaydırma, Kais AI önerisi ===== */
+ICONS.heart = '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'; ICONS.star = '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'; ICONS.party = '<path d="M4 20 9 7l8 8zM14 4v2M19 8h2M18 3l1 1.5M20 13l1.5.5"/>'; ICONS.sparkle = ICONS.sparkle || '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>';
+const TPL_IC = ['tag', 'gift', 'heart', 'party', 'users', 'leaf', 'cal', 'clock', 'star', 'chat'];
+const TPL_V = {
+  kafe: { disc: 'sıcak içeceklerde', nw: 'tarçınlı rulo', treat: 'bir kahve', book: 'Masanı önceden ayırt', season: 'sonbahar menümüz', happy: 'hafta içi 15.00-17.00 arası ikinci kahve yarı fiyatına', ev: 'kahve tadım günümüz' },
+  firin: { disc: 'unlu mamullerde', nw: 'taze çıkan yeni böreğimiz', treat: 'bir poğaça', book: 'Siparişini önceden ver', season: 'sonbahar lezzetlerimiz', happy: 'akşam 18.00 sonrası günün ürünlerinde indirim', ev: 'ekşi maya atölyemiz' },
+  restoran: { disc: 'tüm ana yemeklerde', nw: 'şefin yeni tabağı', treat: 'bir tatlı', book: 'Masanı önceden ayırt', season: 'mevsim menümüz', happy: 'hafta içi öğle menüsünde özel fiyat', ev: 'şef masası akşamımız' },
+  market: { disc: 'seçili ürünlerde', nw: 'yeni gelen ürünlerimiz', treat: 'küçük bir sürpriz hediye', book: 'Siparişini önceden ver', season: 'sezon ürünlerimiz', happy: 'hafta içi sabah saatlerinde indirim', ev: 'tadım günümüz' },
+  magaza: { disc: 'seçili ürünlerde', nw: 'yeni sezon koleksiyonumuz', treat: 'küçük bir hediye', book: 'Özel gün için ürününü ayırt', season: 'yeni sezon koleksiyonumuz', happy: 'hafta içi seçili ürünlerde ek indirim', ev: 'özel alışveriş günümüz' },
+  kuafor: { disc: 'saç bakımı ve kesimde', nw: 'yeni bakım hizmetimiz', treat: 'bir bakım uygulaması', book: 'Randevunu önceden al', season: 'sezon bakımlarımız', happy: 'hafta içi sabah randevularında özel fiyat', ev: 'bakım günümüz' },
+  spor: { disc: 'aylık üyeliklerde', nw: 'yeni grup dersimiz', treat: 'bir deneme dersi', book: 'Dersine önceden yer ayırt', season: 'yaz hazırlığı programımız', happy: 'hafta içi sabah seanslarında özel fiyat', ev: 'açık hava antrenmanımız' },
+  otel: { disc: 'konaklamalarda', nw: 'yeni oda konseptimiz', treat: 'bir kahvaltı', book: 'Odanı önceden ayırt', season: 'yeni sezon', happy: 'hafta içi konaklamalarda özel fiyat', ev: 'etkinlik gecemiz' },
+  oto: { disc: 'bakım paketlerinde', nw: 'yeni servis paketimiz', treat: 'ücretsiz bir kontrol', book: 'Randevunu önceden al', season: 'kış bakım kampanyamız', happy: 'hafta içi randevularda özel fiyat', ev: 'ücretsiz kontrol günümüz' },
+  klinik: { disc: 'kontrol ve muayenelerde', nw: 'yeni tedavi seçeneğimiz', treat: 'ücretsiz bir ön muayene', book: 'Randevunu önceden al', season: 'yıllık check-up kampanyamız', happy: 'hafta içi randevularda özel fiyat', ev: 'bilgilendirme günümüz' },
+  egitim: { disc: 'kurs kayıtlarında', nw: 'yeni dönem programımız', treat: 'ücretsiz bir deneme dersi', book: 'Yerini önceden ayırt', season: 'yeni dönemimiz', happy: 'hafta içi akşam gruplarında özel fiyat', ev: 'tanışma günümüz' },
+  genel: { disc: 'seçili ürün ve hizmetlerde', nw: 'yeni ürün ve hizmetimiz', treat: 'küçük bir sürpriz', book: 'Randevunu ya da siparişini önceden ver', season: 'yeni sezonumuz', happy: 'hafta içi seçili ürünlerde özel fiyat', ev: 'özel günümüz' }
+};
+function tplGroup() {
+  const t = foldTr((typeof PROF !== 'undefined' && PROF.tur) || '') || foldTr(BIZ || '');
+  const has = (...w) => w.some((x) => t.indexOf(x) >= 0);
+  if (has('kafe', 'cafe', 'kahve')) return 'kafe';
+  if (has('firin', 'pastane', 'tatli', 'dondurma')) return 'firin';
+  if (has('restoran', 'fast', 'doner', 'kebap', 'bar', 'catering', 'lokanta')) return 'restoran';
+  if (has('market', 'kasap', 'manav', 'sarkuteri', 'bakkal')) return 'market';
+  if (has('magaza', 'elektronik', 'kirtasiye', 'cicek', 'eczane', 'butik')) return 'magaza';
+  if (has('kuafor', 'berber', 'guzellik', 'spa', 'masaj')) return 'kuafor';
+  if (has('spor', 'fitness', 'pilates')) return 'spor';
+  if (has('otel', 'pansiyon')) return 'otel';
+  if (has('oto', 'servis', 'yikama')) return 'oto';
+  if (has('klinik', 'dis', 'doktor')) return 'klinik';
+  if (has('egitim', 'kurs', 'okul')) return 'egitim';
+  return 'genel';
+}
+function tplBuild() {
+  const v = TPL_V[tplGroup()]; const sig = '\n\nSeni bekliyoruz,\n' + BIZ; const hi = 'Merhaba {ad},\n\n';
+  return [
+    { n: 'Hafta sonu indirimi', subj: `Bu hafta sonu ${v.disc} %15 indirim`, body: `${hi}Cumartesi ve pazar günü ${v.disc} %15 indirim var. Bu e-postayı göstermen yeterli.${sig}` },
+    { n: 'Yeni geldi', subj: `Yeni: ${v.nw}`, body: `${hi}Sana haber vermek istedik: ${v.nw} artık burada. İlk gelen müşterilerimize küçük bir sürprizimiz var.${sig}` },
+    { n: 'Seni özledik', subj: 'Uzun zaman oldu, seni ağırlamak isteriz', body: `${hi}Seni bir süredir göremedik. Bu ay içinde uğrarsan ${v.treat} bizden.${sig}` },
+    { n: 'Doğum günü', subj: 'Doğum gününü kutlarız', body: `${hi}Doğum günün ay içindeyse bize uğra, ${v.treat} bizden. Nice mutlu yıllara!${sig}` },
+    { n: 'Etkinlik daveti', subj: `${v.ev[0].toLocaleUpperCase('tr') + v.ev.slice(1)} için davetlisin`, body: `${hi}Bu ay ${v.ev} var ve seni de aramızda görmek isteriz. Yerin sınırlı, bu e-postaya cevap yazarak yerini ayırtabilirsin.${sig}` },
+    { n: 'Arkadaşını getir', subj: 'Arkadaşınla gel, ikiniz de kazanın', body: `${hi}Bir arkadaşınla birlikte gelirsen ikinize de ${v.treat} bizden. Bu ay sonuna kadar geçerli.${sig}` },
+    { n: 'Yeni sezon', subj: `${v.season[0].toLocaleUpperCase('tr') + v.season.slice(1)} başladı`, body: `${hi}${v.season[0].toLocaleUpperCase('tr') + v.season.slice(1)} başladı. İlk görenlerden olmak için bu hafta uğrayabilirsin.${sig}` },
+    { n: 'Yerini ayırt', subj: 'Sıra beklemeden gel', body: `${hi}${v.book}, sıra beklemeden keyfini çıkar. Bu e-postaya cevap yazman yeterli.${sig}` },
+    { n: 'Sakin saatler', subj: 'Sakin saatlerde sana özel fırsat', body: `${hi}Daha sakin saatlerde seni daha rahat ağırlıyoruz: ${v.happy}.${sig}` },
+    { n: 'Yorumunu paylaş', subj: 'Deneyimin nasıldı?', body: `${hi}Son ziyaretin nasıldı? Bir cümlelik yorumun bizim için çok değerli. Cevap yazarsan bir sonraki ziyaretinde ${v.treat} bizden.${sig.replace('Seni bekliyoruz', 'Teşekkürler')}` }
+  ];
+}
+const curTpls = () => (S.tplAI && S.tplAI.length ? S.tplAI : tplBuild());
+H.camptpl = (el) => { const t = curTpls()[Number(el.dataset.i)]; if (!t) return; S.camp.subj = t.subj; S.camp.body = t.body; render(); };
+function tplRail(lab) {
+  const L = curTpls(); const c = S.camp; const ai = !!(S.tplAI && S.tplAI.length);
+  const can = aiReady() && S.user && S.user.role === 'patron';
+  return `<div class="cm-s tpl"><div class="tpl-h">${lab('layers', 'Şablon')}${can ? `<button type="button" class="tpl-ai" data-a="tplai" ${S.tplBusy ? 'disabled' : ''}>${ic('sparkle', 16)}<span>${S.tplBusy ? 'Hazırlanıyor…' : ai ? 'Yeniden öner' : 'Kais AI ile öner'}</span></button>` : ''}</div>
+  <p class="tpl-n">${ai ? 'Kais AI işletmene göre yazdı.' : 'İşletmene göre ' + L.length + ' davet hazırladım.'} Seçince metne yazılır, düzenleyebilirsin.</p>
+  <div class="tpl-rail" role="list">${L.map((t, i) => `<button type="button" role="listitem" class="tpl-c${c.subj === t.subj ? ' on' : ''}" data-a="camptpl" data-i="${i}"><span class="tpl-i">${ic(TPL_IC[i % TPL_IC.length], 20)}</span><b>${esc(t.n)}</b><span class="tpl-s">${esc(t.subj)}</span>${c.subj === t.subj ? `<i class="tpl-k">${ic('check', 14)}</i>` : ''}</button>`).join('')}</div></div>`;
+}
+H.tplai = async () => {
+  if (S.tplBusy) return; S.tplBusy = true; render();
+  try {
+    const tur = (typeof PROF !== 'undefined' && PROF.tur) || '';
+    const q = `İşletme adı: ${BIZ}.${tur ? ' İşletme türü: ' + tur + '.' : ''} Bu işletmenin müşterilerine gönderebileceği 10 FARKLI davet/kampanya e-postası öner (indirim, yeni ürün, özleme, doğum günü, etkinlik, arkadaş getir, sezon, rezervasyon, sakin saat, yorum gibi, işletmenin işine uygun). Yalnızca JSON dizisi yaz, başka hiçbir şey yazma: [{"n":"2-3 kelimelik başlık","subj":"e-posta konusu (en çok 60 karakter)","body":"Merhaba {ad},\\n\\n2 kısa cümle\\n\\nSeni bekliyoruz,\\n${BIZ}"}]. Uydurma fiyat ya da adres yazma.`;
+    const d = await aiCall('kampanya', q, [], {});
+    let t = String((d && d.reply) || ''); const a = t.indexOf('['); if (a < 0) throw new Error('parse'); t = t.slice(a);
+    let arr; try { arr = JSON.parse(t.slice(0, t.lastIndexOf(']') + 1)); } catch (e) { const k = t.lastIndexOf('}'); arr = JSON.parse(t.slice(0, k + 1) + ']'); }
+    arr = (arr || []).filter((x) => x && x.n && x.subj && x.body).slice(0, 10).map((x) => ({ n: String(x.n).slice(0, 28), subj: String(x.subj).slice(0, 90), body: String(x.body) }));
+    if (arr.length < 3) throw new Error('parse'); S.tplAI = arr; toast('Kais AI yeni şablonlar yazdı.', 'ok');
+  } catch (e) { toast(e && e.kind === 'user' ? e.message : 'Şu an öneri alınamadı. Hazır şablonları kullanabilirsin.', 'warn'); }
+  S.tplBusy = false; render();
+};
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
