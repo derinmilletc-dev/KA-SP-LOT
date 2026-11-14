@@ -843,6 +843,28 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .kx-new{border:1px solid #D5DEEA;background:#fff;border-radius:18px;padding:0 18px;font-weight:600;color:var(--cini-d);font-family:inherit}
 .kx-info{display:flex;gap:10px;align-items:flex-start;margin:0;color:var(--ink-2);font-size:13.5px;line-height:1.45;padding:0 6px}.kx-info svg{flex:none;margin-top:1px}
 
+body.kx-on{--cini:#0E7A45;--cini-d:#0A5A33;--cini-wash:#E2F4EA;--cini-dd:#06402A;background:linear-gradient(180deg,#F6FAF8,#EEF4F1)}
+body.kx-on .avatar{background:#0A5A33!important}
+body.kx-on .tab[aria-current=page]{background:#E2F4EA;color:#0A5A33}
+.kx{gap:14px}
+.kx-hero{align-items:flex-start}.kx-ht h2{font-size:31px;color:#0B2E20;letter-spacing:-.3px}.kx-ht h2 svg{margin-top:-8px;color:#0E7A45;width:20px;height:20px}.kx-ht p{font-size:14px;margin-top:8px;max-width:250px}
+.kx-orb{width:78px;height:78px;margin:4px 14px 0 0;background:radial-gradient(circle at 34% 28%,#A8F0C6 0,#2DAA6A 30%,#0B5B35 70%,#063D24 100%);box-shadow:0 10px 26px rgba(20,160,90,.35),inset 0 -5px 12px rgba(0,40,20,.4),inset 0 3px 8px rgba(255,255,255,.55)}
+.kx-orb:before{content:"";position:absolute;top:6px;left:12px;width:34px;height:20px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0));filter:blur(1px)}
+.kx-orb b{font-size:34px;position:relative}
+.kx-ring{inset:-8px -18px;border:2px solid rgba(120,225,170,.85);filter:drop-shadow(0 0 5px rgba(60,200,130,.6))}
+.kx-qs{gap:8px}
+.kx-q{padding:7px 12px 7px 8px;border-radius:14px;font-size:13.5px;gap:10px;box-shadow:0 3px 10px rgba(10,60,40,.07);border-color:#E6EEEA;background:#FCFEFD}
+.kx-qi{width:34px;height:34px;border-radius:10px;background:#DDF2E6;color:#0E7A45}.kx-qi svg{width:19px;height:19px}.kx-q>svg:last-child{width:16px;height:16px}
+.kx-sec{gap:8px}.kx-lab b{font-size:15px;font-weight:500;color:#0B2E20}
+.kx-tag{background:#E4F4EB;color:#0B2E20;padding:5px 11px;font-size:13px}.kx-tag svg{color:#22B35A}
+.kx-drop{padding:14px;border-radius:14px;border-color:#9ACBAE;background:#E9F5EE;color:#0A4A2B;font-size:14.5px;gap:10px}.kx-drop b{font-weight:500}.kx-drop svg{width:22px;height:22px;color:#0A5A33}
+.kx-box{border-radius:14px;padding:10px 12px 8px;gap:4px;border-color:#E0E9E4;box-shadow:0 3px 10px rgba(10,60,40,.06);background:#fff}.kx-box:focus-within{border-color:#0E7A45;box-shadow:0 0 0 3px rgba(14,122,69,.14)}
+.kx-box textarea{font-size:13.5px;min-height:34px;caret-color:#0E7A45}
+.kx-tool{width:35px;height:30px;border-radius:9px;background:#E4F4EB;color:#0A4A2B}.kx-tool svg{width:17px;height:17px}
+.kx-send{min-height:42px;border-radius:14px;font-size:16px;font-weight:600;background:linear-gradient(180deg,#0F7A45,#07522E);box-shadow:0 8px 18px rgba(14,122,69,.3);gap:8px}.kx-send svg{width:18px;height:18px}
+.kx-new{border-radius:14px;color:#0A4A2B}
+.kx-info{font-size:12.5px;padding:0 4px;gap:8px}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6729,6 +6751,9 @@ H.aimic = () => {
   if (!SR) { toast('Bu tarayıcı sesle yazmayı desteklemiyor.', 'warn'); return; }
   try { const r = new SR(); r.lang = 'tr-TR'; r.interimResults = false; r.onresult = (e) => { const t = Array.from(e.results).map((x) => x[0].transcript).join(' '); if (el) { el.value = (el.value ? el.value + ' ' : '') + t; AIC.draft = el.value; } }; r.onerror = () => toast('Ses alınamadı.', 'warn'); r.start(); toast('Dinliyorum…'); } catch (e) { toast('Mikrofon açılamadı.', 'warn'); }
 };
+
+/* v59: Kais AI sayfası yeşil tema (sadece bu sayfa) */
+const rndV59 = render; render = function () { const r = rndV59.apply(this, arguments); try { document.body.classList.toggle('kx-on', S.view === 'kaisai' && !!S.user); } catch (e) {} return r; };
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
