@@ -936,6 +936,11 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .rz-tb{padding:0 11px}
 .stack-lg>.seg[aria-label="Rezervasyon bölümleri"]{background:transparent;padding:0;gap:6px;box-shadow:none}.stack-lg>.seg[aria-label="Rezervasyon bölümleri"] button{border-radius:99px;padding:8px 15px;background:#fff;border:1px solid #E1E8F2;font-size:13.5px;color:var(--ink-2);min-height:0}.stack-lg>.seg[aria-label="Rezervasyon bölümleri"] button[aria-pressed=true]{background:var(--cini);border-color:var(--cini);color:#fff;box-shadow:0 4px 10px rgba(13,86,166,.25)}
 
+.lx-rq{margin:2px 0 4px;display:flex;flex-direction:column;gap:8px}.lx-rq p{margin:0;font-size:13px;color:var(--ink-2)}.lx-rq>div{display:flex;gap:8px}
+.lx-rq button[data-a=lgrole]{flex:1;border:1px solid #D5DEEA;background:#fff;border-radius:12px;padding:10px 6px;font-size:14px;font-weight:600;color:var(--ink);font-family:inherit}.lx-rq button[aria-pressed=true]{background:var(--cini);border-color:var(--cini);color:#fff}
+.lx-rq .lx-rh{background:var(--cini-wash);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;color:var(--ink)}.lx-rq .lx-link{align-self:flex-start;display:inline-flex;gap:4px}
+.lx-supq{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;border:1px solid #D5DEEA;border-radius:14px;background:#fff;text-decoration:none;color:var(--ink)}.lx-supq b{display:block;font-size:14.5px}.lx-supq em{font-style:normal;font-size:12.5px;color:var(--ink-2)}.lx-supq svg{flex:none;color:var(--cini)}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6937,6 +6942,21 @@ if (!window.__rzTimer) { window.__rzTimer = setInterval(() => { try {
 /* v63: dönem değişince "kapalı" durumunu sıfırla */
 { const cp = H.closeperiod; H.closeperiod = function () { S.closedFor = PERIOD; return cp.apply(this, arguments); };
   const rr = render; render = function () { if (S.closed && S.closedFor && S.closedFor !== PERIOD) S.closed = false; return rr.apply(this, arguments); }; }
+
+/* v64: giriş sayfasında hızlı panel geçişleri (deneme) */
+S.lgRole = S.lgRole || '';
+const _lgHTML64 = loginHTML;
+loginHTML = function () {
+  let h = _lgHTML64(); if (!sbOK()) return h; const tab = S.lgTab || 'own';
+  const roles = [['mudur', 'Müdür', 'Müdür'], ['muhasebeci', 'Muhasebeci', 'Muhasebeci'], ['calisan', 'Çalışan', 'Çalışan']];
+  if (tab === 'emp' && !(SBS.user && ID.mems && ID.mems.length > 1 && !ID.active)) {
+    const sel = S.lgRole; const chips = `<div class="lx-rq"><p>Hangi rolle giriyorsun?</p><div>${roles.map((r) => `<button type="button" data-a="lgrole" data-v="${r[0]}" aria-pressed="${sel === r[0]}">${r[1]}</button>`).join('')}</div>${sel ? `<p class="lx-rh">${S.empMode !== 'join' ? `Daha önce katıldıysan e-posta ve şifrenle gir, <b>${esc(roles.find((r) => r[0] === sel)[2])}</b> ekranın otomatik açılır.` : `Patronun Ekip sayfasındaki <b>${esc(roles.find((r) => r[0] === sel)[2])}</b> satırından kod üretir. Kodu aşağıya yaz.`}</p>${S.empMode !== 'join' ? `<button type="button" class="lx-link" data-a="empmode" data-v="join">İlk kez mi? Davet koduyla katıl</button>` : `<button type="button" class="lx-link" data-a="empmode" data-v="in">Zaten hesabım var, giriş yap</button>`}` : ''}</div>`;
+    h = h.replace(/(<div class="lx-tabs"[\s\S]*?<\/div>)/, '$1' + chips);
+  }
+  const sup = `<a class="lx-supq" href="/tedarikci/"><span class="grow"><b>Tedarikçi misin?</b><em>Tedarikçi paneline git</em></span>${LXI.arrow}</a>`;
+  return h.replace(/<\/div><\/section><\/div>$/, sup + '</div></section></div>');
+};
+H.lgrole = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.lgRole = S.lgRole === el.dataset.v ? '' : el.dataset.v; render(); };
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
