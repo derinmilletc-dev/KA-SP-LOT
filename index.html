@@ -3746,7 +3746,7 @@ function groupRows(rows) {
 }
 function tabSeg() {
   const soon = sktSoon(3).length; const wk = WASTE.length;
-  const t = [['liste', 'Liste' + (soon ? ' · SKT ' + soon : '')], ['uretim', 'Üretim'], ['sayim', 'Sayım' + (S.cnt ? ' •' : '')], ['fire', 'Fire'], ['rapor', 'Rapor']];
+  const t = [['liste', 'Liste' + (soon ? ' · SKT ' + soon : '')], ['uretim', 'Üretim'], ['maliyet', 'Maliyet'], ['sayim', 'Sayım' + (S.cnt ? ' •' : '')], ['fire', 'Fire'], ['rapor', 'Rapor']];
   return `<div class="seg" role="group" aria-label="Stok bölümleri">${t.map((x) => `<button data-a="sttab" data-v="${x[0]}" aria-pressed="${S.stTab === x[0]}">${esc(x[1])}</button>`).join('')}</div>`;
 }
 function stokHead(sub) { return `<div class="row between wrap"><div><h2>Stok</h2><p class="muted small" style="margin-top:4px">${sub}</p></div><div class="row wrap" style="gap:8px"><button class="btn sec" data-a="stkbulk">İçe aktar</button><button class="btn" data-a="stkadd">${ic('plus')} Ürün ekle</button></div></div>${tabSeg()}`; }
@@ -3817,7 +3817,7 @@ function stokRapor() {
 const viewStokV14 = viewStok;
 viewStok = function () {
   const r = S.user && S.user.role; if (r !== 'patron' && r !== 'mudur') return viewStokV14();
-  lotSync(); const b = S.stTab === 'uretim' ? stokUretim() : S.stTab === 'sayim' ? stokSayim() : S.stTab === 'fire' ? stokFire() : S.stTab === 'rapor' ? stokRapor() : stokListe();
+  lotSync(); const b = S.stTab === 'maliyet' ? stokMaliyet() : S.stTab === 'uretim' ? stokUretim() : S.stTab === 'sayim' ? stokSayim() : S.stTab === 'fire' ? stokFire() : S.stTab === 'rapor' ? stokRapor() : stokListe();
   return `<div class="stack-lg">${b}</div>`;
 };
 H.sttab = (el) => { S.stTab = el.dataset.v; render(); };
@@ -4574,7 +4574,186 @@ onChange = function (e) {
 };
 const wipeV21 = wipeData; wipeData = function () { wipeV21(); RESV.length = 0; TABLES.length = 0; RCFG.seeded = false; };
 
-if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v23: reçete maliyeti ve kâr marjı, tedarikçi performansı */
+const MCFG = { kdv: 10, hedef: 60 }; P_OBJ.push(['MCFG', () => MCFG]); P_SCOPE.MCFG = 'stok';
+function recipeCost(k, useAvg) {
+  const rc = RECIPES[k]; let c = 0; const miss = []; const parts = [];
+  Object.entries(rc.items).forEach(([sid, q]) => { const st = stById(sid); if (!st) { miss.push(sid); return; } let p = st.cost || 0; if (useAvg) { const pi = priceInfo(st); if (pi.avg > 0) p = pi.avg; } if (!(p > 0)) miss.push(st.name); parts.push({ name: st.name.split(' (')[0], v: q * p }); c += q * p; });
+  return { c, miss, parts: parts.sort((a, b) => b.v - a.v) };
+}
+function salePriceOf(k) { let q = 0; let t = 0; SALES.forEach((s) => { if (prodKey(s.prod) === k) { q += s.qty; t += s.total; } }); return q > 0 ? { price: t / q, qty: q } : null; }
+function costRows() {
+  return Object.keys(RECIPES).map((k) => {
+    const rc = RECIPES[k]; const now = recipeCost(k, false); const old = recipeCost(k, true); const sp = salePriceOf(k);
+    const net = sp ? sp.price / (1 + MCFG.kdv / 100) : 0; const profit = sp ? net - now.c : 0; const margin = sp && net > 0 ? profit / net : null;
+    const need = MCFG.hedef < 100 && now.c > 0 ? Math.ceil((now.c / (1 - MCFG.hedef / 100)) * (1 + MCFG.kdv / 100) * 2) / 2 : 0;
+    let drift = old.c > 0 ? (now.c / old.c - 1) * 100 : 0; if (drift < -40 || drift > 100) drift = 0;
+    return { k, name: rc.name, cost: now.c, parts: now.parts, miss: now.miss, sp, margin, profit, need, drift };
+  }).sort((a, b) => (a.margin == null ? 2 : a.margin) - (b.margin == null ? 2 : b.margin));
+}
+function stokMaliyet() {
+  const rows = costRows(); const low = rows.filter((r) => r.margin != null && r.margin * 100 < MCFG.hedef); const wm = rows.filter((r) => r.margin != null);
+  const avgM = wm.length ? wm.reduce((a, r) => a + r.margin, 0) / wm.length : null;
+  const drift = rows.filter((r) => r.drift >= 3);
+  return `${stokHead('Ürünün malzeme maliyeti ve kâr marjı.')}
+  <div class="kpis">${kpi('Reçeteli ürün', rows.length)}${kpi('Ort. kâr marjı', avgM == null ? '-' : '%' + Math.round(avgM * 100))}${kpi('Hedefin altında', low.length)}</div>
+  ${drift.length ? `<div class="callout warn">${ic('alert')}<div><b>Malzeme zammı:</b> ${esc(drift.map((r) => r.name + ' maliyeti %' + Math.round(r.drift)).join(', '))} arttı (son alış, önceki alışların ortalamasına göre).</div></div>` : ''}
+  <div class="card stack"><div class="row between wrap"><div><h3>Hesap ayarı</h3><p class="muted small" style="margin-top:2px">Satış fiyatı KDV dahil kabul edilir.</p></div><div class="row wrap" style="gap:8px"><label class="small muted">KDV <select data-ch="mkdv" aria-label="KDV oranı">${[1, 10, 20].map((x) => `<option value="${x}"${MCFG.kdv === x ? ' selected' : ''}>%${x}</option>`).join('')}</select></label><label class="small muted">Hedef marj <select data-ch="mhedef" aria-label="Hedef marj">${[40, 50, 60, 65, 70, 75].map((x) => `<option value="${x}"${MCFG.hedef === x ? ' selected' : ''}>%${x}</option>`).join('')}</select></label></div></div></div>
+  ${rows.length ? rows.map((r) => { const m = r.margin == null ? null : Math.round(r.margin * 100); const tone = m == null ? 'p-mute' : m < MCFG.hedef - 10 ? 'p-bad' : m < MCFG.hedef ? 'p-warn' : 'p-ok';
+    return `<div class="card stack" style="gap:8px"><div class="row between" style="align-items:flex-start"><div><b style="font-weight:600">${esc(r.name)}</b><span class="small muted" style="display:block">Maliyet ${fmt(r.cost)}${r.sp ? ' · satış ' + fmt(r.sp.price) : ' · satış verisi yok'}</span></div><span class="pill ${tone}">${m == null ? 'Marj yok' : 'Marj %' + m}</span></div>
+    ${r.parts.length ? `<div class="row" style="height:10px;border-radius:5px;overflow:hidden;gap:2px">${r.parts.map((p, i) => `<div title="${esc(p.name)} ${fmt(p.v)}" style="flex:${Math.max(p.v, 0.001)};background:${['var(--cini)', 'var(--turq)', 'var(--safran)', 'var(--nar)'][i % 4]}"></div>`).join('')}</div><div class="small muted">${r.parts.slice(0, 3).map((p) => esc(p.name) + ' ' + fmt(p.v)).join(' · ')}</div>` : ''}
+    ${r.sp && m != null ? `<div class="small">Kâr ${fmt(r.profit)} (KDV hariç).${m < MCFG.hedef && r.need ? ` Hedef %${MCFG.hedef} için fiyat <b>${fmt(r.need)}</b> olmalı.` : ''}</div>` : r.need ? `<div class="small muted">Hedef %${MCFG.hedef} için satış fiyatı en az ${fmt(r.need)} olmalı.</div>` : ''}
+    ${r.drift >= 3 ? `<span class="pill p-warn" style="align-self:flex-start">Maliyet %${Math.round(r.drift)} arttı</span>` : ''}${r.miss.length ? `<span class="small" style="color:var(--nar)">Fiyatı olmayan malzeme: ${esc(r.miss.map((x) => String(x).split(' (')[0]).join(', '))}</span>` : ''}</div>`; }).join('') : `<div class="card empty">Henüz reçete yok. Satışlar sayfasından reçete ekle.</div>`}
+  <p class="small muted">Maliyet, stoktaki birim fiyatlardan hesaplanır. Satış fiyatı, yüklenen satış dosyasındaki ortalama fiyattır.</p>`;
+}
+const _och23 = onChange;
+onChange = function (e) { const el = e.target; const ch = el.dataset && el.dataset.ch; if (ch === 'mkdv') { MCFG.kdv = Number(el.value); render(); return; } if (ch === 'mhedef') { MCFG.hedef = Number(el.value); render(); return; } return _och23(e); };
+/* tedarikçi performansı */
+const dayDiff = (a, b) => { const x = a.split('-').map(Number); const y = b.split('-').map(Number); return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 864e5); };
+const _ordcreate23 = H.ordcreate; H.ordcreate = (el) => { const n = ORDERS.length; _ordcreate23(el); if (ORDERS.length > n && !ORDERS[0].iso) ORDERS[0].iso = REF_ISO; };
+const _ordrecv23 = H.ordrecv; H.ordrecv = (el) => { const o = ORDERS.find((x) => x.id === el.dataset.id); const was = o && o.status; _ordrecv23(el); if (o && was === 'gonderildi' && o.status === 'teslim') { o.recvIso = REF_ISO; if (!o.iso) delete o.recvIso; } };
+function supPerf() {
+  return SUPPLIERS.map((sp) => {
+    const os = ORDERS.filter((o) => o.supId === sp.id); const done = os.filter((o) => o.status === 'teslim'); const timed = done.filter((o) => o.iso && o.recvIso);
+    const leads = timed.map((o) => dayDiff(o.iso, o.recvIso)); const late = timed.filter((o) => dayDiff(o.iso, o.recvIso) > (sp.lead || 0)); const ontime = timed.length ? 1 - late.length / timed.length : null;
+    const avgLead = leads.length ? leads.reduce((a, b) => a + b, 0) / leads.length : null; const spend = done.reduce((a, o) => a + o.total, 0); const conf = os.length ? os.filter((o) => o.conf || o.status === 'teslim').length / os.length : null;
+    const ch = []; STOCK.forEach((st) => { const pts = pricePoints(st.id).filter((p) => p.who === sp.name); if (pts.length >= 2) ch.push((pts[pts.length - 1].price / pts[0].price - 1) * 100); });
+    const price = ch.length ? ch.reduce((a, b) => a + b, 0) / ch.length : null;
+    let score = null; if (ontime != null) { score = ontime * 60 + (price == null ? 25 : Math.max(0, 40 - Math.max(0, price) * 4)) * (40 / 40); score = Math.round(Math.min(100, score)); }
+    return { sp, n: os.length, done: done.length, ontime, avgLead, late: late.length, spend, price, score };
+  }).filter((x) => x.n > 0).sort((a, b) => (b.score == null ? -1 : b.score) - (a.score == null ? -1 : a.score));
+}
+function supPerfCard() {
+  const L = supPerf(); if (!L.length) return `<div class="card stack"><div><h3>Tedarikçi performansı</h3><p class="muted small" style="margin-top:2px">Sipariş verip teslim aldıkça, kimin geç getirdiği ve fiyatının nasıl değiştiği burada görünür.</p></div></div>`;
+  return `<div class="card flush"><div style="padding:16px 16px 6px"><h3>Tedarikçi performansı</h3><p class="muted small" style="margin-top:2px">Teslim süresi sözden uzunsa geç sayılır. Fiyat değişimi ilk ve son alış arasındadır.</p></div>
+  ${L.map((x) => { const tone = x.score == null ? 'p-mute' : x.score >= 80 ? 'p-ok' : x.score >= 60 ? 'p-warn' : 'p-bad'; const lbl = x.score == null ? 'Veri az' : x.score >= 80 ? 'Güvenilir' : x.score >= 60 ? 'Dikkat' : 'Zayıf';
+    return `<div class="rrow"><div><b style="font-weight:600">${esc(x.sp.name)}</b><div class="small muted">${x.done} teslim${x.avgLead != null ? ' · ort. ' + q1(x.avgLead) + ' gün (söz ' + (x.sp.lead || 0) + ')' : ''}${x.ontime != null ? ' · zamanında %' + Math.round(x.ontime * 100) : ''}${x.price != null ? ' · fiyat ' + (x.price >= 0 ? '+' : '') + q1(x.price) + '%' : ''}</div></div><b class="num">${fmt0(x.spend)}</b><div class="rfoot"><span class="pill ${tone}">${lbl}${x.score != null ? ' ' + x.score : ''}</span>${x.late ? `<span class="pill p-warn">${x.late} geç teslim</span>` : ''}</div></div>`; }).join('')}</div>`;
+}
+const saSupsCardV23 = saSupsCard; saSupsCard = function () { return supPerfCard() + saSupsCardV23(); };
+/* örnek teslim geçmişi (denemek için) */
+[['t3', '2026-10-20', '2026-10-21', 's2', 60, 35, true], ['t3', '2026-10-30', '2026-11-01', 's2', 60, 36, true], ['t3', '2026-11-08', '2026-11-09', 's2', 60, 38, true], ['t4', '2026-10-22', '2026-10-22', 's1', 2, 1500, false], ['t4', '2026-11-02', '2026-11-04', 's1', 2, 1520, false], ['t1', '2026-10-18', '2026-10-21', 's1', 3, 1430, true], ['t1', '2026-11-05', '2026-11-08', 's1', 3, 1450, true], ['t2', '2026-10-25', '2026-10-30', 's5', 200, 3.1, false], ['t2', '2026-11-04', '2026-11-08', 's5', 200, 3.2, true]].forEach((x, i) => {
+  const st = STOCK.find((s) => s.id === x[3]); if (!st) return; ORDERS.push({ id: 'oh' + i, supId: x[0], date: isoShort(x[1]), iso: x[1], recvIso: x[2], lines: [{ sid: x[3], name: st.name, unit: st.unit, qty: x[4], price: x[5] }], total: Math.round(x[4] * x[5] * 100) / 100, status: 'teslim', conf: x[6], msg: '' });
+});
+const wipeV23 = wipeData; wipeData = function () { wipeV23(); MCFG.kdv = 10; MCFG.hedef = 60; };
+
+/* v24: bildirim merkezi (zil, okundu, tarayıcı bildirimi) */
+ICONS.bell = '<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2H4.5z"/><path d="M10 21h4"/>';
+const NF = { seen: null, notified: new Set(), first: true, timer: null };
+const nfStoreKey = () => 'kp_seen_' + (S.user ? S.user.id : 'x');
+function nfLoad() { if (NF.seen) return NF.seen; try { NF.seen = new Set(JSON.parse(localStorage.getItem(nfStoreKey()) || '[]')); } catch (e) { NF.seen = new Set(); } return NF.seen; }
+function nfSave() { try { localStorage.setItem(nfStoreKey(), JSON.stringify([...NF.seen].slice(-300))); } catch (e) {} }
+function notifList() {
+  if (!S.user) return []; const r = S.user.role; const out = []; const add = (key, sev, text, view, tab) => out.push({ key: key + '|' + REF_ISO, sev, text, view, tab });
+  const stokR = ['patron', 'mudur', 'calisan'].includes(r); const mgr = ['patron', 'mudur'].includes(r);
+  if (stokR) {
+    try { stockPlan().filter((p) => p.lvl === 'acil').slice(0, 5).forEach((p) => add('acil' + p.st.id, 'bad', p.st.name.split(' (')[0] + ' acil: ' + q1(p.st.qty) + ' ' + p.st.unit + ' kaldı' + (p.transit > 0 ? ' (yolda ' + q1(p.transit) + ')' : '') + '.', 'stok', 'liste')); } catch (e) {}
+    sktSoon(3).slice(0, 5).forEach((l) => { const st = stById(l.sid); if (st) add('skt' + l.id, dleft(l.exp) <= 0 ? 'bad' : 'warn', st.name.split(' (')[0] + ' ' + q1(l.qty) + ' ' + st.unit + ' ' + sktTxt(dleft(l.exp)) + (dleft(l.exp) <= 0 ? '' : ' bozulacak') + '.', 'stok', 'rapor'); });
+  }
+  if (mgr) {
+    ORDERS.filter((o) => o.status === 'gonderildi' && o.iso).forEach((o) => { const sp = supById(o.supId); const d = dayDiff(o.iso, REF_ISO); if (sp && d > (sp.lead || 0) + 0) add('gec' + o.id, 'warn', (sp.name) + ' siparişi ' + d + ' gündür gelmedi (söz ' + (sp.lead || 0) + ' gün).', 'satinalma', null); });
+    try { anomalies().forEach((t, i) => add('an' + i + t.slice(0, 12), 'warn', t, 'stok', 'fire')); } catch (e) {}
+    try { const pa = priceAlerts(); if (pa.length) add('fiyat' + pa.map((x) => x.st.id).join(''), 'warn', pa.length + ' üründe fiyat zammı: ' + pa.slice(0, 3).map((x) => x.st.name.split(' (')[0]).join(', ') + '.', 'satinalma', null); } catch (e) {}
+    const lv = LVREQ.filter((x) => ['bekliyor', 'yanit'].includes(x.status)).length; if (lv) add('izin' + lv, 'info', lv + ' izin talebi seni bekliyor.', 'ekip', 'talep');
+  }
+  if (stokR) {
+    const now = new Date().getHours() * 60 + new Date().getMinutes();
+    RESV.filter((x) => x.date === REF_ISO && x.st === 'onay').forEach((x) => { const d = now - toMin(x.time); if (d >= 20) add('rl' + x.id, 'bad', x.name + ' (' + x.time + ', ' + x.n + ' kişi) ' + d + ' dakikadır gelmedi.', 'rezerv', 'liste'); else if (d > -60 && d <= 0) add('ry' + x.id, 'info', x.name + ' ' + (-d) + ' dakikaya gelecek (' + x.n + ' kişi' + (x.tids.length ? ', masa ' + rzNames(x.tids) : '') + ').', 'rezerv', 'liste'); });
+  }
+  if (r === 'patron' || r === 'muhasebeci') {
+    try { debtSoon().slice(0, 4).forEach((d) => add('borc' + d.id, 'warn', d.who + ' ödemesi yaklaşıyor: ' + fmt0(d.amt) + '.', r === 'patron' ? 'muhasebe' : 'borc', null)); } catch (e) {}
+  }
+  if (r === 'muhasebeci') { try { const m = countStatus('eksik'); if (m) add('eksik' + m, 'warn', m + ' işlemin belgesi eksik.', 'belgeler', 'ekstre'); } catch (e) {} }
+  const rank = { bad: 0, warn: 1, info: 2 }; return out.sort((a, b) => rank[a.sev] - rank[b.sev]);
+}
+const nfUnread = () => { const s = nfLoad(); return notifList().filter((x) => !s.has(x.key)); };
+const shellHTMLV23 = shellHTML;
+shellHTML = function () {
+  const h = shellHTMLV23(); const n = nfUnread().length;
+  const btn = `<button class="xbtn sm" data-a="bell" aria-label="Bildirimler${n ? ', ' + n + ' yeni' : ''}" style="position:relative;margin-left:6px">${ic('bell', 18)}${n ? `<span style="position:absolute;top:-4px;right:-4px;background:var(--nar);color:#fff;border-radius:999px;min-width:18px;height:18px;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px">${n > 9 ? '9+' : n}</span>` : ''}</button>`;
+  return h.replace(/(<span class="pill p-mute" id="ps-chip"[^>]*>[^<]*<\/span>)/, '$1' + btn);
+};
+H.bell = () => { S.modal = { type: 'bell' }; renderModal(); };
+NEWM.bell = () => {
+  const L = notifList(); const seen = nfLoad(); const perm = typeof Notification !== 'undefined' ? Notification.permission : 'yok';
+  const tone = { bad: 'p-bad', warn: 'p-warn', info: 'p-info' }; const lbl = { bad: 'Acil', warn: 'Dikkat', info: 'Bilgi' };
+  return sheet('Bildirimler', `${L.length ? L.map((x, i) => `<button class="logline" data-a="nfgo" data-i="${i}" style="width:100%;text-align:left;background:${seen.has(x.key) ? 'transparent' : 'var(--cini-wash)'};border:0;border-radius:10px;padding:10px;gap:10px"><span class="small">${esc(x.text)}</span><span class="pill ${tone[x.sev]}">${lbl[x.sev]}</span></button>`).join('') + `<button class="btn sm sec" data-a="nfread" style="margin-top:8px">Hepsini okundu yap</button>` : `<div class="card empty">${ic('check', 28)}<p style="margin-top:8px">Her şey yolunda, bekleyen bildirim yok.</p></div>`}
+  <div class="card stack" style="margin-top:12px"><b>Tarayıcı bildirimi</b><p class="small muted">${perm === 'granted' ? 'Açık. Uygulama arka planda açıkken acil durumlarda bildirim gelir.' : perm === 'denied' ? 'Tarayıcı bildirimi engellenmiş. Adres çubuğundaki kilit simgesinden izin ver.' : perm === 'yok' ? 'Bu tarayıcı bildirimi desteklemiyor.' : 'Uygulama arka planda açıkken acil durumlarda bildirim gösterilsin mi?'}</p>${perm === 'default' ? '<button class="btn sm" data-a="nfperm">Bildirime izin ver</button>' : ''}<p class="small muted">Uygulama tamamen kapalıyken bildirim gelmez.</p></div>`);
+};
+H.nfgo = (el) => { const x = notifList()[Number(el.dataset.i)]; if (!x) return; nfLoad().add(x.key); nfSave(); S.modal = null; S.view = x.view; if (x.view === 'stok' && x.tab) S.stTab = x.tab; if (x.view === 'ekip' && x.tab) S.sub.ekip = x.tab; if (x.view === 'rezerv') S.rzTab = 'liste'; if (x.view === 'satinalma') S.saTab = 'siparis'; render(); };
+H.nfread = () => { const s = nfLoad(); notifList().forEach((x) => s.add(x.key)); nfSave(); render(); renderModal(); };
+H.nfperm = async () => { try { await Notification.requestPermission(); } catch (e) {} renderModal(); };
+function nfCheck() {
+  if (!S.user) return; const s = nfLoad(); const fresh = notifList().filter((x) => !s.has(x.key) && !NF.notified.has(x.key));
+  if (NF.first) { fresh.forEach((x) => NF.notified.add(x.key)); NF.first = false; return; }
+  fresh.filter((x) => x.sev !== 'info' || x.key.startsWith('ry')).slice(0, 3).forEach((x) => {
+    NF.notified.add(x.key);
+    if (typeof document !== 'undefined' && document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') { try { new Notification(BIZ, { body: x.text, tag: x.key }); } catch (e) {} }
+    else if (typeof document !== 'undefined' && !document.hidden) toast(x.text, x.sev === 'bad' ? 'warn' : undefined);
+  });
+  const n = fresh.length; if (n) render();
+}
+if (typeof setInterval === 'function') { clearInterval(NF.timer); NF.timer = setInterval(nfCheck, 60000); }
+const _logout24 = H.logout; H.logout = () => { NF.seen = null; NF.notified = new Set(); NF.first = true; return _logout24(); };
+
+/* v25: barkod ve raf etiketi yazdırma (EAN-13, EAN-8, Code 39) */
+const EAN_L = ['0001101', '0011001', '0010011', '0111101', '0100011', '0110001', '0101111', '0111011', '0110111', '0001011'];
+const EAN_G = ['0100111', '0110011', '0011011', '0100001', '0011101', '0111001', '0000101', '0010001', '0001001', '0010111'];
+const EAN_R = ['1110010', '1100110', '1101100', '1000010', '1011100', '1001110', '1010000', '1000100', '1001000', '1110100'];
+const EAN_P = ['LLLLLL', 'LLGLGG', 'LLGGLG', 'LLGGGL', 'LGLLGG', 'LGGLLG', 'LGGGLL', 'LGLGLG', 'LGLGGL', 'LGGLGL'];
+const C39 = { '0': '000110100', '1': '100100001', '2': '001100001', '3': '101100000', '4': '000110001', '5': '100110000', '6': '001110000', '7': '000100101', '8': '100100100', '9': '001100100', A: '100001001', B: '001001001', C: '101001000', D: '000011001', E: '100011000', F: '001011000', G: '000001101', H: '100001100', I: '001001100', J: '000011100', K: '100000011', L: '001000011', M: '101000010', N: '000010011', O: '100010010', P: '001010010', Q: '000000111', R: '100000110', S: '001000110', T: '000010110', U: '110000001', V: '011000001', W: '111000000', X: '010010001', Y: '110010000', Z: '011010000', '-': '010000101', '.': '110000100', ' ': '011000100', '*': '010010100' };
+function eanCheck(d) { let s = 0; for (let i = 0; i < d.length; i++) s += Number(d[d.length - 1 - i]) * (i % 2 === 0 ? 3 : 1); return (10 - (s % 10)) % 10; }
+const eanOk = (c) => /^\d{8}$|^\d{13}$/.test(c) && Number(c[c.length - 1]) === eanCheck(c.slice(0, -1));
+function ean13Bits(c) { const d = c.split('').map(Number); const p = EAN_P[d[0]]; let b = '101'; for (let i = 1; i <= 6; i++) b += (p[i - 1] === 'L' ? EAN_L : EAN_G)[d[i]]; b += '01010'; for (let i = 7; i <= 12; i++) b += EAN_R[d[i]]; return b + '101'; }
+function ean8Bits(c) { const d = c.split('').map(Number); let b = '101'; for (let i = 0; i < 4; i++) b += EAN_L[d[i]]; b += '01010'; for (let i = 4; i < 8; i++) b += EAN_R[d[i]]; return b + '101'; }
+function code39Bits(t) {
+  const s = '*' + String(t).toUpperCase().replace(/[^0-9A-Z\-. ]/g, '') + '*'; let b = '';
+  s.split('').forEach((ch, ci) => { const p = C39[ch]; for (let i = 0; i < 9; i++) { const wide = p[i] === '1'; b += (i % 2 === 0 ? '1' : '0').repeat(wide ? 3 : 1); } if (ci < s.length - 1) b += '0'; });
+  return b;
+}
+function barBits(code) { const c = String(code || '').trim(); if (/^\d{13}$/.test(c) && eanOk(c)) return ean13Bits(c); if (/^\d{8}$/.test(c) && eanOk(c)) return ean8Bits(c); return code39Bits(c); }
+function barcodeSVG(code, h) {
+  const b = barBits(code); const q = 10; const W = b.length + q * 2; let x = 0; let r = '';
+  while (x < b.length) { if (b[x] === '1') { let y = x; while (y < b.length && b[y] === '1') y++; r += `<rect x="${q + x}" y="0" width="${y - x}" height="${h || 50}" />`; x = y; } else x++; }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h || 50}" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="Barkod ${esc(code)}"><rect width="${W}" height="${h || 50}" fill="#fff"/><g fill="#000">${r}</g></svg>`;
+}
+function genCode() { let n = 0; STOCK.forEach((s) => { const c = String(s.code || ''); if (/^20\d{11}$/.test(c)) n = Math.max(n, Number(c.slice(2, 12))); }); n++; const d = '20' + String(n).padStart(10, '0'); return d + eanCheck(d); }
+H.etkcodes = () => { let k = 0; STOCK.forEach((s) => { if (!s.code) { s.code = genCode(); k++; } }); renderModal(); render(); toast(k + ' ürüne barkod verildi.', 'ok'); };
+H.etkopen = () => { S.modal = { type: 'etiket', sel: STOCK.map((s) => s.id), size: 'm', copies: 1 }; renderModal(); };
+const ETK_SZ = { s: ['40 × 25 mm', 40, 25, 10], m: ['58 × 35 mm', 58, 35, 12], l: ['80 × 50 mm', 80, 50, 14] };
+function labelHTML(st, sz, nameFs) {
+  return `<div class="etk" style="width:${sz[1]}mm;height:${sz[2]}mm"><div class="etk-n" style="font-size:${sz[3] - 2}px">${esc(st.name)}</div><div class="etk-m">${esc([st.unit, st.cat, st.loc].filter(Boolean).join(' · '))}</div><div class="etk-b">${barcodeSVG(st.code, 50)}</div><div class="etk-c">${esc(st.code)}</div></div>`;
+}
+NEWM.etiket = (m) => {
+  const miss = STOCK.filter((s) => !s.code).length; const sz = ETK_SZ[m.size]; const chosen = STOCK.filter((s) => m.sel.includes(s.id) && s.code);
+  return sheet('Etiket yazdır', `<p class="muted small">Seçtiğin ürünler için raf etiketi hazırlanır. Barkodu sayım ekranındaki barkod okutma ile okutabilirsin.</p>
+  ${miss ? `<div class="callout warn">${ic('alert')}<div>${miss} ürünün barkodu yok. <button class="btn sm" data-a="etkcodes" style="margin-left:6px">Otomatik barkod ver</button></div></div>` : ''}
+  <div class="row wrap" style="gap:10px;margin:8px 0"><label class="small muted">Boyut <select data-ch="etksize" aria-label="Etiket boyutu">${Object.keys(ETK_SZ).map((k) => `<option value="${k}"${m.size === k ? ' selected' : ''}>${ETK_SZ[k][0]}</option>`).join('')}</select></label><label class="small muted">Adet <input type="number" min="1" max="10" value="${m.copies}" data-ch="etkcopies" style="width:64px" aria-label="Her üründen kaç etiket"></label>
+  <button class="btn sm sec" data-a="etkall">${m.sel.length === STOCK.length ? 'Hiçbirini seçme' : 'Hepsini seç'}</button></div>
+  <div class="stack" style="max-height:200px;overflow:auto;gap:2px">${STOCK.map((s) => `<label class="small" style="display:flex;gap:8px;align-items:center;padding:4px 0"><input type="checkbox" data-ch="etksel" data-id="${s.id}"${m.sel.includes(s.id) ? ' checked' : ''}> ${esc(s.name)}${s.code ? '' : ' <span class="muted">(barkod yok)</span>'}</label>`).join('')}</div>
+  ${chosen.length ? `<p class="lbl" style="margin-top:10px">Önizleme</p><div class="etk-wrap">${labelHTML(chosen[0], sz)}</div>` : ''}
+  <button class="btn block" data-a="etkprint"${chosen.length ? '' : ' disabled'} style="margin-top:12px">${ic('file')} ${chosen.length * m.copies} etiketi yazdır</button><p class="small muted">Yazıcı penceresinde kenar boşluğunu "Yok" seç.</p>`);
+};
+H.etkall = () => { const m = S.modal; m.sel = m.sel.length === STOCK.length ? [] : STOCK.map((s) => s.id); renderModal(); };
+H.etkprint = () => {
+  const m = S.modal; const sz = ETK_SZ[m.size]; const list = STOCK.filter((s) => m.sel.includes(s.id) && s.code); if (!list.length) return;
+  let root = document.getElementById('kp-print'); if (!root) { root = document.createElement('div'); root.id = 'kp-print'; document.body.appendChild(root); }
+  let html = ''; list.forEach((s) => { for (let i = 0; i < m.copies; i++) html += labelHTML(s, sz); }); root.innerHTML = html; document.body.classList.add('kp-printing');
+  const done = () => { document.body.classList.remove('kp-printing'); root.innerHTML = ''; window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); setTimeout(() => { try { window.print(); } catch (e) { done(); } }, 50);
+};
+(function () { if (typeof document === 'undefined' || !document.createElement) return; try { const st = document.createElement('style'); st.textContent = '.etk{box-sizing:border-box;border:1px dashed #bbb;border-radius:4px;padding:2mm;display:flex;flex-direction:column;justify-content:space-between;background:#fff;color:#000;overflow:hidden;font-family:Inter,Arial,sans-serif}.etk-n{font-weight:700;line-height:1.1;max-height:2.3em;overflow:hidden}.etk-m{font-size:8px;color:#444}.etk-b{height:34%;min-height:8mm}.etk-b svg{width:100%;height:100%;display:block}.etk-c{font-size:8px;text-align:center;letter-spacing:1px}.etk-wrap{display:flex;justify-content:center;padding:8px;background:var(--canvas);border-radius:10px}#kp-print{display:none}@media print{body.kp-printing>*:not(#kp-print){display:none!important}body.kp-printing #kp-print{display:flex!important;flex-wrap:wrap;gap:2mm}.etk{border:1px solid #999!important;break-inside:avoid}@page{margin:6mm}}'; document.head.appendChild(st); } catch (e) {} })();
+const _och25 = onChange;
+onChange = function (e) {
+  const el = e.target; const ch = el.dataset && el.dataset.ch; const m = S.modal;
+  if (m && m.type === 'etiket') {
+    if (ch === 'etksize') { m.size = el.value; renderModal(); return; } if (ch === 'etkcopies') { m.copies = Math.max(1, Math.min(10, parseInt(el.value, 10) || 1)); renderModal(); return; }
+    if (ch === 'etksel') { const id = el.dataset.id; m.sel = m.sel.includes(id) ? m.sel.filter((x) => x !== id) : m.sel.concat([id]); renderModal(); return; }
+  }
+  return _och25(e);
+};
+const stokHeadV25 = stokHead;
+stokHead = function (sub) { const h = stokHeadV25(sub); return h.replace('<button class="btn sec" data-a="stkbulk">', '<button class="btn sec" data-a="etkopen">Etiket</button><button class="btn sec" data-a="stkbulk">'); };
+
+if (typeof window !== 'undefined') { window.__K = { barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
