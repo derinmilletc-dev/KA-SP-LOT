@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>KaisPilot</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -573,6 +573,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .lx-de{display:none;padding:14px;text-align:center;color:var(--muted);font-size:14px}
 .pf-s .lx-dd{margin-top:6px}
 
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -3249,7 +3250,7 @@ function codeFor(slot) { let h = 2166136261; const s = AUTH.secret + ':' + slot;
 const curSlot = () => Math.floor(Date.now() / 60000);
 const shopCode = () => codeFor(curSlot());
 const codeOk = (c) => { const s = curSlot(); return /^\d{6}$/.test(String(c).trim()) && [s, s - 1].some((x) => codeFor(x) === String(c).trim()); };
-const codeCard = () => `<div class="card stack"><div><h3>Giriş kodu</h3><p class="muted small" style="margin-top:2px">Çalışan işe başlarken bu kodu girer. Kod her dakika değişir, dükkândan uzakta kullanılamaz.</p></div><div class="num" id="shop-code" style="font-size:40px;font-weight:700;letter-spacing:.14em;text-align:center">${shopCode()}</div><p class="small muted" style="text-align:center">Yenilenmesine <span id="code-left">${60 - new Date().getSeconds()}</span> sn</p></div>`;
+const codeCard = () => `<div class="card stack"><div><h3>Giriş kodu</h3><p class="muted small" style="margin-top:2px">Çalışan işe başlarken bu kodu girer. Kod her dakika değişir, dükkândan uzakta kullanılamaz.</p></div><div class="num" id="shop-code" style="font-size:40px;font-weight:700;letter-spacing:.14em;text-align:center">${shopCode()}</div><button type="button" class="btn sec sm" style="align-self:center" data-a="codecopy">Kodu kopyala</button><p class="small muted" style="text-align:center">Yenilenmesine <span id="code-left">${60 - new Date().getSeconds()}</span> sn</p></div>`;
 const bugunPatronV7 = bugunPatron; bugunPatron = function () { return bugunPatronV7().replace(/<\/div>\s*$/, codeCard() + '</div>'); };
 const bugunMudurV7 = bugunMudur; bugunMudur = function () { return bugunMudurV7().replace(/<\/div>\s*$/, codeCard() + '</div>'); };
 const tickV7 = tick;
@@ -6107,6 +6108,10 @@ if (typeof document !== 'undefined') document.addEventListener('input', (e) => {
   if (t.id === 'pf-il') { const dl = document.getElementById('pf-vdl'); if (dl) dl.innerHTML = t.value ? `<option value="${esc(t.value)} Vergi Dairesi">` : ''; }
 });
 
+
+/* ===== v47: kod kopyala + zoom kapat ===== */
+H.codecopy = async (el) => { const t = ((document.getElementById('shop-code') || {}).textContent || '').replace(/\s/g, ''); if (!t) return; let ok = false; try { await navigator.clipboard.writeText(t); ok = true; } catch (e) { try { const i = document.createElement('textarea'); i.value = t; i.style.position = 'fixed'; i.style.opacity = '0'; document.body.appendChild(i); i.select(); ok = document.execCommand('copy'); i.remove(); } catch (x) {} } toast(ok ? 'Kod kopyalandı: ' + t : 'Kopyalanamadı. Kodu elle yaz.', ok ? 'ok' : 'warn'); };
+if (typeof document !== 'undefined') { ['gesturestart', 'gesturechange', 'gestureend'].forEach((n) => document.addEventListener(n, (e) => e.preventDefault())); document.addEventListener('touchmove', (e) => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false }); let lt = 0; document.addEventListener('touchend', (e) => { const n = Date.now(); if (n - lt < 300 && !(e.target.closest && e.target.closest('input,textarea,select'))) e.preventDefault(); lt = n; }, { passive: false }); }
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
