@@ -865,6 +865,11 @@ body.kx-on .tab[aria-current=page]{background:#E2F4EA;color:#0A5A33}
 .kx-new{border-radius:14px;color:#0A4A2B}
 .kx-info{font-size:12.5px;padding:0 4px;gap:8px}
 
+.kx-orb{width:112px;height:92px;background:none!important;box-shadow:none!important;border-radius:0;margin:0 -6px 0 0;filter:drop-shadow(0 10px 14px rgba(30,170,100,.35));display:block;flex:none}.kx-orb:before{display:none!important}.kx-orb svg{display:block;overflow:visible}
+.kx-box textarea,.kx-box #ai-q{height:26px;min-height:26px;overflow:hidden}
+body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
+.kx-send{box-shadow:0 10px 22px rgba(14,160,85,.38)}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6732,7 +6737,17 @@ const KAI_IC = ['spark', 'bars', 'cart'];
 const viewKaisAIV58 = viewKaisAI;
 viewKaisAI = function () {
   let h = viewKaisAIV58();
-  const orb = `<div class="kx-orb" aria-hidden="true"><i class="kx-ring"></i><b>K</b></div>`;
+  const orb = `<div class="kx-orb" aria-hidden="true"><svg viewBox="0 0 112 92" width="112" height="92"><defs>
+<radialGradient id="kxg1" cx=".34" cy=".28" r=".95"><stop offset="0" stop-color="#6FD39E"/><stop offset=".22" stop-color="#23925D"/><stop offset=".6" stop-color="#0B4D2E"/><stop offset="1" stop-color="#042A19"/></radialGradient>
+<radialGradient id="kxg2" cx=".66" cy=".74" r=".62"><stop offset=".6" stop-color="#3EE08F" stop-opacity="0"/><stop offset="1" stop-color="#5CF0A8" stop-opacity=".6"/></radialGradient>
+<linearGradient id="kxg3" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8FEFC8"/><stop offset=".5" stop-color="#C9FBE6"/><stop offset="1" stop-color="#7BE3BA"/></linearGradient>
+<linearGradient id="kxg4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<filter id="kxf" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="1.6"/></filter></defs>
+<g transform="rotate(-14 56 46)"><ellipse cx="56" cy="46" rx="52" ry="16" fill="none" stroke="#7FE9BC" stroke-opacity=".55" stroke-width="3" filter="url(#kxf)"/><ellipse cx="56" cy="46" rx="52" ry="16" fill="none" stroke="url(#kxg3)" stroke-width="1.8"/></g>
+<circle cx="56" cy="46" r="38" fill="url(#kxg1)"/><circle cx="56" cy="46" r="38" fill="url(#kxg2)"/><circle cx="56" cy="46" r="37.2" fill="none" stroke="#7CF0B8" stroke-opacity=".35" stroke-width="1.4"/>
+<ellipse cx="42" cy="26" rx="18" ry="9" transform="rotate(-32 42 26)" fill="url(#kxg4)"/>
+<text x="57" y="62" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="46" font-weight="700" font-style="italic" fill="#fff" style="filter:drop-shadow(0 2px 3px rgba(0,40,20,.45))">K</text>
+<g transform="rotate(-14 56 46)"><path d="M4 46A52 16 0 0 0 108 46" fill="none" stroke="#7FE9BC" stroke-opacity=".5" stroke-width="3" filter="url(#kxf)"/><path d="M4 46A52 16 0 0 0 108 46" fill="none" stroke="url(#kxg3)" stroke-width="1.8"/></g></svg></div>`;
   h = h.replace(/<div><h2>Kais AI<\/h2><p class="muted small"[^>]*>([\s\S]*?)<\/p><\/div>/, (m, t) => `<div class="kx-hero"><div class="kx-ht"><h2>Kais AI ${kai('spark', 22)}</h2><p>${t}</p></div>${orb}</div>`);
   let qi = 0;
   h = h.replace(/<div class="stack">((?:<button class="btn sec"[^>]*data-a="aiq"[\s\S]*?<\/button>)+)<\/div>/, (m, inner) => `<div class="kx-qs">${inner.replace(/<button class="btn sec"[^>]*data-a="aiq" data-q="([^"]*)">([\s\S]*?)<\/button>/g, (mm, q, t) => `<button type="button" class="kx-q" data-a="aiq" data-q="${q}"><span class="kx-qi">${kai(KAI_IC[qi++ % 3], 22)}</span><span class="grow">${t}</span>${kai('chev', 18)}</button>`)}</div>`);
@@ -6741,7 +6756,7 @@ viewKaisAI = function () {
     const hasInput = /id="ai-file"/.test(inner);
     return `<div class="kx-sec"><div class="kx-lab"><b>Fatura ya da belge ekle</b><span class="kx-tag">${kai('bolt', 14)} Akıllı analiz</span></div>${chips ? `<div class="kx-chips">${chips}</div>` : ''}${hasInput ? `<label class="kx-drop" for="ai-file">${kai('up', 26)}<b>Fotoğraf / PDF seç</b></label><input id="ai-file" type="file" accept="image/*,application/pdf" multiple data-ch="kfile" style="position:absolute;opacity:0;width:1px;height:1px">` : ''}</div>`;
   });
-  h = h.replace(/<div class="field"><label for="ai-q">Sorun<\/label><textarea id="ai-q"[^>]*placeholder="([^"]*)">([\s\S]*?)<\/textarea><\/div>/, (m, ph, v) => `<div class="kx-sec"><div class="kx-lab"><b>Sorun</b></div><div class="kx-box"><textarea id="ai-q" rows="3" placeholder="${ph}">${v}</textarea><div class="kx-tools"><button type="button" class="kx-tool" data-a="aimic" aria-label="Sesle yaz">${kai('mic', 20)}</button><label class="kx-tool" for="ai-file" aria-label="Dosya ekle">${kai('clip', 20)}</label></div></div></div>`);
+  h = h.replace(/<div class="field"><label for="ai-q">Sorun<\/label><textarea id="ai-q"[^>]*placeholder="([^"]*)">([\s\S]*?)<\/textarea><\/div>/, (m, ph, v) => `<div class="kx-sec"><div class="kx-lab"><b>Sorun</b></div><div class="kx-box"><textarea id="ai-q" rows="1" placeholder="${ph}">${v}</textarea><div class="kx-tools"><button type="button" class="kx-tool" data-a="aimic" aria-label="Sesle yaz">${kai('mic', 20)}</button><label class="kx-tool" for="ai-file" aria-label="Dosya ekle">${kai('clip', 20)}</label></div></div></div>`);
   h = h.replace(/<div class="row wrap"><button class="btn grow" data-a="aisend"([^>]*)>Gönder<\/button>(<button class="btn sec" data-a="aiclear">Yeni sohbet<\/button>)?<\/div>/, (m, a, c) => `<div class="kx-act"><button class="kx-send" data-a="aisend"${a}>${kai('send', 20)} Gönder</button>${c ? '<button class="kx-new" data-a="aiclear">Yeni sohbet</button>' : ''}</div>`);
   h = h.replace(/<p class="small muted">(Yanıtlar yalnızca[\s\S]*?)<\/p>/, (m, t) => `<p class="kx-info">${kai('info', 18)}<span>${t}</span></p>`);
   return h.replace('<div class="stack-lg">', '<div class="stack-lg kx">');
@@ -6754,6 +6769,8 @@ H.aimic = () => {
 
 /* v59: Kais AI sayfası yeşil tema (sadece bu sayfa) */
 const rndV59 = render; render = function () { const r = rndV59.apply(this, arguments); try { document.body.classList.toggle('kx-on', S.view === 'kaisai' && !!S.user); } catch (e) {} return r; };
+
+document.addEventListener('input', (e) => { const t = e.target; if (t && t.id === 'ai-q') { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; } });
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
