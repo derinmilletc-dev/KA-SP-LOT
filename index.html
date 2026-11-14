@@ -574,6 +574,44 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .pf-s .lx-dd{margin-top:6px}
 
 html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+/* v48 dashboard */
+.dash{gap:12px!important}
+.ki{border:1px solid #CFE0F5;background:linear-gradient(135deg,#F2F7FE,#FFFFFF 70%);border-radius:16px;padding:12px 14px;box-shadow:0 1px 0 rgba(13,86,166,.04)}
+.ki-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;color:var(--cini-d)}
+.ki-i{width:24px;height:24px;border-radius:8px;background:var(--cini);color:#fff;display:grid;place-items:center}
+.ki-i svg{width:15px;height:15px}
+.ki-t{font-size:18px;font-weight:700;color:var(--ink);line-height:1.25}
+.ki-d{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;font-size:15px;font-weight:700}
+.ki-d.up{background:#FBEAED;color:var(--nar)}.ki-d.dn{background:#E3F4EB;color:#177A4B}
+.ki-p{margin:4px 0 0;font-size:14px;line-height:1.4;color:var(--ink-2)}
+.ki-l{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:0;border:0;background:none;color:var(--cini);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.ki-l svg{width:14px;height:14px}
+.dsec{display:flex;flex-direction:column;gap:8px}
+.dsec-h h2{font-size:20px;margin:0}.dsec-h p{margin:2px 0 0;font-size:13.5px}
+.dtodo{display:flex;flex-direction:column;gap:8px}
+.dash .todo{padding:10px 12px;min-height:0;gap:12px;border-radius:14px}
+.dash .todo .dot{width:34px;height:34px;border-radius:10px}
+.dash .todo .dot svg{width:18px;height:18px}
+.dash .todo b{font-size:15px;line-height:1.25}
+.dash .todo .sub{font-size:13px;line-height:1.3;display:block;margin-top:1px}
+.dash .todo>svg:last-child{color:#9AA7BA}
+.dmore{align-self:center;display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--cini);font:inherit;font-size:14px;font-weight:700;padding:4px 8px;cursor:pointer}
+.dfin{border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px}
+.dfin-h h3{margin:0;font-size:16px}
+.dfin-m{display:grid;grid-template-columns:repeat(3,1fr);margin-top:8px}
+.dfin-m>div{padding:0 8px;border-left:1px solid var(--line)}.dfin-m>div:first-child{padding-left:0;border-left:0}
+.dfin-m span{display:block;font-size:12.5px;color:var(--muted)}
+.dfin-m b{display:block;font-size:17px;margin-top:1px;color:var(--ink);white-space:nowrap}
+.dfin-m b.pos{color:#177A4B}.dfin-m b.neg{color:var(--nar)}
+.kc{padding:14px}
+.kc-h{display:flex;gap:10px;align-items:center}
+.kc-h h3{margin:0}.kc-h p{margin:1px 0 0}
+.kc-i{width:34px;height:34px;border-radius:10px;background:var(--cini-wash);color:var(--cini);display:grid;place-items:center;flex:none}
+.kc-n{font-size:36px;font-weight:700;letter-spacing:.16em;text-align:center;margin:8px 0 6px;color:var(--ink)}
+.kc-f{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.kc-b{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1.5px solid var(--cini);border-radius:999px;background:#fff;color:var(--cini);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.pf-card{padding:12px 14px!important}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6112,6 +6150,38 @@ if (typeof document !== 'undefined') document.addEventListener('input', (e) => {
 /* ===== v47: kod kopyala + zoom kapat ===== */
 H.codecopy = async (el) => { const t = ((document.getElementById('shop-code') || {}).textContent || '').replace(/\s/g, ''); if (!t) return; let ok = false; try { await navigator.clipboard.writeText(t); ok = true; } catch (e) { try { const i = document.createElement('textarea'); i.value = t; i.style.position = 'fixed'; i.style.opacity = '0'; document.body.appendChild(i); i.select(); ok = document.execCommand('copy'); i.remove(); } catch (x) {} } toast(ok ? 'Kod kopyalandı: ' + t : 'Kopyalanamadı. Kodu elle yaz.', ok ? 'ok' : 'warn'); };
 if (typeof document !== 'undefined') { ['gesturestart', 'gesturechange', 'gestureend'].forEach((n) => document.addEventListener(n, (e) => e.preventDefault())); document.addEventListener('touchmove', (e) => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false }); let lt = 0; document.addEventListener('touchend', (e) => { const n = Date.now(); if (n - lt < 300 && !(e.target.closest && e.target.closest('input,textarea,select'))) e.preventDefault(); lt = n; }, { passive: false }); }
+
+/* ===== v48: Bugün (patron) yeniden düzen, giriş kodu Ekip'e ===== */
+ICONS.copy = '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>';
+const CODE_RX = /<div class="card stack"><div><h3>Giriş kodu<\/h3>[\s\S]*?id="code-left">\d+<\/span> sn<\/p><\/div>/;
+const bugunMudurV47 = bugunMudur; bugunMudur = function () { return bugunMudurV47().replace(CODE_RX, ''); };
+function codeCardEkip() {
+  return `<div class="card kc"><div class="kc-h"><span class="kc-i">${ic('lock', 20)}</span><div class="grow"><h3>Giriş kodu</h3><p class="muted small">Çalışanların işe girişinde kullanacağı kod</p></div></div><div class="kc-n num" id="shop-code">${shopCode()}</div><div class="kc-f"><span class="small muted">Yenilenmesine <b id="code-left">${60 - new Date().getSeconds()}</b> sn</span><button type="button" class="kc-b" data-a="codecopy">${ic('copy', 16)}<span>Kopyala</span></button></div></div>`;
+}
+const viewEkipV47 = viewEkip; viewEkip = function () { const h = viewEkipV47(); if (!S.user || !['patron', 'mudur'].includes(S.user.role) || S.sub.ekip !== 'bugun') return h; const t = '<div class="stack-lg">'; const i = h.indexOf(t); return i < 0 ? codeCardEkip() + h : h.slice(0, i + t.length) + codeCardEkip() + h.slice(i + t.length); };
+const bugunPatronV47 = bugunPatron;
+bugunPatron = function () {
+  const h = bugunPatronV47();
+  const todos = h.match(/<button class="todo"[\s\S]*?<\/button>/g) || [];
+  const t = totals();
+  const cur = RECEIPTS.filter((f) => f.cat === 'Hammadde').reduce((a, f) => a + f.total, 0);
+  const pct = AVG_HAM ? Math.round((cur / AVG_HAM - 1) * 100) : 0;
+  const empty = !t.out && !t.in && !cur;
+  const up = pct >= 0;
+  const lim = S.todoAll ? todos.length : 4; const hidden = todos.length - lim;
+  const ins = empty
+    ? `<div class="ki-t">Henüz karşılaştıracak veri yok</div><p class="ki-p">Fiş ya da ekstre ekledikçe Kais gider artışlarını ve dikkat edilecekleri burada gösterir.</p>`
+    : `<div class="ki-t">Hammadde gideri <span class="ki-d ${up ? 'up' : 'dn'}">${up ? '↑' : '↓'} %${Math.abs(pct)}</span></div><p class="ki-p">Son 3 ay ortalamasına göre hammadde giderin ${Math.abs(pct) >= 30 ? 'belirgin şekilde ' : ''}${up ? 'yükseldi' : 'düştü'}.</p><button type="button" class="ki-l" data-a="insight">${S.insightOpen ? 'Hesabı gizle' : 'Hesabı göster'} ${ic('chevron', 14)}</button>${S.insightOpen ? `<div class="callout" style="margin-top:8px">${ic('info')}<div>Son 3 ay ortalaması ${fmt0(AVG_HAM)}. ${PERIOD}: ${fmt0(cur)}. Fark ${fmt0(cur - AVG_HAM)}. Yetersiz geçmiş varsa uyarı üretmem.</div></div>` : ''}`;
+  const net = t.in - t.out;
+  return `<div class="stack-lg dash">
+  <div class="ki"><div class="ki-h"><span class="ki-i">${ic('sparkle', 16)}</span><b>Kais fark etti</b></div>${ins}</div>
+  <section class="dsec"><div class="dsec-h"><h2>Bugün ne yapmalısın?</h2><p class="muted">${esc(today())} · ${todos.length ? todos.length + ' konu seni bekliyor' : 'her şey yolunda'}</p></div>
+   <div class="dtodo">${todos.slice(0, lim).join('') || `<div class="card"><p class="muted">Bugün seni bekleyen bir konu yok.</p></div>`}</div>
+   ${hidden > 0 ? `<button type="button" class="dmore" data-a="todoall">${hidden} konu daha göster ${ic('chevron', 14)}</button>` : (S.todoAll && todos.length > 4 ? `<button type="button" class="dmore" data-a="todoall">Daha az göster</button>` : '')}</section>
+  <section class="dfin"><div class="dfin-h"><h3>${esc(PERIOD)}</h3></div><div class="dfin-m"><div><span>Gelen</span><b class="num">${fmt0(t.in)}</b></div><div><span>Giden</span><b class="num">${fmt0(t.out)}</b></div><div><span>Net</span><b class="num ${net > 0 ? 'pos' : net < 0 ? 'neg' : ''}">${fmt0(net)}</b></div></div><button type="button" class="ki-l" data-a="nav" data-v="muhasebe">Finans detaylarını gör ${ic('chevron', 14)}</button></section>
+  </div>`;
+};
+H.todoall = () => { S.todoAll = !S.todoAll; render(); };
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
