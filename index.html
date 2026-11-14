@@ -1005,6 +1005,14 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .dy-me{display:flex;gap:8px;align-items:center;border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px}.dy-me.kabul{background:#E8F7EE;color:#14804A}.dy-me.red{background:#EDF0F4;color:#5A6678}
 .dy-alert{display:flex;gap:10px;align-items:flex-start;background:#FFF3DB;border-radius:16px;padding:12px 14px;color:#8A5200}.dy-alert b{display:block;color:var(--ink);font-size:15px}.dy-alert span{font-size:13.5px;color:var(--ink-2)}
 .dy-e{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:32px 20px;background:#fff;border:1px dashed #C9D5E5;border-radius:18px;color:var(--cini)}.dy-e b{color:var(--ink);font-size:16px}.dy-e p{margin:0;color:var(--ink-2);font-size:14px;max-width:280px}
+
+.rz-it .card.rzc,.card.rzc{padding:12px 12px 8px;gap:6px}
+.rzc-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.rzc-n{min-width:0;display:flex;flex-direction:column}.rzc-n b{font-size:16px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rzc-t{font-size:13px;font-weight:600;color:var(--cini);font-variant-numeric:tabular-nums}
+.rzc-m{display:flex;flex-wrap:wrap;align-items:center;gap:2px 0;font-size:13px;color:var(--ink-2)}.rzc-m>span+span:before{content:"·";margin:0 6px}.rzc-m .rzc-tg{margin-left:8px;padding:1px 8px;border-radius:999px;font-weight:600;font-size:12px}.rzc-m .rzc-tg:before{content:none}
+.rzc-tg.bad{background:#FDE8EB;color:#B4233A}.rzc-tg.ok{background:#E3F6EA;color:#14804A}
+.rzc-nt{display:flex;gap:6px;align-items:flex-start;margin:0;font-size:13px;color:var(--ink);background:#F4F7FB;border-radius:10px;padding:6px 9px}.rzc-nt .ic{flex:none;margin-top:2px;color:var(--cini)}
+.rzc-a{display:flex;gap:6px;margin-top:2px}.rzc-a .btn{flex:1 1 0;min-width:0;min-height:38px;padding:0 4px;font-size:13.5px;white-space:nowrap}.rzc-a .btn:first-child{flex:1.3}.rzc-no{color:var(--nar)!important}
+.rzc-l{display:flex;border-top:1px solid #EDF1F7;margin:2px -4px 0;padding-top:2px}.rzc-l>*{flex:1;border:0;background:none;color:var(--cini);font-size:13px;font-weight:600;white-space:nowrap;font-family:inherit;padding:9px 2px;text-align:center;text-decoration:none}.rzc-l>*+*{border-left:1px solid #EDF1F7}
 .mg{display:flex;flex-direction:column;gap:14px}
 .mg-hi h2{margin:0;font-size:26px;letter-spacing:-.3px}.mg-hi p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 .mg-q{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mg-q button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 10px;border:1px solid #E1E8F2;border-radius:16px;background:#fff;color:var(--cini-d);font-family:inherit;box-shadow:0 3px 10px rgba(13,40,80,.05)}.mg-q svg{color:var(--cini)}.mg-q span{font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap}
@@ -7191,6 +7199,24 @@ H.dyf = (el) => { S.dyf = el.dataset.v; render(); };
 H.dyh = (el) => { snap(); S.draft.hours = el.dataset.v; render(); };
 H.dytpl = (el) => { snap(); const t = (DY_TPL[S.draft.type] || [])[Number(el.dataset.i)]; if (t) { S.draft.title = t[0]; S.draft.body = t[1]; } render(); };
 H.dypick = () => { snap(); render(); };
+/* ===== v69: Rezervasyon kartı, sıkı yerleşim ===== */
+rzCard = function (r) {
+  const h = rzHist(r.phone, r.id); const st = RZ_ST[r.st]; const a = [];
+  const b = (s, t, c) => `<button class="btn sm${c ? ' ' + c : ''}" data-a="rzst" data-id="${r.id}" data-s="${s}">${t}</button>`;
+  if (r.st === 'onay') a.push(b('geldi', 'Geldi', ''), b('gelmedi', 'Gelmedi', 'sec'), b('iptal', 'İptal', 'sec rzc-no'));
+  if (r.st === 'geldi') a.push(b('bitti', 'Masa boşaldı', ''));
+  if (['gelmedi', 'iptal'].includes(r.st)) a.push(b('onay', 'Geri al', 'sec'));
+  const wa = r.phone && rzActive(r) ? rzWa(r, rzMsg(r, 'hat')) : '';
+  const end = fromMin((toMin(r.time) + r.dur) % 1440);
+  const meta = [`${r.n} kişi`, r.tids.length ? 'Masa ' + esc(rzNames(r.tids)) : 'masa yok'].concat(r.src ? [esc(r.src)] : []);
+  const tag = h.miss ? `<span class="rzc-tg bad">${h.miss} kez gelmedi</span>` : h.n >= 2 ? `<span class="rzc-tg ok">${h.n} kez geldi</span>` : '';
+  const links = [wa ? `<a href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : '', r.phone ? `<button data-a="rzcopy" data-id="${r.id}">Mesajı kopyala</button>` : '', `<button data-a="rzedit" data-id="${r.id}">Düzenle</button>`].filter(Boolean).join('');
+  return `<div class="card rzc"><div class="rzc-h"><div class="rzc-n"><b>${esc(r.name)}</b><span class="rzc-t">${esc(r.time)}–${esc(end)}</span></div><span class="pill ${st[0]}">${st[1]}</span></div>
+  <div class="rzc-m">${meta.map((x) => `<span>${x}</span>`).join('')}${tag}</div>
+  ${r.note ? `<p class="rzc-nt">${ic('info', 14)}<span>${esc(r.note)}</span></p>` : ''}
+  ${a.length ? `<div class="rzc-a">${a.join('')}</div>` : ''}
+  <div class="rzc-l">${links}</div></div>`;
+};
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
