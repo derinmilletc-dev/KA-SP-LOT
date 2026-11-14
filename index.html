@@ -7932,7 +7932,7 @@ NEWM.geo = () => {
   const m = S.modal; const r = S.settings.shopR || 1000;
   const body = {
     wait: `<div class="geo"><span class="geo-i spin">${ic('clock', 28)}</span><b>Konumun kontrol ediliyor</b><p>Tarayıcı izin isterse "İzin ver"e dokun. Konum yalnızca giriş anında bir kez kontrol edilir, kaydedilmez.</p></div>`,
-    far: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Dükkândan ${gTxt(m.d || 0)} uzaktasın</b><p>Giriş için dükkâna en fazla ${gTxt(r)} yakın olmalısın. Yaklaşınca tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
+    far: `<div class="geo"><span class="geo-i">${ic('clock', 28)}</span><b>Dükkâna ulaştığında tekrar dene</b><p>Giriş, dükkâna ${gTxt(r)} yaklaştığında yapılır. Vardığında aşağıdaki düğmeye dokun.</p><button class="btn block" data-a="geotry">Dükkândayım, tekrar dene</button></div>`,
     deny: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Konum izni kapalı</b><p>Giriş için konum izni gerekir. iPhone'da Ayarlar > Gizlilik > Konum Servisleri > Safari'den izni aç, sonra tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
     time: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Konum alınamadı</b><p>Sinyal zayıf olabilir. Açık alana çıkıp tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
     err: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Konum alınamadı</b><p>Konum servisleri kapalı olabilir. Açıp tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
