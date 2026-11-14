@@ -513,6 +513,30 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .lx-sep{height:1px;background:#D5DEEA;margin:4px 4px 0}
 .lx-have{margin:0;text-align:center;font-size:14.5px;color:var(--ink-2)}
 .lx-have .lx-link{display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:700;min-height:36px;padding:4px 2px}
+/* v45 profil */
+.lx-opt{font-weight:500;color:#8A96AA;font-size:12px;margin-left:4px}
+.pf-cs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.pf-c{border:1.5px solid var(--line);background:#fff;color:var(--ink-2);border-radius:999px;padding:0 14px;min-height:40px;font-size:14px;font-weight:600;font-family:inherit;transition:background .15s,border-color .15s,color .15s}
+.pf-c.on{background:var(--cini-wash);border-color:var(--cini);color:var(--cini-d)}
+.pf-card{background:linear-gradient(135deg,#1F5FB0,#0D3F7C);color:#fff;border-radius:18px;padding:16px;box-shadow:0 10px 24px rgba(13,63,124,.22)}
+.pf-top{display:flex;gap:14px;align-items:center}
+.pf-ring{width:52px;height:52px;flex:none}
+.pf-card h3{color:#fff;margin:0}.pf-card p{margin:2px 0 0;font-size:14px;line-height:1.4;color:rgba(255,255,255,.86)}
+.pf-miss{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center}
+.pf-miss button{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:999px;padding:0 12px;min-height:30px;font-size:13px;font-weight:600;font-family:inherit}
+.pf-miss span{font-size:13px;color:rgba(255,255,255,.8)}
+.pf-act{display:flex;gap:8px;margin-top:14px}
+.pf-go{flex:1;min-height:44px;border:0;border-radius:12px;background:#fff;color:var(--cini-d);font-weight:700;font-size:15px;font-family:inherit}
+.pf-later{min-height:44px;padding:0 16px;border:0;background:transparent;color:rgba(255,255,255,.85);font-weight:600;font-size:15px;font-family:inherit}
+.pf-bar{height:6px;border-radius:99px;background:#E5EBF3;overflow:hidden;margin-top:4px}.pf-bar i{display:block;height:100%;background:var(--cini);border-radius:99px}
+.pf-s{margin-top:14px}.pf-l{display:block;font-weight:700;font-size:14px;color:var(--ink)}.pf-h{font-weight:500;color:var(--muted);font-size:12px;margin-left:4px}
+.pf-s input{width:100%;min-height:48px;margin-top:6px;border:1.5px solid var(--line);border-radius:12px;padding:0 14px;font-size:16px;font-family:inherit;background:#fff;box-sizing:border-box}
+.pf-s input:focus{outline:none;border-color:var(--cini);box-shadow:0 0 0 3px rgba(13,86,166,.15)}
+.pf-row{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:560px){.pf-row{grid-template-columns:1fr 1fr;gap:12px}}
+.pf-row.pf-2{grid-template-columns:1fr 1fr;gap:10px}
+.pf-st{font-size:12.5px;min-height:16px;margin-top:4px;color:var(--muted)}.pf-st.ok{color:#177A4B}.pf-st.bad{color:var(--nar)}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -4364,7 +4388,7 @@ async function idAuth(kind, mode) {
       if (kind === 'emp') return fail('Bu hesap henüz bir işletmeye katılmamış. "Davet koduyla katıl"a basıp kodunu gir.');
       if (!bn) return fail('Bu hesapta işletme yok. İşletme adını yazıp İşletmemi oluştur\'a bas.');
       const i = await c.from('businesses').insert({ name: bn, owner_id: SBS.user.id }); if (i.error) throw i.error;
-      NAMES.u1 = { name: nm || 'İşveren', title: 'Patron' }; BIZ = bn; if (!((document.getElementById('id-demo') || {}).checked)) wipeData(); applyNames(); await sbLoadBiz();
+      NAMES.u1 = { name: nm || 'İşveren', title: 'Patron' }; BIZ = bn; wipeData(); PEND.tur = ((document.querySelector('.lx-tur .on') || {}).dataset || {}).v || ''; applyNames(); await sbLoadBiz();
     }
     ID.busy = false; if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter();
   } catch (e) { fail(idMsg(e)); }
@@ -5538,7 +5562,7 @@ function lxLogin() {
       extra = `<div class="lx-or"><span>veya</span></div><button type="button" class="lx-alt" data-a="lgcreate" aria-expanded="${create}">${LXI.plus}<b>${emp ? 'Davet kodum var' : 'İşletme oluştur'}</b><span>${emp ? 'Hesabını davet koduyla aç' : 'İşletmenizi dakikalar içinde kurun'}</span></button>`;
       if (create) extra += emp
         ? `<div class="lx-box"><p class="small muted">İşvereninin verdiği kodu yaz. Yukarıya e-postanı ve kendi belirlediğin en az 8 karakterlik şifreni yaz.</p><div class="lx-f"><label for="id-code">Davet kodu</label><div class="lx-in"><input id="id-code" type="text" autocapitalize="characters" placeholder="Örn. K7M2QX" style="text-transform:uppercase"></div></div><button type="button" class="btn block" data-a="idnew">Hesap oluştur ve katıl</button></div>`
-        : `<div class="lx-box"><p class="small muted">Yukarıya e-postanı ve en az 8 karakterlik şifreni yaz, buraya işletmeni. Yeni işletme boş başlar.</p><div class="lx-f"><label for="id-biz">İşletme adı</label><div class="lx-in"><input id="id-biz" type="text" autocomplete="organization"></div></div><div class="lx-f"><label for="id-name">Adın soyadın</label><div class="lx-in"><input id="id-name" type="text" autocomplete="name"></div></div><button type="button" class="btn block" data-a="idnew">İşletmemi oluştur</button></div>`;
+        : `<div class="lx-box"><p class="small muted">Yukarıya e-postanı ve en az 8 karakterlik şifreni yaz, buraya işletmeni. Yeni işletme boş başlar.</p><div class="lx-f"><label for="id-biz">İşletme adı</label><div class="lx-in"><input id="id-biz" type="text" autocomplete="organization"></div></div><div class="lx-f"><label>İşletme türü <span class="lx-opt">isteğe bağlı</span></label><div class="pf-cs lx-tur" data-grp="tur"><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Kafe">Kafe</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Restoran">Restoran</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Fırın / pastane">Fırın / pastane</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Market">Market</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Kuaför / berber">Kuaför / berber</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Mağaza">Mağaza</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Diğer">Diğer</button></div></div><div class="lx-f"><label for="id-name">Adın soyadın</label><div class="lx-in"><input id="id-name" type="text" autocomplete="name"></div></div><button type="button" class="btn block" data-a="idnew">İşletmemi oluştur</button></div>`;
     }
     const demoBox = AUTH.demo === false ? '' : `<button type="button" class="lx-demo" data-a="demo" data-id="u1">${LXI.play}<b>Demo hesabını dene</b><span>Örnek verilerle sistemi keşfedin</span></button><details class="lx-more"><summary>Diğer roller <span aria-hidden="true">▾</span></summary><div class="lx-roles">${[['u2', 'Müdür'], ['u3', 'Muhasebeci'], ['u4', 'Çalışan']].map((x) => `<button type="button" data-a="demo" data-id="${x[0]}">${x[1]}</button>`).join('')}</div></details>`;
     body = `${note}${fields}${err}${forgot}${go}${extra}${demoBox}`;
@@ -5862,6 +5886,87 @@ H.empmode = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value ||
 const _logout42 = H.logout; H.logout = () => { ONB.block = false; ONB.loaded = false; ONB.cfg = null; ONB.list = null; ONB.cd = null; _logout42(); };
 /* v44: tedarikçi sekmesi doğrudan tedarikçi girişine */
 const _lgtab44 = H.lgtab; H.lgtab = (el) => { if (el.dataset.v === 'sup' && sbOK() && typeof location !== 'undefined' && /^http/.test(location.protocol)) { el.setAttribute('aria-pressed', 'true'); location.href = '/tedarikci'; return; } _lgtab44(el); };
+
+/* ===== v45: Profilini tamamla ===== */
+const PROF = { tur: '', tip: '', vkn: '', vd: '', il: '', ilce: '', tel: '', cal: '', muh: '', mods: [], snooze: 0, done: false };
+const PEND = { tur: '' };
+P_OBJ.push(['PROF', () => PROF]);
+function profReset() { Object.assign(PROF, { tur: '', tip: '', vkn: '', vd: '', il: '', ilce: '', tel: '', cal: '', muh: '', mods: [], snooze: 0, done: false }); }
+const _wd45 = wipeData; wipeData = function () { _wd45(); profReset(); };
+function profPend() { if (PEND.tur && !PROF.tur) { PROF.tur = PEND.tur; pSched(); } PEND.tur = ''; }
+const PF_IL = ['Adana','Adıyaman','Afyonkarahisar','Ağrı','Aksaray','Amasya','Ankara','Antalya','Ardahan','Artvin','Aydın','Balıkesir','Bartın','Batman','Bayburt','Bilecik','Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum','Denizli','Diyarbakır','Düzce','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir','Gaziantep','Giresun','Gümüşhane','Hakkâri','Hatay','Iğdır','Isparta','İstanbul','İzmir','Kahramanmaraş','Karabük','Karaman','Kars','Kastamonu','Kayseri','Kilis','Kırıkkale','Kırklareli','Kırşehir','Kocaeli','Konya','Kütahya','Malatya','Manisa','Mardin','Mersin','Muğla','Muş','Nevşehir','Niğde','Ordu','Osmaniye','Rize','Sakarya','Samsun','Şanlıurfa','Siirt','Sinop','Sivas','Şırnak','Tekirdağ','Tokat','Trabzon','Tunceli','Uşak','Van','Yalova','Yozgat','Zonguldak'];
+const PF_TUR = ['Kafe', 'Restoran', 'Fırın / pastane', 'Market', 'Kuaför / berber', 'Mağaza', 'Otel', 'Atölye', 'Diğer'];
+const PF_TIP = ['Şahıs işletmesi', 'Limited şirket', 'Anonim şirket', 'Kuruluş aşamasında'];
+const PF_CAL = ['Sadece ben', '2–5 kişi', '6–20 kişi', '21–50 kişi', '50+ kişi'];
+const PF_MUH = ['Var', 'Arıyorum', 'Kendim tutuyorum'];
+const PF_MOD = ['Stok', 'Satış (POS)', 'Tedarik', 'Bordro ve maaş', 'Müşteri ve rezervasyon', 'Duyuru ve vardiya'];
+const PF_SUG = { 'Kafe': ['Stok', 'Satış (POS)', 'Tedarik'], 'Restoran': ['Stok', 'Satış (POS)', 'Tedarik', 'Bordro ve maaş'], 'Fırın / pastane': ['Stok', 'Satış (POS)', 'Tedarik'], 'Market': ['Stok', 'Satış (POS)', 'Tedarik'], 'Kuaför / berber': ['Müşteri ve rezervasyon', 'Bordro ve maaş'], 'Mağaza': ['Stok', 'Satış (POS)'], 'Otel': ['Müşteri ve rezervasyon', 'Bordro ve maaş', 'Duyuru ve vardiya'] };
+const PF_FIELDS = [['tur', 'İşletme türü'], ['tip', 'Şirket tipi'], ['vkn', 'Vergi no'], ['il', 'Şehir'], ['tel', 'Telefon'], ['cal', 'Ekip büyüklüğü'], ['muh', 'Muhasebeci'], ['mods', 'Kullanacağın bölümler']];
+function pfHas(k) { return k === 'mods' ? PROF.mods.length > 0 : !!PROF[k]; }
+function pfMissing() { return PF_FIELDS.filter(([k]) => !pfHas(k)); }
+function vknOk(v) {
+  if (!/^\d+$/.test(v)) return false; const d = v.split('').map(Number);
+  if (v.length === 10) { let sum = 0; for (let i = 0; i < 9; i++) { const t = (d[i] + 9 - i) % 10; let x = t === 0 ? 0 : (t * Math.pow(2, 9 - i)) % 9; if (t !== 0 && x === 0) x = 9; sum += x; } return (10 - (sum % 10)) % 10 === d[9]; }
+  if (v.length === 11) { if (d[0] === 0) return false; const odd = d[0] + d[2] + d[4] + d[6] + d[8]; const even = d[1] + d[3] + d[5] + d[7]; if ((((odd * 7 - even) % 10) + 10) % 10 !== d[9]) return false; return d.slice(0, 10).reduce((a, b) => a + b, 0) % 10 === d[10]; }
+  return false;
+}
+function telFmt(v) { let d = String(v).replace(/\D/g, ''); if (d.startsWith('90') && d.length > 10) d = d.slice(2); if (d.startsWith('0')) d = d.slice(1); d = d.slice(0, 10); const p = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(Boolean); return d ? '0 ' + p.join(' ') : ''; }
+function pfChips(g, list, sel, multi) { return `<div class="pf-cs" data-grp="${g}" data-multi="${multi ? 1 : 0}">${list.map((x) => `<button type="button" class="pf-c${(multi ? sel.includes(x) : sel === x) ? ' on' : ''}" data-a="pfchip" data-g="${g}" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>`; }
+function profCard() {
+  const r = S.user && S.user.role; if (r !== 'patron' || S.demoMode || PROF.done || Date.now() < (PROF.snooze || 0)) return '';
+  profPend(); const miss = pfMissing(); if (!miss.length) return '';
+  const n = PF_FIELDS.length - miss.length; const pct = Math.round(n / PF_FIELDS.length * 100); const C = 2 * Math.PI * 22; const off = C * (1 - pct / 100);
+  return `<div class="pf-card"><div class="pf-top"><svg class="pf-ring" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="5"/><circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 26 26)"/><text x="26" y="30.5" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">%${pct}</text></svg><div><h3>Profilini tamamla</h3><p>İşletmen için ${miss.length} kısa bilgi kaldı. Kais ekranları sana göre hazırlar.</p></div></div>
+  <div class="pf-miss">${miss.slice(0, 5).map(([k, l]) => `<button type="button" data-a="pfopen" data-f="${k}">${esc(l)}</button>`).join('')}${miss.length > 5 ? `<span>+${miss.length - 5}</span>` : ''}</div>
+  <div class="pf-act"><button type="button" class="pf-go" data-a="pfopen">Devam et</button><button type="button" class="pf-later" data-a="pfsnooze">Sonra</button></div></div>`;
+}
+const _vh45 = viewHTML; viewHTML = function () { let h = _vh45(); const r = S.user && S.user.role; if (r === 'patron' && S.view === 'bugun') { const c = profCard(); if (c) h = h.replace('<div class="stack-lg">', '<div class="stack-lg">' + c); } return h; };
+H.pfopen = (el) => { profPend(); S.modal = { type: 'prof', f: (el && el.dataset && el.dataset.f) || '' }; renderModal(); setTimeout(() => { const f = el && el.dataset && el.dataset.f; const t = f && document.querySelector('[data-pfk="' + f + '"]'); if (t && t.scrollIntoView) t.scrollIntoView({ block: 'center' }); }, 60); };
+H.pfsnooze = () => { PROF.snooze = Date.now() + 3 * 864e5; pSched(); render(); };
+H.pfchip = (el) => {
+  const box = el.closest('[data-grp]'); if (!box) return; const multi = box.dataset.multi === '1'; const was = el.classList.contains('on');
+  if (!multi) box.querySelectorAll('.pf-c').forEach((b) => b.classList.remove('on'));
+  el.classList.toggle('on', multi ? !was : !was ? true : false);
+  if (el.dataset.g === 'tur' && el.classList.contains('on')) { const mb = document.querySelector('[data-grp="mods"]'); const sug = PF_SUG[el.dataset.v]; if (mb && sug && !mb.querySelector('.on')) mb.querySelectorAll('.pf-c').forEach((b) => { if (sug.includes(b.dataset.v)) b.classList.add('on'); }); }
+};
+function pfOn(g) { return Array.from(document.querySelectorAll('[data-grp="' + g + '"] .on')).map((b) => b.dataset.v); }
+NEWM.prof = () => {
+  const L = (k, t, body, hint) => `<div class="pf-s" data-pfk="${k}"><label class="pf-l">${t}${hint ? ` <span class="pf-h">${hint}</span>` : ''}</label>${body}</div>`;
+  const miss = pfMissing().length; const pct = Math.round((PF_FIELDS.length - miss) / PF_FIELDS.length * 100);
+  return sheet('Profilini tamamla', `<div class="pf-bar"><i style="width:${pct}%"></i></div><p class="small muted" style="margin:6px 0 4px">Boş bırakabilirsin, istediğin zaman devam edersin.</p>
+  ${L('tur', 'İşletme türü', pfChips('tur', PF_TUR, PROF.tur, false))}
+  ${L('tip', 'Şirket tipi', pfChips('tip', PF_TIP, PROF.tip, false))}
+  <div class="pf-row">
+   ${L('vkn', 'Vergi no', `<input id="pf-vkn" inputmode="numeric" maxlength="11" autocomplete="off" placeholder="10 hane (şahıs ise T.C. no)" value="${esc(PROF.vkn)}"><div class="pf-st" id="pf-vkn-s"></div>`)}
+   ${L('vd', 'Vergi dairesi', `<input id="pf-vd" autocomplete="off" list="pf-vdl" placeholder="Örn. ${esc(PROF.il || 'Kadıköy')} Vergi Dairesi" value="${esc(PROF.vd)}"><datalist id="pf-vdl">${PROF.il ? `<option value="${esc(PROF.il)} Vergi Dairesi">` : ''}</datalist>`)}
+  </div>
+  <div class="pf-row pf-2">
+   ${L('il', 'Şehir', `<input id="pf-il" list="pf-ill" autocomplete="off" placeholder="Yazmaya başla" value="${esc(PROF.il)}"><datalist id="pf-ill">${PF_IL.map((x) => `<option value="${x}">`).join('')}</datalist>`)}
+   ${L('ilce', 'İlçe', `<input id="pf-ilce" autocomplete="off" placeholder="Örn. Kadıköy" value="${esc(PROF.ilce)}">`)}
+  </div>
+  ${L('tel', 'İşletme telefonu', `<input id="pf-tel" inputmode="tel" autocomplete="tel" placeholder="0 5xx xxx xx xx" value="${esc(PROF.tel)}">`)}
+  ${L('cal', 'Kaç kişi çalışıyor?', pfChips('cal', PF_CAL, PROF.cal, false))}
+  ${L('muh', 'Muhasebecin var mı?', pfChips('muh', PF_MUH, PROF.muh, false), 'Varsa sonra davet kodu ile ekleyebilirsin')}
+  ${L('mods', 'Hangi bölümleri kullanacaksın?', pfChips('mods', PF_MOD, PROF.mods, true), 'Birden fazla seç')}
+  <div class="row" style="gap:8px;margin-top:14px"><button type="button" class="btn block" data-a="pfsave">Kaydet</button></div>`);
+};
+H.pfsave = () => {
+  const g = (id) => ((document.getElementById(id) || {}).value || '').trim();
+  const vkn = g('pf-vkn').replace(/\D/g, '');
+  if (vkn && !vknOk(vkn)) { const e = document.getElementById('pf-vkn-s'); if (e) { e.textContent = 'Numara geçersiz görünüyor. Kontrol et ya da boş bırak.'; e.className = 'pf-st bad'; } toast('Vergi numarasını kontrol et.', 'bad'); return; }
+  const one = (k) => pfOn(k)[0] || '';
+  Object.assign(PROF, { tur: one('tur'), tip: one('tip'), vkn, vd: g('pf-vd'), il: g('pf-il'), ilce: g('pf-ilce'), tel: g('pf-tel'), cal: one('cal'), muh: one('muh'), mods: pfOn('mods') });
+  if (vkn) EDOC.vkn = vkn; if (PROF.vd) EDOC.vd = PROF.vd;
+  PROF.done = pfMissing().length === 0; pSched(); S.modal = null; renderModal(); render();
+  toast(PROF.done ? 'Profil tamam. Teşekkürler.' : 'Kaydedildi.', 'ok');
+};
+if (typeof document !== 'undefined') document.addEventListener('input', (e) => {
+  const t = e.target; if (!t || !t.id) return;
+  if (t.id === 'pf-vkn') { const v = t.value.replace(/\D/g, '').slice(0, 11); if (v !== t.value) t.value = v; const s = document.getElementById('pf-vkn-s'); if (!s) return; if (!v) { s.textContent = ''; s.className = 'pf-st'; } else if (v.length < 10) { s.textContent = v.length + '/10 hane'; s.className = 'pf-st'; } else if (vknOk(v)) { s.textContent = v.length === 10 ? 'Geçerli vergi numarası' : 'Geçerli T.C. kimlik numarası'; s.className = 'pf-st ok'; } else { s.textContent = 'Numara geçersiz görünüyor'; s.className = 'pf-st bad'; } }
+  if (t.id === 'pf-tel') { const f = telFmt(t.value); if (f !== t.value) t.value = f; }
+  if (t.id === 'pf-il') { const dl = document.getElementById('pf-vdl'); if (dl) dl.innerHTML = t.value ? `<option value="${esc(t.value)} Vergi Dairesi">` : ''; }
+});
+
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
