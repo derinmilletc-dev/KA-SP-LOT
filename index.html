@@ -998,7 +998,12 @@ const mark = (s = 28) => `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fi
 
 /* ---------- veri ---------- */
 let BIZ = 'Çınar Kafe & Fırın';
-const PERIOD = 'Ekim 2026';
+const _NOW = new Date();
+const MONTH_LONG = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const MONTH_ABBR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const _PM = (_NOW.getMonth() + 11) % 12; const _PY = _NOW.getMonth() === 0 ? _NOW.getFullYear() - 1 : _NOW.getFullYear();
+const PREVM = MONTH_LONG[_PM]; const CURM = MONTH_LONG[_NOW.getMonth()]; const PREVA = MONTH_ABBR[_PM]; const CURA = MONTH_ABBR[_NOW.getMonth()];
+const PERIOD = PREVM + ' ' + _PY;
 const USERS = [
   { id: 'u1', name: 'Kemal Çınar', role: 'patron', title: 'Patron', email: 'kemal@cinarkafe.example', color: '#0D56A6' },
   { id: 'u2', name: 'Elif Yıldız', role: 'mudur', title: 'Müdür', email: 'elif@cinarkafe.example', color: '#17807E' },
@@ -1586,7 +1591,7 @@ function csvText() {
   const lab = { eslesti: 'Eşleşti', eksik: 'Eksik', belgesiz: 'Belgesiz', gelir: 'Gelir', maas: 'Maaş', tekrar: 'Tekrarlayan' };
   const lines = ROWS.map((r) => {
     const f = RECEIPTS.find((x) => x.bank === r.id);
-    return [r.date + ' 2026', r.desc, r.amt.toFixed(2).replace('.', ','), (f && f.cat) || r.cat || '', f ? f.id : '', f ? f.rate : '', lab[rowStatus(r)]].join(';');
+    return [rDateY(r), r.desc, r.amt.toFixed(2).replace('.', ','), (f && f.cat) || r.cat || '', f ? f.id : '', f ? f.rate : '', lab[rowStatus(r)]].join(';');
   });
   return [head].concat(lines).join('\n');
 }
@@ -1619,7 +1624,7 @@ function viewMuhasebe() {
 }
 function chartHTML() {
   const t = totals();
-  const data = MONTHS.concat([{ m: 'Eki', in: t.in, out: t.out }]);
+  const data = MONTHS.concat([{ m: PREVA, in: t.in, out: t.out }]);
   const max = Math.max(...data.flatMap((d) => [d.in, d.out]));
   const base = 130; const top = 24;
   const bars = data.map((d, i) => {
@@ -2152,8 +2157,8 @@ Object.assign(ICONS, {
   trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
 });
 
-const REF = { y: 2026, m: 11, d: 14 };
-const NEXTP = 'Kasım 2026';
+const REF = { y: _NOW.getFullYear(), m: _NOW.getMonth() + 1, d: _NOW.getDate() };
+const NEXTP = CURM + ' ' + REF.y;
 const MON = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 const isoTxt = (iso) => { const a = iso.split('-').map(Number); return String(a[2]).padStart(2, '0') + ' ' + MON[a[1] - 1] + ' ' + a[0]; };
 const monthsBetween = (iso) => { const a = iso.split('-').map(Number); let mm = (REF.y - a[0]) * 12 + (REF.m - a[1]); if (REF.d < a[2]) mm--; return Math.max(0, mm); };
@@ -2221,7 +2226,7 @@ RECEIPTS.push(
   { id: 'f11', seller: 'Hırdavat Yıldız', date: '14 Kas', total: 480, rate: 20, cat: 'Diğer', status: 'musavirde', by: 'u1', bank: null, at: '11:15', items: [] }
 );
 const STOCKLOG = [];
-const openReceipts = (all) => RECEIPTS.filter((f) => ['bekliyor', 'musavirde', 'duzeltme'].includes(f.status) && (all || /Eki/.test(f.date)));
+const openReceipts = (all) => RECEIPTS.filter((f) => ['bekliyor', 'musavirde', 'duzeltme'].includes(f.status) && (all || String(f.date).indexOf(PREVA) >= 0));
 const RS = { bekliyor: ['p-warn', 'Patron onayı bekliyor'], musavirde: ['p-info', 'Muhasebecide'], duzeltme: ['p-bad', 'Düzeltme istendi'], onayli: ['p-ok', 'Onaylandı, tabloda'], reddedildi: ['p-mute', 'Reddedildi'] };
 
 Object.assign(S.sub, { muhasebe: 'belgeler', belgeler: 'gelen', ekip: 'bugun' });
@@ -2298,7 +2303,7 @@ function viewDonem() {
   if (ds.length) items.push(todo('wallet', 'warn', `${ds.length} ödeme için hatırlatma zamanı`, `${ds[0].who}: ${fmt0(ds[0].amt)}`, 'borc'));
   const wn = waitingNotes();
   return `<div class="stack-lg">
-  <div><h2>${esc(BIZ)}</h2><p class="muted" style="margin-top:4px">Ekim dönemi kapanış bekliyor · Kasım dönemi devam ediyor</p></div>
+  <div><h2>${esc(BIZ)}</h2><p class="muted" style="margin-top:4px">${PREVM} dönemi kapanış bekliyor · ${CURM} dönemi devam ediyor</p></div>
   ${items.length ? `<div class="stack">${items.join('')}</div>` : `<div class="callout">${ic('check')}<div>Bekleyen iş yok.</div></div>`}
   <div class="card stack"><div class="row between wrap"><h3>Dönem durumu</h3><span class="num" style="font-weight:600">%${pct} belgeli</span></div>
     <div class="prog"><i style="width:${pct}%"></i></div>
@@ -2348,7 +2353,7 @@ function ledgerRefresh(r) {
 function csvText() {
   const n = (x) => Number(x).toFixed(2).replace('.', ',');
   const head = 'Tarih;Açıklama;Hesap;Belge;KDV %;KDV;Toplam;Kaynak';
-  return [head].concat(LEDGER.map((r) => [r.date + ' 2026', String(r.desc).replace(/;/g, ','), r.acc, r.doc, r.rate, n(kdv(r)), n(r.total), r.edited ? 'Düzenlendi' : r.src].join(';'))).join('\n');
+  return [head].concat(LEDGER.map((r) => [rDateY(r), String(r.desc).replace(/;/g, ','), r.acc, r.doc, r.rate, n(kdv(r)), n(r.total), r.edited ? 'Düzenlendi' : r.src].join(';'))).join('\n');
 }
 function kdvCard() {
   const t = totals();
@@ -2443,7 +2448,7 @@ function viewMaas() {
   return `<div class="stack-lg">
   <div class="card stack aicard"><div class="row"><span class="aib">${ic('sparkle', 20)}</span><div class="grow"><h3>Kais AI</h3><p class="muted small" style="margin-top:2px">İş sözleşmesinin fotoğrafını ekle, kimin olduğunu yaz. Maaş, mesai, izin ve haklar kendiliğinden doldurulur.</p></div></div>
   <button class="btn" style="align-self:flex-start" data-a="aiopen">${ic('camera')} Sözleşme yükle</button></div>
-  <div class="kpis">${kpi('Kasım hakkı', fmt0(tot))}${kpi('Ödenen', fmt0(paid))}${kpi('Kalan', fmt0(tot - paid))}</div>
+  <div class="kpis">${kpi(CURM + ' hakkı', fmt0(tot))}${kpi('Ödenen', fmt0(paid))}${kpi('Kalan', fmt0(tot - paid))}</div>
   <div class="card flush">${EMP_IDS.map((id) => {
     const u = byId(id); const p = PROFILES[id]; const d = dueOf(id);
     return `<button class="emp go" data-a="empopen" data-id="${id}">${avatar(u, 40)}<div class="grow"><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">${esc(u.title)} · kıdem ${tenureTxt(monthsBetween(p.hire))}</div>${p.contract ? '' : '<span class="pill p-warn" style="margin-top:6px">Sözleşme eksik</span>'}</div><div class="right"><div class="num" style="font-weight:600">${fmt0(Math.abs(d.left))}</div><div class="small muted">${d.left > 0 ? 'kalan' : d.left < 0 ? 'fazla ödendi' : 'tamam'}</div></div>${ic('chevron', 18)}</button>`;
@@ -2462,7 +2467,7 @@ function empDetail(uid, mine, ro) {
   const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0);
   const left = Math.max(0, ent - used);
   const pays = PAYS.filter((x) => x.uid === uid && x.per === NEXTP);
-  const last = PAYS.find((x) => x.uid === uid && x.kind === 'maas' && x.per === 'Ekim 2026');
+  const last = PAYS.find((x) => x.uid === uid && x.kind === 'maas' && x.per === PERIOD);
   const wk = noticeWeeks(mm);
   const hour15 = d.hourly * 1.5;
   const otPct = Math.min(100, Math.round((p.otYear / 270) * 100));
@@ -2472,7 +2477,7 @@ function empDetail(uid, mine, ro) {
   return `<div class="stack-lg">
   <div class="row">${avatar(u, 52)}<div class="grow"><h2>${esc(u.name)}</h2><div class="small muted">${esc(u.title)} · ${esc(isoTxt(p.hire))} tarihinde başladı</div><div class="row wrap" style="gap:6px;margin-top:6px"><span class="pill p-info">Kıdem ${tenureTxt(mm)}</span>${p.contract ? '<span class="pill p-ok">Sözleşme kayıtlı</span>' : '<span class="pill p-warn">Sözleşme eksik</span>'}</div></div></div>
 
-  <div class="card stack"><div class="row between wrap"><div><h3>${mine ? 'Bu ayki maaş hakkın' : 'Kasım 2026 maaşı'}</h3><p class="muted small">Ödeme günü her ayın ${p.payday}'u</p></div>${d.left <= 0 ? '<span class="pill p-ok">Tamamı ödendi</span>' : `<span class="pill p-warn">${fmt0(d.left)} kalan</span>`}</div>
+  <div class="card stack"><div class="row between wrap"><div><h3>${mine ? 'Bu ayki maaş hakkın' : NEXTP + ' maaşı'}</h3><p class="muted small">Ödeme günü her ayın ${p.payday}'u</p></div>${d.left <= 0 ? '<span class="pill p-ok">Tamamı ödendi</span>' : `<span class="pill p-warn">${fmt0(d.left)} kalan</span>`}</div>
   <div class="kpis">${kpi('Hak edilen', fmt0(d.total))}${kpi('Ödenen', fmt0(d.paid))}${kpi(d.left < 0 ? 'Fazla ödenen' : 'Kalan', fmt0(Math.abs(d.left)))}</div>
   <div class="prog" role="img" aria-label="Ödenen oran %${pct}"><i style="width:${pct}%"></i></div>
   <div><div class="logline"><span>Maaş (${p.stype === 'net' ? 'net' : 'brüt'})</span><b class="num">${fmt(p.salary)}</b></div>
@@ -2481,7 +2486,7 @@ function empDetail(uid, mine, ro) {
   ${d.ded ? `<div class="logline"><span>İzin kesintisi<span class="small muted" style="display:block">Ücretsiz izin günleri</span></span><b class="num">${fmt(-d.ded)}</b></div>` : ''}
   <div class="logline"><span><b style="font-weight:600">Toplam hak</b></span><b class="num">${fmt(d.total)}</b></div></div>
   ${pays.length ? `<div><p class="lbl">Bu ay yapılan ödemeler</p>${pays.map((x) => `<div class="logline"><span><span class="pill p-info">${PAY_KIND[x.kind]}</span> <span class="muted">${esc(x.date)}</span></span><b class="num">${fmt(x.amt)}</b></div>`).join('')}</div>` : '<p class="small muted">Bu ay henüz ödeme yapılmadı.</p>'}
-  ${last ? `<p class="small muted">Ekim maaşı ödendi: ${esc(last.date)}, ${fmt(last.amt)}</p>` : ''}
+  ${last ? `<p class="small muted">${PREVM} maaşı ödendi: ${esc(last.date)}, ${fmt(last.amt)}</p>` : ''}
   ${p.stype === 'brut' ? `<div class="callout warn">${ic('alert')}<div>Maaş brüt kayıtlı. Eline geçen net tutar bordroya göre belli olur, bu yüzden hesap yaklaşıktır.</div></div>` : ''}
   ${mine || ro ? '' : `<button class="btn" style="align-self:flex-start" data-a="payadd" data-id="${uid}">${ic('plus')} Ödeme ekle</button>`}
   <p class="small muted">Tutarlar tahmindir. Saat ücreti maaşın 225 saate bölünmesiyle bulundu. Bordro, SGK ve vergi hesabı muhasebecidedir.</p></div>
@@ -2544,7 +2549,7 @@ function reviewModal(m) {
 }
 function payModal(m) {
   const u = byId(m.uid); const d = dueOf(m.uid);
-  return sheet('Ödeme ekle', `<div class="callout">${ic('wallet')}<div><b>${esc(u.name)}</b><p style="margin-top:2px">Kasım hakkı ${fmt(d.total)}, ödenen ${fmt(d.paid)}, kalan ${fmt(d.left)}</p></div></div>
+  return sheet('Ödeme ekle', `<div class="callout">${ic('wallet')}<div><b>${esc(u.name)}</b><p style="margin-top:2px">${CURM} hakkı ${fmt(d.total)}, ödenen ${fmt(d.paid)}, kalan ${fmt(d.left)}</p></div></div>
   <div class="field"><label for="pay-kind">Ödeme türü</label><select id="pay-kind">${Object.keys(PAY_KIND).map((k) => `<option value="${k}">${PAY_KIND[k]}</option>`).join('')}</select></div>
   <div class="row"><div class="field grow"><label for="pay-amt">Tutar (₺)</label><input id="pay-amt" type="number" min="0" step="50" inputmode="decimal" value="${d.left > 0 ? Math.round(d.left) : ''}"></div><div class="field grow"><label for="pay-date">Tarih</label><input id="pay-date" type="text" value="14 Kas"></div></div>
   <div class="err" id="pay-err" role="alert"></div><button class="btn block" data-a="payok" data-id="${m.uid}">Kaydet</button><p class="small muted">Bu kayıt banka hareketi değildir. Ödemeyi yaptıktan sonra buraya işlersin.</p>`);
@@ -2584,7 +2589,7 @@ function aiModal(m) {
   return sheet('Okuma sonucu', `<dl class="kv"><dt>Çalışan</dt><dd>${esc(x.name)}</dd><dt>Görev</dt><dd>${esc(x.pos)}</dd><dt>İşe giriş</dt><dd>${esc(isoTxt(x.hire))}</dd><dt>Maaş</dt><dd class="num">${fmt(x.salary)} ${m.stype === 'net' ? 'net' : 'brüt'}</dd><dt>Haftalık saat</dt><dd>${x.hours} saat</dd><dt>Deneme</dt><dd>${x.trial} ay</dd></dl>
   ${m.stype === 'brut' ? `<div class="callout warn">${ic('alert')}<div>Brüt maaş. Net ödeme bordroya göre belli olur, hesap yaklaşık kalır.</div></div>` : ''}
   <div><b style="font-weight:600">Kais şuralara kaydedecek</b>
-  ${chk('Çalışan profili', 'Görev ve işe giriş tarihi')}${chk('Maaş', `Kasım maaş hesabı, ${fmt0(x.salary)} ${m.stype === 'net' ? 'net' : 'brüt'}`)}${chk('Mesai', `Haftalık ${x.hours} saat, yüzde 50 zamlı fazla mesai`)}${chk('İzinler', `Kıdem ${tenureTxt(mm)}, yıllık izin ${leaveDays(mm) || 'henüz yok'}${leaveDays(mm) ? ' gün' : ''}`)}${chk('Haklar ve süreler', `Deneme ${x.trial} ay, ihbar süresi ${noticeWeeks(mm)} hafta`)}</div>
+  ${chk('Çalışan profili', 'Görev ve işe giriş tarihi')}${chk('Maaş', `${CURM} maaş hesabı, ${fmt0(x.salary)} ${m.stype === 'net' ? 'net' : 'brüt'}`)}${chk('Mesai', `Haftalık ${x.hours} saat, yüzde 50 zamlı fazla mesai`)}${chk('İzinler', `Kıdem ${tenureTxt(mm)}, yıllık izin ${leaveDays(mm) || 'henüz yok'}${leaveDays(mm) ? ' gün' : ''}`)}${chk('Haklar ve süreler', `Deneme ${x.trial} ay, ihbar süresi ${noticeWeeks(mm)} hafta`)}</div>
   <div class="row"><button class="btn grow" data-a="aisave">Kaydet</button><button class="btn sec" data-a="closemodal">Vazgeç</button></div><p class="small muted">Prototipte okuma sonucu örnektir. Hukuki değerleri iş hukukçusu ya da muhasebeciyle teyit et.</p>`);
 }
 function renderModal() {
@@ -2679,7 +2684,7 @@ H.payok = (el) => {
   const g = (id) => document.getElementById(id);
   const amt = Number(g('pay-amt').value);
   if (!(amt > 0)) { g('pay-err').textContent = 'Tutarı yaz.'; return; }
-  PAYS.push({ id: 'p' + ++seq, uid: el.dataset.id, kind: g('pay-kind').value || 'maas', per: NEXTP, amt, date: (g('pay-date').value || '14 Kas').trim() });
+  PAYS.push({ id: 'p' + ++seq, uid: el.dataset.id, kind: g('pay-kind').value || 'maas', per: NEXTP, amt, date: (g('pay-date').value || (String(REF.d).padStart(2, '0') + ' ' + CURA)).trim() });
   S.modal = null; render(); toast('Ödeme kaydedildi.', 'ok');
 };
 H.lvadd = (el) => { S.modal = { type: 'lv', uid: el.dataset.id }; renderModal(); };
@@ -2731,7 +2736,7 @@ H.aiwho = (el) => { S.modal.uid = el.dataset.id; aiRead(); };
 H.aistype = (el) => { S.modal.stype = el.dataset.v; S.modal.step = 'result'; renderModal(); };
 H.aisave = () => {
   const m = S.modal; const p = PROFILES[m.uid];
-  p.contract = true; p.stype = m.stype || 'net'; p.cAt = '14 Kas 2026'; p.fname = m.fname || 'is-sozlesmesi.jpg';
+  p.contract = true; p.stype = m.stype || 'net'; p.cAt = String(REF.d).padStart(2, '0') + ' ' + CURA + ' ' + REF.y; p.fname = m.fname || 'is-sozlesmesi.jpg';
   S.modal = null; S.view = 'ekip'; S.sub.ekip = 'maas'; S.empView = m.uid; render();
   if (typeof window !== 'undefined' && window.scrollTo) window.scrollTo(0, 0);
   toast(`${byId(m.uid).name.split(' ')[0]} için sözleşme kaydedildi. Maaş, mesai, izin ve haklar güncellendi.`, 'ok');
@@ -2984,13 +2989,13 @@ function ledgerRefresh(r) {
 function csvText() {
   const n = (x) => Number(x).toFixed(2).replace('.', ',');
   const head = 'Tür;Tarih;Açıklama;Hesap;Belge;KDV %;KDV;Toplam;Kaynak';
-  return [head].concat(LEDGER.map((r) => [dirOf(r) === 'gelir' ? 'Gelir' : 'Gider', r.date + ' 2026', String(r.desc).replace(/;/g, ','), r.acc, r.doc, r.rate, n(kdv(r)), n(r.total), r.edited ? 'Düzenlendi' : r.src].join(';'))).join('\n');
+  return [head].concat(LEDGER.map((r) => [dirOf(r) === 'gelir' ? 'Gelir' : 'Gider', rDateY(r), String(r.desc).replace(/;/g, ','), r.acc, r.doc, r.rate, n(kdv(r)), n(r.total), r.edited ? 'Düzenlendi' : r.src].join(';'))).join('\n');
 }
 function kdvCard() {
-  const t = LEDGER.filter((r) => dirOf(r) === 'gelir' && lper(r) === 'Ekim');
+  const t = LEDGER.filter((r) => dirOf(r) === 'gelir' && lper(r) === PREVM);
   const hes = t.reduce((a, r) => a + kdv(r), 0);
   const ind = gp().reduce((a, r) => a + kdv(r), 0);
-  return `<div class="card stack"><div><h3>Ekim KDV hazırlık özeti</h3><p class="muted small">Tahmini veri özeti, vergi tavsiyesi değildir. Beyanı muhasebeci hazırlar ve teyit eder.</p></div>
+  return `<div class="card stack"><div><h3>${PREVM} KDV hazırlık özeti</h3><p class="muted small">Tahmini veri özeti, vergi tavsiyesi değildir. Beyanı muhasebeci hazırlar ve teyit eder.</p></div>
   <div class="kpis"><div class="kpi"><div class="l">Hesaplanan</div><div class="v num">${fmt0(hes)}</div></div><div class="kpi"><div class="l">İndirilecek</div><div class="v num">${fmt0(ind)}</div></div><div class="kpi"><div class="l">Fark</div><div class="v num">${fmt0(hes - ind)}</div></div></div>
   <p class="small muted">Hesaplanan KDV gelir tablosundaki ${t.length}, indirilecek KDV gider tablosundaki ${gp().length} satırdan hesaplandı. ${countStatus('eksik')} belgesiz işlem hesaba girmedi.</p></div>`;
 }
@@ -3013,7 +3018,7 @@ let DEBTS = [
 const daysTo = (iso) => { const a = iso.split('-').map(Number); return Math.round((Date.UTC(a[0], a[1] - 1, a[2]) - Date.UTC(REF.y, REF.m - 1, REF.d)) / 86400000); };
 function allDebts() {
   const sal = EMP_IDS.reduce((a, id) => a + Math.max(0, dueOf(id).left), 0);
-  const kd = LEDGER.filter((r) => dirOf(r) === 'gelir' && lper(r) === 'Ekim').reduce((a, r) => a + kdv(r), 0) - gp().reduce((a, r) => a + kdv(r), 0);
+  const kd = LEDGER.filter((r) => dirOf(r) === 'gelir' && lper(r) === PREVM).reduce((a, r) => a + kdv(r), 0) - gp().reduce((a, r) => a + kdv(r), 0);
   return DEBTS.map((d) => (d.auto === 'maas' ? Object.assign({}, d, { amt: sal }) : d.auto === 'kdv' ? Object.assign({}, d, { amt: Math.max(0, Math.round(kd)) }) : d)).filter((d) => d.amt > 0 || d.paid).sort((a, b) => (a.due < b.due ? -1 : 1));
 }
 const debtSoon = () => allDebts().filter((d) => !d.paid && d.on && daysTo(d.due) <= d.rem);
@@ -3122,7 +3127,7 @@ H.dfgo = () => {
   const kind = document.getElementById('df-kind').value || 'is'; const text = (document.getElementById('df-text').value || '').trim();
   const fail = (e) => { S.modal = { type: 'df', step: 'input', text, err: e }; renderModal(); };
   if (text.length < 4) return fail('Bilgileri yaz.');
-  const date = '14 Kas 2026';
+  const date = String(REF.d).padStart(2, '0') + ' ' + CURA + ' ' + REF.y;
   if (kind === 'is') {
     const d = dfParse(text);
     if (!d.name) return fail('Çalışanın adını yaz.');
@@ -3169,8 +3174,8 @@ function viewCalisanlar() {
   let body = '';
   if (cur === 'maas') {
     const tot = all.reduce((a, d) => a + d.total, 0); const paid = all.reduce((a, d) => a + d.paid, 0);
-    body = `<div class="kpis">${kpi('Kasım hakkı', fmt0(tot))}${kpi('Ödenen', fmt0(paid))}${kpi('Kalan', fmt0(tot - paid))}</div>
-    <div class="card flush"><div style="padding:16px 16px 6px"><h3>Çalışan bazında</h3><p class="muted small" style="margin-top:2px">Ekim maaşı ekstreden bulundu. Kasım hesabı mesai ve izin kesintisini içerir.</p></div>${EMP_IDS.map((id, i) => { const u = byId(id); const d = all[i]; const pct = d.total ? Math.max(0, Math.min(100, Math.round((d.paid / d.total) * 100))) : 0; return `<button class="emp go" data-a="accopen" data-id="${id}" style="grid-template-columns:auto minmax(0,1fr) auto">${avatar(u, 40)}<div class="grow"><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">Hak ${fmt0(d.total)} · ödenen ${fmt0(d.paid)}${d.ded ? ' · izin kesintisi ' + fmt0(d.ded) : ''}</div><div class="minibar" style="max-width:none"><i style="width:${pct}%;background:var(--turq)"></i></div></div><div class="right"><div class="num" style="font-weight:600">${fmt0(Math.abs(d.left))}</div><div class="small muted">${d.left > 0 ? 'kalan' : 'tamam'}</div></div></button>`; }).join('')}</div>
+    body = `<div class="kpis">${kpi(CURM + ' hakkı', fmt0(tot))}${kpi('Ödenen', fmt0(paid))}${kpi('Kalan', fmt0(tot - paid))}</div>
+    <div class="card flush"><div style="padding:16px 16px 6px"><h3>Çalışan bazında</h3><p class="muted small" style="margin-top:2px">${PREVM} maaşı ekstreden bulundu. ${CURM} hesabı mesai ve izin kesintisini içerir.</p></div>${EMP_IDS.map((id, i) => { const u = byId(id); const d = all[i]; const pct = d.total ? Math.max(0, Math.min(100, Math.round((d.paid / d.total) * 100))) : 0; return `<button class="emp go" data-a="accopen" data-id="${id}" style="grid-template-columns:auto minmax(0,1fr) auto">${avatar(u, 40)}<div class="grow"><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">Hak ${fmt0(d.total)} · ödenen ${fmt0(d.paid)}${d.ded ? ' · izin kesintisi ' + fmt0(d.ded) : ''}</div><div class="minibar" style="max-width:none"><i style="width:${pct}%;background:var(--turq)"></i></div></div><div class="right"><div class="num" style="font-weight:600">${fmt0(Math.abs(d.left))}</div><div class="small muted">${d.left > 0 ? 'kalan' : 'tamam'}</div></div></button>`; }).join('')}</div>
     <div class="card flush"><div style="padding:16px 16px 6px"><h3>Tüm ödemeler</h3></div>${PAYS.slice().reverse().map((x) => `<div class="logline" style="padding:12px 16px"><span><span class="pill p-info">${PAY_KIND[x.kind]}</span> ${esc(byId(x.uid).name)}<span class="small muted" style="display:block">${esc(x.per)} · ${esc(x.date)}</span></span><b class="num">${fmt(x.amt)}</b></div>`).join('')}</div>`;
   } else if (cur === 'soz') {
     body = `<div class="card stack aicard"><div class="row"><span class="aib">${ic('sparkle', 20)}</span><div class="grow"><h3>Kais AI ile belge hazırla</h3><p class="muted small" style="margin-top:2px">Yeni çalışanın bilgisini yaz, iş sözleşmesi taslağı hazırlasın. İzin belgesi ve yazılı uyarı da hazırlar.</p></div></div><button class="btn" style="align-self:flex-start" data-a="dfopen">${ic('plus')} Taslak hazırla</button></div>
@@ -3189,9 +3194,10 @@ function viewCalisanlar() {
    değişiklik geçmişi, dönem ayrımı
    ===================================================================== */
 S.tper = 'hepsi';
-const lper = (r) => (/Eki/.test(r.date) ? 'Ekim' : /Kas/.test(r.date) ? 'Kasım' : 'Diğer');
+const lper = (r) => (String(r.date).indexOf(PREVA) >= 0 ? PREVM : String(r.date).indexOf(CURA) >= 0 ? CURM : 'Diğer');
+const rDateY = (r) => r.date + ' ' + (String(r.date).indexOf(PREVA) >= 0 ? _PY : REF.y);
 const inPer = (r) => S.tper === 'hepsi' || lper(r) === S.tper;
-const gp = () => gl().filter((r) => lper(r) === 'Ekim');
+const gp = () => gl().filter((r) => lper(r) === PREVM);
 
 /* puantaj: mesai giriş-çıkış kayıtlarından hesaplanır */
 const WEEKS = ['02–07 Kas', '09–14 Kas'];
@@ -3214,7 +3220,7 @@ EMP_IDS.forEach((id) => {
 });
 function puantaj(uid) {
   const o = otFromLog(uid); const lim = PROFILES[uid].hours;
-  return `<div><p class="lbl">Puantaj, Kasım</p>${o.weeks.map((w) => `<div class="logline"><span>${esc(w.lab)}<span class="small muted" style="display:block">${w.days.map((h, i) => DAYN[i] + ' ' + h).join(' · ')}</span></span><span class="num"><b>${w.total} sa</b>${w.ot ? ` · <span style="color:var(--safran)">${w.ot} sa fazla</span>` : ''}</span></div>`).join('')}<p class="small muted" style="margin-top:6px">Giriş, çıkış ve mola kayıtlarından net çalışma saati. Haftalık ${lim} saati aşan kısım fazla mesai sayılır ve maaş hesabına kendiliğinden girer.</p></div>`;
+  return `<div><p class="lbl">Puantaj, ${CURM}</p>${o.weeks.map((w) => `<div class="logline"><span>${esc(w.lab)}<span class="small muted" style="display:block">${w.days.map((h, i) => DAYN[i] + ' ' + h).join(' · ')}</span></span><span class="num"><b>${w.total} sa</b>${w.ot ? ` · <span style="color:var(--safran)">${w.ot} sa fazla</span>` : ''}</span></div>`).join('')}<p class="small muted" style="margin-top:6px">Giriş, çıkış ve mola kayıtlarından net çalışma saati. Haftalık ${lim} saati aşan kısım fazla mesai sayılır ve maaş hesabına kendiliğinden girer.</p></div>`;
 }
 
 /* ekstre ile tablo uyuşması */
@@ -3232,7 +3238,7 @@ function misBanner() {
   if (!list.length) return '';
   return `<div class="callout warn">${ic('alert')}<div class="grow"><b>${list.length} satırın tutarı ekstreyle uyuşmuyor</b>${list.map((r) => { const b = mismatch(r); return `<div class="row between wrap" style="margin-top:8px"><span>${esc(r.desc)}: tabloda ${fmt(Number(r.total))}, ekstrede ${fmt(Math.abs(b.amt))}</span>${S.closed ? '' : `<button class="btn sm sec" data-a="lfix" data-id="${r.id}">Ekstre tutarına eşitle</button>`}</div>`; }).join('')}<p class="small muted" style="margin-top:8px">İndirim, kısmi ödeme ya da elle değişiklik olabilir. Doğruysa olduğu gibi bırak.</p></div></div>`;
 }
-const perChips = () => `<div class="chips">${[['hepsi', 'Tümü'], ['Ekim', 'Ekim (kapanış)'], ['Kasım', 'Kasım (devam ediyor)']].map((x) => `<button class="chip" data-a="tper" data-v="${x[0]}" aria-pressed="${S.tper === x[0]}">${x[1]}</button>`).join('')}</div>`;
+const perChips = () => `<div class="chips">${[['hepsi', 'Tümü'], [PREVM, PREVM + ' (kapanış)'], [CURM, CURM + ' (devam ediyor)']].map((x) => `<button class="chip" data-a="tper" data-v="${x[0]}" aria-pressed="${S.tper === x[0]}">${x[1]}</button>`).join('')}</div>`;
 H.tper = (el) => { S.tper = el.dataset.v; render(); };
 
 /* değişiklik geçmişi ve geri alma */
@@ -3337,7 +3343,7 @@ const r2 = (x) => Math.round(x * 100) / 100;
 function ledgerSheet(kind) {
   const rows = [['Dönem', 'Tarih', 'Açıklama', 'Hesap', 'Belge', 'KDV %', 'KDV', 'Toplam', 'Kaynak']];
   const list = LEDGER.filter((r) => dirOf(r) === kind);
-  list.forEach((r, i) => { const n = i + 2; rows.push([lper(r), r.date + ' 2026', String(r.desc), String(r.acc), String(r.doc || ''), Number(r.rate), { f: 'H' + n + '-H' + n + '/(1+F' + n + '/100)', v: r2(kdv(r)) }, { n: Number(r.total) }, r.edited ? 'Düzenlendi' : String(r.src || '')]); });
+  list.forEach((r, i) => { const n = i + 2; rows.push([lper(r), rDateY(r), String(r.desc), String(r.acc), String(r.doc || ''), Number(r.rate), { f: 'H' + n + '-H' + n + '/(1+F' + n + '/100)', v: r2(kdv(r)) }, { n: Number(r.total) }, r.edited ? 'Düzenlendi' : String(r.src || '')]); });
   const e = list.length + 1;
   rows.push(['', '', '', '', '', { b: 'Toplam' }, { bf: 'SUM(G2:G' + e + ')', v: r2(list.reduce((a, r) => a + kdv(r), 0)) }, { bf: 'SUM(H2:H' + e + ')', v: r2(list.reduce((a, r) => a + Number(r.total), 0)) }]);
   return rows;
@@ -6927,6 +6933,10 @@ if (!window.__rzTimer) { window.__rzTimer = setInterval(() => { try {
   const now = new Date(); const m = now.getHours() * 60 + now.getMinutes(); const iso = REF_ISO; window.__rzSent = window.__rzSent || {};
   RESV.filter((r) => r.date === iso && r.st === 'onay').forEach((r) => { const dt = toMin(r.time) - m; if (dt <= 30 && dt >= 0 && !window.__rzSent[r.id]) { window.__rzSent[r.id] = 1; try { new Notification('Rezervasyon yaklaşıyor', { body: r.name + ' · ' + r.n + ' kişi · ' + r.time + (dt ? ' (' + dt + ' dk sonra)' : '') }); } catch (x) {} } });
 } catch (e) {} }, 60000); }
+
+/* v63: dönem değişince "kapalı" durumunu sıfırla */
+{ const cp = H.closeperiod; H.closeperiod = function () { S.closedFor = PERIOD; return cp.apply(this, arguments); };
+  const rr = render; render = function () { if (S.closed && S.closedFor && S.closedFor !== PERIOD) S.closed = false; return rr.apply(this, arguments); }; }
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
