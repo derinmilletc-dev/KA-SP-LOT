@@ -788,6 +788,8 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .gz-s{gap:6px}
 @media(max-width:430px){.gz-s button:first-child{padding:0;width:38px;justify-content:center}.gz-s button:first-child span{display:none}}
 @media(max-width:375px){.gz-p svg{display:none}.gz-b button{padding:0 9px}.gz-s button:first-child{padding:0}}
+.xrow{display:flex;gap:8px;flex-wrap:nowrap;margin-top:4px}.xrow .btn{flex:1 1 0;min-width:0;padding:0 6px;font-size:13px;white-space:nowrap;justify-content:center;gap:0}.xrow .btn svg{display:none}.xrow .btn{min-height:44px;height:44px}
+
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -1457,7 +1459,7 @@ function paketHTML(role) {
   <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="l">Gelen</div><div class="v num">${fmt0(t.in)}</div></div><div class="kpi"><div class="l">Giden</div><div class="v num">${fmt0(t.out)}</div></div><div class="kpi"><div class="l">Belgesiz</div><div class="v num">${countStatus('belgesiz')}</div></div></div></div>
   <div class="card stack"><div><h3>Excel / CSV çıktısı</h3><p class="muted small">Noktalı virgülle ayrılmış, Türkçe Excel'de doğrudan açılır.</p></div>
   <textarea class="csv" readonly aria-label="CSV önizleme" id="csvbox">${esc(csvText())}</textarea>
-  <div class="row wrap"><button class="btn sec" data-a="copycsv">Kopyala</button>${xlsxBtn()}
+  <div class="xrow"><button class="btn sec" data-a="copycsv">Kopyala</button>${xlsxBtn()}
   ${role === 'patron' ? `<button class="btn" data-a="sendpkg" ${S.sent ? 'disabled' : ''}>${ic('send')} ${S.sent ? 'Muhasebeciye gönderildi' : 'Muhasebeciye gönder'}</button>` : `<button class="btn" data-a="closeperiod" ${!ready || S.closed ? 'disabled' : ''}>${ic('lock')} ${S.closed ? 'Dönem kapalı' : 'Dönemi kapat'}</button>`}</div>
   ${role !== 'patron' && !ready ? '<p class="small muted">Eksik belge ya da bekleyen onay varken dönem kapatılamaz.</p>' : ''}
   ${S.sent && role !== 'patron' ? `<p class="small"><span class="pill p-ok">Patron paketi gönderdi</span> ${esc(S.sent)}</p>` : ''}
@@ -2233,7 +2235,7 @@ function paketHTML(role) {
   <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="l">Gelen</div><div class="v num">${fmt0(t.in)}</div></div><div class="kpi"><div class="l">Giden</div><div class="v num">${fmt0(t.out)}</div></div><div class="kpi"><div class="l">Belgesiz</div><div class="v num">${countStatus('belgesiz')}</div></div></div></div>
   <div class="card stack"><div><h3>Excel / CSV çıktısı</h3><p class="muted small">Gider tablosundan üretilir. Noktalı virgülle ayrılmış, Türkçe Excel'de doğrudan açılır.</p></div>
   <textarea class="csv" readonly aria-label="CSV önizleme" id="csvbox">${esc(csvText())}</textarea>
-  <div class="row wrap"><button class="btn sec" data-a="copycsv">Kopyala</button>${xlsxBtn()}
+  <div class="xrow"><button class="btn sec" data-a="copycsv">Kopyala</button>${xlsxBtn()}
   ${role === 'patron' ? `<button class="btn" data-a="sendpkg" ${S.sent ? 'disabled' : ''}>${ic('send')} ${S.sent ? 'Muhasebeciye gönderildi' : 'Muhasebeciye gönder'}</button>` : `<button class="btn" data-a="closeperiod" ${!ready || S.closed ? 'disabled' : ''}>${ic('lock')} ${S.closed ? 'Dönem kapalı' : 'Dönemi kapat'}</button>`}</div>
   ${role !== 'patron' && !ready ? '<p class="small muted">Eksik belge ya da bekleyen onay varken dönem kapatılamaz.</p>' : ''}
   ${S.sent && role !== 'patron' ? `<p class="small"><span class="pill p-ok">Patron paketi gönderdi</span> ${esc(S.sent)}</p>` : ''}
