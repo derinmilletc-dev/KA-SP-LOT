@@ -3621,6 +3621,64 @@ viewSatinAlma = function () {
 };
 H.satab = (el) => { S.saTab = el.dataset.v; render(); };
 
+/* v14: akıllı Stok sayfası */
+S.stFilter = S.stFilter || 'hepsi'; S.stQ = S.stQ || '';
+const q1 = (n) => (Math.round(Number(n) * 10) / 10).toLocaleString('tr-TR');
+function stokRows() {
+  const plan = stockPlan(); const rank = { now: 0, soon: 1, ok: 2 };
+  return plan.map((p) => { const st = p.st; const crit = st.qty < st.min; return Object.assign({ crit, pi: priceInfo(st), lvl: p.status === 'now' || crit ? 'acil' : p.status === 'soon' || st.qty < st.min * 1.25 ? 'azalan' : 'yeterli' }, p); })
+    .sort((a, b) => (rank[a.status] - rank[b.status]) || ((a.left === Infinity ? 1e9 : a.left) - (b.left === Infinity ? 1e9 : b.left)) || (a.st.qty / a.st.min - b.st.qty / b.st.min));
+}
+function endTxt(p) { if (p.left === Infinity) return ''; const d = Math.max(0, Math.ceil(p.left)); return d === 0 ? 'bugün biter' : d === 1 ? 'yarın biter' : isoShort(addDays(REF_ISO, d)) + ' civarı biter'; }
+function stokRowHTML(p) {
+  const st = p.st; const tone = p.lvl === 'acil' ? ['p-bad', 'Acil'] : p.lvl === 'azalan' ? ['p-warn', 'Azalıyor'] : ['p-ok', 'Yeterli'];
+  const pct = Math.min(100, Math.round((st.qty / (st.min * 2)) * 100)); const bar = p.lvl === 'acil' ? 'var(--nar)' : p.lvl === 'azalan' ? '#D9A441' : 'var(--yesil)';
+  const pi = p.pi; const sug = p.pick && p.qty ? p.qty : 0;
+  const trend = pi.pts.length >= 2 ? `<span class="pill ${pi.flag ? 'p-bad' : pi.pct < -3 ? 'p-ok' : 'p-mute'}">fiyat ${pi.pct > 0 ? '+' : ''}${Math.round(pi.pct)}%</span>` : '';
+  return `<div class="stk2" style="border-top:1px solid var(--line)"><div class="stk" style="border-top:0"><div><div class="row wrap" style="gap:8px"><b style="font-weight:600">${esc(st.name)}</b><span class="pill ${tone[0]}">${tone[1]}</span>${p.left !== Infinity ? `<span class="small muted">~${p.left < 10 ? q1(p.left) : Math.round(p.left)} gün yeter</span>` : ''}</div>
+    <div class="small muted">${p.left !== Infinity ? esc(endTxt(p)) + ' · ' : ''}en az ${q1(st.min)} ${esc(st.unit)}${p.daily ? ' · günde ' + q1(p.daily) : ''}</div><div class="minibar"><i style="width:${pct}%;background:${bar}"></i></div></div>
+    <div class="stepper"><button data-a="stk" data-id="${st.id}" data-d="-1" aria-label="${esc(st.name)} bir azalt">−</button><b>${q1(st.qty)}</b><button data-a="stk" data-id="${st.id}" data-d="1" aria-label="${esc(st.name)} bir artır">+</button></div></div>
+  <details class="rt"><summary><span class="small">${sug ? `<b>Öneri:</b> ${sug} ${esc(st.unit)} · ${esc(p.pick.name)} · ${fmt(p.price)}` : 'Detay ve düzeltme'}</span>${trend}</summary><div class="rb">
+    ${sug ? `<div class="row wrap" style="margin-bottom:8px"><button class="btn sm" data-a="stkgo">Satın almada gör</button></div>` : ''}
+    <div class="row wrap" style="gap:10px">
+      <label class="small muted" style="flex:1;min-width:120px">Sayım (gerçek miktar)<input class="num" type="number" min="0" step="0.01" value="${st.qty}" data-ch="sqty" data-id="${st.id}" aria-label="${esc(st.name)} sayım"></label>
+      <label class="small muted" style="flex:1;min-width:120px">En az seviye<input class="num" type="number" min="0" step="0.01" value="${st.min}" data-ch="smin" data-id="${st.id}" aria-label="${esc(st.name)} en az seviye"></label>
+      <label class="small muted" style="flex:1;min-width:120px">Günlük tüketim<input class="num" type="number" min="0" step="0.01" placeholder="otomatik" value="${st.use || ''}" data-ch="suse" data-id="${st.id}" aria-label="${esc(st.name)} günlük tüketim"></label></div>
+    <p class="small muted" style="margin-top:8px">Tüketim kaynağı: ${p.src === 'elle' ? 'elle yazdığın değer' : p.src === 'satış' ? p.days + ' günlük satış ve reçeteler' : 'veri yok'}.${st.cost ? ' Birim maliyet ' + fmt(st.cost) + '.' : ''}</p>
+    ${pi.pts.length ? `<p class="lbl" style="margin-top:8px">Son alışlar</p>${pi.pts.slice(-3).reverse().map((x) => `<div class="logline"><span class="small">${esc(isoShort(x.date))} · ${esc(x.who)}</span><b class="num">${fmt(x.price)}</b></div>`).join('')}` : ''}
+    ${pi.best && pi.last && pi.best.items[st.id] < pi.last.price ? `<p class="small" style="margin-top:6px">${esc(pi.best.name)} ${fmt(pi.best.items[st.id])} fiyat veriyor.</p>` : ''}</div></details></div>`;
+}
+const viewStokV13 = viewStok;
+viewStok = function () {
+  const r = S.user && S.user.role; if (r !== 'patron' && r !== 'mudur') return viewStokV13();
+  const rows = stokRows(); const f = S.stFilter; const qq = (S.stQ || '').trim().toLowerCase();
+  const val = STOCK.reduce((a, s) => a + s.qty * (s.cost || 0), 0);
+  const acil = rows.filter((p) => p.lvl === 'acil').length; const az = rows.filter((p) => p.lvl === 'azalan').length;
+  const props = proposals(); const need = rows.filter((p) => p.pick && p.qty).length; const al = priceAlerts();
+  const vis = rows.filter((p) => (f === 'hepsi' || p.lvl === f) && (!qq || p.st.name.toLowerCase().includes(qq)));
+  const seg = [['hepsi', 'Hepsi ' + rows.length], ['acil', 'Acil ' + acil], ['azalan', 'Azalan ' + az], ['yeterli', 'Yeterli ' + (rows.length - acil - az)]];
+  return `<div class="stack-lg">
+  <div class="row between wrap"><div><h2>Stok</h2><p class="muted small" style="margin-top:4px">Ne kadar kaldı, ne zaman biter, ne alınmalı.</p></div><button class="btn" data-a="stkadd">${ic('plus')} Ürün ekle</button></div>
+  <div class="kpis">${kpi('Stok değeri', fmt0(val))}${kpi('Acil', acil)}${kpi('Sipariş gereken', need)}</div>
+  ${need ? `<div class="callout warn">${ic('alert')}<div><b>${need} ürün için sipariş gerekiyor.</b> ${props.length ? esc(props.map((o) => o.sup.name + ' ' + fmt0(o.total)).join(' · ')) : ''}<div style="margin-top:8px"><button class="btn sm" data-a="stkgo">Satın almaya git</button></div></div></div>` : `<div class="callout">${ic('check')}<div>Şu an sipariş vermen gereken ürün yok.</div></div>`}
+  ${al.length ? `<div class="callout">${ic('info')}<div><b>${al.length} üründe fiyat artışı:</b> ${esc(al.map((i) => i.st.name.split(' (')[0] + ' %' + Math.round(i.pct)).join(', '))}</div></div>` : ''}
+  <div class="row wrap" style="gap:10px"><div class="seg" role="group" aria-label="Filtre">${seg.map((x) => `<button data-a="stkf" data-v="${x[0]}" aria-pressed="${f === x[0]}">${esc(x[1])}</button>`).join('')}</div>
+    <input type="text" class="grow" style="min-width:140px" placeholder="Ürün ara" value="${esc(S.stQ || '')}" data-ch="stq" aria-label="Ürün ara"></div>
+  <div class="card flush">${vis.length ? vis.map(stokRowHTML).join('') : '<div class="empty">Bu filtrede ürün yok.</div>'}</div>
+  <p class="small muted">Sıralama aciliyete göredir. Günlük tüketim satış ve reçetelerden hesaplanır, istersen ürünün detayından elle yaz. Satış verisi yoksa kalan gün gösterilmez.</p>
+  ${stokLogCard()}${priceCard()}</div>`;
+};
+H.stkgo = () => { S.view = 'satinalma'; S.saTab = 'siparis'; render(); window.scrollTo && window.scrollTo(0, 0); };
+H.stkf = (el) => { S.stFilter = el.dataset.v; render(); };
+const _och14 = onChange;
+onChange = function (e) {
+  const el = e.target; const ch = el.dataset && el.dataset.ch;
+  if (ch === 'stq') { S.stQ = el.value; render(); return; }
+  if (ch === 'sqty') { const st = STOCK.find((x) => x.id === el.dataset.id); const v = Number(String(el.value).replace(',', '.')); if (st && v >= 0 && v !== st.qty) { const d = r3(v - st.qty); STOCKLOG.unshift({ t: isoShort(REF_ISO), name: st.name, qty: d, from: 'Sayım düzeltmesi' }); st.qty = r3(v); auditAdd({ type: 'ord', text: 'Stok sayımı: ' + st.name + ' ' + (d > 0 ? '+' : '') + d }); render(); toast('Stok düzeltildi.', 'ok'); } return; }
+  if (ch === 'smin') { const st = STOCK.find((x) => x.id === el.dataset.id); const v = Number(String(el.value).replace(',', '.')); if (st && v >= 0) { st.min = v; render(); } return; }
+  return _och14(e);
+};
+
 if (typeof window !== 'undefined') { window.__K = { SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 </script>
