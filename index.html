@@ -3078,7 +3078,7 @@ function viewSatis() {
   <div><h2>Satışlar ve maliyet</h2><p class="muted small" style="margin-top:4px">Adisyon programından aldığın satış dosyasını yükle. Gelir tablosu, stok ve ürün kârlılığı buradan beslenir.</p></div>
   <div class="kpis">${kpi('Ciro (KDV dahil)', fmt0(st.t.total))}${kpi('Maliyet', fmt0(st.t.cost))}${kpi('Brüt kâr', fmt0(st.kar))}</div>
   <div class="card stack"><div><h3>Satış dosyası yükle</h3><p class="muted small" style="margin-top:2px">Sütunlar: Tarih; Ürün; Adet; Tutar. Tutar KDV dahil satır toplamıdır. Excel'den CSV olarak kaydet.</p></div>
-  <div class="field"><label for="sale-file">Dosya (.csv)</label><input id="sale-file" type="file" accept=".csv,.txt,text/csv" data-ch="salefile"></div>
+  <div class="field"><label for="sale-file">Dosya (.csv ya da .xlsx)</label><input id="sale-file" type="file" accept=".csv,.txt,.xlsx,text/csv" data-ch="salefile"></div>
   <div class="field"><label for="sale-text">Ya da buraya yapıştır</label><textarea id="sale-text" style="min-height:110px" placeholder="Tarih;Ürün;Adet;Tutar">${esc(S.saleText)}</textarea></div>
   <div class="row wrap"><button class="btn grow" data-a="saleprev">Önizle</button><button class="btn sec" data-a="salesample">Örnek doldur</button></div>
   ${pv ? `<div class="callout ${pv.rows.length ? 'info' : 'warn'}">${ic(pv.rows.length ? 'info' : 'alert')}<div><b>${pv.rows.length} satır okundu, ${fmt0(pv.total)}</b>${pv.dup ? `<p style="margin-top:2px">${pv.dup} satır daha önce yüklenmiş, atlanacak.</p>` : ''}${pv.unk.length ? `<p style="margin-top:2px">Reçetesi olmayan ürün: ${esc(pv.unk.join(', '))}. Bunlar için maliyet hesaplanmaz, stok düşmez.</p>` : ''}${pv.errors.slice(0, 4).map((e) => `<p style="margin-top:2px">${esc(e)}</p>`).join('')}</div></div>
@@ -4033,7 +4033,7 @@ const bulkMatch = (r) => (r.code && STOCK.find((s) => s.code && String(s.code) =
 H.stkbulk = () => { S.modal = { type: 'stkbulk', text: '' }; renderModal(); };
 NEWM.stkbulk = (m) => { const p = parseBulk(m.text); const nw = p.rows.filter((r) => !bulkMatch(r)).length; const up = p.rows.length - nw;
   return sheet('Stok içe aktar', `<p class="muted small">Excel'de listeni hazırla, <b>Farklı kaydet → CSV</b> yap. Dosyayı seç ya da satırları yapıştır. Sütunlar: Ürün; Birim; Miktar; En az; Maliyet; Kategori; Yer; Barkod. Aynı adlı ürün güncellenir, yenisi eklenir.</p>
-  <div class="row wrap" style="gap:8px;margin:8px 0"><input type="file" id="bk-file" accept=".csv,.txt,text/csv,text/plain" data-ch="bulkfile" aria-label="CSV dosyası"><button class="btn sm sec" data-a="bulktpl">Şablon indir</button></div>
+  <div class="row wrap" style="gap:8px;margin:8px 0"><input type="file" id="bk-file" accept=".csv,.txt,.xlsx,text/csv,text/plain" data-ch="bulkfile" aria-label="CSV ya da Excel dosyası"><button class="btn sm sec" data-a="bulktpl">Şablon indir</button></div>
   <div class="field"><label for="bk-txt">Satırlar</label><textarea id="bk-txt" rows="6" data-ch="bulktxt" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Ürün;Birim;Miktar;En az;Maliyet;Kategori;Yer;Barkod">${esc(m.text)}</textarea></div>
   ${p.rows.length ? `<div class="callout">${ic('info')}<div>${nw} yeni ürün, ${up} güncellenecek.${p.errors.length ? ' ' + p.errors.length + ' satır okunamadı.' : ''}</div></div>${p.errors.slice(0, 3).map((e) => `<p class="small muted">${esc(e)}</p>`).join('')}<button class="btn" data-a="bulkgo">İçe aktar</button>` : '<p class="small muted">Önizleme için satır ekle.</p>'}`); };
 H.bulktpl = async () => {
@@ -5146,7 +5146,92 @@ stokSayim = function () {
   const i = h.indexOf('<div class="card stack">'); return i < 0 ? h + card : h.slice(0, i) + card + h.slice(i);
 };
 H.cntphoto = () => { AIC.mode = 'sayim'; AIC.draft = ''; AIC.err = ''; S.view = 'kaisai'; render(); };
-if (typeof window !== 'undefined') { window.__K = { aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v31: yedekleme / geri yükleme, xlsx içe aktarma */
+const BK = { list: [], busy: false, err: '', conf: null, fileSnap: '', at: '' };
+const bkCan = () => !!(sbOK() && SBS.user && SBS.biz && ID.active && ID.active.role === 'patron');
+const bkMsg = (e) => { const m = String((e && e.message) || e || ''); return /backups|schema cache|relation/i.test(m) ? 'Yedek tablosu kurulmamış. kaispilot_yedek.sql dosyasını Supabase\'de çalıştır.' : m || 'Yedekleme hatası.'; };
+const bkDay = (iso) => { try { return new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return String(iso || ''); } };
+async function bkLoad() {
+  if (!bkCan()) return; const c = sbClient();
+  const r = await c.from('backups').select('id,created_at,kind,by_name,size').eq('business_id', SBS.biz.id).order('created_at', { ascending: false }).limit(30);
+  if (r.error) throw r.error; BK.list = r.data || [];
+}
+async function bkMake(kind) {
+  const c = sbClient(); const snap = pSnap();
+  const r = await c.from('backups').insert({ business_id: SBS.biz.id, kind, by_name: (S.user && S.user.name) || '', size: snap.length, snap }); if (r.error) throw r.error;
+  await bkLoad();
+  const old = BK.list.slice(20).map((x) => x.id); if (old.length) await c.from('backups').delete().in('id', old);
+  if (old.length) BK.list = BK.list.slice(0, 20);
+}
+async function bkAuto() {
+  if (!bkCan() || BK.busy) return; BK.busy = true;
+  try { await bkLoad(); const today = new Date().toDateString(); const last = BK.list.find((x) => x.kind === 'gunluk'); if (!last || new Date(last.created_at).toDateString() !== today) { await bkMake('gunluk'); BK.at = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }); } BK.err = ''; }
+  catch (e) { BK.err = bkMsg(e); } finally { BK.busy = false; }
+}
+function bkApply(snap) {
+  const ok = pApply(snap); if (!ok) return false;
+  if (typeof pFlush === 'function') pFlush(); return true;
+}
+function bkCard() {
+  if (!bkCan()) return '';
+  const kn = { gunluk: 'Günlük', manuel: 'Elle alındı', 'geri-yukleme-oncesi': 'Geri yüklemeden önce' };
+  return `<div class="card stack"><div><h3>Yedekleme</h3><p class="muted small" style="margin-top:2px">Verin günde bir kez otomatik yedeklenir. Yanlışlıkla sildiysen ya da bozulduysa bir yedeği geri yükleyebilirsin. Son 20 yedek tutulur.</p></div>
+  ${BK.err ? `<div class="callout warn">${ic('alert')}<div>${esc(BK.err)}</div></div>` : ''}
+  ${BK.conf ? `<div class="callout warn">${ic('alert')}<div><b>Emin misin?</b><p style="margin-top:2px">Şu anki veri ${BK.conf === 'file' ? 'dosyadaki' : 'seçtiğin yedekteki'} veriyle değiştirilecek. Önce şimdiki halin ayrıca yedeklenir.</p></div></div>
+  <div class="row wrap"><button class="btn sm" data-a="bkyes">Evet, geri yükle</button><button class="btn sm sec" data-a="bkno">Vazgeç</button></div>` : ''}
+  ${BK.list.length ? `<div class="card flush">${BK.list.slice(0, 8).map((b) => `<div class="logline" style="padding:10px 14px"><span>${esc(bkDay(b.created_at))}<span class="small muted" style="display:block">${esc(kn[b.kind] || b.kind)}${b.by_name ? ' · ' + esc(b.by_name) : ''}${b.size ? ' · ' + Math.round(b.size / 1024) + ' KB' : ''}</span></span><button class="btn sm sec" data-a="bkrestore" data-id="${b.id}">Geri yükle</button></div>`).join('')}</div>` : '<p class="small muted">Henüz yedek yok.</p>'}
+  <div class="row wrap"><button class="btn sm" data-a="bkmake" ${BK.busy ? 'disabled' : ''}>Şimdi yedekle</button><button class="btn sm sec" data-a="bkexp">Bilgisayara indir</button><label class="btn sm sec" for="bk-up" style="cursor:pointer">Dosyadan yükle</label><input id="bk-up" type="file" accept=".json,application/json" data-ch="bkfile" style="position:absolute;opacity:0;width:1px;height:1px"></div></div>`;
+}
+const viewAyarlarV31 = viewAyarlar; viewAyarlar = function () { const h = viewAyarlarV31(); const c = bkCard(); const i = h.lastIndexOf('</div>'); return c && i > 0 ? h.slice(0, i) + c + h.slice(i) : h; };
+H.bkmake = async () => { BK.busy = true; BK.err = ''; render(); try { await bkMake('manuel'); toast('Yedek alındı.', 'ok'); } catch (e) { BK.err = bkMsg(e); } BK.busy = false; render(); };
+H.bkrestore = (el) => { BK.conf = String(el.dataset.id); BK.fileSnap = ''; render(); };
+H.bkno = () => { BK.conf = null; BK.fileSnap = ''; render(); };
+H.bkyes = async () => {
+  if (!BK.conf || !bkCan()) return; const id = BK.conf; BK.busy = true; BK.err = ''; render();
+  try {
+    let snap = BK.fileSnap;
+    if (id !== 'file') { const r = await sbClient().from('backups').select('snap').eq('id', id).eq('business_id', SBS.biz.id).maybeSingle(); if (r.error) throw r.error; if (!r.data) throw new Error('Yedek bulunamadı.'); snap = r.data.snap; }
+    await bkMake('geri-yukleme-oncesi');
+    if (!bkApply(snap)) throw new Error('Yedek okunamadı, veri değişmedi.');
+    BK.conf = null; BK.fileSnap = ''; toast('Yedek geri yüklendi.', 'ok');
+  } catch (e) { BK.err = bkMsg(e); BK.conf = null; }
+  BK.busy = false; render();
+};
+H.bkexp = async () => { try { await saveBlob('kaispilot-yedek-' + new Date().toISOString().slice(0, 10) + '.json', new Blob([pSnap()], { type: 'application/json' })); toast('Yedek dosyası hazır.', 'ok'); } catch (e) { toast('İndirilemedi.', 'warn'); } };
+const _och31 = onChange;
+onChange = function (e) {
+  const el = e.target; const ch = el.dataset && el.dataset.ch;
+  if (ch === 'bkfile') {
+    const f = el.files && el.files[0]; if (!f) return; const rd = new FileReader();
+    rd.onload = () => { try { const t = String(rd.result || ''); const o = JSON.parse(t); if (!o || typeof o !== 'object' || !Array.isArray(o.STOCK) && !Array.isArray(o.LEDGER)) throw new Error('x'); BK.fileSnap = t; BK.conf = 'file'; BK.err = ''; } catch (er) { BK.err = 'Bu dosya bir KaisPilot yedeği değil.'; } render(); };
+    rd.readAsText(f); try { el.value = ''; } catch (x) {} return;
+  }
+  if ((ch === 'bulkfile' || ch === 'salefile') && el.files && el.files[0] && /\.xlsx$/i.test(el.files[0].name)) {
+    const f = el.files[0];
+    xlsxToText(f).then((t) => { if (ch === 'bulkfile') { if (S.modal && S.modal.type === 'stkbulk') { S.modal.text = t; renderModal(); } } else { S.saleText = t; S.saleName = f.name; S.salePrev = previewOf(t, f.name); render(); } }, () => toast('Excel dosyası okunamadı. CSV olarak kaydetmeyi dene.', 'warn'));
+    return;
+  }
+  return _och31(e);
+};
+/* xlsx -> ';' ayraçlı metin (ilk sayfa) */
+async function xlsxToText(file) {
+  const buf = new Uint8Array(await file.arrayBuffer()); const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength); const td = new TextDecoder();
+  let e = buf.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--; if (e < 0) throw new Error('zip');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const files = {};
+  for (let i = 0; i < n; i++) { if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('zip'); const nl = dv.getUint16(p + 28, true); const name = td.decode(buf.subarray(p + 46, p + 46 + nl)); files[name] = { m: dv.getUint16(p + 10, true), cs: dv.getUint32(p + 20, true), lho: dv.getUint32(p + 42, true) }; p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true); }
+  const rd = async (name) => { const f = files[name]; if (!f) return null; const st = f.lho + 30 + dv.getUint16(f.lho + 26, true) + dv.getUint16(f.lho + 28, true); const d = buf.slice(st, st + f.cs); if (f.m === 0) return td.decode(d); if (f.m !== 8 || typeof DecompressionStream === 'undefined') throw new Error('zip'); return td.decode(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()); };
+  const un = (x) => String(x).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+  const ss = []; const sx = await rd('xl/sharedStrings.xml'); if (sx) (sx.match(/<si>[\s\S]*?<\/si>/g) || []).forEach((si) => ss.push(un((si.match(/<t[^>]*>([\s\S]*?)<\/t>/g) || []).map((t) => t.replace(/<[^>]+>/g, '')).join(''))));
+  const sheetName = Object.keys(files).filter((k) => /^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort((a, b) => parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10))[0]; if (!sheetName) throw new Error('zip');
+  const sh = await rd(sheetName); const col = (r) => { let c = 0; String(r).replace(/[A-Z]/g, (ch2) => { c = c * 26 + ch2.charCodeAt(0) - 64; return ''; }); return c - 1; };
+  const rows = []; (sh.match(/<row[\s\S]*?<\/row>/g) || []).forEach((rw) => { const cells = []; (rw.match(/<c\s[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g) || []).forEach((cx) => { const ref = (cx.match(/\sr="([A-Z]+)\d+"/) || [])[1]; const t = (cx.match(/\st="(\w+)"/) || [])[1]; const v = (cx.match(/<v>([\s\S]*?)<\/v>/) || [])[1]; const is = (cx.match(/<is>[\s\S]*?<t[^>]*>([\s\S]*?)<\/t>/) || [])[1]; let val = ''; if (t === 's' && v != null) val = ss[+v] || ''; else if (t === 'inlineStr' || is != null) val = un(is || ''); else if (v != null) val = t === 'str' ? un(v) : v; if (ref) cells[col(ref)] = { v: val, num: !t || t === 'n' }; }); rows.push(cells); });
+  const hdr = (rows[0] || []).map((c) => (c ? String(c.v).toLocaleLowerCase('tr-TR') : ''));
+  const lines = rows.map((cells, ri) => { const out = []; for (let i = 0; i < cells.length; i++) { const c = cells[i]; let v = c ? String(c.v) : ''; if (c && c.num && v !== '') { const x = Number(v); if (ri > 0 && /tarih|date/.test(hdr[i] || '') && x > 30000 && x < 80000) v = new Date(Math.round((x - 25569) * 86400000)).toISOString().slice(0, 10); else v = v.replace('.', ','); } out.push(v.replace(/[;\r\n]+/g, ' ').trim()); } return out.join(';'); }).filter((l) => l.replace(/;/g, '').trim());
+  return lines.join('\n');
+}
+const _bkSb31 = sbLoadBiz; sbLoadBiz = async function () { await _bkSb31(); if (bkCan()) setTimeout(() => { bkAuto().then(() => { if (typeof render === 'function') render(); }); }, 4000); };
+if (typeof setInterval === 'function' && typeof window !== 'undefined' && !window.__noPosTimer) setInterval(() => { bkAuto(); }, 3 * 3600 * 1000);
+if (typeof window !== 'undefined') { window.__K = { BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
