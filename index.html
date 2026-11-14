@@ -4268,7 +4268,110 @@ function wipeData() {
   applyNames();
 }
 
-if (typeof window !== 'undefined') { window.__K = { wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v20: veri bölümleri (stok / ekip / muh / maas_*), rol bazlı erişim, dinamik çalışan yeri */
+const SEATS = []; P_ARR.push(['SEATS', () => SEATS]);
+const SEAT_COLORS = ['#0E7C86', '#9A4DB0', '#B07A12', '#3B6FB6', '#A33E5B', '#4C8A3F', '#7A5C3A', '#2F6F8F'];
+function addSeatLocal(id, name, title) {
+  if (byId(id)) return byId(id);
+  const u = { id, name, role: 'calisan', title: title || 'Çalışan', email: id + '@isletme.example', color: SEAT_COLORS[EMP_IDS.length % SEAT_COLORS.length] };
+  USERS.push(u); EMP_IDS.push(id);
+  const p = PROFILES[id] = { hire: REF_ISO, salary: 0, stype: 'net', hours: 45, trial: 2, payday: 30, contract: false, cAt: '' };
+  ATT[id] = { state: 'none', inAt: null, breakMin: 0, late: 0, log: [] };
+  EMPDATA[id] = { late: 0, over: 0, miss: 0, task: 100, prot: '', itiraz: null };
+  HOURS[id] = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]];
+  Object.defineProperty(p, 'otMonth', { get: () => otFromLog(id).hours, enumerable: true, configurable: true });
+  Object.defineProperty(p, 'otYear', { get: () => otFromLog(id).hours, enumerable: true, configurable: true });
+  return u;
+}
+function ensureSeats(list) { (list || []).forEach((x) => { if (x && x.id && !byId(x.id)) addSeatLocal(x.id, x.name || 'Çalışan', x.title); }); }
+const pApplyV18 = pApply; pApply = function (s) { try { const o = JSON.parse(s); if (o && Array.isArray(o.SEATS)) ensureSeats(o.SEATS); } catch (e) {} return pApplyV18(s); };
+H.seatadd = () => {
+  if (!ID.active || ID.active.role !== 'patron') return;
+  let n = 8; while (byId('u' + n)) n++; const id = 'u' + n; const nm = 'Çalışan ' + (EMP_IDS.length + 1);
+  addSeatLocal(id, nm, 'Çalışan'); SEATS.push({ id, name: nm, title: 'Çalışan' }); NAMES[id] = { name: nm, title: 'Çalışan' }; render(); toast('Yeni çalışan yeri eklendi. Davet edebilirsin.', 'ok');
+};
+const teamCardV18 = teamCard;
+teamCard = function () { const h = teamCardV18(); return h.includes('data-a="teamref">Yenile</button></div>') && ID.active && ID.active.role === 'patron' ? h.replace(/<\/div>$/, `<div class="row wrap"><button class="btn sm sec" data-a="seatadd">Yeni çalışan yeri ekle</button></div></div>`) : h; };
+/* bölümler */
+const P_SCOPE = {};
+['STOCK', 'STOCKLOG', 'RECV', 'SALES', 'SALEIMP', 'RECIPES', 'SUPPLIERS', 'ORDERS', 'RFQS', 'LOTS', 'WASTE', 'COUNTLOG'].forEach((k) => { P_SCOPE[k] = 'stok'; });
+['ATT', 'EMPDATA', 'HOURS', 'LEAVES', 'LVREQ', 'MSGS', 'CLOCK', 'NAMES', 'SETTINGS', 'RECEIPTS', 'SEATS'].forEach((k) => { P_SCOPE[k] = 'ekip'; });
+['LEDGER', 'PAYS', 'DEBTS', 'DRAFTS', 'ROWS', 'EDOC', 'NOTES', 'AUDIT', 'MAIL'].forEach((k) => { P_SCOPE[k] = 'muh'; });
+const SAL_F = ['salary', 'stype', 'payday'];
+function splitSnap(s) {
+  const o = JSON.parse(s); const out = { stok: {}, ekip: {}, muh: {} };
+  Object.keys(o).forEach((k) => { if (['AUTH', 'seq', 'PROFILES', 'ROLES'].includes(k)) return; out[P_SCOPE[k] || 'muh'][k] = o[k]; });
+  out.ekip.seq = o.seq; out.ekip.ROLES = o.ROLES; out.ekip.PROFILES = {};
+  Object.keys(o.PROFILES || {}).forEach((id) => { const p = o.PROFILES[id]; const pub = {}; const sal = {}; Object.keys(p).forEach((f) => { (SAL_F.includes(f) ? sal : pub)[f] = p[f]; }); out.ekip.PROFILES[id] = pub; out['maas_' + id] = { PROFILES: { [id]: sal } }; });
+  return out;
+}
+function mergeP(list) {
+  const m = {}; list.forEach((p) => Object.keys(p).forEach((k) => { if (k === 'PROFILES') { m.PROFILES = m.PROFILES || {}; Object.keys(p.PROFILES).forEach((id) => { m.PROFILES[id] = Object.assign(m.PROFILES[id] || {}, p.PROFILES[id]); }); } else m[k] = p[k]; })); return JSON.stringify(m);
+}
+const roleOf = () => ID.active && ID.active.role; const uidOf = () => ID.active && ID.active.app_uid;
+function canR(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return r === 'muhasebeci' || (r === 'calisan' && sc === 'maas_' + uidOf()); if (r === 'mudur') return sc === 'stok' || sc === 'ekip'; if (r === 'muhasebeci') return sc === 'muh' || sc === 'ekip'; if (r === 'calisan') return sc === 'stok' || sc === 'ekip'; return false; }
+function canW(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return false; return canR(sc); }
+function hideUnreadable() {
+  const keys = P_ARR.map((x) => x[0]);
+  ['stok', 'muh'].forEach((sc) => { if (canR(sc)) return; keys.forEach((k) => { if ((P_SCOPE[k] || 'muh') === sc) { const a = P_ARR.find((x) => x[0] === k)[1](); a.length = 0; } }); if (sc === 'stok') Object.keys(RECIPES).forEach((k) => { delete RECIPES[k]; }); else { Object.keys(NOTES).forEach((k) => { delete NOTES[k]; }); Object.keys(EDOC).forEach((k) => { EDOC[k] = ''; }); EDOC.unvan = BIZ; } });
+  EMP_IDS.forEach((id) => { if (!canR('maas_' + id)) PROFILES[id].salary = 0; });
+}
+CL.vers = {}; CL.sent = {};
+const isDup = (e) => /duplicate|23505/i.test(String((e && e.message) || '') + String((e && e.code) || ''));
+cloudConflict = async function (sc) {
+  const c = sbClient(); const r = await c.from('app_state').select('scope,state,version').eq('business_id', SBS.biz.id).eq('scope', sc).limit(1);
+  if (r.error || !r.data || !r.data[0]) throw (r.error || new Error('Bulut kaydı okunamadı.'));
+  CL.vers[sc] = r.data[0].version; const prev = PS.remote ? [JSON.parse(PS.remote)] : []; PS.remote = mergeP(prev.concat([JSON.parse(r.data[0].state)])); PS.state = 'saved';
+  toast('Başka cihazda değişiklik olmuş, güncellendi. Son işlemini kontrol et.', 'warn'); setTimeout(() => { render(); }, 60);
+};
+cloudSet = async function (d) {
+  const c = sbClient(); const bid = SBS.biz.id; const sp = splitSnap(d.s);
+  for (const sc of Object.keys(sp)) {
+    if (!canW(sc)) continue; const str = JSON.stringify(sp[sc]); if (CL.sent[sc] === str) continue; const v = CL.vers[sc] || 0;
+    if (v === 0 && roleOf() !== 'patron') continue;
+    if (v === 0) { const i = await c.from('app_state').insert({ business_id: bid, scope: sc, state: str, version: 1, updated_by: SBS.user.id }); if (i.error) { if (isDup(i.error)) { await cloudConflict(sc); continue; } throw i.error; } CL.vers[sc] = 1; CL.sent[sc] = str; continue; }
+    const u = await c.from('app_state').update({ state: str, version: v + 1, updated_at: new Date().toISOString(), updated_by: SBS.user.id }).eq('business_id', bid).eq('scope', sc).eq('version', v).select('version');
+    if (u.error) throw u.error; if (!u.data || !u.data.length) { await cloudConflict(sc); continue; }
+    CL.vers[sc] = v + 1; CL.sent[sc] = str;
+  }
+  CL.at = clTime();
+};
+cloudPoll = async function () {
+  if (!CL.on || PS.busy || CL.busy || !SBS.biz) return; CL.busy = true;
+  try {
+    const c = sbClient(); const bid = SBS.biz.id; const v = await c.from('app_state').select('scope,version').eq('business_id', bid); if (v.error || !v.data) { CL.busy = false; return; }
+    const ch = v.data.filter((x) => x.scope !== 'all' && x.version > (CL.vers[x.scope] || 0));
+    if (ch.length) {
+      const res = await Promise.all(ch.map((x) => c.from('app_state').select('scope,state,version').eq('business_id', bid).eq('scope', x.scope).limit(1))); const pl = PS.remote ? [JSON.parse(PS.remote)] : []; let any = false;
+      res.forEach((r) => { const row = r.data && r.data[0]; if (row) { CL.vers[row.scope] = row.version; pl.push(JSON.parse(row.state)); any = true; } });
+      if (any) { CL.at = clTime(); PS.remote = mergeP(pl); render(); }
+    }
+  } catch (e) {} CL.busy = false;
+};
+cloudAttach = async function () {
+  const c = sbClient(); if (!c || !SBS.biz || CL.on) return;
+  const r = await c.from('app_state').select('scope,state,version').eq('business_id', SBS.biz.id);
+  if (r.error) { CL.err = /scope|app_state/.test(r.error.message || '') ? 'Bulut tablosu güncel değil. kaispilot_roller.sql dosyasını Supabase\'de çalıştır.' : sbMsg(r.error); return; }
+  CL.err = ''; const rows = r.data || []; const legacy = rows.find((x) => x.scope === 'all'); const scoped = rows.filter((x) => x.scope !== 'all'); const bid = SBS.biz.id;
+  if (!PS.localDb) PS.localDb = PS.db; PS.cloudOn = true; CL.on = true; CL.vers = {}; CL.sent = {};
+  PS.db = { doc: () => ({ set: cloudSet, onSnapshot() {} }) }; PS.canWrite = true; PS.loaded = true;
+  if (legacy && roleOf() === 'patron') pApply(legacy.state);
+  scoped.forEach((x) => { pApply(x.state); CL.vers[x.scope] = x.version; });
+  if (legacy && roleOf() === 'patron') {
+    const sp = splitSnap(pSnap());
+    for (const sc of Object.keys(sp)) { if (CL.vers[sc]) continue; const str = JSON.stringify(sp[sc]); const i = await c.from('app_state').insert({ business_id: bid, scope: sc, state: str, version: 1, updated_by: SBS.user.id }); if (i.error && !isDup(i.error)) throw i.error; if (!i.error) { CL.vers[sc] = 1; CL.sent[sc] = str; } }
+    await c.from('app_state').delete().eq('business_id', bid).eq('scope', 'all'); toast('Veriler bölümlere ayrıldı.', 'ok');
+  }
+  hideUnreadable();
+  if (!scoped.length && !legacy && roleOf() !== 'patron') toast('İşveren verileri henüz hazırlamamış. Biraz sonra tekrar dene.', 'warn');
+  const sp0 = splitSnap(pSnap()); Object.keys(sp0).forEach((sc) => { if (CL.vers[sc] && !CL.sent[sc]) CL.sent[sc] = JSON.stringify(sp0[sc]); });
+  PS.last = pSnap(); CL.at = clTime(); PS.state = 'saved';
+  if (!scoped.length && !legacy && roleOf() === 'patron') { PS.last = ''; PS.state = 'saving'; pSched(); }
+  clearInterval(CL.timer); CL.timer = setInterval(cloudPoll, 8000);
+};
+cloudOff = function () { clearInterval(CL.timer); CL.on = false; CL.vers = {}; CL.sent = {}; PS.cloudOn = false; PS.db = PS.localDb || null; PS.state = 'local'; };
+
+if (typeof window !== 'undefined') { window.__K = { splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
