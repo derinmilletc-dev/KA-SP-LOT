@@ -374,7 +374,7 @@ const ic = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0
 const mark = (s = 28) => `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)"/><circle cx="16" cy="16" r="3.2" fill="currentColor" stroke="none"/></svg>`;
 
 /* ---------- veri ---------- */
-const BIZ = 'Çınar Kafe & Fırın';
+let BIZ = 'Çınar Kafe & Fırın';
 const PERIOD = 'Ekim 2026';
 const USERS = [
   { id: 'u1', name: 'Kemal Çınar', role: 'patron', title: 'Patron', email: 'kemal@cinarkafe.example', color: '#0D56A6' },
@@ -4120,17 +4120,139 @@ function cloudCard() {
   <div class="row wrap"><button class="btn sm sec" data-a="cloudsync">${CL.on ? 'Şimdi eşitle' : 'Tekrar dene'}</button></div></div>`;
 }
 const sbCardV16 = sbCard; sbCard = function () { return sbCardV16() + cloudCard(); };
-const loginHTMLV16 = loginHTML;
+/* v18: gerçek hesaplar, işletme üyeliği, davet kodu, üçlü giriş */
+const NAMES = {}; P_OBJ.push(['NAMES', () => NAMES]);
+const ID = { mems: [], active: null, team: null, teamBusy: false, pref: null, busy: false };
+function applyNames() { Object.keys(NAMES).forEach((uid) => { const u = byId(uid); if (u && NAMES[uid]) { if (NAMES[uid].name) u.name = NAMES[uid].name; if (NAMES[uid].title) u.title = NAMES[uid].title; } }); }
+const pApplyV17 = pApply; pApply = function (s) { const ok = pApplyV17(s); if (ok) applyNames(); return ok; };
+const idMsg = (e) => { const m = String((e && e.message) || e || ''); return /relation .*(members|invites)|claim_invite.*(exist|find)|schema cache/i.test(m) ? 'Giriş tabloları kurulmamış. kaispilot_giris.sql dosyasını Supabase\'de çalıştır.' : /invalid_code/.test(m) ? 'Davet kodu geçersiz ya da süresi dolmuş.' : /already_member/.test(m) ? 'Bu hesap zaten bu işletmede.' : /seat_taken/.test(m) ? 'Bu davetin yeri daha önce doldurulmuş. İşverenden yeni kod iste.' : /duplicate key/.test(m) ? 'Bu kayıt zaten var.' : sbMsg(e); };
+const canSup = () => !ID.active || ['patron', 'mudur'].includes(ID.active.role);
+sbLoadBiz = async function () {
+  const c = sbClient(); if (!c || !SBS.user) return;
+  const r = await c.from('members').select('business_id,role,app_uid,display_name,businesses(id,name,owner_id)').eq('user_id', SBS.user.id); if (r.error) throw r.error;
+  ID.mems = (r.data || []).filter((m) => m.businesses); ID.active = null; SBS.biz = null;
+  const pick = ID.mems.find((m) => m.business_id === ID.pref) || (ID.mems.length === 1 ? ID.mems[0] : null);
+  if (pick) { ID.active = pick; SBS.biz = pick.businesses; if (canSup()) await sbSyncSups(); }
+};
+const sbPullV17 = sbPull; sbPull = async function () { return canSup() ? sbPullV17() : false; };
+async function idEnter() {
+  if (!SBS.user || !ID.active) { render(); return; }
+  await cloudTry(); BIZ = ID.active.businesses.name; applyNames();
+  const u = byId(ID.active.app_uid); if (!u) { S.loginErr = 'Bu hesabın yeri bulunamadı. İşverenle konuş.'; render(); return; }
+  if (ID.active.display_name && !NAMES[u.id]) u.name = ID.active.display_name;
+  u.role = ID.active.role; ID.team = null; S.demoMode = false; loginAs(u);
+}
+const _sbin18 = H.sbin; H.sbin = async () => { await _sbin18(); if (ID.active && (!S.user || S.demoMode)) await idEnter(); };
+const _sbup18 = H.sbup; H.sbup = async () => { await _sbup18(); if (ID.active && (!S.user || S.demoMode)) await idEnter(); };
+const sbBootV17 = sbBoot; sbBoot = async function () { await sbBootV17(); await idEnter(); };
+async function idAuth(kind, mode) {
+  const g = (id) => ((document.getElementById(id) || {}).value || '').trim(); const em = g('id-em'); const pw = (document.getElementById('id-pw') || {}).value || ''; const code = g('id-code').toUpperCase(); const bn = g('id-biz'); const nm = g('id-name');
+  const fail = (t) => { S.loginErr = t; const e = document.getElementById('id-err'); if (e) e.textContent = t; ID.busy = false; };
+  if (!em || pw.length < 8) return fail('E-posta ve en az 8 karakterlik şifre yaz.');
+  if (kind === 'emp' && mode === 'new' && !code) return fail('Davet kodunu yaz.');
+  if (kind === 'own' && mode === 'new' && !bn) return fail('İşletme adını yaz.');
+  const c = sbClient(); if (!c) return fail('Bulut bağlantısı kullanılamıyor.'); ID.busy = true; S.loginErr = '';
+  try {
+    let r;
+    if (mode === 'new') { r = await c.auth.signUp({ email: em, password: pw }); if (r.error && /already registered/i.test(r.error.message || '')) r = await c.auth.signInWithPassword({ email: em, password: pw }); }
+    else r = await c.auth.signInWithPassword({ email: em, password: pw });
+    if (r.error) throw r.error;
+    if (!r.data.session) return fail('Hesap açıldı. E-postana gelen onay bağlantısına tıkla, sonra aynı bilgilerle tekrar dene.');
+    SBS.user = r.data.session.user; await sbLoadBiz();
+    if (code) { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; await sbLoadBiz(); }
+    if (!ID.mems.length) {
+      if (kind === 'emp') return fail('Bu hesaba bağlı işletme yok. İşvereninden davet kodu iste.');
+      if (!bn) return fail('Bu hesapta işletme yok. İşletme adını yazıp İşletmemi oluştur\'a bas.');
+      const i = await c.from('businesses').insert({ name: bn, owner_id: SBS.user.id }); if (i.error) throw i.error;
+      NAMES.u1 = { name: nm || 'İşveren', title: 'Patron' }; applyNames(); await sbLoadBiz();
+    }
+    ID.busy = false; if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter();
+  } catch (e) { fail(idMsg(e)); }
+}
+H.lgtab = (el) => { S.lgTab = el.dataset.v; render(); };
+H.idin = () => { idAuth(S.lgTab || 'own', 'in'); };
+H.idnew = () => { idAuth(S.lgTab || 'own', 'new'); };
+H.idpick = async (el) => { ID.pref = el.dataset.id; await sbLoadBiz(); await idEnter(); };
+H.idout = async () => { await idSignOut(); };
+async function idSignOut() {
+  try { clearTimeout(PS.timer); if (CL.on) await pFlush(); } catch (e) {}
+  cloudOff(); try { await sbClient().auth.signOut(); } catch (e) {}
+  SBS.user = null; SBS.biz = null; SBS.sups = []; ID.mems = []; ID.active = null; ID.team = null; ID.pref = null; S.user = null; S.modal = null;
+  if (typeof location !== 'undefined' && location.reload && !global_noreload()) location.reload(); else render();
+}
+const global_noreload = () => typeof window !== 'undefined' && window.__noReload === true;
+const _logout18 = H.logout; H.logout = () => { if (ID.active) { idSignOut(); return; } _logout18(); };
+const sbCardV17 = sbCard; sbCard = function () { const h = sbCardV17(); return ID.active ? h.replace('<button class="btn sm sec" data-a="sbout">Bağlantıyı kes</button>', '') : h; };
+/* giriş ekranı */
+const loginHTMLV17 = loginHTML;
 loginHTML = function () {
-  const h = loginHTMLV16(); if (!sbOK()) return h;
-  const box = SBS.user ? `<div class="stack"><p class="lbl">Bulut</p><p class="small">${CL.on ? 'Bu cihaz ortak veriye bağlı.' : 'Bulut hesabı bağlı, veri yükleniyor…'}</p>${CL.err ? `<p class="small" style="color:var(--bad)">${esc(CL.err)}</p>` : ''}</div>`
-    : `<details class="stack"><summary class="small" style="cursor:pointer">Bu cihazı ortak veriye bağla</summary><p class="small muted" style="margin:8px 0">Tüm cihazlarda aynı bulut hesabıyla bağlan. Bağlanınca stok, ekip ve diğer veriler ortak olur. Bu hesap yukarıdaki girişten ayrıdır.</p>
-    <div class="field"><label for="sb-em">Bulut e-postası</label><input type="text" id="sb-em" inputmode="email" autocomplete="username"></div><div class="field"><label for="sb-pw">Bulut şifresi</label><input type="password" id="sb-pw" autocomplete="current-password"></div>
-    <div class="err" id="sb-err" role="alert">${esc(SBS.err)}</div><div class="row wrap"><button type="button" class="btn sm" data-a="sbin">Bağlan</button><button type="button" class="btn sm sec" data-a="sbup">Hesap oluştur</button></div></details>`;
-  const i = h.lastIndexOf('</div></section>'); return i < 0 ? h : h.slice(0, i) + box + h.slice(i);
+  const h = loginHTMLV17(); if (!sbOK()) return h; const tab = S.lgTab || 'own';
+  const demo = USERS.filter((u) => ['u1', 'u2', 'u3', 'u4'].includes(u.id));
+  const tabs = `<div class="seg" role="group" aria-label="Giriş türü">${[['own', 'İşveren'], ['emp', 'Çalışan'], ['sup', 'Tedarikçi']].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[1]}</button>`).join('')}</div>`;
+  const cred = `<div class="field"><label for="id-em">E-posta</label><input id="id-em" type="email" autocomplete="username" placeholder="ad@sirket.com"></div><div class="field"><label for="id-pw">Şifre (en az 8 karakter)</label><input id="id-pw" type="password" autocomplete="current-password"></div>`;
+  const err = `<div class="err" id="id-err" role="alert">${esc(S.loginErr)}</div>`;
+  let inner;
+  if (SBS.user && ID.mems.length > 1 && !ID.active) inner = `<div class="stack"><p class="lbl">Hangi işletmeye girmek istiyorsun?</p>${ID.mems.map((m) => `<button type="button" class="btn sec block" data-a="idpick" data-id="${m.business_id}">${esc(m.businesses.name)} · ${esc(ROLE_LABEL[m.role])}</button>`).join('')}<button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div>`;
+  else if (tab === 'sup') inner = `<div class="stack"><p class="muted">Tedarikçiysen teklif ve siparişlerini kendi panelinden yönetirsin. İşletme seni e-postanla davet eder.</p><a class="btn block" href="/tedarikci">Tedarikçi paneline git</a></div>`;
+  else if (tab === 'emp') inner = `<div class="stack">${cred}${err}<button type="button" class="btn block" data-a="idin">Giriş yap</button>
+    <details class="stack"><summary class="small" style="cursor:pointer">İlk kez mi giriyorsun? Davet kodum var</summary><p class="small muted" style="margin:8px 0">İşvereninin verdiği kodu yaz. Yukarıya e-postanı ve kendi belirlediğin şifreni yaz.</p><div class="field"><label for="id-code">Davet kodu</label><input id="id-code" type="text" autocapitalize="characters" placeholder="Örn. K7M2QX" style="text-transform:uppercase"></div><button type="button" class="btn sec block" data-a="idnew">Hesap oluştur ve katıl</button></details></div>`;
+  else inner = `<div class="stack">${cred}${err}<button type="button" class="btn block" data-a="idin">Giriş yap</button>
+    <details class="stack"><summary class="small" style="cursor:pointer">İlk kez mi? İşletmeni oluştur</summary><p class="small muted" style="margin:8px 0">Yukarıya e-postanı ve şifreni yaz, aşağıya işletmeni. Yeni işletme örnek verilerle başlar.</p><div class="field"><label for="id-biz">İşletme adı</label><input id="id-biz" type="text"></div><div class="field"><label for="id-name">Adın soyadın</label><input id="id-name" type="text" autocomplete="name"></div><button type="button" class="btn sec block" data-a="idnew">İşletmemi oluştur</button></details></div>`;
+  const note = SBS.user && !ID.active && ID.mems.length === 0 ? `<div class="callout warn">${ic('alert')}<div>${esc(SBS.user.email || 'Bu hesap')} giriş yapmış ama bir işletmeye bağlı değil. <button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div></div>` : '';
+  const demoBox = AUTH.demo === false ? '' : `<details class="stack"><summary class="small muted" style="cursor:pointer">Demo ile dene (örnek veri, sadece bu cihazda)</summary><div class="demo" style="margin-top:8px">${demo.map((u) => `<button type="button" data-a="demo" data-id="${u.id}"><b>${esc(ROLE_LABEL[u.role])}</b><span>${esc(u.name)}</span></button>`).join('')}</div></details>`;
+  const sec = `<section class="login-form"><div class="inner"><div><h1 style="font-size:28px">Giriş yap</h1><p class="muted" style="margin-top:6px">Rolünü seç, hesabınla gir.</p></div>${tabs}${note}${inner}${demoBox}</div></section>`;
+  return h.replace(/<section class="login-form">[\s\S]*?<\/section>/, sec);
+};
+/* demo girişi bulutu açmaz */
+const _demo18 = H.demo; H.demo = (el) => { S.demoMode = true; _demo18(el); };
+/* ekip: hesap bağlantıları */
+async function teamLoad() {
+  const c = sbClient(); if (!c || !ID.active || ID.teamBusy) return; ID.teamBusy = true; const b = ID.active.business_id;
+  try { const m = await c.from('members').select('id,user_id,role,app_uid,display_name,email').eq('business_id', b); const i = await c.from('invites').select('id,code,app_uid,expires_at,used_at').eq('business_id', b);
+    ID.team = { members: m.data || [], invites: (i.data || []).filter((x) => !x.used_at && new Date(x.expires_at) > new Date()), err: m.error ? idMsg(m.error) : '' };
+  } catch (e) { ID.team = { members: [], invites: [], err: idMsg(e) }; }
+  ID.teamBusy = false;
+}
+function teamCard() {
+  if (!ID.active || ID.active.role !== 'patron') return '';
+  if (!ID.team) { if (!ID.teamBusy) teamLoad().then(() => render()); return `<div class="card"><p class="small muted">Hesap bağlantıları yükleniyor…</p></div>`; }
+  const rows = USERS.filter((u) => u.id !== 'u1').map((u) => {
+    const m = ID.team.members.find((x) => x.app_uid === u.id); const inv = ID.team.invites.find((x) => x.app_uid === u.id);
+    const right = m ? `<span class="pill p-ok">Bağlı</span><button class="btn sm sec" data-a="memrm" data-id="${m.id}">${S.rmArm === m.id ? 'Emin misin?' : 'Çıkar'}</button>`
+      : inv ? `<span class="pill p-warn">Kod ${esc(inv.code)}</span><button class="btn sm sec" data-a="invshow" data-id="${u.id}">Göster</button><button class="btn sm sec" data-a="invrm" data-id="${inv.id}">İptal</button>`
+      : `<button class="btn sm" data-a="invnew" data-id="${u.id}">Davet et</button>`;
+    return `<div class="logline"><span>${esc(u.name)}<span class="small muted" style="display:block">${esc(ROLE_LABEL[u.role])}${u.title && u.role === 'calisan' ? ' · ' + esc(u.title) : ''}${m && m.email ? ' · ' + esc(m.email) : ''}</span></span><span class="row" style="gap:6px">${right}</span></div>`;
+  }).join('');
+  return `<div class="card stack"><div class="row between wrap"><div><h3>Hesap bağlantıları</h3><p class="muted small" style="margin-top:2px">Kişiyi davet et, kodu ona gönder. Kod 7 gün geçerli ve tek kullanımlık.</p></div><button class="btn sm sec" data-a="teamref">Yenile</button></div>${ID.team.err ? `<div class="callout warn">${ic('alert')}<div>${esc(ID.team.err)}</div></div>` : ''}${rows}</div>`;
+}
+const viewEkipV17 = viewEkip; viewEkip = function () { const h = viewEkipV17(); return S.sub.ekip === 'bugun' ? h + teamCard() : h; };
+H.teamref = async () => { ID.team = null; ID.teamBusy = false; await teamLoad(); render(); };
+H.invnew = (el) => { const u = byId(el.dataset.id); S.modal = { type: 'invnew', uid: u.id }; renderModal(); };
+NEWM.invnew = (m) => { const u = byId(m.uid); return sheet('Davet et', `<p class="muted small">${esc(ROLE_LABEL[u.role])} olarak katılacak. Adını ve görevini yaz.</p><div class="field"><label for="iv-name">Ad soyad</label><input type="text" id="iv-name" value="${esc(u.name)}"></div><div class="field"><label for="iv-title">Görev</label><input type="text" id="iv-title" value="${esc(u.title || '')}"></div><div class="err" id="iv-err" role="alert"></div><button class="btn block" data-a="invmake" data-id="${u.id}">Kod üret</button>`); };
+const mkCode = () => { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; const b = new Uint8Array(6); try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 6; i++) b[i] = Math.floor(Math.random() * 256); } for (let i = 0; i < 6; i++) s += A[b[i] % A.length]; return s; };
+H.invmake = async (el) => {
+  const u = byId(el.dataset.id); const name = (document.getElementById('iv-name').value || '').trim(); const title = (document.getElementById('iv-title').value || '').trim();
+  const err = (t) => { const e = document.getElementById('iv-err'); if (e) e.textContent = t; }; if (!name) return err('Adı yaz.');
+  const c = sbClient(); if (!c || !ID.active) return err('Bağlantı yok.');
+  try {
+    await c.from('invites').delete().eq('business_id', ID.active.business_id).eq('app_uid', u.id).is('used_at', null);
+    const code = mkCode(); const i = await c.from('invites').insert({ business_id: ID.active.business_id, code, role: u.role, app_uid: u.id, name }); if (i.error) throw i.error;
+    NAMES[u.id] = { name, title: title || u.title }; applyNames(); ID.team = null; ID.teamBusy = false; await teamLoad();
+    S.modal = { type: 'invcode', uid: u.id, code }; render(); renderModal();
+  } catch (e) { err(idMsg(e)); }
+};
+H.invshow = (el) => { const inv = ID.team && ID.team.invites.find((x) => x.app_uid === el.dataset.id); if (!inv) return; S.modal = { type: 'invcode', uid: el.dataset.id, code: inv.code }; renderModal(); };
+const invText = (code) => BIZ + ' sana KaisPilot daveti gönderdi.\nAdres: ' + (typeof location !== 'undefined' && location.origin ? location.origin : '') + '\nGiriş ekranında Çalışan sekmesini aç, "Davet kodum var" kısmına şu kodu yaz: ' + code + '\n(Kod 7 gün geçerli.)';
+NEWM.invcode = (m) => { const u = byId(m.uid); return sheet('Davet kodu hazır', `<p class="muted small">${esc(u.name)} için tek kullanımlık kod:</p><p style="font-size:32px;font-weight:700;letter-spacing:4px;text-align:center;margin:12px 0" id="iv-code">${esc(m.code)}</p><pre class="small" style="white-space:pre-wrap;background:var(--bg2,#f4f6f9);padding:10px;border-radius:8px">${esc(invText(m.code))}</pre><button class="btn block" data-a="invcopy">Mesajı kopyala</button>`); };
+H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code), 'Mesaj kopyalandı. WhatsApp\'tan gönder.'); };
+H.invrm = async (el) => { const c = sbClient(); try { await c.from('invites').delete().eq('id', el.dataset.id); } catch (e) {} ID.team = null; ID.teamBusy = false; await teamLoad(); render(); toast('Davet iptal edildi.'); };
+H.memrm = async (el) => {
+  if (S.rmArm !== el.dataset.id) { S.rmArm = el.dataset.id; render(); return; } S.rmArm = null; const c = sbClient();
+  try { const d = await c.from('members').delete().eq('id', el.dataset.id); if (d.error) throw d.error; toast('Erişim kapatıldı.', 'ok'); } catch (e) { toast(idMsg(e), 'warn'); }
+  ID.team = null; ID.teamBusy = false; await teamLoad(); render();
 };
 
-if (typeof window !== 'undefined') { window.__K = { CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+if (typeof window !== 'undefined') { window.__K = { ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
