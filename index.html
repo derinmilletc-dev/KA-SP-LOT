@@ -386,6 +386,21 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
   .lx-art{position:relative;right:auto;top:auto;width:min(100%,520px);margin:auto 0 0 auto}
   .lx-card{margin:0;border-radius:0;box-shadow:none;background:#F7F9FC;display:flex;align-items:center;justify-content:center;padding:56px}
 }
+
+/* v36: giriş üstü birebir görsel */
+.login.lx{background:linear-gradient(180deg,#1D4A73 0,#1D4A73 calc(35.5vw),#9DB5CF calc(35.5vw + 180px),#E6EDF5 calc(35.5vw + 360px),#F2F6FB 100%)}
+.lx-hero{padding:0!important;min-height:0!important;aspect-ratio:1065/378;background:url(/login-hero.jpg) top center/100% auto no-repeat}
+.lx-hero::before{display:none}
+.lx-hero>*{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0);white-space:nowrap}
+.lx-card{margin:0 7.4%!important;border-radius:24px}
+@media(max-width:360px){.lx-card{margin:0 3%!important}}
+@media(max-width:899px){.lx-card{margin:0 4.5%!important;padding:24px 16px 22px}.lx-tabs{gap:8px}.lx-tabs button{padding:14px 2px 12px}.lx-tabs button span{white-space:nowrap;font-size:11px}}
+@media(max-width:360px){.lx-card{margin:0 3%!important}.lx-tabs button span{font-size:10px}}
+.lx-alt,.lx-demo{display:flex!important;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 10px}
+.lx-alt span,.lx-demo span{flex-basis:100%}
+@media(min-width:900px){.login.lx{background:#1A456F}.lx-hero{position:relative;aspect-ratio:auto;min-height:100vh!important;background:#1A456F}
+ .lx-hero::after{content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);aspect-ratio:1065/378;background:url(/login-hero.jpg) center/100% auto no-repeat;-webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent)}
+ .lx-card{margin:0!important;border-radius:0}}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
