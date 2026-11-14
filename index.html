@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>KaisPilot</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#12213B">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -5530,7 +5535,7 @@ NEWM.bell = () => {
   const L = notifList(); const seen = nfLoad(); const perm = typeof Notification !== 'undefined' ? Notification.permission : 'yok';
   const tone = { bad: 'p-bad', warn: 'p-warn', info: 'p-info' }; const lbl = { bad: 'Acil', warn: 'Dikkat', info: 'Bilgi' };
   return sheet('Bildirimler', `${L.length ? L.map((x, i) => `<button class="logline" data-a="nfgo" data-i="${i}" style="width:100%;text-align:left;background:${seen.has(x.key) ? 'transparent' : 'var(--cini-wash)'};border:0;border-radius:10px;padding:10px;gap:10px"><span class="small">${esc(x.text)}</span><span class="pill ${tone[x.sev]}">${lbl[x.sev]}</span></button>`).join('') + `<button class="btn sm sec" data-a="nfread" style="margin-top:8px">Hepsini okundu yap</button>` : `<div class="card empty">${ic('check', 28)}<p style="margin-top:8px">Her şey yolunda, bekleyen bildirim yok.</p></div>`}
-  <div class="card stack" style="margin-top:12px"><b>Tarayıcı bildirimi</b><p class="small muted">${perm === 'granted' ? 'Açık. Uygulama arka planda açıkken acil durumlarda bildirim gelir.' : perm === 'denied' ? 'Tarayıcı bildirimi engellenmiş. Adres çubuğundaki kilit simgesinden izin ver.' : perm === 'yok' ? 'Bu tarayıcı bildirimi desteklemiyor.' : 'Uygulama arka planda açıkken acil durumlarda bildirim gösterilsin mi?'}</p>${perm === 'default' ? '<button class="btn sm" data-a="nfperm">Bildirime izin ver</button>' : ''}<p class="small muted">Uygulama tamamen kapalıyken bildirim gelmez.</p></div>`);
+  <div class="card stack" style="margin-top:12px"><b>Tarayıcı bildirimi</b><p class="small muted">${perm === 'granted' ? 'Açık. Uygulama arka planda açıkken acil durumlarda bildirim gelir.' : perm === 'denied' ? 'Tarayıcı bildirimi engellenmiş. Adres çubuğundaki kilit simgesinden izin ver.' : perm === 'yok' ? 'Bu tarayıcı bildirimi desteklemiyor.' : 'Uygulama arka planda açıkken acil durumlarda bildirim gösterilsin mi?'}</p>${perm === 'default' ? '<button class="btn sm" data-a="nfperm">Bildirime izin ver</button>' : ''}<p class="small muted"></p></div>`);
 };
 H.nfgo = (el) => { const x = notifList()[Number(el.dataset.i)]; if (!x) return; nfLoad().add(x.key); nfSave(); S.modal = null; S.view = x.view; if (x.view === 'stok' && x.tab) S.stTab = x.tab; if (x.view === 'ekip' && x.tab) S.sub.ekip = x.tab; if (x.view === 'rezerv') S.rzTab = 'liste'; if (x.view === 'satinalma') S.saTab = 'siparis'; render(); };
 H.nfread = () => { const s = nfLoad(); notifList().forEach((x) => s.add(x.key)); nfSave(); render(); renderModal(); };
@@ -7964,6 +7969,71 @@ viewAyarlar = function () {
 };
 const _och81 = onChange;
 onChange = function (e) { const el = e.target; if (el.dataset && el.dataset.ch === 'shopr') { S.settings.shopR = Number(el.value) || 1000; toast('Giriş mesafesi güncellendi.'); if (typeof pSched === 'function') pSched(); return; } return _och81(e); };
+/* ===== v82: telefon kapalıyken push bildirim ===== */
+const PUSH = { pub: 'BEyriv2csC6u5pWJ1-JNT5vDj0krwhR3gRpGmwwXKQQvHYLRLlEvPjpercOfCaeH8by0QEOON6R5ULyZq_vVRoQ', st: 'bos', busy: false, msg: '' };
+const pushOK = () => typeof navigator !== 'undefined' && 'serviceWorker' in navigator && typeof PushManager !== 'undefined' && typeof Notification !== 'undefined';
+const pushIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+const pushStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const pushKey = (s) => { const p = '='.repeat((4 - s.length % 4) % 4); const b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, (c) => c.charCodeAt(0)); };
+async function pushReg() { if (!pushOK()) return null; try { return await navigator.serviceWorker.register('/sw.js'); } catch (e) { return null; } }
+async function pushCheck() {
+  if (!pushOK()) { PUSH.st = 'yok'; return; }
+  if (Notification.permission === 'denied') { PUSH.st = 'red'; return; }
+  try { const r = await navigator.serviceWorker.getRegistration('/sw.js'); const s = r && await r.pushManager.getSubscription(); PUSH.st = s && Notification.permission === 'granted' ? 'acik' : 'bos'; } catch (e) { PUSH.st = 'bos'; }
+}
+const pushCtx = () => SBS.user && SBS.biz && ID.active && sbClient() ? { c: sbClient(), bid: SBS.biz.id, uid: SBS.user.id, au: ID.active.app_uid } : null;
+async function pushSave(sub) {
+  const x = pushCtx(); if (!x) return false; const j = sub.toJSON();
+  const r = await x.c.from('push_subs').upsert({ business_id: x.bid, user_id: x.uid, app_uid: x.au, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: (navigator.userAgent || '').slice(0, 160) }, { onConflict: 'endpoint' });
+  return !r.error;
+}
+H.pushon = async () => {
+  if (PUSH.busy) return; if (!pushCtx()) { toast('Önce hesabınla giriş yapmalısın.', 'warn'); return; }
+  if (!pushOK()) { PUSH.st = 'yok'; renderModal(); return; }
+  PUSH.busy = true; PUSH.msg = ''; renderModal();
+  try {
+    const reg = await pushReg(); if (!reg) throw new Error('sw'); await navigator.serviceWorker.ready;
+    const perm = await Notification.requestPermission(); if (perm !== 'granted') { PUSH.st = perm === 'denied' ? 'red' : 'bos'; throw new Error('perm'); }
+    let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKey(PUSH.pub) });
+    if (!(await pushSave(sub))) throw new Error('db');
+    PUSH.st = 'acik'; toast('Telefon kapalıyken de bildirim gelecek.', 'ok');
+  } catch (e) { if (PUSH.st !== 'red') PUSH.msg = e && e.message === 'db' ? 'Kayıt yapılamadı. Bağlantını kontrol edip tekrar dene.' : e && e.message === 'perm' ? '' : 'Bildirim açılamadı. Tekrar dene.'; }
+  PUSH.busy = false; renderModal();
+};
+H.pushoff = async () => {
+  if (PUSH.busy) return; PUSH.busy = true; renderModal();
+  try { const r = await navigator.serviceWorker.getRegistration('/sw.js'); const s = r && await r.pushManager.getSubscription(); if (s) { const ep = s.endpoint; await s.unsubscribe(); const x = pushCtx(); if (x) await x.c.from('push_subs').delete().eq('endpoint', ep); } PUSH.st = 'bos'; toast('Telefon bildirimi kapatıldı.'); } catch (e) { PUSH.msg = 'Kapatılamadı. Tekrar dene.'; }
+  PUSH.busy = false; renderModal();
+};
+function pushCard() {
+  const ios = pushIOS() && !pushStandalone();
+  let t = '', b = '';
+  if (PUSH.st === 'yok' || !pushOK()) { t = ios ? 'iPhone\'da önce uygulamayı ana ekrana ekle: Paylaş düğmesi, sonra "Ana Ekrana Ekle". Sonra buradan aç.' : 'Bu tarayıcı telefon bildirimini desteklemiyor.'; }
+  else if (ios) { t = 'iPhone\'da bildirim için önce uygulamayı ana ekrana ekle: Paylaş düğmesi, sonra "Ana Ekrana Ekle". Ana ekrandaki simgeden açıp bu düğmeye dokun.'; b = '<button class="btn sm" data-a="pushon">Dene</button>'; }
+  else if (PUSH.st === 'acik') { t = 'Açık. Telefon kapalıyken de önemli işler için bildirim gelir.'; b = '<button class="btn sm sec" data-a="pushoff">Kapat</button>'; }
+  else if (PUSH.st === 'red') t = 'Bildirim engellenmiş. Tarayıcı ayarlarından bu site için bildirime izin ver, sonra tekrar dene.';
+  else { t = 'Uygulama kapalıyken bile giriş hatırlatması, izin ve mesai cevapları, duyurular ve ödeme günleri telefonuna düşsün.'; b = '<button class="btn sm"' + (PUSH.busy ? ' disabled' : '') + ' data-a="pushon">' + (PUSH.busy ? 'Açılıyor' : 'Telefona bildirim gönder') + '</button>'; }
+  return `<div class="card stack" style="margin-top:12px"><b>Telefon kapalıyken bildirim</b><p class="small muted">${t}</p>${PUSH.msg ? `<p class="small" style="color:var(--bad)">${esc(PUSH.msg)}</p>` : ''}${b}</div>`;
+}
+const _bellP = NEWM.bell;
+NEWM.bell = () => {
+  if (PUSH.st === 'bos') pushCheck().then(() => { if (S.modal && S.modal.type === 'bell' && PUSH.st !== 'bos') renderModal(); });
+  const h = _bellP(); const i = h.lastIndexOf('</div></div>'); return pushCard() && i > 0 ? h.slice(0, i) + '</div>' + pushCard() + '</div>' + h.slice(i + 12) : h;
+};
+async function pushSend(to, title, body) {
+  try { const x = pushCtx(); if (!x || !to || !to.length) return; const ids = to.slice();
+    const s = await x.c.auth.getSession(); const tok = s && s.data && s.data.session && s.data.session.access_token; if (!tok) return;
+    fetch(SB_URL + '/functions/v1/kais-push', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, apikey: SB_KEY }, body: JSON.stringify({ action: 'send', business_id: x.bid, to: ids, title, body }) }).catch(() => {});
+  } catch (e) {}
+}
+const _sendP = H.sendmsg;
+H.sendmsg = () => {
+  const d = S.draft; const to = d && d.aud === 'all' ? EMP_IDS.slice() : d && d.sel ? d.sel.slice() : []; const n0 = MSGS.length; const ttl = d && d.title ? d.title.trim() : ''; const ty = d && d.type;
+  _sendP(); if (MSGS.length > n0) pushSend(to, ty === 'mesai' ? 'Mesai teklifi' : 'Yeni duyuru', ttl);
+};
+const _lrfP = H.lrfinal;
+H.lrfinal = () => { const m = S.modal; const r = m && LVREQ.find((x) => x.id === m.id); const st0 = r && r.status; _lrfP(); if (r && r.status !== st0 && r.status === 'onayli') pushSend([r.uid], 'İzin talebin cevaplandı', 'Sonucu uygulamadan gör.'); };
+if (pushOK()) { pushReg(); }
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
