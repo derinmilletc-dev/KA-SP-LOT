@@ -750,6 +750,21 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .top .bname{font-size:17px}.top .bsep{margin:0 2px 0 0}
 .top .bsep~#ps-chip{display:none}
 .cm-p{padding:0 15px;font-size:14.5px}
+/* v53 müşteri üst */
+.seg-i button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;font-size:15px}
+.seg-i{padding:4px;border-radius:16px;background:#E9EFF7;box-shadow:inset 0 1px 2px rgba(20,60,120,.06)}
+.seg-i button[aria-pressed=true]{background:linear-gradient(180deg,#0B4A94,#06356F);box-shadow:0 4px 10px rgba(6,53,111,.35)}
+.cm-hero{position:relative;overflow:hidden;border-radius:18px;padding:18px 18px;min-height:88px;color:#fff;background:linear-gradient(120deg,#0C3F85 0,#0A2F68 60%,#082455);box-shadow:0 8px 20px rgba(8,36,85,.3);display:flex;align-items:center}
+.cm-hero h3{margin:0;color:#fff;font-size:26px;line-height:1.15;font-weight:800}
+.cm-hero p{margin:4px 0 0;font-size:13.5px;line-height:1.35;color:rgba(255,255,255,.85);max-width:68%}
+.cm-hero .cmh-art{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:126px;height:auto}
+.cm-l{display:flex!important;align-items:center;gap:10px;margin-bottom:8px}.cm-l b{font-weight:700;font-size:17px}.cm-l svg{color:var(--ink);flex:none}
+.cm-p svg{flex:none;color:var(--ink-2)}
+.cm-p[aria-pressed=true] svg{color:#fff}
+.cm-p.tp-on{background:#E3EEFC;border-color:#4C86D6;color:var(--cini-d);font-weight:600}.cm-p.tp-on svg{color:var(--cini)}
+.cm-hr{border:0;border-top:1px solid #E6ECF4;margin:0}
+.cm-n.warn{border-left:3px solid #E7A21A;border-radius:6px 14px 14px 6px}
+.cm-c{margin-top:0}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6444,24 +6459,32 @@ viewEkip = function () {
 
 /* ===== v52: Müşteri sayfası mockup ===== */
 ICONS.send = ICONS.send || '<path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/>';
+ICONS.tag = '<path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>'; ICONS.gift = '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8c-2-4-6-3-5 0 .6 1.6 3 1 5 0zm0 0c2-4 6-3 5 0-.6 1.6-3 1-5 0z"/>';
 function kampanyaHTML() {
   const c = S.camp; const all = segList(c.seg); const ok = all.filter((x) => x.iys === 'onayli'); const out = all.length - ok.length; const first = ok[0];
   const prev = (c.body || '').replace(/\{ad\}/g, first ? first.name.split(' ')[0] : 'Müşterimiz');
-  const env = '<svg class="cm-art" viewBox="0 0 90 70" aria-hidden="true"><defs><linearGradient id="cme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6FA8F2"/><stop offset="1" stop-color="#2F68C8"/></linearGradient></defs><path d="M12 30 45 52 78 30v26a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6z" fill="url(#cme)"/><rect x="24" y="8" width="42" height="34" rx="4" fill="#fff" stroke="#BCD3F2" transform="rotate(-6 45 25)"/><g transform="rotate(-6 45 25)"><rect x="31" y="16" width="28" height="3" rx="1.5" fill="#6FA0E6"/><rect x="31" y="23" width="24" height="3" rx="1.5" fill="#9DBDEB"/><rect x="31" y="30" width="26" height="3" rx="1.5" fill="#9DBDEB"/></g><path d="M12 30 45 52 78 30" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.5"/><path d="M70 6l3 6M80 14l-6 2M62 2l1 5" stroke="#4B87DE" stroke-width="2" stroke-linecap="round"/></svg>';
+  const env = '<svg class="cm-art" viewBox="0 0 90 70" aria-hidden="true"><defs><linearGradient id="cme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6FA8F2"/><stop offset="1" stop-color="#2F68C8"/></linearGradient></defs><path d="M12 30 45 52 78 30v26a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6z" fill="url(#cme)"/><rect x="24" y="8" width="42" height="34" rx="4" fill="#fff" stroke="#BCD3F2" transform="rotate(-6 45 25)"/><g transform="rotate(-6 45 25)"><rect x="31" y="16" width="28" height="3" rx="1.5" fill="#6FA0E6"/><rect x="31" y="23" width="24" height="3" rx="1.5" fill="#9DBDEB"/><rect x="31" y="30" width="26" height="3" rx="1.5" fill="#9DBDEB"/></g><path d="M12 30 45 52 78 30" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.5"/></svg>';
+  const hero = '<svg class="cmh-art" viewBox="0 0 150 80" aria-hidden="true"><defs><linearGradient id="cmh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3F82DA"/><stop offset="1" stop-color="#1B55B0"/></linearGradient></defs><ellipse cx="86" cy="44" rx="58" ry="26" fill="none" stroke="#7FB2F0" stroke-opacity=".45" stroke-width="1.5" transform="rotate(-8 86 44)"/><path d="M26 6 52 14 36 18z" fill="#9CC4F7"/><path d="M26 6 36 18 33 24 30 15z" fill="#6FA0E6"/><path d="M62 38 96 58 130 38v26a6 6 0 0 1-6 6H68a6 6 0 0 1-6-6z" fill="url(#cmh)"/><rect x="72" y="14" width="48" height="40" rx="5" fill="#fff"/><rect x="80" y="24" width="32" height="4" rx="2" fill="#4B87DE"/><rect x="80" y="33" width="28" height="4" rx="2" fill="#9DBDEB"/><rect x="80" y="42" width="30" height="4" rx="2" fill="#9DBDEB"/><path d="M62 38 96 58 130 38" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/></svg>';
+  const sel = TPL.findIndex((t) => t.subj === c.subj);
+  const tic = ['tag', 'gift', 'megaphone'];
+  const lab = (ico, t, f) => `<${f ? 'label for="' + f + '"' : 'span'} class="cm-l">${ic(ico, 22)}<b>${t}</b></${f ? 'label' : 'span'}>`;
   return `<div class="stack-lg cm">
-  <div class="card cm-c"><div class="cm-h"><span class="cm-i">${ic('send', 24)}</span><div><h3>Yeni kampanya</h3><p>Müşterilerine toplu e-posta gönder.</p></div></div>${env}
-    <div class="cm-s"><span class="cm-l">Şablon</span><div class="cm-ch">${TPL.map((t, i) => `<button type="button" class="cm-p" data-a="camptpl" data-i="${i}">${esc(t.n)}</button>`).join('')}</div></div>
-    <div class="cm-s"><span class="cm-l">Kime</span><div class="cm-ch">${[['all', 'Tüm müşteriler'], ['recent', 'Son 30 gün gelenler'], ['loyal', 'Sadık müşteriler (8+ ziyaret)']].map((x) => `<button type="button" class="cm-p" data-a="campseg" data-v="${x[0]}" aria-pressed="${c.seg === x[0]}">${c.seg === x[0] ? ic('check', 18) : ''}${x[1]}</button>`).join('')}</div></div>
-    <div class="cm-n ${out ? 'warn' : ''}">${ic('users', 24)}<div><b>${ok.length} kişiye gidecek</b>${out ? `<p>${out} kişi e-posta izni vermediği ya da listeden çıktığı için hariç tutuldu.</p>` : ''}</div></div>
-    <div class="cm-s"><label class="cm-l" for="c-subj">Konu</label><input id="c-subj" type="text" value="${esc(c.subj)}" placeholder="Örnek: Bu hafta sonu %15 indirim"></div>
-    <div class="cm-s"><label class="cm-l" for="c-body">Mesaj</label><textarea id="c-body" placeholder="{ad} yazarsan her müşterinin adı otomatik gelir">${esc(c.body)}</textarea></div>
+  <div class="cm-hero"><div><h3>Yeni kampanya</h3><p>Müşterilerinize toplu e-posta gönderin.</p></div>${hero}</div>
+  <div class="card cm-c">
+    <div class="cm-s">${lab('layers', 'Şablon')}<div class="cm-ch">${TPL.map((t, i) => `<button type="button" class="cm-p${sel === i ? ' tp-on' : ''}" data-a="camptpl" data-i="${i}">${ic(tic[i] || 'tag', 20)}${esc(t.n)}</button>`).join('')}</div></div>
+    <hr class="cm-hr">
+    <div class="cm-s">${lab('users', 'Kime')}<div class="cm-ch">${[['all', 'Tüm müşteriler', 'users'], ['recent', 'Son 30 gün gelenler', 'cal'], ['loyal', 'Sadık müşteriler (8+ ziyaret)', 'userplus']].map((x) => `<button type="button" class="cm-p" data-a="campseg" data-v="${x[0]}" aria-pressed="${c.seg === x[0]}">${ic(c.seg === x[0] ? 'check' : x[2], 20)}${x[1]}</button>`).join('')}</div></div>
+    <div class="cm-n ${out ? 'warn' : ''}">${ic('users', 26)}<div><b>${ok.length} kişiye gidecek</b>${out ? `<p>${out} kişi e-posta izni vermediği ya da listeden çıktığı için hariç tutuldu.</p>` : ''}</div></div>
+    <div class="cm-s">${lab('pencil', 'Konu', 'c-subj')}<input id="c-subj" type="text" value="${esc(c.subj)}" placeholder="Örnek: Bu hafta sonu %15 indirim"></div>
+    <div class="cm-s">${lab('chat', 'Mesaj', 'c-body')}<textarea id="c-body" placeholder="{ad} yazarsan her müşterinin adı otomatik gelir">${esc(c.body)}</textarea></div>
     <div class="cm-pv">${ic('mail', 22)}<div><b>Önizleme</b><p style="white-space:pre-line">${esc(prev) || 'Mesajın yazınca burada görünür.'}</p><small>Bu iletiyi almak istemiyorsanız buradan listeden çıkabilirsiniz.</small></div>${env}</div>
-    <button type="button" class="cm-go" data-a="campsend">${ic('send', 20)}<b>${ok.length} kişiye gönder</b></button>
+    <hr class="cm-hr">
+    <button type="button" class="cm-go" data-a="campsend">${ic('send', 22)}<b>${ok.length} kişiye gönder</b></button>
     <p class="cm-f">Gönderen: ${mailReady() ? esc(S.mail.addr) : 'e-posta bağlı değil'}. Ticari elektronik ileti için alıcı onayı ve çıkış bağlantısı gerekir, kapsamı iş hukukçusuyla doğrula.</p>
   </div>
   <div class="card cm-g"><div class="cm-gh"><span class="cm-gi">${ic('layers', 22)}</span><h3>Gönderilen kampanyalar</h3></div>${CAMPAIGNS.length ? CAMPAIGNS.slice().reverse().map((x) => `<div class="cm-r"><div><b>${esc(x.subj)}</b><span>${esc(x.date)} · ${x.sent} kişiye gitti · açılma ${esc(x.open)}</span></div>${ic('chevron', 18)}</div>`).join('') : '<p class="muted" style="padding:4px 14px 14px">Henüz kampanya göndermedin.</p>'}</div></div>`;
 }
-const _vmu52 = viewMusteri; viewMusteri = function () { return _vmu52().replace('<div class="seg"', '<div class="seg seg-b"'); };
+const _vmu52 = viewMusteri; viewMusteri = function () { return _vmu52().replace('<div class="seg"', '<div class="seg seg-b seg-i"').replace(/(data-v="kampanya" aria-pressed="(?:true|false)">)Toplu e-posta/, '$1' + ic('mail', 22) + '<span>Toplu e-posta</span>').replace(/(data-v="liste" aria-pressed="(?:true|false)">)Müşteri listesi/, '$1' + ic('users', 22) + '<span>Müşteri listesi</span>'); };
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
