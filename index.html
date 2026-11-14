@@ -48,9 +48,14 @@ function loginView(){
     if(r.data.session) boot(); else say('Hesap oluşturuldu. E-postana gelen onay bağlantısına tıkla, sonra giriş yap.',true);};
 }
 function setupView(){
-  app.innerHTML=head('Hoş geldin')+`<div class="card"><h2>İşletmeni oluştur</h2><p class="m">Tedarikçiysen ve burayı görüyorsan, davet e-postası senin hesabınla eşleşmemiş olabilir. İşletme sahibine e-postanı doğru yazdırmasını söyle.</p>
-  <label>İşletme adı</label><input id="bn" type="text" autocomplete="off" placeholder="Örn: Çınar Kafe &amp; Fırın"><p class="err" id="msg"></p><button id="mk">İşletme oluştur</button></div>`; bindOut();
-  $('#mk').onclick=async()=>{const n=$('#bn').value.trim(); if(!n) return say('Ad yaz.'); const r=await sb.from('businesses').insert({name:n,owner_id:ME.id}); if(r.error) say(r.error.message); else boot();};
+  app.innerHTML=head('Hoş geldin')+`<form class="card" id="bf" autocomplete="off"><h2>İşletmeni oluştur</h2><p class="m">Tedarikçiysen ve burayı görüyorsan, davet e-postası senin hesabınla eşleşmemiş olabilir. İşletme sahibine e-postanı doğru yazdırmasını söyle.</p>
+  <label for="bn">İşletme adı</label><input id="bn" name="bn" type="text" autocomplete="off" placeholder="Örn: Çınar Kafe &amp; Fırın"><p class="err" id="msg"></p><button type="submit" id="mk">İşletme oluştur</button></form>`; bindOut();
+  $('#bf').addEventListener('submit',async(ev)=>{ev.preventDefault();
+    const n=String(new FormData(ev.target).get('bn')||'').trim();
+    if(!n) return say('Ad alanı boş okundu (0 karakter). Bir kez tıklayıp yazmayı dene.');
+    $('#mk').disabled=true; say('Kaydediliyor…',true);
+    const r=await sb.from('businesses').insert({name:n,owner_id:ME.id});
+    if(r.error){$('#mk').disabled=false; say('Kaydedilemedi: '+r.error.message);} else boot();});
 }
 /* ---------- PATRON ---------- */
 async function patronView(){
