@@ -112,10 +112,20 @@ function loginView(){
   $('#tfm').onsubmit=(e)=>e.preventDefault();
   ['#em','#pw'].forEach(k=>$(k).addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();$('#in').onclick();}}));
   const cred=()=>({email:$('#em').value.trim(),password:$('#pw').value});
-  $('#in').onclick=async()=>{const r=await sb.auth.signInWithPassword(cred()); if(r.error) say('Giriş olmadı: '+r.error.message); else boot();};
-  $('#up').onclick=async()=>{const c=cred(); if(c.password.length<8) return say('Şifre en az 8 karakter olmalı.');
-    const r=await sb.auth.signUp(c); if(r.error) return say(r.error.message);
-    if(r.data.session) boot(); else say('Hesap oluşturuldu. E-postana gelen onay bağlantısına tıkla, sonra giriş yap.',true);};
+  const tr=(m)=>{m=String(m||''); if(/rate limit|too many|security purposes/i.test(m)) return 'Kısa sürede çok fazla deneme yapıldı. Birkaç dakika bekleyip tekrar dene.'; if(/invalid login/i.test(m)) return 'E-posta ya da şifre yanlış.'; if(/email not confirmed/i.test(m)) return 'E-postanı henüz onaylamadın. Gelen kutundaki onay bağlantısına tıkla.'; if(/valid email|invalid.*email|email.*invalid/i.test(m)) return 'E-posta adresi geçersiz görünüyor.'; if(/password/i.test(m)) return 'Şifre en az 8 karakter olmalı.'; if(/signups? not allowed|disabled/i.test(m)) return 'Yeni hesap açma şu an kapalı. İşletmeye haber ver.'; if(/fetch|network/i.test(m)) return 'Bağlantı kurulamadı. İnterneti kontrol edip tekrar dene.'; return m;};
+  const busy=(b,on,t)=>{b.disabled=on; const sp=b.querySelector('span'); if(b.id==='up'&&sp){sp.textContent=on?'Oluşturuluyor…':'Hesap oluştur';} if(b.id==='in'){b.style.opacity=on?.7:'';}};
+  const chk=()=>{const c=cred(); if(!/^\S+@\S+\.\S+$/.test(c.email)){say('Geçerli bir e-posta adresi yaz.'); return null;} if(c.password.length<8){say('Şifre en az 8 karakter olmalı.'); return null;} return c;};
+  $('#in').onclick=async()=>{say(''); const c=chk(); if(!c) return; const b=$('#in'); busy(b,true); try{const r=await sb.auth.signInWithPassword(c); if(r.error) say(tr(r.error.message)); else boot();}catch(e){say(tr(e&&e.message));} busy(b,false);};
+  $('#up').onclick=async()=>{say(''); const c=chk(); if(!c) return; const b=$('#up'); busy(b,true);
+    try{
+      let r=await sb.auth.signUp(c);
+      if(r.error && /already (registered|been registered)/i.test(r.error.message||'')) r=await sb.auth.signInWithPassword(c);
+      if(r.error){say(tr(r.error.message));}
+      else if(r.data && r.data.session){boot();}
+      else if(r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length===0){say('Bu e-postayla zaten bir hesap var. "Giriş yap"a bas. Şifreni unuttuysan işletmeden yardım iste.');}
+      else say('Hesap oluşturuldu. '+c.email+' adresine bir onay bağlantısı gönderdik. Tıkladıktan sonra buradan giriş yap. Gelmediyse spam klasörüne bak.',true);
+    }catch(e){say(tr(e&&e.message));}
+    busy(b,false);};
 }
 function setupView(){
   document.body.classList.add('lg');
