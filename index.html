@@ -294,7 +294,7 @@ details.chk .cbody{padding:2px 0 8px 38px}
 .ritem select{flex:1 1 160px;width:auto}
 .inl{display:flex;gap:8px;align-items:center;font-size:14px}
 .inl input{margin-top:0}
-.xl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+.xl{overflow-x:auto;position:relative;border:1px solid var(--line);border-radius:14px;background:#fff}
 .xt{border-collapse:collapse;min-width:900px;width:100%;font-size:14px}
 .xt th{font-weight:500;color:var(--muted);text-align:left;padding:10px 8px;font-size:13px;background:#F6F8FB;white-space:nowrap}
 .xt th.r{text-align:right}
@@ -320,6 +320,15 @@ details.chk .cbody{padding:2px 0 8px 38px}
 .paper{white-space:pre-wrap;background:#FAFBFD;border:1px solid var(--line);border-radius:8px;padding:14px;font-size:12.5px;line-height:1.55;max-height:340px;overflow:auto}
 .paper-edit{min-height:300px;font-size:13px;line-height:1.5}
 .xt tr.mis td{box-shadow:inset 0 -2px 0 var(--nar-wash)}
+/* v34: telefon düzeltmeleri */
+.seg,.chips,.tabs{position:relative}
+.seg{scrollbar-width:none;-webkit-overflow-scrolling:touch}.seg::-webkit-scrollbar{display:none}
+.seg.ovr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 34px),transparent)}
+.seg.ovl{-webkit-mask-image:linear-gradient(270deg,#000 calc(100% - 34px),transparent);mask-image:linear-gradient(270deg,#000 calc(100% - 34px),transparent)}
+.seg.ovl.ovr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 34px,#000 calc(100% - 34px),transparent);mask-image:linear-gradient(90deg,transparent,#000 34px,#000 calc(100% - 34px),transparent)}
+input[type=date],input[type=time],input[type=datetime-local]{width:100%;min-height:44px;border:1px solid #C7D0DD;border-radius:10px;padding:10px 12px;font:inherit;background:#fff;color:var(--ink)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{font-size:16px}
+.sw::before{content:"";position:absolute;inset:-8px -4px}
 </style>
 </head>
 <body>
@@ -5285,6 +5294,17 @@ H.brrefresh = () => { BR.text = ''; BR.key = ''; BR.tried = brKey(); brLoad(true
 H.brask = () => { S.view = 'kaisai'; render(); };
 const viewHTMLV33 = viewHTML;
 viewHTML = function () { const h = viewHTMLV33(); if (S.view !== 'bugun' || !S.user || !['patron', 'mudur'].includes(S.user.role)) return h; const c = brCard(); if (!c) return h; const t = '<div class="stack-lg">'; const i = h.indexOf(t); return i < 0 ? c + h : h.slice(0, i + t.length) + c + h.slice(i + t.length); };
+/* v34: telefon: kaydırmalı sekmelerde kenar solması, seçili sekmeyi görünür tut */
+function segMark(s) { const o = s.scrollWidth > s.clientWidth + 2; s.classList.toggle('ovr', o && s.scrollLeft + s.clientWidth < s.scrollWidth - 2); s.classList.toggle('ovl', o && s.scrollLeft > 2); }
+function segFix() {
+  if (typeof document === 'undefined' || !document.querySelectorAll) return;
+  document.querySelectorAll('.seg').forEach((s) => {
+    if (s.addEventListener) s.addEventListener('scroll', () => segMark(s), { passive: true });
+    const p = s.querySelector && s.querySelector('[aria-pressed=true]'); if (p && s.scrollWidth > s.clientWidth + 2) s.scrollLeft = Math.max(0, p.offsetLeft - 24);
+    segMark(s);
+  });
+}
+const renderV34 = render; render = function () { renderV34(); try { segFix(); } catch (e) {} };
 if (typeof window !== 'undefined') { window.__K = { BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
