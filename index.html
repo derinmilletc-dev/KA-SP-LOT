@@ -5051,12 +5051,12 @@ H.aifrm = (el) => { AIC.files.splice(+el.dataset.k, 1); render(); };
 H.aisend = () => { const el = document.getElementById('ai-q'); let t = ((el && el.value) || '').trim(); if (AIC.busy) return; if (AIC.mode === 'sayim' && !AIC.files.length) { toast('Önce raf fotoğrafı ekle.', 'warn'); return; } if (!t && AIC.files.length) t = AIC.mode === 'sayim' ? 'Bu fotoğraftaki ürünleri say ve sayım olarak güncelle.' : 'Bu belgeyi incele ve gider olarak kaydet.'; if (!t) return; AIC.draft = ''; aiAsk(t); };
 /* v30: Claude ile fiş okuma, fotoğrafla sayım, sözleşme okuma, belge bilgisi ayıklama */
 const aiReady = () => !S.noAI && !!(sbOK() && SBS.user && SBS.biz);
-async function aiCall(mode, text, atts) {
+async function aiCall(mode, text, atts, ctx) {
   const c = sbClient(); if (!c || !SBS.user || !SBS.biz) throw new Error('nocloud');
-  const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode, messages: [{ role: 'user', content: text }], context: {}, attachments: (atts || []).map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
+  const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode, messages: [{ role: 'user', content: text }], context: ctx || {}, attachments: (atts || []).map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
   if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} const x = new Error(m || 'ai_fail'); x.kind = m ? 'user' : (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'nofn' : 'fail'); throw x; }
   if (r.data && r.data.error) { const x = new Error(r.data.error); x.kind = 'user'; throw x; }
-  return (r.data && r.data.data) || {};
+  return (r.data && (r.data.data || r.data)) || {};
 }
 const _och30 = onChange;
 onChange = function (e) {
@@ -5264,7 +5264,28 @@ clientsCard = function () {
   }).join('');
   return `<div class="card stack"><div><h3>Müşterilerin</h3><p class="muted small" style="margin-top:2px">${ID.mems.length} işletme${totP ? ', toplam ' + totP + ' fiş senin onayını bekliyor' : ', bekleyen fiş yok'}. Birine geçince ekran o işletmenin verisiyle yenilenir.</p></div>${rows}${det}</div>`;
 };
-if (typeof window !== 'undefined') { window.__K = { cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v33: günlük sabah özeti */
+const BR = { text: '', busy: false, err: '', key: '', tried: '' };
+const brKey = () => 'kp_brief_' + (SBS.biz ? SBS.biz.id : 'x') + '_' + (S.user ? S.user.id : 'x') + '_' + new Date().toISOString().slice(0, 10);
+const brStore = (v) => { try { if (v == null) return localStorage.getItem(brKey()); localStorage.setItem(brKey(), v); } catch (e) {} return null; };
+async function brLoad(force) {
+  if (BR.busy || !aiReady() || !S.user || (!force && BR.text && BR.key === brKey())) return; BR.busy = true; BR.err = ''; render();
+  try { const d = await aiCall('ozet', 'Bugün için özet yaz.', [], aiContext()); const t = (d && d.reply) || ''; BR.text = t; BR.key = brKey(); if (t) brStore(t); }
+  catch (e) { BR.err = e && e.kind === 'user' ? e.message : (e && e.kind === 'nofn' ? 'Kais AI sunucusu güncel değil.' : 'Özet şu an alınamadı.'); }
+  BR.busy = false; render();
+}
+function brCard() {
+  if (!S.user || !['patron', 'mudur'].includes(S.user.role) || !aiReady()) return '';
+  const k = brKey(); if (BR.key !== k) { const c = brStore(); if (c) { BR.text = c; BR.key = k; } else { BR.text = ''; } }
+  if (!BR.text && !BR.busy && !BR.err && BR.tried !== k) { BR.tried = k; setTimeout(() => brLoad(), 50); }
+  const body = BR.busy && !BR.text ? '<p class="muted small">Kais AI bugünün özetini hazırlıyor…</p>' : BR.text ? `<div style="white-space:pre-wrap">${esc(BR.text).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')}</div>` : BR.err ? `<div class="callout warn">${ic('alert')}<div>${esc(BR.err)}</div></div>` : '';
+  return `<div class="card stack aicard"><div class="row"><span class="aib">${ic('sparkle', 20)}</span><div class="grow"><h3>Günün özeti</h3><p class="muted small" style="margin-top:2px">Kais AI bugün için dikkat edilecekleri sıraladı.</p></div></div>${body}<div class="row wrap"><button class="btn sm sec" data-a="brrefresh" ${BR.busy ? 'disabled' : ''}>Yenile</button><button class="btn sm sec" data-a="brask">Kais AI'a sor</button></div></div>`;
+}
+H.brrefresh = () => { BR.text = ''; BR.key = ''; BR.tried = brKey(); brLoad(true); };
+H.brask = () => { S.view = 'kaisai'; render(); };
+const viewHTMLV33 = viewHTML;
+viewHTML = function () { const h = viewHTMLV33(); if (S.view !== 'bugun' || !S.user || !['patron', 'mudur'].includes(S.user.role)) return h; const c = brCard(); if (!c) return h; const t = '<div class="stack-lg">'; const i = h.indexOf(t); return i < 0 ? c + h : h.slice(0, i + t.length) + c + h.slice(i + t.length); };
+if (typeof window !== 'undefined') { window.__K = { BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
