@@ -3277,7 +3277,7 @@ function viewSatinAlma() {
   ${noData ? `<div class="callout warn">${ic('alert')}<div><b>Tüketim hesabı için satış verisi yok</b><p style="margin-top:2px">Satışlar sayfasından günlük satış dosyası yükle ya da ürünlerin günlük tüketimini elle yaz.</p></div></div>` : days < 7 ? `<div class="callout">${ic('info')}<div>Tüketim ${days} günlük satıştan hesaplandı. En az bir haftalık veriyle tahmin güvenilir olur.</div></div>` : ''}
   <div class="field"><label for="cover">Stok kaç günlük tutulsun?</label><select id="cover" data-ch="cover">${[5, 7, 10, 14].map((d) => `<option value="${d}" ${cover === d ? 'selected' : ''}>${d} gün</option>`).join('')}</select></div>
   ${props.length ? `<div class="stack"><h3>Önerilen siparişler</h3>${props.map((o) => `<div class="card stack"><div class="row between wrap"><div><b style="font-weight:600">${esc(o.sup.name)}</b><div class="small muted">Teslim ${o.sup.lead} gün${o.sup.minAmt ? ' · en az ' + fmt0(o.sup.minAmt) : ''}</div></div><b class="num">${fmt0(o.total)}</b></div>
-  <div>${o.lines.map((p) => `<div class="logline"><span>${esc(p.st.name)}<span class="small muted" style="display:block">${p.qty} ${esc(p.st.unit)} × ${fmt(p.price)}${p.base > p.price ? ' · eskisi ' + fmt(p.base) : p.base && p.base < p.price ? ' · eskisi ' + fmt(p.base) + ' (daha ucuzdu, ama geç gelir)' : ''}${p.late ? ' · stok bitmeden gelmeyebilir' : ''}</span></span>${pill(p)}</div>`).join('')}</div>
+  <div>${o.lines.map((p) => `<div class="logline"><span>${esc(p.st.name)}<span class="small muted" style="display:block">${p.qty} ${esc(p.st.unit)}${p.packs ? ' (' + fq(p.packs) + ' ' + esc(p.packName) + ')' : ''} × ${fmt(p.price)}${p.base > p.price ? ' · eskisi ' + fmt(p.base) : p.base && p.base < p.price ? ' · eskisi ' + fmt(p.base) + ' (daha ucuzdu, ama geç gelir)' : ''}${p.late ? ' · stok bitmeden gelmeyebilir' : ''}</span></span>${pill(p)}</div>`).join('')}</div>
   ${o.total < o.sup.minAmt ? `<div class="callout warn">${ic('alert')}<div>Tutar minimum sipariş tutarının altında (${fmt0(o.sup.minAmt)}).</div></div>` : ''}
   ${o.saving > 0 ? `<p class="small muted">Son alış fiyatına göre yaklaşık ${fmt0(o.saving)} tasarruf.</p>` : ''}
   <div class="row wrap"><button class="btn grow" data-a="ordcreate" data-id="${o.sup.id}">Siparişi kaydet ve mesajı kopyala</button></div></div>`).join('')}</div>` : '<div class="callout">' + ic('check') + '<div>Şu an sipariş vermen gereken ürün yok.</div></div>'}
@@ -3595,7 +3595,7 @@ function saOrdersCard() {
 function saPropsHTML(props) {
   if (!props.length) return '<div class="callout">' + ic('check') + '<div>Şu an sipariş vermen gereken ürün yok.</div></div>';
   return `<div class="stack"><h3>Önerilen siparişler</h3>${props.map((o) => `<div class="card stack"><div class="row between wrap"><div><b style="font-weight:600">${esc(o.sup.name)}</b><div class="small muted">Teslim ${o.sup.lead} gün${o.sup.minAmt ? ' · en az ' + fmt0(o.sup.minAmt) : ''}</div></div><b class="num">${fmt0(o.total)}</b></div>
-  <div>${o.lines.map((p) => `<div class="logline"><span>${esc(p.st.name)}<span class="small muted" style="display:block">${p.qty} ${esc(p.st.unit)} × ${fmt(p.price)}${p.base > p.price ? ' · eskisi ' + fmt(p.base) : p.base && p.base < p.price ? ' · eskisi ' + fmt(p.base) + ' (daha ucuzdu, ama geç gelir)' : ''}${p.late ? ' · stok bitmeden gelmeyebilir' : ''}</span></span>${saPill(p)}</div>`).join('')}</div>
+  <div>${o.lines.map((p) => `<div class="logline"><span>${esc(p.st.name)}<span class="small muted" style="display:block">${p.qty} ${esc(p.st.unit)}${p.packs ? ' (' + fq(p.packs) + ' ' + esc(p.packName) + ')' : ''} × ${fmt(p.price)}${p.base > p.price ? ' · eskisi ' + fmt(p.base) : p.base && p.base < p.price ? ' · eskisi ' + fmt(p.base) + ' (daha ucuzdu, ama geç gelir)' : ''}${p.late ? ' · stok bitmeden gelmeyebilir' : ''}</span></span>${saPill(p)}</div>`).join('')}</div>
   ${o.total < o.sup.minAmt ? `<div class="callout warn">${ic('alert')}<div>Tutar minimum sipariş tutarının altında (${fmt0(o.sup.minAmt)}).</div></div>` : ''}
   ${o.saving > 0 ? `<p class="small muted">Son alış fiyatına göre yaklaşık ${fmt0(o.saving)} tasarruf.</p>` : ''}
   <div class="row wrap"><button class="btn grow" data-a="ordcreate" data-id="${o.sup.id}">Siparişi kaydet ve mesajı kopyala</button></div></div>`).join('')}</div>`;
@@ -3679,7 +3679,215 @@ onChange = function (e) {
   return _och14(e);
 };
 
-if (typeof window !== 'undefined') { window.__K = { SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v15: Stok yönetimi: parti/SKT, fire, sayım, kategori, koli, hareket geçmişi, rapor */
+const SEED15 = { s1: { cat: 'Kuru gıda', loc: 'Depo', shelf: 180 }, s2: { cat: 'Süt ürünleri', loc: 'Soğuk oda', shelf: 7, packName: 'koli', packN: 12 }, s3: { cat: 'Kahve', loc: 'Depo', shelf: 120 }, s4: { cat: 'Kuru gıda', loc: 'Depo', shelf: 365 }, s5: { cat: 'Ambalaj', loc: 'Depo', packName: 'koli', packN: 1000 }, s6: { cat: 'Kuru gıda', loc: 'Depo', shelf: 365 }, s7: { cat: 'Ambalaj', loc: 'Depo' } };
+STOCK.forEach((s) => { const d = SEED15[s.id]; if (d) Object.keys(d).forEach((k) => { if (s[k] === undefined) s[k] = d[k]; }); });
+const LOTS = []; const WASTE = []; const COUNTLOG = [];
+P_ARR.push(['LOTS', () => LOTS], ['WASTE', () => WASTE], ['COUNTLOG', () => COUNTLOG]);
+[['s2', 12, 2], ['s2', 24, 6], ['s1', 3, 90], ['s1', 5, 150], ['s3', 14, 80], ['s4', 6, 300], ['s6', 3, 200]].forEach(([sid, q, d]) => LOTS.push({ id: 'l' + (++seq), sid, qty: q, exp: addDays(REF_ISO, d), recv: REF_ISO }));
+const WHY = ['Bozuldu / SKT geçti', 'Döküldü / hata', 'İkram', 'Diğer'];
+const dleft = (iso) => { if (!iso) return null; const a = iso.split('-').map(Number); const b = REF_ISO.split('-').map(Number); return Math.round((Date.UTC(a[0], a[1] - 1, a[2]) - Date.UTC(b[0], b[1] - 1, b[2])) / 864e5); };
+const lotsOf = (sid) => LOTS.filter((l) => l.sid === sid).sort((a, b) => (a.exp || '9999') < (b.exp || '9999') ? -1 : 1);
+function lotSync() {
+  STOCK.forEach((st) => { let sum = 0; const ls = lotsOf(st.id); ls.forEach((l) => { sum += l.qty; });
+    for (let i = 0; i < ls.length && sum > st.qty + 1e-9; i++) { const cut = Math.min(ls[i].qty, sum - st.qty); ls[i].qty = r3(ls[i].qty - cut); sum -= cut; }
+  });
+  for (let i = LOTS.length - 1; i >= 0; i--) if (LOTS[i].qty <= 1e-9) LOTS.splice(i, 1);
+}
+const lotFree = (st) => Math.max(0, r3(st.qty - lotsOf(st.id).reduce((a, l) => a + l.qty, 0)));
+const mv = (st, qty, k, why) => STOCKLOG.unshift({ t: isoShort(REF_ISO), iso: REF_ISO, name: st.name, sid: st.id, qty, from: why, k, by: S.user ? S.user.name : '' });
+/* stokLogCard yalnız fişten girişleri göstersin */
+const stokLogCardV14 = stokLogCard;
+stokLogCard = function () { const all = STOCKLOG; const keep = all.filter((x) => !x.k); const back = all.slice(); all.length = 0; keep.forEach((x) => all.push(x)); try { return stokLogCardV14(); } finally { all.length = 0; back.forEach((x) => all.push(x)); } };
+/* hareket kaydı kancaları */
+const _importSales = importSales;
+importSales = function (rows, name) { const imp = _importSales(rows, name); Object.entries(imp.cons || {}).forEach(([sid, u]) => { const st = STOCK.find((x) => x.id === sid); if (st && u > 0) mv(st, -u, 'satis', 'Satış: ' + imp.name); }); return imp; };
+const _stk15 = H.stk;
+H.stk = (el) => { const s = STOCK.find((x) => x.id === el.dataset.id); const b = s ? s.qty : 0; _stk15(el); if (s && s.qty !== b) mv(s, r3(s.qty - b), 'elle', 'Elle düzeltme'); };
+const _ordrecv15 = H.ordrecv;
+H.ordrecv = (el) => {
+  const o = ORDERS.find((x) => x.id === el.dataset.id); const was = o && o.status; _ordrecv15(el);
+  if (o && was === 'gonderildi' && o.status === 'teslim') o.lines.forEach((l) => { const st = STOCK.find((x) => x.id === l.sid); if (st && st.shelf > 0) LOTS.push({ id: 'l' + (++seq), sid: st.id, qty: l.qty, exp: addDays(REF_ISO, st.shelf), recv: REF_ISO }); });
+};
+/* koli: sipariş miktarı tam koliye yuvarlanır */
+const stockPlanV14 = stockPlan;
+stockPlan = function () { const plan = stockPlanV14(); plan.forEach((p) => { const st = p.st; if (p.pick && p.qty > 0 && st.packN > 1) { p.qty = Math.ceil(p.qty / st.packN) * st.packN; p.packs = p.qty / st.packN; p.packName = st.packName || 'koli'; } }); return plan; };
+/* ---- akıllı Stok sayfası v2 ---- */
+S.stTab = S.stTab || 'liste'; S.stGroup = S.stGroup || 'liste';
+const sktSoon = (n) => LOTS.filter((l) => l.exp && dleft(l.exp) <= n).sort((a, b) => a.exp < b.exp ? -1 : 1);
+const sktTxt = (d) => d < 0 ? Math.abs(d) + ' gün önce geçti' : d === 0 ? 'bugün' : d === 1 ? 'yarın' : d + ' gün sonra';
+const sktTone = (d) => d <= 0 ? 'p-bad' : d <= 3 ? 'p-warn' : d <= 14 ? 'p-info' : 'p-mute';
+const stById = (id) => STOCK.find((x) => x.id === id);
+function lotHTML(st) {
+  const ls = lotsOf(st.id); const free = lotFree(st);
+  return `<p class="lbl" style="margin-top:10px">Partiler ve son kullanma tarihi</p>
+  ${ls.length ? ls.map((l) => { const d = dleft(l.exp); return `<div class="logline"><span class="small">${fq(l.qty)} ${esc(st.unit)} <span class="pill ${sktTone(d)}">${l.exp ? esc(isoShort(l.exp)) + ' · ' + sktTxt(d) : 'tarihsiz'}</span></span><span class="row" style="gap:6px">${d !== null && d <= 0 ? `<button class="btn sm" data-a="lotwaste" data-id="${l.id}">Fire yaz</button>` : ''}<button class="btn sm sec" data-a="lotdel" data-id="${l.id}" aria-label="Partiyi sil">Sil</button></span></div>`; }).join('') : '<p class="small muted">Parti kaydı yok.</p>'}
+  ${free > 0 ? `<p class="small muted">Tarihi girilmemiş stok: ${fq(free)} ${esc(st.unit)}</p>` : ''}
+  <div class="row wrap" style="gap:8px;margin-top:6px"><input class="num" type="number" min="0" step="0.01" placeholder="miktar" id="lq-${st.id}" style="width:90px" aria-label="Parti miktarı"><input type="date" id="ld-${st.id}" aria-label="Son kullanma tarihi"><button class="btn sm sec" data-a="lotadd" data-id="${st.id}">Parti ekle</button></div>`;
+}
+function stokRowHTML15(p) {
+  const base = stokRowHTML(p); const st = p.st; const next = sktSoon(7).filter((l) => l.sid === st.id)[0];
+  let h = base;
+  if (st.packN > 1) h = h.replace(/(<div class="stepper">)/, `<div class="small muted" style="text-align:right;margin-right:8px">≈ ${q1(st.qty / st.packN)} ${esc(st.packName || 'koli')}</div>$1`);
+  if (next) h = h.replace('<span class="small muted">~', `<span class="pill ${sktTone(dleft(next.exp))}">SKT ${sktTxt(dleft(next.exp))}</span> <span class="small muted">~`);
+  const extra = `<div style="margin-top:10px"><div class="row wrap" style="gap:10px">
+    <label class="small muted" style="flex:1;min-width:130px">Kategori<input type="text" value="${esc(st.cat || '')}" data-ch="scat" data-id="${st.id}" placeholder="Örn: Kuru gıda" aria-label="${esc(st.name)} kategori"></label>
+    <label class="small muted" style="flex:1;min-width:130px">Depo yeri<input type="text" value="${esc(st.loc || '')}" data-ch="sloc" data-id="${st.id}" placeholder="Örn: Soğuk oda" aria-label="${esc(st.name)} yer"></label>
+    <label class="small muted" style="flex:1;min-width:130px">Raf ömrü (gün)<input class="num" type="number" min="0" value="${st.shelf || ''}" data-ch="sshelf" data-id="${st.id}" placeholder="yok" aria-label="${esc(st.name)} raf ömrü"></label></div>
+    <div class="row wrap" style="gap:10px;margin-top:8px"><label class="small muted" style="flex:1;min-width:130px">Paket adı<input type="text" value="${esc(st.packName || '')}" data-ch="spkn" data-id="${st.id}" placeholder="koli, çuval…" aria-label="${esc(st.name)} paket adı"></label>
+    <label class="small muted" style="flex:1;min-width:130px">1 pakette kaç ${esc(st.unit)}<input class="num" type="number" min="0" value="${st.packN || ''}" data-ch="spkc" data-id="${st.id}" placeholder="yok" aria-label="${esc(st.name)} paket içi adet"></label></div>
+    ${lotHTML(st)}<div class="row wrap" style="margin-top:10px"><button class="btn sm sec" data-a="sthist" data-id="${st.id}">Hareket geçmişi</button><button class="btn sm sec" data-a="wasteopen" data-id="${st.id}">Fire yaz</button></div></div>`;
+  return h.replace(/<\/div><\/details><\/div>$/, extra + '</div></details></div>');
+}
+function groupRows(rows) {
+  const g = S.stGroup; if (g === 'liste') return rows.map(stokRowHTML15).join('');
+  const key = g === 'kat' ? 'cat' : 'loc'; const m = {}; rows.forEach((p) => { const k = p.st[key] || 'Belirsiz'; (m[k] = m[k] || []).push(p); });
+  return Object.keys(m).sort().map((k) => { const v = m[k].reduce((a, p) => a + p.st.qty * (p.st.cost || 0), 0); return `<div class="lbl" style="padding:12px 16px 4px;display:flex;justify-content:space-between"><span>${esc(k)} · ${m[k].length} ürün</span><span>${fmt0(v)}</span></div>${m[k].map(stokRowHTML15).join('')}`; }).join('');
+}
+function tabSeg() {
+  const soon = sktSoon(3).length; const wk = WASTE.length;
+  const t = [['liste', 'Liste' + (soon ? ' · SKT ' + soon : '')], ['sayim', 'Sayım' + (S.cnt ? ' •' : '')], ['fire', 'Fire'], ['rapor', 'Rapor']];
+  return `<div class="seg" role="group" aria-label="Stok bölümleri">${t.map((x) => `<button data-a="sttab" data-v="${x[0]}" aria-pressed="${S.stTab === x[0]}">${esc(x[1])}</button>`).join('')}</div>`;
+}
+function stokHead(sub) { return `<div class="row between wrap"><div><h2>Stok</h2><p class="muted small" style="margin-top:4px">${sub}</p></div><button class="btn" data-a="stkadd">${ic('plus')} Ürün ekle</button></div>${tabSeg()}`; }
+function stokListe() {
+  const rows = stokRows(); const f = S.stFilter; const qq = (S.stQ || '').trim().toLowerCase();
+  const val = STOCK.reduce((a, s) => a + s.qty * (s.cost || 0), 0);
+  const acil = rows.filter((p) => p.lvl === 'acil').length; const az = rows.filter((p) => p.lvl === 'azalan').length;
+  const props = proposals(); const need = rows.filter((p) => p.pick && p.qty).length; const al = priceAlerts(); const sk = sktSoon(3);
+  const vis = rows.filter((p) => (f === 'hepsi' || p.lvl === f) && (!qq || p.st.name.toLowerCase().includes(qq) || (p.st.cat || '').toLowerCase().includes(qq) || (p.st.loc || '').toLowerCase().includes(qq)));
+  const seg = [['hepsi', 'Hepsi ' + rows.length], ['acil', 'Acil ' + acil], ['azalan', 'Azalan ' + az], ['yeterli', 'Yeterli ' + (rows.length - acil - az)]];
+  const gs = [['liste', 'Liste'], ['kat', 'Kategori'], ['yer', 'Yer']];
+  return `${stokHead('Ne kadar kaldı, ne zaman biter, ne alınmalı.')}
+  <div class="kpis">${kpi('Stok değeri', fmt0(val))}${kpi('Acil', acil)}${kpi('Sipariş gereken', need)}</div>
+  ${sk.length ? `<div class="callout warn">${ic('alert')}<div><b>${sk.length} parti 3 gün içinde bozulacak veya bozuldu:</b> ${esc(sk.slice(0, 3).map((l) => (stById(l.sid) || { name: '' }).name.split(' (')[0] + ' ' + fq(l.qty) + ' · ' + sktTxt(dleft(l.exp))).join(', '))}<div style="margin-top:8px"><button class="btn sm" data-a="sttab" data-v="rapor">Detay</button></div></div></div>` : ''}
+  ${need ? `<div class="callout warn">${ic('alert')}<div><b>${need} ürün için sipariş gerekiyor.</b> ${props.length ? esc(props.map((o) => o.sup.name + ' ' + fmt0(o.total)).join(' · ')) : ''}<div style="margin-top:8px"><button class="btn sm" data-a="stkgo">Satın almaya git</button></div></div></div>` : `<div class="callout">${ic('check')}<div>Şu an sipariş vermen gereken ürün yok.</div></div>`}
+  ${al.length ? `<div class="callout">${ic('info')}<div><b>${al.length} üründe fiyat artışı:</b> ${esc(al.map((i) => i.st.name.split(' (')[0] + ' %' + Math.round(i.pct)).join(', '))}</div></div>` : ''}
+  <div class="row wrap" style="gap:10px"><div class="seg" role="group" aria-label="Filtre">${seg.map((x) => `<button data-a="stkf" data-v="${x[0]}" aria-pressed="${f === x[0]}">${esc(x[1])}</button>`).join('')}</div><div class="seg" role="group" aria-label="Gruplama">${gs.map((x) => `<button data-a="stg" data-v="${x[0]}" aria-pressed="${S.stGroup === x[0]}">${esc(x[1])}</button>`).join('')}</div>
+    <input type="text" class="grow" style="min-width:140px" placeholder="Ürün, kategori veya yer ara" value="${esc(S.stQ || '')}" data-ch="stq" aria-label="Ara"></div>
+  <div class="card flush">${vis.length ? groupRows(vis) : '<div class="empty">Bu filtrede ürün yok.</div>'}</div>
+  <p class="small muted">Sıralama aciliyete göredir. Satış verisi yoksa kalan gün gösterilmez.</p>${priceCard()}`;
+}
+function stokSayim() {
+  const c = S.cnt; const groups = {}; STOCK.forEach((st) => { const k = st.loc || 'Belirsiz'; (groups[k] = groups[k] || []).push(st); });
+  const last = COUNTLOG[0];
+  if (!c) return `${stokHead('Raftaki gerçek miktarı yaz, farkı sistem hesaplasın.')}
+  <div class="card stack"><div><h3>Sayım yap</h3><p class="muted small" style="margin-top:2px">Ürünleri sayarken yer yer ilerle. Sayım bitince sistemdeki miktarla farkı görür, onaylarsan stok düzelir. Fark kayıp ya da fire demektir.</p></div><button class="btn" data-a="cntstart">Sayıma başla</button></div>
+  ${last ? `<div class="callout">${ic('info')}<div>Son sayım: ${esc(isoShort(last.date))}, ${last.items.length} üründe fark, toplam ${fmt0(last.total)}.</div></div>` : ''}
+  ${COUNTLOG.length ? `<div class="card flush"><div style="padding:16px 16px 6px"><h3>Geçmiş sayımlar</h3></div>${COUNTLOG.slice(0, 6).map((x) => `<div class="logline" style="padding:10px 16px"><span>${esc(isoShort(x.date))} · ${esc(x.by || '')}<span class="small muted" style="display:block">${x.items.map((i) => esc(i.name.split(' (')[0]) + ' ' + (i.diff > 0 ? '+' : '') + q1(i.diff)).join(', ') || 'Fark yok'}</span></span><b class="num" style="color:${x.total < 0 ? 'var(--nar)' : 'inherit'}">${fmt0(x.total)}</b></div>`).join('')}</div>` : ''}`;
+  const n = Object.keys(c.vals).length;
+  return `${stokHead('Sayım sürüyor.')}
+  <div class="callout">${ic('info')}<div>Sadece saydığın ürünleri yaz, boş bıraktığın ürün değişmez. ${n} / ${STOCK.length} ürün girildi.</div></div>
+  ${Object.keys(groups).sort().map((k) => `<div class="card flush"><div class="lbl" style="padding:12px 16px 4px">${esc(k)}</div>${groups[k].map((st) => `<div class="logline" style="padding:10px 16px"><span>${esc(st.name)}<span class="small muted" style="display:block">Sistemde ${q1(st.qty)} ${esc(st.unit)}</span></span><input class="num" style="width:100px;text-align:right" type="number" min="0" step="0.01" placeholder="sayılan" value="${c.vals[st.id] != null ? c.vals[st.id] : ''}" data-ch="cntv" data-id="${st.id}" aria-label="${esc(st.name)} sayılan"></div>`).join('')}</div>`).join('')}
+  <div class="row wrap"><button class="btn grow" data-a="cntfinish"${n ? '' : ' disabled'}>Sayımı bitir ve farkı gör</button><button class="btn sec" data-a="cntcancel">Vazgeç</button></div>`;
+}
+function stokFire() {
+  const mon = WASTE.filter((w) => w.date.slice(0, 7) === REF_ISO.slice(0, 7)); const tot = mon.reduce((a, w) => a + w.cost, 0);
+  const opts = STOCK.map((s) => `<option value="${s.id}"${S.wasteSid === s.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
+  return `${stokHead('Dökülen, bozulan, ikram edilen ürünleri kaydet.')}
+  <div class="kpis">${kpi('Bu ay fire', fmt0(tot))}${kpi('Kayıt', mon.length)}${kpi('Fire oranı', stockValTxt(tot))}</div>
+  <div class="card stack"><div><h3>Fire yaz</h3></div>
+  <div class="field"><label for="wf-sid">Ürün</label><select id="wf-sid">${opts}</select></div>
+  <div class="field"><label for="wf-qty">Miktar</label><input type="number" min="0" step="0.01" id="wf-qty" inputmode="decimal" placeholder="Örn: 2"></div>
+  <div class="field"><label for="wf-why">Neden</label><select id="wf-why">${WHY.map((w) => `<option>${esc(w)}</option>`).join('')}</select></div>
+  <div class="field"><label for="wf-note">Not (istersen)</label><input type="text" id="wf-note"></div>
+  <div class="err" id="wf-err" role="alert"></div><button class="btn" data-a="wasteadd">Fire kaydet</button></div>
+  <div class="card flush"><div style="padding:16px 16px 6px"><h3>Son kayıtlar</h3></div>${WASTE.length ? WASTE.slice(0, 12).map((w) => `<div class="logline" style="padding:10px 16px"><span>${esc(w.name)}<span class="small muted" style="display:block">${esc(isoShort(w.date))} · ${esc(w.why)} · ${q1(w.qty)} ${esc(w.unit)}${w.note ? ' · ' + esc(w.note) : ''}</span></span><b class="num">${fmt0(w.cost)}</b></div>`).join('') : '<div class="empty">Henüz fire kaydı yok.</div>'}</div>`;
+}
+function stockValTxt(w) { const v = STOCK.reduce((a, s) => a + s.qty * (s.cost || 0), 0); return v > 0 ? '%' + (Math.round((w / v) * 1000) / 10).toLocaleString('tr-TR') : '-'; }
+function stokRapor() {
+  const mon = WASTE.filter((w) => w.date.slice(0, 7) === REF_ISO.slice(0, 7)); const fire = mon.reduce((a, w) => a + w.cost, 0);
+  const sayim = COUNTLOG.reduce((a, x) => a + Math.min(0, x.total), 0); const plan = stockPlan(); const sd = Math.max(...plan.map((p) => p.days), 0);
+  const dead = sd >= 1 ? plan.filter((p) => p.daily === 0 && p.src !== 'elle' && p.st.qty > 0) : []; const deadVal = dead.reduce((a, p) => a + p.st.qty * (p.st.cost || 0), 0);
+  const by = {}; mon.forEach((w) => { by[w.why] = (by[w.why] || 0) + w.cost; }); const mx = Math.max(1, ...Object.values(by));
+  const topP = {}; mon.forEach((w) => { topP[w.name] = (topP[w.name] || 0) + w.cost; });
+  const cat = {}; STOCK.forEach((s) => { const k = s.cat || 'Belirsiz'; cat[k] = (cat[k] || 0) + s.qty * (s.cost || 0); }); const cm = Math.max(1, ...Object.values(cat));
+  const dif = {}; COUNTLOG.forEach((x) => x.items.forEach((i) => { dif[i.name] = (dif[i.name] || 0) + i.val; })); const sk = sktSoon(14);
+  const bar = (l, v, m, tone) => `<div style="margin:6px 0"><div class="row between small"><span>${esc(l)}</span><b class="num">${fmt0(v)}</b></div><div class="minibar"><i style="width:${Math.max(3, Math.round((Math.abs(v) / m) * 100))}%;background:${tone || 'var(--cini)'}"></i></div></div>`;
+  return `${stokHead('Kayıp, fire ve bağlı para bir arada.')}
+  <div class="kpis">${kpi('Bu ay fire', fmt0(fire))}${kpi('Sayım farkı', fmt0(sayim))}${kpi('Hareketsiz stok', sd >= 1 ? fmt0(deadVal) : '-')}</div>
+  <div class="card stack"><div><h3>Son kullanma tarihi yaklaşanlar</h3><p class="muted small" style="margin-top:2px">14 gün içinde bozulacak partiler. En erken bozulan ilk kullanılmalı.</p></div>
+  ${sk.length ? sk.map((l) => { const st = stById(l.sid) || { name: '?', unit: '' }; const d = dleft(l.exp); return `<div class="logline"><span>${esc(st.name)}<span class="small muted" style="display:block">${fq(l.qty)} ${esc(st.unit)} · ${esc(isoShort(l.exp))}</span></span><span class="row" style="gap:6px"><span class="pill ${sktTone(d)}">${sktTxt(d)}</span>${d <= 0 ? `<button class="btn sm" data-a="lotwaste" data-id="${l.id}">Fire yaz</button>` : ''}</span></div>`; }).join('') : '<p class="small muted">14 gün içinde bozulacak parti yok.</p>'}</div>
+  <div class="card stack"><div><h3>Fire nedenleri (bu ay)</h3></div>${Object.keys(by).length ? Object.keys(by).map((k) => bar(k, by[k], mx, 'var(--nar)')).join('') : '<p class="small muted">Bu ay fire kaydı yok.</p>'}
+  ${Object.keys(topP).length ? `<p class="lbl" style="margin-top:8px">En çok fire veren ürünler</p>${Object.keys(topP).sort((a, b) => topP[b] - topP[a]).slice(0, 3).map((k) => bar(k, topP[k], Math.max(...Object.values(topP)), 'var(--nar)')).join('')}` : ''}</div>
+  <div class="card stack"><div><h3>Sayım farkları</h3><p class="muted small" style="margin-top:2px">Sistemdeki ile gerçek miktar arasındaki fark. Eksi değer, kayıp demektir.</p></div>${Object.keys(dif).length ? Object.keys(dif).sort((a, b) => dif[a] - dif[b]).slice(0, 5).map((k) => bar(k, dif[k], Math.max(...Object.values(dif).map(Math.abs), 1), dif[k] < 0 ? 'var(--nar)' : 'var(--yesil)')).join('') : '<p class="small muted">Henüz sayım yapılmadı.</p>'}</div>
+  <div class="card stack"><div><h3>Hareketsiz stok</h3><p class="muted small" style="margin-top:2px">Satış ve reçetelerde hiç kullanılmayan, rafta para bağlayan ürünler.</p></div>${sd < 1 ? '<p class="small muted">Satış verisi yüklenince hesaplanır.</p>' : dead.length ? dead.map((p) => `<div class="logline"><span>${esc(p.st.name)}<span class="small muted" style="display:block">${q1(p.st.qty)} ${esc(p.st.unit)}</span></span><b class="num">${fmt0(p.st.qty * (p.st.cost || 0))}</b></div>`).join('') : '<p class="small muted">Hareketsiz ürün yok.</p>'}</div>
+  <div class="card stack"><div><h3>Kategoriye göre stok değeri</h3></div>${Object.keys(cat).sort((a, b) => cat[b] - cat[a]).map((k) => bar(k, cat[k], cm)).join('')}</div>`;
+}
+const viewStokV14 = viewStok;
+viewStok = function () {
+  const r = S.user && S.user.role; if (r !== 'patron' && r !== 'mudur') return viewStokV14();
+  lotSync(); const b = S.stTab === 'sayim' ? stokSayim() : S.stTab === 'fire' ? stokFire() : S.stTab === 'rapor' ? stokRapor() : stokListe();
+  return `<div class="stack-lg">${b}</div>`;
+};
+H.sttab = (el) => { S.stTab = el.dataset.v; render(); };
+H.stg = (el) => { S.stGroup = el.dataset.v; render(); };
+H.wasteopen = (el) => { S.wasteSid = el.dataset.id; S.stTab = 'fire'; render(); window.scrollTo && window.scrollTo(0, 0); };
+function addWaste(st, qty, why, note) {
+  const q = Math.min(qty, st.qty); st.qty = r3(st.qty - q);
+  WASTE.unshift({ id: 'w' + (++seq), sid: st.id, name: st.name, unit: st.unit, qty: q, why, note: note || '', date: REF_ISO, cost: Math.round(q * (st.cost || 0) * 100) / 100, by: S.user ? S.user.name : '' });
+  mv(st, -q, 'fire', 'Fire: ' + why); auditAdd({ type: 'ord', text: 'Fire kaydı: ' + st.name + ' ' + q1(q) + ' ' + st.unit + ' (' + why + ')' });
+}
+H.wasteadd = () => {
+  const g = (id) => document.getElementById(id); const st = stById(g('wf-sid').value); const q = Number(String(g('wf-qty').value).replace(',', '.')); const err = (t) => { g('wf-err').textContent = t; };
+  if (!st) return err('Ürün seç.'); if (!(q > 0)) return err('Miktarı yaz.'); if (q > st.qty) return err('Stokta ' + q1(st.qty) + ' ' + st.unit + ' var, daha fazlasını yazamazsın.');
+  addWaste(st, q, g('wf-why').value, (g('wf-note').value || '').trim()); S.wasteSid = st.id; render(); toast('Fire kaydedildi.', 'ok');
+};
+H.lotwaste = (el) => { const l = LOTS.find((x) => x.id === el.dataset.id); if (!l) return; const st = stById(l.sid); if (!st) return; const q = l.qty; LOTS.splice(LOTS.indexOf(l), 1); addWaste(st, q, WHY[0], 'Parti: ' + (l.exp ? isoShort(l.exp) : '')); render(); toast('Fire kaydedildi.', 'ok'); };
+H.lotdel = (el) => { const i = LOTS.findIndex((x) => x.id === el.dataset.id); if (i >= 0) { LOTS.splice(i, 1); render(); } };
+H.lotadd = (el) => {
+  const st = stById(el.dataset.id); const g = (id) => document.getElementById(id); const q = Number(String(g('lq-' + st.id).value).replace(',', '.')); const d = g('ld-' + st.id).value;
+  if (!(q > 0) || !d) { toast('Miktar ve son kullanma tarihini yaz.', 'warn'); return; }
+  if (q > lotFree(st) + 1e-9) { toast('Parti, tarihi girilmemiş stoktan (' + q1(lotFree(st)) + ') fazla olamaz. Önce stok miktarını artır.', 'warn'); return; }
+  LOTS.push({ id: 'l' + (++seq), sid: st.id, qty: q, exp: d, recv: REF_ISO }); render(); toast('Parti eklendi.', 'ok');
+};
+H.cntstart = () => { S.cnt = { vals: {} }; render(); };
+H.cntcancel = () => { S.cnt = null; render(); };
+H.cntfinish = () => {
+  if (!S.cnt) return; const items = []; Object.keys(S.cnt.vals).forEach((sid) => { const st = stById(sid); const v = S.cnt.vals[sid]; if (!st || v == null || isNaN(v)) return; const diff = r3(v - st.qty); items.push({ sid, name: st.name, unit: st.unit, exp: st.qty, cnt: v, diff, val: Math.round(diff * (st.cost || 0) * 100) / 100 }); });
+  S.modal = { type: 'cntsum', items }; renderModal();
+};
+NEWM.cntsum = (m) => { const ch = m.items.filter((i) => i.diff !== 0); const tot = ch.reduce((a, i) => a + i.val, 0);
+  return sheet('Sayım sonucu', `${ch.length ? ch.map((i) => `<div class="logline"><span>${esc(i.name)}<span class="small muted" style="display:block">Sistemde ${q1(i.exp)}, sayılan ${q1(i.cnt)} ${esc(i.unit)}</span></span><span style="text-align:right"><b class="num" style="color:${i.diff < 0 ? 'var(--nar)' : 'var(--yesil)'}">${i.diff > 0 ? '+' : ''}${q1(i.diff)}</b><span class="small muted" style="display:block">${fmt0(i.val)}</span></span></div>`).join('') + `<div class="logline"><b>Toplam fark</b><b class="num">${fmt0(tot)}</b></div>` : '<p class="muted">Fark yok, sayım sistemle tutuyor.</p>'}
+  <div class="row wrap" style="margin-top:12px"><button class="btn grow" data-a="cntapply">${ch.length ? 'Stoğu düzelt' : 'Kapat'}</button><button class="btn sec" data-a="closemodal">Geri dön</button></div>`); };
+H.cntapply = () => {
+  const m = S.modal; if (!m || m.type !== 'cntsum') return; const ch = m.items.filter((i) => i.diff !== 0);
+  ch.forEach((i) => { const st = stById(i.sid); if (st) { st.qty = i.cnt; mv(st, i.diff, 'sayim', 'Sayım düzeltmesi'); } });
+  if (ch.length) { COUNTLOG.unshift({ id: 'c' + (++seq), date: REF_ISO, by: S.user ? S.user.name : '', items: ch, total: Math.round(ch.reduce((a, i) => a + i.val, 0) * 100) / 100 }); auditAdd({ type: 'ord', text: 'Stok sayımı: ' + ch.length + ' üründe fark' }); }
+  S.cnt = null; S.modal = null; render(); toast(ch.length ? 'Stok düzeltildi.' : 'Sayım kapandı.', 'ok');
+};
+H.sthist = (el) => { S.modal = { type: 'sthist', sid: el.dataset.id, range: '30' }; renderModal(); };
+H.hrange = (el) => { if (S.modal && S.modal.type === 'sthist') { S.modal.range = el.dataset.v; renderModal(); } };
+NEWM.sthist = (m) => { const st = stById(m.sid); if (!st) return ''; const cut = m.range === 'all' ? null : addDays(REF_ISO, -Number(m.range));
+  const rows = STOCKLOG.filter((x) => (x.sid === st.id || (!x.sid && x.name === st.name)) && (!cut || !x.iso || x.iso >= cut));
+  return sheet('Hareketler: ' + st.name.split(' (')[0], `<div class="seg" role="group" aria-label="Süre">${[['7', '7 gün'], ['30', '30 gün'], ['all', 'Tümü']].map((x) => `<button data-a="hrange" data-v="${x[0]}" aria-pressed="${m.range === x[0]}">${x[1]}</button>`).join('')}</div>
+  <div style="margin-top:10px">${rows.length ? rows.map((x) => `<div class="logline"><span>${esc(x.from)}<span class="small muted" style="display:block">${esc(x.t)}${x.by ? ' · ' + esc(x.by) : ''}</span></span><b class="num" style="color:${x.qty < 0 ? 'var(--nar)' : 'var(--yesil)'}">${x.qty > 0 ? '+' : ''}${q1(x.qty)}</b></div>`).join('') : '<p class="muted">Bu sürede hareket yok.</p>'}</div><p class="small muted" style="margin-top:8px">Şu an ${q1(st.qty)} ${esc(st.unit)} var.</p>`); };
+const _och15 = onChange;
+onChange = function (e) {
+  const el = e.target; const ch = el.dataset && el.dataset.ch; const st = el.dataset && el.dataset.id ? stById(el.dataset.id) : null;
+  if (ch === 'scat' && st) { st.cat = el.value.trim(); render(); return; }
+  if (ch === 'sloc' && st) { st.loc = el.value.trim(); render(); return; }
+  if (ch === 'sshelf' && st) { const v = Number(el.value); st.shelf = v > 0 ? v : 0; render(); return; }
+  if (ch === 'spkn' && st) { st.packName = el.value.trim(); render(); return; }
+  if (ch === 'spkc' && st) { const v = Number(el.value); st.packN = v > 1 ? v : 0; render(); return; }
+  if (ch === 'cntv' && S.cnt) { const v = el.value === '' ? null : Number(String(el.value).replace(',', '.')); if (v == null || isNaN(v) || v < 0) delete S.cnt.vals[el.dataset.id]; else S.cnt.vals[el.dataset.id] = v; render(); return; }
+  return _och15(e);
+};
+/* Bugün: SKT uyarısı */
+const bugunPatronV14 = bugunPatron;
+bugunPatron = function () { const h = bugunPatronV14(); const sk = sktSoon(3); if (!sk.length) return h; const l = sk[0]; const st = stById(l.sid) || { name: '' };
+  const t = `<div class="stack">${todo('alert', 'warn', sk.length + ' parti bozulmak üzere', st.name.split(' (')[0] + ' ' + sktTxt(dleft(l.exp)), 'stok')}</div>`;
+  return h.replace(/<div class="card stack"><div><h3>Giriş kodu<\/h3>/, t + '<div class="card stack"><div><h3>Giriş kodu</h3>'); };
+function stokSheets() {
+  const out = [];
+  if (WASTE.length) out.push(['Fire', [['Tarih', 'Ürün', 'Miktar', 'Birim', 'Neden', 'Tutar', 'Not']].concat(WASTE.map((w) => [w.date, w.name, w.qty, w.unit, w.why, { n: r2(w.cost) }, w.note])), [12, 26, 10, 10, 22, 12, 24]]);
+  if (LOTS.length) out.push(['Partiler', [['Ürün', 'Miktar', 'Son kullanma', 'Kalan gün']].concat(LOTS.map((l) => [(stById(l.sid) || {}).name || '', l.qty, l.exp || '', dleft(l.exp) == null ? '' : dleft(l.exp)])), [26, 10, 14, 10]]);
+  if (COUNTLOG.length) out.push(['Sayımlar', [['Tarih', 'Ürün', 'Sistemde', 'Sayılan', 'Fark', 'Tutar']].concat(COUNTLOG.flatMap((c) => c.items.map((i) => [c.date, i.name, i.exp, i.cnt, i.diff, { n: r2(i.val) }]))), [12, 26, 10, 10, 10, 12]]);
+  return out;
+}
+const eSheetsV14 = eSheets; eSheets = function () { return eSheetsV14().concat(stokSheets()); };
+
+if (typeof window !== 'undefined') { window.__K = { LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 </script>
 </body>
