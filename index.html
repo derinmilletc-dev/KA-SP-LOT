@@ -2920,7 +2920,7 @@ function pInit() {
     try {
       const db = await claude.use('db'); if (!db) return;
       let us = null; try { us = await claude.use('user'); } catch (e) { us = null; }
-      PS.db = db; PS.state = 'saving'; paintStatus();
+      if (PS.cloudOn) { PS.localDb = db; return; } PS.db = db; PS.state = 'saving'; paintStatus();
       if (us && us.can && us.can('data.write') === false) PS.canWrite = false;
       const tm = setTimeout(() => { if (!PS.loaded) { PS.state = 'error'; paintStatus(); } }, 10000);
       db.doc('kais/state').onSnapshot((snap) => {
@@ -4062,7 +4062,75 @@ onChange = function (e) {
   return _och16(e);
 };
 
-if (typeof window !== 'undefined') { window.__K = { parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v17: bulut eşitleme (Supabase app_state) */
+const CL = { on: false, ver: 0, timer: null, busy: false, err: '', at: '' };
+const clTime = () => new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+async function cloudConflict() {
+  const c = sbClient(); const r = await c.from('app_state').select('state,version').eq('business_id', SBS.biz.id).limit(1);
+  if (r.error || !r.data || !r.data[0]) throw (r.error || new Error('Bulut kaydı okunamadı.'));
+  CL.ver = r.data[0].version; PS.remote = r.data[0].state; PS.state = 'saved';
+  toast('Başka cihazda değişiklik olmuş, güncellendi. Son işlemini kontrol et.', 'warn'); setTimeout(() => { render(); }, 60);
+}
+async function cloudSet(d) {
+  const c = sbClient(); const bid = SBS.biz.id;
+  if (CL.ver === 0) {
+    const i = await c.from('app_state').insert({ business_id: bid, state: d.s, version: 1, updated_by: SBS.user.id });
+    if (i.error) { if (/duplicate|23505/i.test(String(i.error.message) + String(i.error.code))) return cloudConflict(); throw i.error; }
+    CL.ver = 1; CL.at = clTime(); return;
+  }
+  const u = await c.from('app_state').update({ state: d.s, version: CL.ver + 1, updated_at: new Date().toISOString(), updated_by: SBS.user.id }).eq('business_id', bid).eq('version', CL.ver).select('version');
+  if (u.error) throw u.error; if (!u.data || !u.data.length) return cloudConflict();
+  CL.ver += 1; CL.at = clTime();
+}
+async function cloudPoll() {
+  if (!CL.on || PS.busy || CL.busy || !SBS.biz) return; CL.busy = true;
+  try {
+    const c = sbClient(); const v = await c.from('app_state').select('version').eq('business_id', SBS.biz.id).limit(1);
+    if (!v.error && v.data && v.data[0] && v.data[0].version > CL.ver) {
+      const r = await c.from('app_state').select('state,version').eq('business_id', SBS.biz.id).limit(1);
+      if (!r.error && r.data && r.data[0]) { CL.ver = r.data[0].version; CL.at = clTime(); if (r.data[0].state !== PS.last) { PS.remote = r.data[0].state; render(); } }
+    }
+  } catch (e) {} CL.busy = false;
+}
+async function cloudAttach() {
+  const c = sbClient(); if (!c || !SBS.biz || CL.on) return;
+  const r = await c.from('app_state').select('state,version').eq('business_id', SBS.biz.id).limit(1);
+  if (r.error) { CL.err = /app_state/.test(r.error.message || '') ? 'Bulut tablosu kurulmamış. Supabase SQL Editor\'de app_state SQL\'ini çalıştır.' : sbMsg(r.error); return; }
+  CL.err = ''; const row = r.data && r.data[0];
+  if (!PS.localDb) PS.localDb = PS.db; PS.cloudOn = true; CL.on = true;
+  PS.db = { doc: () => ({ set: cloudSet, onSnapshot() {} }) }; PS.canWrite = true; PS.loaded = true;
+  if (row) { CL.ver = row.version; CL.at = clTime(); if (pApply(row.state)) PS.last = pSnap(); PS.state = 'saved'; toast('Bulut verisi yüklendi.', 'ok'); }
+  else { CL.ver = 0; PS.last = ''; PS.state = 'saving'; pSched(); }
+  clearInterval(CL.timer); CL.timer = setInterval(cloudPoll, 8000);
+}
+function cloudOff() { clearInterval(CL.timer); CL.on = false; CL.ver = 0; PS.cloudOn = false; PS.db = PS.localDb || null; PS.state = 'local'; }
+async function cloudTry() { try { await cloudAttach(); } catch (e) { CL.err = sbMsg(e); } }
+const sbBootV16 = sbBoot;
+sbBoot = async function () { await sbBootV16(); await cloudTry(); render(); };
+H.sbin = async () => { await sbAuth(false); await cloudTry(); render(); };
+H.sbup = async () => { await sbAuth(true); await cloudTry(); render(); };
+const _sbout17 = H.sbout; H.sbout = async () => { cloudOff(); await _sbout17(); };
+H.cloudsync = async () => { if (!CL.on) { await cloudTry(); render(); return; } await cloudPoll(); await pFlush(); render(); toast('Eşitlendi.', 'ok'); };
+const paintStatusV16 = paintStatus;
+paintStatus = function () { const e = document.getElementById('ps-chip'); if (e) e.textContent = (CL.on ? 'Bulut · ' : '') + (PS_TXT[PS.state] || ''); };
+function cloudCard() {
+  if (!sbOK() || !SBS.user) return '';
+  return `<div class="card stack"><div class="row between wrap"><div><h3>Ortak veri (bulut)</h3><p class="muted small" style="margin-top:2px">${CL.on ? 'Bu cihazdaki değişiklikler aynı hesapla bağlanan diğer cihazlara birkaç saniyede geçer.' : 'Veri şu an yalnızca bu cihazda duruyor.'}</p></div><span class="pill ${CL.on ? 'p-ok' : 'p-warn'}">${CL.on ? 'Açık' : 'Kapalı'}</span></div>
+  ${CL.on ? `<p class="small muted">Son eşitleme: ${esc(CL.at || '-')}. Sürüm ${CL.ver}.</p>` : ''}${CL.err ? `<div class="callout warn">${ic('alert')}<div>${esc(CL.err)}</div></div>` : ''}
+  <div class="row wrap"><button class="btn sm sec" data-a="cloudsync">${CL.on ? 'Şimdi eşitle' : 'Tekrar dene'}</button></div></div>`;
+}
+const sbCardV16 = sbCard; sbCard = function () { return sbCardV16() + cloudCard(); };
+const loginHTMLV16 = loginHTML;
+loginHTML = function () {
+  const h = loginHTMLV16(); if (!sbOK()) return h;
+  const box = SBS.user ? `<div class="stack"><p class="lbl">Bulut</p><p class="small">${CL.on ? 'Bu cihaz ortak veriye bağlı.' : 'Bulut hesabı bağlı, veri yükleniyor…'}</p>${CL.err ? `<p class="small" style="color:var(--bad)">${esc(CL.err)}</p>` : ''}</div>`
+    : `<details class="stack"><summary class="small" style="cursor:pointer">Bu cihazı ortak veriye bağla</summary><p class="small muted" style="margin:8px 0">Tüm cihazlarda aynı bulut hesabıyla bağlan. Bağlanınca stok, ekip ve diğer veriler ortak olur. Bu hesap yukarıdaki girişten ayrıdır.</p>
+    <div class="field"><label for="sb-em">Bulut e-postası</label><input type="text" id="sb-em" inputmode="email" autocomplete="username"></div><div class="field"><label for="sb-pw">Bulut şifresi</label><input type="password" id="sb-pw" autocomplete="current-password"></div>
+    <div class="err" id="sb-err" role="alert">${esc(SBS.err)}</div><div class="row wrap"><button type="button" class="btn sm" data-a="sbin">Bağlan</button><button type="button" class="btn sm sec" data-a="sbup">Hesap oluştur</button></div></details>`;
+  const i = h.lastIndexOf('</div></section>'); return i < 0 ? h : h.slice(0, i) + box + h.slice(i);
+};
+
+if (typeof window !== 'undefined') { window.__K = { CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
