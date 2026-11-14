@@ -656,7 +656,7 @@ function shellHTML() {
     <div class="me">${avatar(u, 38)}<div class="grow"><b style="display:block;font-weight:600">${esc(u.name)}</b><span class="small muted">${esc(ROLE_LABEL[u.role])}</span></div><button class="xbtn" data-a="logout" aria-label="Çıkış yap" title="Çıkış yap">${ic('logout')}</button></div>
   </aside>
   <div class="col">
-    <header class="top"><span class="mark">${mark(26)}</span><h1 class="ptitle">${esc(TITLES[S.view] || '')}</h1><span class="biz">${esc(BIZ)}</span><button class="avatar" style="background:${u.color}" data-a="menu" aria-label="Hesap menüsü">${esc(ini(u.name))}</button></div>
+    <header class="top"><span class="mark">${mark(26)}</span><h1 class="ptitle">${esc(TITLES[S.view] || '')}</h1><span class="biz">${esc(BIZ)}</span><button class="avatar" style="background:${u.color}" data-a="menu" aria-label="Hesap menüsü">${esc(ini(u.name))}</button></header>
     <main class="main" id="main">${viewHTML()}</main>
   </div>
   <nav class="tabbar" aria-label="Alt menü">${nav.filter((n) => !n[3]).map((n) => item(n, 'tab')).join('')}${nav.some((n) => n[3]) ? `<button class="tab" data-a="menu" ${nav.some((n) => n[3] && n[0] === S.view) ? 'aria-current="page"' : ''}>${ic('list', 22)}<span>Daha fazla</span></button>` : ''}</nav>
