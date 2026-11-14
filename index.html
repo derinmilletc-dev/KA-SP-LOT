@@ -49,7 +49,7 @@ function loginView(){
 }
 function setupView(){
   app.innerHTML=head('Hoş geldin')+`<div class="card"><h2>İşletmeni oluştur</h2><p class="m">Tedarikçiysen ve burayı görüyorsan, davet e-postası senin hesabınla eşleşmemiş olabilir. İşletme sahibine e-postanı doğru yazdırmasını söyle.</p>
-  <label>İşletme adı</label><input id="bn" value="Çınar Kafe & Fırın"><p class="err" id="msg"></p><button id="mk">İşletme oluştur</button></div>`; bindOut();
+  <label>İşletme adı</label><input id="bn" type="text" autocomplete="off" placeholder="Örn: Çınar Kafe &amp; Fırın"><p class="err" id="msg"></p><button id="mk">İşletme oluştur</button></div>`; bindOut();
   $('#mk').onclick=async()=>{const n=$('#bn').value.trim(); if(!n) return say('Ad yaz.'); const r=await sb.from('businesses').insert({name:n,owner_id:ME.id}); if(r.error) say(r.error.message); else boot();};
 }
 /* ---------- PATRON ---------- */
