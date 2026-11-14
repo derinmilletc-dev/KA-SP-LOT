@@ -782,6 +782,12 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tpl-k{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--cini);color:#fff;display:grid;place-items:center;font-style:normal}
 .tpl-k svg{width:13px;height:13px}
 
+.gz-b{gap:6px}
+.gz-b button{padding:0 11px;font-size:13px;min-height:38px;white-space:nowrap}
+.gz-b .gz-p{font-size:13.5px}
+.gz-s{gap:6px}
+@media(max-width:430px){.gz-s button:first-child{padding:0;width:38px;justify-content:center}.gz-s button:first-child span{display:none}}
+@media(max-width:375px){.gz-p svg{display:none}.gz-b button{padding:0 9px}.gz-s button:first-child{padding:0}}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -6369,7 +6375,7 @@ brCard = function () {
   const b = gunBullets(); const first = b.find((x) => x[0] === 'warn');
   const art = '<svg class="gz-art" viewBox="0 0 110 100" aria-hidden="true"><defs><linearGradient id="gzc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6FA8F2"/><stop offset="1" stop-color="#2F68C8"/></linearGradient></defs><g transform="rotate(8 55 50)"><rect x="18" y="10" width="62" height="80" rx="9" fill="url(#gzc)"/><rect x="26" y="20" width="46" height="62" rx="5" fill="#fff" opacity=".95"/><rect x="38" y="4" width="22" height="12" rx="5" fill="#9CC4F7"/><rect x="33" y="28" width="12" height="12" rx="3" fill="#22B573"/><path d="m35.5 34 2.2 2.2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="50" y="30" width="16" height="3" rx="1.5" fill="#9DB8DE"/><rect x="50" y="36" width="11" height="3" rx="1.5" fill="#C4D5EC"/><rect x="33" y="48" width="12" height="12" rx="3" fill="#22B573"/><path d="m35.5 54 2.2 2.2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="50" y="50" width="16" height="3" rx="1.5" fill="#9DB8DE"/><rect x="50" y="56" width="11" height="3" rx="1.5" fill="#C4D5EC"/></g><g><rect x="58" y="58" width="44" height="34" rx="7" fill="#fff" stroke="#BCD3F2"/><rect x="66" y="74" width="7" height="12" rx="2" fill="#4B87DE"/><rect x="77" y="68" width="7" height="18" rx="2" fill="#2F68C8"/><rect x="88" y="64" width="7" height="22" rx="2" fill="#1F55B0"/></g></svg>';
   const det = S.gunOpen ? `<div class="gz-o">${BR.text ? `<div style="white-space:pre-wrap">${esc(BR.text).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')}</div>` : (ai && BR.busy ? '<p>Kais AI bugünün özetini hazırlıyor…</p>' : b.map((x) => `<p>${esc(x[1])}</p>`).join(''))}</div>` : '';
-  return `<div class="gz"><div class="gz-h"><span class="gz-i">${ic('sparkle', 22)}</span><div><h3>Günün özeti</h3><p>Kais AI bugün için dikkat edilmesi gerekenleri sıraladı.</p></div></div>${art}<ul class="gz-l">${b.map((x) => `<li>${GZ[x[0]]}<span>${esc(x[1])}</span></li>`).join('')}</ul>${det}<div class="gz-b"><button type="button" class="gz-p" data-a="gundet">Detayları gör ${ic('arrow', 16)}</button><span class="gz-s"><button type="button" data-a="gunyen">${ic('refresh', 16)}<span>Yenile</span></button>${ai && AI_ROLES.includes(S.user.role) ? `<button type="button" data-a="brask">${ic('chat', 16)}<span>Kais AI'ya sor</span></button>` : ''}</span></div></div>`;
+  return `<div class="gz"><div class="gz-h"><span class="gz-i">${ic('sparkle', 22)}</span><div><h3>Günün özeti</h3><p>Kais AI bugün için dikkat edilmesi gerekenleri sıraladı.</p></div></div>${art}<ul class="gz-l">${b.map((x) => `<li>${GZ[x[0]]}<span>${esc(x[1])}</span></li>`).join('')}</ul>${det}<div class="gz-b"><button type="button" class="gz-p" data-a="gundet">Detayları gör ${ic('arrow', 16)}</button><span class="gz-s"><button type="button" data-a="gunyen" aria-label="Yenile">${ic('refresh', 16)}<span>Yenile</span></button>${ai && AI_ROLES.includes(S.user.role) ? `<button type="button" data-a="brask">${ic('chat', 16)}<span>Kais AI'ya sor</span></button>` : ''}</span></div></div>`;
 };
 H.gundet = () => { S.gunOpen = !S.gunOpen; render(); };
 H.gunyen = () => { if (aiReady()) H.brrefresh(); else { render(); toast('Özet güncellendi.', 'ok'); } };
