@@ -6503,7 +6503,8 @@ const _vmu52 = viewMusteri; viewMusteri = function () { return _vmu52().replace(
 
 /* ===== v54: kampanya şablonları: işletmeye göre 10 davet, yatay kaydırma, Kais AI önerisi ===== */
 ICONS.heart = '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'; ICONS.star = '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'; ICONS.party = '<path d="M4 20 9 7l8 8zM14 4v2M19 8h2M18 3l1 1.5M20 13l1.5.5"/>'; ICONS.sparkle = ICONS.sparkle || '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>';
-const TPL_IC = ['tag', 'gift', 'heart', 'party', 'users', 'leaf', 'cal', 'clock', 'star', 'chat'];
+ICONS.invite = '<path d="M3 10l9-6 9 6v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 10l9 6 9-6"/><path d="M9 12V8.5h6V12M10.5 10h3"/>'; ICONS.leaf = ICONS.leaf || '<path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15Z"/><path d="M5 19 13 11"/>';
+const TPL_IC = ['tag', 'gift', 'heart', 'party', 'users', 'invite', 'leaf', 'clock', 'star', 'chat'];
 const TPL_V = {
   kafe: { disc: 'sıcak içeceklerde', nw: 'tarçınlı rulo', treat: 'bir kahve', book: 'Masanı önceden ayırt', season: 'sonbahar menümüz', happy: 'hafta içi 15.00-17.00 arası ikinci kahve yarı fiyatına', ev: 'kahve tadım günümüz' },
   firin: { disc: 'unlu mamullerde', nw: 'taze çıkan yeni böreğimiz', treat: 'bir poğaça', book: 'Siparişini önceden ver', season: 'sonbahar lezzetlerimiz', happy: 'akşam 18.00 sonrası günün ürünlerinde indirim', ev: 'ekşi maya atölyemiz' },
