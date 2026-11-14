@@ -717,6 +717,39 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .hadd{display:inline-flex;align-items:center;gap:8px;margin-top:12px;min-height:44px;padding:0 16px;border:1.5px solid #CBDAEE;border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer}
 .hadd svg{color:var(--cini)}
 
+/* v52 müşteri */
+.cm-c{position:relative;padding:14px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.cm-h{display:flex;gap:12px;align-items:center;padding-right:96px}
+.cm-i{flex:none;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#1F66BD,#0E4B97);color:#fff;display:grid;place-items:center;box-shadow:0 4px 10px rgba(14,75,151,.28)}
+.cm-h h3{margin:0;font-size:21px}.cm-h p{margin:2px 0 0;font-size:13.5px;color:var(--ink-2);line-height:1.35}
+.cm-c>.cm-art{position:absolute;top:6px;right:8px;width:84px;height:auto}
+.cm-l{display:block;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.cm-ch{display:flex;flex-wrap:wrap;gap:8px}
+.cm-p{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;border:1px solid #D6DFEB;border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-size:15px;font-weight:500;cursor:pointer;box-shadow:0 1px 3px rgba(20,60,120,.07)}
+.cm-p[aria-pressed=true]{background:linear-gradient(180deg,#1F66BD,#0E4B97);border-color:#0E4B97;color:#fff;font-weight:600;box-shadow:0 4px 10px rgba(14,75,151,.28)}
+.cm-n{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:#EAF2FD;color:var(--ink)}
+.cm-n.warn{background:#FFF1D6}.cm-n.warn>svg{color:#C98A12}.cm-n>svg{flex:none;color:var(--cini);margin-top:1px}
+.cm-n b{font-size:16px}.cm-n p{margin:3px 0 0;font-size:14px;line-height:1.4}
+.cm-c input,.cm-c textarea{width:100%;box-sizing:border-box;border:1px solid #D3DCE8;border-radius:14px;background:#fff;padding:0 14px;min-height:52px;font:inherit;font-size:16px;color:var(--ink)}
+.cm-c textarea{padding:12px 14px;min-height:130px;resize:vertical}
+.cm-c input:focus,.cm-c textarea:focus{outline:none;border-color:var(--cini);box-shadow:0 0 0 3px rgba(13,86,166,.15)}
+.cm-pv{position:relative;display:flex;gap:12px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#E2ECFB,#F1F7FF);overflow:hidden}
+.cm-pv>svg.ic{flex:none;color:var(--cini);margin-top:2px}
+.cm-pv b{font-size:16px}.cm-pv p{margin:4px 0 0;font-size:14px;line-height:1.4;padding-right:70px}
+.cm-pv small{display:block;margin-top:6px;font-size:12.5px;line-height:1.35;color:var(--muted);padding-right:70px}
+.cm-pv .cm-art{position:absolute;right:6px;top:8px;width:68px;height:auto;opacity:.9}
+.cm-go{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;border:0;border-radius:14px;background:linear-gradient(180deg,#1F66BD,#0E4B97);color:#fff;font:inherit;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 6px 14px rgba(14,75,151,.28)}
+.cm-go b{font-weight:700}
+.cm-f{margin:0;font-size:13px;line-height:1.45;color:var(--ink-2)}
+.cm-g{padding:0;overflow:hidden}
+.cm-gh{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #EAEFF6}.cm-gh h3{margin:0;font-size:18px}
+.cm-gi{width:38px;height:38px;border-radius:11px;background:#E6F0FC;color:var(--cini);display:grid;place-items:center}
+.cm-r{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #EAEFF6}.cm-r:last-child{border-bottom:0}
+.cm-r>div{flex:1;min-width:0}.cm-r b{display:block;font-size:16px}.cm-r span{display:block;margin-top:2px;font-size:13.5px;color:var(--ink-2)}.cm-r>svg{color:var(--ink-2);flex:none}
+
+.top .bname{font-size:17px}.top .bsep{margin:0 2px 0 0}
+.top .bsep~#ps-chip{display:none}
+.cm-p{padding:0 15px;font-size:14.5px}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -1060,7 +1093,7 @@ function shellHTML() {
     <div class="me">${avatar(u, 38)}<div class="grow"><b style="display:block;font-weight:600">${esc(u.name)}</b><span class="small muted">${esc(ROLE_LABEL[u.role])}</span></div><button class="xbtn" data-a="logout" aria-label="Çıkış yap" title="Çıkış yap">${ic('logout')}</button></div>
   </aside>
   <div class="col">
-    <header class="top"><span class="mark">${mark(26)}</span>${['bugun', 'ekip'].includes(S.view) ? '<span class="bname">KaisPilot</span><span class="bsep"></span>' : ''}<h1 class="ptitle">${esc(TITLES[S.view] || '')}</h1><span class="biz">${esc(BIZ)}</span><button class="avatar" style="background:${u.color}" data-a="menu" aria-label="Hesap menüsü">${esc(ini(u.name))}</button></header>
+    <header class="top"><span class="mark">${mark(26)}</span>${['bugun', 'ekip', 'musteri'].includes(S.view) ? '<span class="bname">KaisPilot</span><span class="bsep"></span>' : ''}<h1 class="ptitle">${esc(TITLES[S.view] || '')}</h1><span class="biz">${esc(BIZ)}</span><button class="avatar" style="background:${u.color}" data-a="menu" aria-label="Hesap menüsü">${esc(ini(u.name))}</button></header>
     <main class="main" id="main">${viewHTML()}</main>
   </div>
   <nav class="tabbar" aria-label="Alt menü">${nav.filter((n) => !n[3]).map((n) => item(n, 'tab')).join('')}${nav.some((n) => n[3]) ? `<button class="tab" data-a="menu" ${nav.some((n) => n[3] && n[0] === S.view) ? 'aria-current="page"' : ''}>${ic('list', 22)}<span>Daha fazla</span></button>` : ''}</nav>
@@ -6408,6 +6441,27 @@ viewEkip = function () {
   const tk = ekipTasks();
   return `<div class="stack-lg">${segH}<div class="stack-lg dash">${ekipGun()}${ekipKais()}<section class="dsec"><div class="dsec-h"><h2>Bugün ne yapmalısın?</h2><p class="muted">${tk.length ? 'Ekibinle ilgili ' + tk.length + ' konu seni bekliyor.' : 'Ekipte bekleyen konu yok.'}</p></div>${tk.length ? `<div class="dtodo">${tk.join('')}</div>` : ''}</section>${codeCardEkip()}</div>${rest}</div>`;
 };
+
+/* ===== v52: Müşteri sayfası mockup ===== */
+ICONS.send = ICONS.send || '<path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/>';
+function kampanyaHTML() {
+  const c = S.camp; const all = segList(c.seg); const ok = all.filter((x) => x.iys === 'onayli'); const out = all.length - ok.length; const first = ok[0];
+  const prev = (c.body || '').replace(/\{ad\}/g, first ? first.name.split(' ')[0] : 'Müşterimiz');
+  const env = '<svg class="cm-art" viewBox="0 0 90 70" aria-hidden="true"><defs><linearGradient id="cme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6FA8F2"/><stop offset="1" stop-color="#2F68C8"/></linearGradient></defs><path d="M12 30 45 52 78 30v26a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6z" fill="url(#cme)"/><rect x="24" y="8" width="42" height="34" rx="4" fill="#fff" stroke="#BCD3F2" transform="rotate(-6 45 25)"/><g transform="rotate(-6 45 25)"><rect x="31" y="16" width="28" height="3" rx="1.5" fill="#6FA0E6"/><rect x="31" y="23" width="24" height="3" rx="1.5" fill="#9DBDEB"/><rect x="31" y="30" width="26" height="3" rx="1.5" fill="#9DBDEB"/></g><path d="M12 30 45 52 78 30" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.5"/><path d="M70 6l3 6M80 14l-6 2M62 2l1 5" stroke="#4B87DE" stroke-width="2" stroke-linecap="round"/></svg>';
+  return `<div class="stack-lg cm">
+  <div class="card cm-c"><div class="cm-h"><span class="cm-i">${ic('send', 24)}</span><div><h3>Yeni kampanya</h3><p>Müşterilerine toplu e-posta gönder.</p></div></div>${env}
+    <div class="cm-s"><span class="cm-l">Şablon</span><div class="cm-ch">${TPL.map((t, i) => `<button type="button" class="cm-p" data-a="camptpl" data-i="${i}">${esc(t.n)}</button>`).join('')}</div></div>
+    <div class="cm-s"><span class="cm-l">Kime</span><div class="cm-ch">${[['all', 'Tüm müşteriler'], ['recent', 'Son 30 gün gelenler'], ['loyal', 'Sadık müşteriler (8+ ziyaret)']].map((x) => `<button type="button" class="cm-p" data-a="campseg" data-v="${x[0]}" aria-pressed="${c.seg === x[0]}">${c.seg === x[0] ? ic('check', 18) : ''}${x[1]}</button>`).join('')}</div></div>
+    <div class="cm-n ${out ? 'warn' : ''}">${ic('users', 24)}<div><b>${ok.length} kişiye gidecek</b>${out ? `<p>${out} kişi e-posta izni vermediği ya da listeden çıktığı için hariç tutuldu.</p>` : ''}</div></div>
+    <div class="cm-s"><label class="cm-l" for="c-subj">Konu</label><input id="c-subj" type="text" value="${esc(c.subj)}" placeholder="Örnek: Bu hafta sonu %15 indirim"></div>
+    <div class="cm-s"><label class="cm-l" for="c-body">Mesaj</label><textarea id="c-body" placeholder="{ad} yazarsan her müşterinin adı otomatik gelir">${esc(c.body)}</textarea></div>
+    <div class="cm-pv">${ic('mail', 22)}<div><b>Önizleme</b><p style="white-space:pre-line">${esc(prev) || 'Mesajın yazınca burada görünür.'}</p><small>Bu iletiyi almak istemiyorsanız buradan listeden çıkabilirsiniz.</small></div>${env}</div>
+    <button type="button" class="cm-go" data-a="campsend">${ic('send', 20)}<b>${ok.length} kişiye gönder</b></button>
+    <p class="cm-f">Gönderen: ${mailReady() ? esc(S.mail.addr) : 'e-posta bağlı değil'}. Ticari elektronik ileti için alıcı onayı ve çıkış bağlantısı gerekir, kapsamı iş hukukçusuyla doğrula.</p>
+  </div>
+  <div class="card cm-g"><div class="cm-gh"><span class="cm-gi">${ic('layers', 22)}</span><h3>Gönderilen kampanyalar</h3></div>${CAMPAIGNS.length ? CAMPAIGNS.slice().reverse().map((x) => `<div class="cm-r"><div><b>${esc(x.subj)}</b><span>${esc(x.date)} · ${x.sent} kişiye gitti · açılma ${esc(x.open)}</span></div>${ic('chevron', 18)}</div>`).join('') : '<p class="muted" style="padding:4px 14px 14px">Henüz kampanya göndermedin.</p>'}</div></div>`;
+}
+const _vmu52 = viewMusteri; viewMusteri = function () { return _vmu52().replace('<div class="seg"', '<div class="seg seg-b"'); };
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
