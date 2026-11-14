@@ -49,7 +49,15 @@ body.lg .err{margin:0;font-size:14px;min-height:0}body.lg .err:empty{display:non
 .tn svg{flex:none;color:#0D56A6;margin-top:1px}
 .tfoot{margin:14px 0 calc(18px + env(safe-area-inset-bottom));text-align:center;font-size:12.5px;color:#8895A9}
 body:not(.lg) .tfoot{margin-top:4px}
-body.lg .th{box-sizing:border-box;height:clamp(160px,calc(100vh - 560px),220px);height:clamp(160px,calc(100svh - 560px),220px);display:flex;flex-direction:column;justify-content:center}body.lg .th-in{width:100%}
+/* görseldeki gibi: üst band birebir */
+body.lg .th{position:relative;padding:0;height:auto;aspect-ratio:1065/322;background:#0B3D67 url(/tedarikci/ted-hero.jpg) top center/100% auto no-repeat}
+body.lg .th-in{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.lg{background:linear-gradient(180deg,#1D507D 0,#1D507D calc(30vw),#9DB5CF calc(30vw + 170px),#E6EDF5 calc(30vw + 330px),#F2F6FB calc(30vw + 520px)) no-repeat,#F2F6FB!important}
+body.lg .tc{margin:0 7%;max-width:none}
+@media(min-width:620px){body.lg .th{aspect-ratio:auto;height:190px;background:#0F4472}body.lg .th::after{content:"";position:absolute;inset:0;background:url(/tedarikci/ted-hero.jpg) center/auto 100% no-repeat;-webkit-mask-image:linear-gradient(90deg,transparent calc(50% - 330px),#000 calc(50% - 250px),#000 calc(50% + 250px),transparent calc(50% + 330px));mask-image:linear-gradient(90deg,transparent calc(50% - 330px),#000 calc(50% - 250px),#000 calc(50% + 250px),transparent calc(50% + 330px))}body.lg .tc{max-width:480px;margin:0 auto}html,body.lg{background:linear-gradient(180deg,#0F4472 0,#1D507D 190px,#9DB5CF 330px,#E6EDF5 520px,#F2F6FB 700px) no-repeat,#F2F6FB!important}}
+.tor{display:flex;align-items:center;gap:14px;color:#66738A;font-size:13.5px;margin:0 6px}
+.tor::before,.tor::after{content:"";flex:1;height:1px;background:#D5DEEA}
+.tn{background:#E4EDF8}
 </style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="tfoot">KaisPilot Tedarik · v5</p>
 <script>
 window.addEventListener('error',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+e.message+' ('+(e.lineno||'')+')';document.body.appendChild(d);});
@@ -87,6 +95,7 @@ function loginView(){
    <div class="f"><label for="pw">Şifre</label><div class="ti">${sv('<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>')}<input id="pw" type="password" autocomplete="current-password" placeholder="En az 8 karakter"><button type="button" class="eye" id="eye" aria-label="Şifreyi göster veya gizle">${sv('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}</button></div></div>
    <p class="err" id="msg" role="alert"></p>
    <button type="button" class="tb p" id="in">Giriş yap ${sv('<path d="M4 12h15M13 6l6 6-6 6"/>',22)}</button>
+   <div class="tor"><span>veya</span></div>
    <button type="button" class="tb o" id="up">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',20)}<span>Hesap oluştur</span></button>
   </form>
   <div class="tn">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',18)}<span>Tedarikçiysen, sana davet gönderen işletmenin yazdığı e-posta ile hesap oluştur.</span></div></section>`;
