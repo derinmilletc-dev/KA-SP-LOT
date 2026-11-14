@@ -6944,19 +6944,20 @@ if (!window.__rzTimer) { window.__rzTimer = setInterval(() => { try {
   const rr = render; render = function () { if (S.closed && S.closedFor && S.closedFor !== PERIOD) S.closed = false; return rr.apply(this, arguments); }; }
 
 /* v64: giriş sayfasında hızlı panel geçişleri (deneme) */
-S.lgRole = S.lgRole || '';
 const _lgHTML64 = loginHTML;
 loginHTML = function () {
   let h = _lgHTML64(); if (!sbOK()) return h; const tab = S.lgTab || 'own';
-  const roles = [['mudur', 'Müdür', 'Müdür'], ['muhasebeci', 'Muhasebeci', 'Muhasebeci'], ['calisan', 'Çalışan', 'Çalışan']];
   if (tab === 'emp' && !(SBS.user && ID.mems && ID.mems.length > 1 && !ID.active)) {
-    const sel = S.lgRole; const chips = `<div class="lx-rq"><p>Hangi rolle giriyorsun?</p><div>${roles.map((r) => `<button type="button" data-a="lgrole" data-v="${r[0]}" aria-pressed="${sel === r[0]}">${r[1]}</button>`).join('')}</div>${sel ? `<p class="lx-rh">${S.empMode !== 'join' ? `Daha önce katıldıysan e-posta ve şifrenle gir, <b>${esc(roles.find((r) => r[0] === sel)[2])}</b> ekranın otomatik açılır.` : `Patronun Ekip sayfasındaki <b>${esc(roles.find((r) => r[0] === sel)[2])}</b> satırından kod üretir. Kodu aşağıya yaz.`}</p>${S.empMode !== 'join' ? `<button type="button" class="lx-link" data-a="empmode" data-v="join">İlk kez mi? Davet koduyla katıl</button>` : `<button type="button" class="lx-link" data-a="empmode" data-v="in">Zaten hesabım var, giriş yap</button>`}` : ''}</div>`;
+    const roles = [['mudur', 'Müdür'], ['muhasebeci', 'Muhasebeci'], ['calisan', 'Çalışan']];
+    const chips = `<div class="lx-rq"><p>Panele hızlı geç (deneme)</p><div>${roles.map((r) => `<button type="button" data-a="lgrole" data-v="${r[0]}">${r[1]}</button>`).join('')}</div></div>`;
     h = h.replace(/(<div class="lx-tabs"[\s\S]*?<\/div>)/, '$1' + chips);
   }
   const sup = `<a class="lx-supq" href="/tedarikci/"><span class="grow"><b>Tedarikçi misin?</b><em>Tedarikçi paneline git</em></span>${LXI.arrow}</a>`;
   return h.replace(/<\/div><\/section><\/div>$/, sup + '</div></section></div>');
 };
-H.lgrole = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.lgRole = S.lgRole === el.dataset.v ? '' : el.dataset.v; render(); };
+H.lgrole = (el) => { const u = USERS.find((x) => x.role === el.dataset.v); if (!u) return; loginAs(u); toast('Deneme paneli açıldı. Bu ekranda kayıtlı veri yok.'); };
+H.lgtab = (function (prev) { return function (el) { if (el.dataset.v === 'sup' && sbOK() && typeof location !== 'undefined' && /^http/.test(location.protocol)) { location.href = '/tedarikci/'; return; } return prev(el); }; })(_lgtab44);
+if (typeof window !== 'undefined') window.addEventListener('pageshow', (e) => { if (e.persisted) { try { render(); } catch (x) {} } });
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
