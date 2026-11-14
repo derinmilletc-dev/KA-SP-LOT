@@ -4410,7 +4410,7 @@ ICONS.calendar = '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d
 const RCFG = { open: 8, close: 22, dur: 90, seeded: false }; const TABLES = [];
 const RESV = [
   { id: 'r1', name: 'Selin Kaya', phone: '0532 111 22 33', n: 2, date: REF_ISO, time: '12:30', dur: 60, tids: [], src: 'Telefon', note: 'Pencere kenarı olursa sevinir', st: 'onay' },
-  { id: 'r2', name: 'Demir Ailesi', phone: '0533 444 55 66', n: 5, date: REF_ISO, time: '19:30', dur: 120, tids: [], src: 'WhatsApp', note: 'Doğum günü, pasta getirecekler', st: 'bekliyor' },
+  { id: 'r2', name: 'Demir Ailesi', phone: '0533 444 55 66', n: 5, date: REF_ISO, time: '19:30', dur: 120, tids: [], src: 'WhatsApp', note: 'Doğum günü, pasta getirecekler', st: 'onay' },
   { id: 'r3', name: 'Mavi Ofis', phone: '0542 777 88 99', n: 8, date: REF_ISO, time: '13:00', dur: 90, tids: [], src: 'Telefon', note: '', st: 'onay' },
   { id: 'r4', name: 'Murat Yılmaz', phone: '0505 222 33 44', n: 4, date: addDays(REF_ISO, 1), time: '20:00', dur: 90, tids: [], src: 'Yüz yüze', note: '', st: 'onay' },
   { id: 'r5', name: 'Demir Ailesi', phone: '0533 444 55 66', n: 4, date: addDays(REF_ISO, -7), time: '19:00', dur: 90, tids: ['t4'], src: 'WhatsApp', note: '', st: 'gelmedi' },
@@ -4421,11 +4421,11 @@ P_SCOPE.RESV = 'ekip'; P_SCOPE.TABLES = 'ekip'; P_SCOPE.RCFG = 'ekip';
 NAV.patron.splice(5, 0, ['rezerv', 'Rezervasyon', 'calendar', 'more']); NAV.mudur.push(['rezerv', 'Rezervasyon', 'calendar']); NAV.calisan.push(['rezerv', 'Rezervasyon', 'calendar', 'more']); TITLES.rezerv = 'Rezervasyon';
 const toMin = (t) => { const a = String(t || '0:0').split(':').map(Number); return (a[0] || 0) * 60 + (a[1] || 0); };
 const fromMin = (x) => String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0');
-const RZ_ST = { bekliyor: ['p-warn', 'Onay bekliyor'], onay: ['p-info', 'Onaylı'], geldi: ['p-ok', 'Masada'], bitti: ['p-mute', 'Tamamlandı'], gelmedi: ['p-bad', 'Gelmedi'], iptal: ['p-mute', 'İptal'] };
+const RZ_ST = { bekliyor: ['p-warn', 'Onay bekliyor'], onay: ['p-info', 'Bekleniyor'], geldi: ['p-ok', 'Masada'], bitti: ['p-mute', 'Tamamlandı'], gelmedi: ['p-bad', 'Gelmedi'], iptal: ['p-mute', 'İptal'] };
 const rzActive = (r) => ['bekliyor', 'onay', 'geldi'].includes(r.st);
 const rzDigits = (p) => String(p || '').replace(/\D/g, '').slice(-10);
 function seedTables() { if (TABLES.length || RCFG.seeded) return; [['1', 2, 'İç'], ['2', 2, 'İç'], ['3', 4, 'İç'], ['4', 4, 'İç'], ['5', 4, 'Bahçe'], ['6', 6, 'İç'], ['7', 6, 'Bahçe'], ['8', 8, 'İç']].forEach((x) => TABLES.push({ id: 't' + x[0], name: 'Masa ' + x[0], cap: x[1], zone: x[2] })); RCFG.seeded = true; }
-function rzSeat() { RESV.forEach((r) => { if (!r.tids.length && rzActive(r)) { const a = rzAssign(r.date, r.time, r.dur, r.n, r.id); if (a) r.tids = a; } }); }
+function rzSeat() { RESV.forEach((r) => { if (r.st === 'bekliyor') r.st = 'onay'; if (!r.tids.length && rzActive(r)) { const a = rzAssign(r.date, r.time, r.dur, r.n, r.id); if (a) r.tids = a; } }); }
 function rzBusy(date, s, e, ignore) { const m = {}; RESV.filter((r) => r.date === date && rzActive(r) && r.id !== ignore).forEach((r) => { const rs = toMin(r.time); if (rs < e && s < rs + r.dur) r.tids.forEach((t) => { m[t] = r; }); }); return m; }
 function rzAssign(date, time, dur, n, ignore) {
   const s = toMin(time); const busy = rzBusy(date, s, s + dur, ignore); const free = TABLES.filter((t) => !busy[t.id]);
@@ -4451,7 +4451,6 @@ function rzMsg(r, kind) {
 function rzWa(r, text) { let d = String(r.phone || '').replace(/\D/g, ''); if (!d) return ''; if (d.startsWith('0')) d = '90' + d.slice(1); else if (d.length === 10) d = '90' + d; return 'https://wa.me/' + d + '?text=' + encodeURIComponent(text); }
 function rzInsights(date) {
   const L = RESV.filter((r) => r.date === date && rzActive(r)); const out = []; const nowMin = new Date().getHours() * 60 + new Date().getMinutes(); const today = date === REF_ISO;
-  const unc = L.filter((r) => r.st === 'bekliyor'); if (unc.length) out.push(['warn', unc.length + ' rezervasyon onay bekliyor: ' + unc.map((r) => r.name.split(' ')[0] + ' ' + r.time).slice(0, 3).join(', ') + '.']);
   if (today) { const late = L.filter((r) => r.st === 'onay' && nowMin - toMin(r.time) >= 20); if (late.length) out.push(['bad', late.map((r) => r.name.split(' ')[0]).join(', ') + ' 20 dakikadan fazla gecikti. Aramayı düşün.']); }
   const risky = L.filter((r) => rzHist(r.phone, r.id).miss > 0); if (risky.length) out.push(['warn', risky.map((r) => r.name.split(' ')[0]).join(', ') + ' daha önce gelmemiş. Hatırlatma mesajı gönder.']);
   const heat = rzHeat(date); const pk = heat.reduce((a, b) => (b.p > a.p ? b : a), { p: 0, t: '' }); if (pk.p >= 0.7) out.push(['info', pk.t + ' civarı %' + Math.round(pk.p * 100) + ' dolu. Son masaları dikkatli ver.']);
@@ -4461,12 +4460,11 @@ function rzInsights(date) {
 S.rzDate = REF_ISO; S.rzTab = 'liste';
 function rzCard(r) {
   const h = rzHist(r.phone, r.id); const st = RZ_ST[r.st]; const act = [];
-  if (r.st === 'bekliyor') act.push(`<button class="btn sm" data-a="rzst" data-id="${r.id}" data-s="onay">Onayla</button>`);
   if (r.st === 'onay') act.push(`<button class="btn sm" data-a="rzst" data-id="${r.id}" data-s="geldi">Geldi</button>`);
   if (r.st === 'geldi') act.push(`<button class="btn sm" data-a="rzst" data-id="${r.id}" data-s="bitti">Masa boşaldı</button>`);
-  if (['bekliyor', 'onay'].includes(r.st)) act.push(`<button class="btn sm sec" data-a="rzst" data-id="${r.id}" data-s="gelmedi">Gelmedi</button><button class="btn sm sec" data-a="rzst" data-id="${r.id}" data-s="iptal">İptal</button>`);
+  if (r.st === 'onay') act.push(`<button class="btn sm sec" data-a="rzst" data-id="${r.id}" data-s="gelmedi">Gelmedi</button><button class="btn sm sec" data-a="rzst" data-id="${r.id}" data-s="iptal">İptal</button>`);
   if (['gelmedi', 'iptal'].includes(r.st)) act.push(`<button class="btn sm sec" data-a="rzst" data-id="${r.id}" data-s="onay">Geri al</button>`);
-  const wa = r.phone && rzActive(r) ? rzWa(r, rzMsg(r, r.st === 'bekliyor' ? 'onay' : 'hat')) : '';
+  const wa = r.phone && rzActive(r) ? rzWa(r, rzMsg(r, 'hat')) : '';
   return `<div class="card stack" style="gap:8px"><div class="row between" style="align-items:flex-start;gap:10px"><div class="row" style="gap:12px;align-items:flex-start"><div style="min-width:54px;text-align:center"><b class="num" style="font-size:20px;display:block">${esc(r.time)}</b><span class="small muted">${r.dur} dk</span></div><div><b style="font-weight:600">${esc(r.name)}</b><span class="small muted" style="display:block">${r.n} kişi${r.tids.length ? ' · Masa ' + esc(rzNames(r.tids)) : ' · masa yok'}${r.src ? ' · ' + esc(r.src) : ''}</span></div></div><span class="pill ${st[0]}">${st[1]}</span></div>
   ${r.note ? `<p class="small" style="margin:0">${ic('info', 14)} ${esc(r.note)}</p>` : ''}
   ${h.miss ? `<span class="pill p-bad" style="align-self:flex-start">${h.miss} kez gelmedi</span>` : h.n >= 2 ? `<span class="pill p-ok" style="align-self:flex-start">${h.n} kez geldi</span>` : ''}
@@ -4522,7 +4520,7 @@ H.rzst = (el) => {
   if (['gelmedi', 'iptal'].includes(r.st) && s === 'onay') { const a = rzAssign(r.date, r.time, r.dur, r.n, r.id); if (!a) { toast('O saatte masa dolmuş. Düzenleyip saati değiştir.', 'warn'); return; } r.tids = a; }
   r.st = s; if (s === 'geldi') r.arr = new Date().toTimeString().slice(0, 5); render(); toast({ onay: 'Onaylandı.', geldi: 'Misafir masaya alındı.', bitti: 'Masa boşaldı.', gelmedi: 'Gelmedi olarak işaretlendi.', iptal: 'İptal edildi.' }[s] || 'Güncellendi.', 'ok');
 };
-H.rzcopy = (el) => { const r = RESV.find((x) => x.id === el.dataset.id); if (r) cpy(rzMsg(r, r.st === 'bekliyor' ? 'onay' : 'hat'), 'Mesaj kopyalandı.'); };
+H.rzcopy = (el) => { const r = RESV.find((x) => x.id === el.dataset.id); if (r) cpy(rzMsg(r, 'hat'), 'Mesaj kopyalandı.'); };
 H.rznew = () => { S.modal = { type: 'rznew', id: null, name: '', phone: '', n: 2, date: S.rzDate, time: '19:00', dur: RCFG.dur, src: 'Telefon', note: '', tid: 'auto' }; renderModal(); };
 H.rzedit = (el) => { const r = RESV.find((x) => x.id === el.dataset.id); if (!r) return; S.modal = { type: 'rznew', id: r.id, name: r.name, phone: r.phone, n: r.n, date: r.date, time: r.time, dur: r.dur, src: r.src, note: r.note, tid: r.tids.length === 1 ? r.tids[0] : 'auto' }; renderModal(); };
 function rzCheck(m) {
