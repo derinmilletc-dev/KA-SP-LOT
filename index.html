@@ -4371,6 +4371,40 @@ cloudAttach = async function () {
 };
 cloudOff = function () { clearInterval(CL.timer); CL.on = false; CL.vers = {}; CL.sent = {}; PS.cloudOn = false; PS.db = PS.localDb || null; PS.state = 'local'; };
 
+/* v21: muhasebeci müşteri listesi (birden çok işletme) */
+const prefGet = () => { try { return localStorage.getItem('kp_biz'); } catch (e) { return null; } };
+const prefSet = (v) => { try { if (v) localStorage.setItem('kp_biz', v); else localStorage.removeItem('kp_biz'); } catch (e) {} };
+const sbLoadBizV20 = sbLoadBiz; sbLoadBiz = async function () { if (!ID.pref) ID.pref = prefGet(); return sbLoadBizV20(); };
+const _idpick21 = H.idpick; H.idpick = async (el) => { prefSet(el.dataset.id); return _idpick21(el); };
+const idSignOutV20 = idSignOut; idSignOut = async function () { prefSet(null); return idSignOutV20(); };
+async function cinfoLoad() {
+  const c = sbClient(); if (!c || ID.cinfoBusy) return; ID.cinfoBusy = true; ID.cinfo = {};
+  try { const r = await c.from('app_state').select('business_id,updated_at').eq('scope', 'muh'); (r.data || []).forEach((x) => { ID.cinfo[x.business_id] = x.updated_at; }); } catch (e) {}
+  ID.cinfoBusy = false; render();
+}
+function clientsCard() {
+  if (!ID.active || ID.active.role !== 'muhasebeci') return '';
+  if (!ID.cinfo && !ID.cinfoBusy) cinfoLoad();
+  const rows = ID.mems.map((m) => { const cur = m.business_id === ID.active.business_id; const up = ID.cinfo && ID.cinfo[m.business_id]; const dt = up ? new Date(up).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : '';
+    return `<div class="logline"><span>${esc(m.businesses.name)}<span class="small muted" style="display:block">${dt ? 'Son güncelleme ' + esc(dt) : 'Henüz veri yok'}</span></span>${cur ? '<span class="pill p-ok">Şu an burada</span>' : `<button class="btn sm" data-a="bizgo" data-id="${m.business_id}">Geç</button>`}</div>`; }).join('');
+  return `<div class="card stack"><div><h3>Müşterilerin</h3><p class="muted small" style="margin-top:2px">${ID.mems.length} işletme. Birine geçince ekran o işletmenin verisiyle yenilenir.</p></div>${rows}
+  <details class="stack"><summary class="small" style="cursor:pointer">Yeni müşteri ekle</summary><p class="small muted" style="margin:8px 0">İşletme sahibi seni muhasebeci olarak davet eder, sana bir kod verir. Kodu buraya yaz.</p><div class="row wrap" style="gap:8px"><input type="text" id="mc-code" class="grow" style="min-width:140px;text-transform:uppercase" placeholder="Davet kodu" aria-label="Davet kodu"><button class="btn" data-a="mclaim">Ekle</button></div><div class="err" id="mc-err" role="alert"></div></details></div>`;
+}
+const viewHTMLV20 = viewHTML;
+viewHTML = function () { const h = viewHTMLV20(); return S.user && S.user.role === 'muhasebeci' && S.view === 'donem' && ID.active && h.includes('<div class="stack-lg">') ? h.replace('<div class="stack-lg">', '<div class="stack-lg">' + clientsCard()) : h; };
+H.bizgo = async (el) => {
+  try { clearTimeout(PS.timer); if (CL.on) await pFlush(); } catch (e) {}
+  prefSet(el.dataset.id); ID.pref = el.dataset.id;
+  if (typeof location !== 'undefined' && location.reload && !global_noreload()) { location.reload(); return; }
+  cloudOff(); ID.active = null; await sbLoadBiz(); await idEnter();
+};
+H.mclaim = async () => {
+  const code = ((document.getElementById('mc-code') || {}).value || '').trim().toUpperCase(); const err = (t) => { const e = document.getElementById('mc-err'); if (e) e.textContent = t; };
+  if (!code) return err('Kodu yaz.');
+  try { const x = await sbClient().rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; const keep = ID.active && ID.active.business_id; ID.pref = keep; await sbLoadBiz(); ID.cinfo = null; render(); toast('Müşteri eklendi.', 'ok'); }
+  catch (e) { err(idMsg(e)); }
+};
+
 if (typeof window !== 'undefined') { window.__K = { splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
