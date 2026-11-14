@@ -4419,11 +4419,11 @@ function teamCard() {
   const rows = USERS.filter((u) => u.id !== 'u1').map((u) => {
     const m = ID.team.members.find((x) => x.app_uid === u.id); const inv = ID.team.invites.find((x) => x.app_uid === u.id);
     const right = m ? `<span class="pill p-ok">Bağlı</span><button class="btn sm sec" data-a="memrm" data-id="${m.id}">${S.rmArm === m.id ? 'Emin misin?' : 'Çıkar'}</button>`
-      : inv ? `<span class="pill p-warn">Kod ${esc(inv.code)}</span><button class="btn sm sec" data-a="invshow" data-id="${u.id}">Göster</button><button class="btn sm sec" data-a="invrm" data-id="${inv.id}">İptal</button>`
+      : inv ? `<span class="pill p-warn">Kod ${esc(inv.code)} · ${invLeft(inv)}</span><button class="btn sm sec" data-a="invshow" data-id="${u.id}">Göster</button><button class="btn sm sec" data-a="invrm" data-id="${inv.id}">İptal</button>`
       : `<button class="btn sm" data-a="invnew" data-id="${u.id}">Davet et</button>`;
     return `<div class="logline"><span>${esc(u.name)}<span class="small muted" style="display:block">${esc(ROLE_LABEL[u.role])}${u.title && u.role === 'calisan' ? ' · ' + esc(u.title) : ''}${m && m.email ? ' · ' + esc(m.email) : ''}</span></span><span class="row" style="gap:6px">${right}</span></div>`;
   }).join('');
-  return `<div class="card stack"><div class="row between wrap"><div><h3>Hesap bağlantıları</h3><p class="muted small" style="margin-top:2px">Kişiyi davet et, kodu ona gönder. Kod 7 gün geçerli ve tek kullanımlık.</p></div><button class="btn sm sec" data-a="teamref">Yenile</button></div>${ID.team.err ? `<div class="callout warn">${ic('alert')}<div>${esc(ID.team.err)}</div></div>` : ''}${rows}</div>`;
+  return `<div class="card stack"><div class="row between wrap"><div><h3>Hesap bağlantıları</h3><p class="muted small" style="margin-top:2px">Kişiyi davet et, kodu ona gönder. Kod 24 saat (1 gün) geçerli ve tek kullanımlık.</p></div><button class="btn sm sec" data-a="teamref">Yenile</button></div>${ID.team.err ? `<div class="callout warn">${ic('alert')}<div>${esc(ID.team.err)}</div></div>` : ''}${rows}</div>`;
 }
 const viewEkipV17 = viewEkip; viewEkip = function () { const h = viewEkipV17(); return S.sub.ekip === 'bugun' ? h + teamCard() : h; };
 H.teamref = async () => { ID.team = null; ID.teamBusy = false; await teamLoad(); render(); };
@@ -4436,13 +4436,14 @@ H.invmake = async (el) => {
   const c = sbClient(); if (!c || !ID.active) return err('Bağlantı yok.');
   try {
     await c.from('invites').delete().eq('business_id', ID.active.business_id).eq('app_uid', u.id).is('used_at', null);
-    const code = mkCode(); const i = await c.from('invites').insert({ business_id: ID.active.business_id, code, role: u.role, app_uid: u.id, name }); if (i.error) throw i.error;
+    const code = mkCode(); const i = await c.from('invites').insert({ business_id: ID.active.business_id, code, role: u.role, app_uid: u.id, name, expires_at: new Date(Date.now() + 864e5).toISOString() }); if (i.error) throw i.error;
     NAMES[u.id] = { name, title: title || u.title }; applyNames(); ID.team = null; ID.teamBusy = false; await teamLoad();
     S.modal = { type: 'invcode', uid: u.id, code }; render(); renderModal();
   } catch (e) { err(idMsg(e)); }
 };
 H.invshow = (el) => { const inv = ID.team && ID.team.invites.find((x) => x.app_uid === el.dataset.id); if (!inv) return; S.modal = { type: 'invcode', uid: el.dataset.id, code: inv.code }; renderModal(); };
-const invText = (code) => BIZ + ' sana KaisPilot daveti gönderdi.\nAdres: ' + (typeof location !== 'undefined' && location.origin ? location.origin : '') + '\nGiriş ekranında Çalışan sekmesini aç, "Davet kodum var" kısmına şu kodu yaz: ' + code + '\n(Kod 7 gün geçerli.)';
+function invLeft(inv) { const ms = new Date(inv.expires_at) - Date.now(); if (!(ms > 0)) return 'süresi doldu'; const h = Math.floor(ms / 36e5); return h >= 1 ? h + ' sa kaldı' : Math.max(1, Math.round(ms / 6e4)) + ' dk kaldı'; }
+const invText = (code) => BIZ + ' sana KaisPilot daveti gönderdi.\nAdres: ' + (typeof location !== 'undefined' && location.origin ? location.origin : '') + '\nGiriş ekranında Çalışan sekmesini aç, Davet kodu kısmına şu kodu yaz: ' + code + '\n(Kod 24 saat geçerli.)';
 NEWM.invcode = (m) => { const u = byId(m.uid); return sheet('Davet kodu hazır', `<p class="muted small">${esc(u.name)} için tek kullanımlık kod:</p><p style="font-size:32px;font-weight:700;letter-spacing:4px;text-align:center;margin:12px 0" id="iv-code">${esc(m.code)}</p><pre class="small" style="white-space:pre-wrap;background:var(--bg2,#f4f6f9);padding:10px;border-radius:8px">${esc(invText(m.code))}</pre><button class="btn block" data-a="invcopy">Mesajı kopyala</button>`); };
 H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code), 'Mesaj kopyalandı. WhatsApp\'tan gönder.'); };
 H.invrm = async (el) => { const c = sbClient(); try { await c.from('invites').delete().eq('id', el.dataset.id); } catch (e) {} ID.team = null; ID.teamBusy = false; await teamLoad(); render(); toast('Davet iptal edildi.'); };
