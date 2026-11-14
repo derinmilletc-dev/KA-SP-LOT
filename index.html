@@ -14,8 +14,10 @@ button.s{background:#e8eee9;color:var(--ink)}button.sm{padding:7px 10px;font-siz
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .m{color:var(--mut);font-size:14px}.err{color:var(--bad);font-size:14px;min-height:20px}.ok{color:var(--acc)}
 .pill{font-size:12px;padding:2px 8px;border-radius:99px;background:#e8eee9}.ln{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
-</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main>
+</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="m" style="text-align:center">sürüm 3</p>
 <script>
+window.addEventListener('error',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+e.message+' ('+(e.lineno||'')+')';document.body.appendChild(d);});
+window.addEventListener('unhandledrejection',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+((e.reason&&e.reason.message)||e.reason);document.body.appendChild(d);});
 const SB_URL='https://bbcsbkgbwzciyfymvpxh.supabase.co';
 const SB_KEY='sb_publishable_Pc2JtwezlCiezDW4P4IKxw_gXFXUjnA';
 const sb=supabase.createClient(SB_URL,SB_KEY);
