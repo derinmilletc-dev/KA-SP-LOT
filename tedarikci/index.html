@@ -106,7 +106,7 @@ function loginView(){
    <div class="tor"><span>veya</span></div>
    <button type="button" class="tb o" id="up">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',20)}<span>Hesap oluştur</span></button>
   </form>
-  <div class="tn">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',18)}<span>Tedarikçiysen, sana davet gönderen işletmenin yazdığı e-posta ile hesap oluştur.</span></div></section>`;
+  <div class="tn">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',18)}<span>Tedarikçiysen istediğin e-postayla hesap oluştur. Giriş yaptıktan sonra işletmenin sana verdiği davet kodunu girerek bağlanırsın.</span></div></section>`;
   $('#eye').onclick=()=>{const i=$('#pw'); i.type=i.type==='password'?'text':'password';};
   $('#tfm').onsubmit=(e)=>e.preventDefault();
   ['#em','#pw'].forEach(k=>$(k).addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();$('#in').onclick();}}));
@@ -117,11 +117,28 @@ function loginView(){
     if(r.data.session) boot(); else say('Hesap oluşturuldu. E-postana gelen onay bağlantısına tıkla, sonra giriş yap.',true);};
 }
 function setupView(){
-  app.innerHTML=head('Hoş geldin')+`<form class="card" id="bf" autocomplete="off"><h2>İşletmeni oluştur</h2><p class="m">Tedarikçiysen ve burayı görüyorsan, davet e-postası senin hesabınla eşleşmemiş olabilir. İşletme sahibine e-postanı doğru yazdırmasını söyle.</p>
-  <label for="bn">İşletme adı</label><input id="bn" name="bn" type="text" autocomplete="off" placeholder="Örn: Çınar Kafe &amp; Fırın"><p class="err" id="msg"></p><button type="submit" id="mk">İşletme oluştur</button></form>`; bindOut();
+  document.body.classList.add('lg');
+  const hero='<header class="th"><div class="th-in"><h1>KaisPilot Tedarik</h1></div></header>';
+  app.innerHTML=hero+`<section class="tc"><h2>Davet kodunu gir</h2><p class="sub">İşletmenin sana verdiği 6 haneli kodu yaz.</p>
+  <form class="tf" id="cf" autocomplete="off" novalidate>
+   <div class="f"><label for="cd">Davet kodu</label><div class="ti"><input id="cd" type="text" autocapitalize="characters" autocomplete="one-time-code" maxlength="12" placeholder="Örn. A1B2C3" style="text-transform:uppercase;letter-spacing:2px"></div></div>
+   <p class="err" id="msg" role="alert"></p>
+   <button type="submit" class="tb p" id="cbtn">Bağlan</button>
+  </form>
+  <div class="tn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>Kodun yoksa seninle çalışan işletmeden iste. Kod, KaisPilot'ta tedarikçi kaydında görünür.</span></div>
+  <details style="margin-top:14px"><summary class="m" style="cursor:pointer">İşletme sahibi misin? İşletmeni oluştur</summary>
+   <form class="tf" id="bf" autocomplete="off" style="margin-top:10px"><div class="f"><label for="bn">İşletme adı</label><div class="ti"><input id="bn" name="bn" type="text" autocomplete="off" placeholder="Örn: Çınar Kafe &amp; Fırın"></div></div><button type="submit" class="tb o" id="mk"><span>İşletme oluştur</span></button></form></details>
+  <div class="tor" style="margin-top:14px"><span>${esc(ME.email||'')}</span></div><button type="button" class="tb o" id="out" style="margin-top:8px;min-height:44px"><span>Çıkış yap</span></button></section>`;
+  bindOut();
+  $('#cf').addEventListener('submit',async(ev)=>{ev.preventDefault();
+    const code=$('#cd').value.trim().toUpperCase(); if(code.length<4) return say('Davet kodunu yaz.');
+    $('#cbtn').disabled=true; say('Bağlanıyor…',true);
+    const r=await sb.rpc('claim_supplier_code',{p_code:code});
+    if(r.error){$('#cbtn').disabled=false; return say(/function|schema cache/i.test(r.error.message)?'Davet kodu sistemi henüz kurulmamış. İşletmeye haber ver.':r.error.message);}
+    boot();});
   $('#bf').addEventListener('submit',async(ev)=>{ev.preventDefault();
     const n=String(new FormData(ev.target).get('bn')||'').trim();
-    if(!n) return say('Ad alanı boş okundu (0 karakter). Bir kez tıklayıp yazmayı dene.');
+    if(!n) return say('İşletme adını yaz.');
     $('#mk').disabled=true; say('Kaydediliyor…',true);
     const r=await sb.from('businesses').insert({name:n,owner_id:ME.id});
     if(r.error){$('#mk').disabled=false; say('Kaydedilemedi: '+r.error.message);} else boot();});

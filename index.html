@@ -3671,7 +3671,7 @@ async function sbPull() {
   }
   return ch;
 }
-const supTag = (sid) => { const t = supById(sid); if (!t) return ''; if (!SBS.biz) return t.email ? ' · panel için bağlan' : ''; if (!t.email) return ' · e-posta yok, elle gir'; const row = SBS.sups.find((x) => x.id === t.sbid); return row && row.user_id ? ' · panelde' : ' · davet bekliyor'; };
+let supTag = (sid) => { const t = supById(sid); if (!t) return ''; if (!SBS.biz) return t.email ? ' · panel için bağlan' : ''; if (!t.email) return ' · e-posta yok, elle gir'; const row = SBS.sups.find((x) => x.id === t.sbid); return row && row.user_id ? ' · panelde' : ' · davet bekliyor'; };
 function sbCard() {
   const addr = (typeof location !== 'undefined' && location.origin && /^http/.test(location.origin)) ? location.origin + '/tedarikci' : '';
   if (!sbOK()) return `<div class="card stack"><div><h3>Tedarikçi paneli</h3><p class="muted small" style="margin-top:2px">Bu ekranda tedarikçi sistemi kullanılamıyor. KaisPilot'u kendi adresinden aç. Şimdilik teklifleri elle girebilirsin.</p></div></div>`;
@@ -5527,6 +5527,33 @@ NEWM.newpw = () => sheet('Yeni şifre belirle', `<div class="stack"><p class="mu
 H.pwsave = async () => { const v = (document.getElementById('np-pw') || {}).value || ''; const e = document.getElementById('np-err'); if (v.length < 8) { if (e) e.textContent = 'En az 8 karakter yaz.'; return; } try { const r = await sbClient().auth.updateUser({ password: v }); if (r.error) throw r.error; S.modal = null; render(); toast('Şifren güncellendi.', 'ok'); } catch (x) { if (e) e.textContent = idMsg(x); } };
 const _idEnter35 = idEnter; idEnter = async function () { await _idEnter35(); if (RECOV && S.user && !S._recDone) { S._recDone = true; S.modal = { type: 'newpw' }; renderModal(); } };
 if (typeof document !== 'undefined') document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'idform') { e.preventDefault(); (S.lgCreate ? H.idnew : H.idin)(); } });
+/* v41: tedarikçi davet kodu (e-posta şartı yok) */
+sbSyncSups = async function () {
+  const c = sbClient(); if (!c || !SBS.biz) return;
+  const load = async () => { const q = await c.from('suppliers').select('*').eq('business_id', SBS.biz.id); if (q.error) throw q.error; SBS.sups = q.data || []; };
+  await load();
+  for (const t of SUPPLIERS) {
+    const em = (t.email || '').toLowerCase(); const nm = (t.name || '').trim().toLowerCase();
+    let row = SBS.sups.find((x) => x.id === t.sbid) || (em && SBS.sups.find((x) => (x.invite_email || '').toLowerCase() === em)) || SBS.sups.find((x) => (x.name || '').trim().toLowerCase() === nm);
+    if (!row) { const i = await c.from('suppliers').insert({ business_id: SBS.biz.id, name: t.name, phone: t.phone || null, lead_days: t.lead || 0, min_amount: t.minAmt || 0, invite_email: em || null }); if (i.error) throw i.error; await load(); row = SBS.sups.find((x) => (x.name || '').trim().toLowerCase() === nm); }
+    if (row) t.sbid = row.id;
+  }
+};
+const supRow = (t) => t && SBS.sups.find((x) => x.id === t.sbid);
+supTag = (sid) => { const t = supById(sid); if (!t || !SBS.biz) return ''; const row = supRow(t); if (row && row.user_id) return ' · panelde'; if (row && row.invite_code) return ' · davet kodu ' + row.invite_code; return ' · davet bekliyor'; };
+function supCodeBox(t) {
+  if (!t || !SBS.biz) return '';
+  const row = supRow(t); if (!row) return '';
+  if (row.user_id) return `<div class="callout">${ic('check')}<div>Bu tedarikçi panele bağlı. Teklif istekleri ona otomatik gider.</div></div>`;
+  if (!row.invite_code) return '';
+  const url = (typeof location !== 'undefined' && /^http/.test(location.origin || '')) ? location.origin + '/tedarikci' : 'kaistrade.vercel.app/tedarikci';
+  const msg = `Merhaba, ${BIZ} olarak teklif ve siparişleri KaisPilot Tedarik üzerinden gönderiyoruz. ${url} adresinden istediğin e-postayla hesap aç, sonra şu davet kodunu gir: ${row.invite_code}`;
+  const wa = 'https://wa.me/' + (t.phone ? String(t.phone).replace(/\D/g, '').replace(/^0/, '90') : '') + '?text=' + encodeURIComponent(msg);
+  return `<div class="callout">${ic('mail')}<div><b>Davet kodu: <span style="font-size:18px;letter-spacing:2px">${esc(row.invite_code)}</span></b><p class="small muted" style="margin:4px 0 8px">Tedarikçi ${esc(url)} adresinden istediği e-postayla hesap açıp bu kodu girince panele bağlanır.</p><div class="row wrap" style="gap:6px"><button class="btn sm sec" data-a="supcopy" data-v="${esc(msg)}">Mesajı kopyala</button><a class="btn sm sec" href="${wa}" target="_blank" rel="noopener">WhatsApp ile gönder</a></div></div></div>`;
+}
+const _nmSup41 = NEWM.sup;
+NEWM.sup = (m) => { let h = _nmSup41(m); h = h.replace('E-posta (tedarikçi paneline davet için)', 'E-posta (isteğe bağlı)').replace('Boş bırakırsan teklifleri elle girersin', 'Boş bırakabilirsin'); const box = m.id ? supCodeBox(supById(m.id)) : ''; return box ? h.replace('<div class="field"><label for="sp-name">', box + '<div class="field"><label for="sp-name">') : h; };
+H.supcopy = async (el) => { const v = el.dataset.v || ''; try { await navigator.clipboard.writeText(v); toast('Davet mesajı kopyalandı.', 'ok'); } catch (e) { toast('Kopyalanamadı. Kodu elle gönder.', 'warn'); } };
 if (typeof window !== 'undefined') { window.__K = { BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
