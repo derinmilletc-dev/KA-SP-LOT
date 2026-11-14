@@ -479,6 +479,31 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
  .lx-hero::after{inset:auto!important;left:-4%!important;right:-4%!important;top:54%!important;transform:translateY(-50%);aspect-ratio:1065/326;background:url(/login-hero.jpg) center/100% 100% no-repeat!important;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 6%,#000 97%,transparent 100%)!important;mask-image:linear-gradient(180deg,transparent 0,#000 6%,#000 97%,transparent 100%)!important}
  .lx-card{flex:none;margin-bottom:calc(18px + env(safe-area-inset-bottom))!important;padding-bottom:16px!important}
 }
+
+/* v42: karşılama ekranı + şartlar */
+.onb{min-height:100%;background:linear-gradient(180deg,#E5EFFA 0,#F2F5F9 260px)}
+.onb-in{max-width:560px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px 0}
+.onb-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.onb-hi{margin:18px 2px 14px}.onb-hi h1{font-size:26px}.onb-hi p{margin-top:4px}
+.onb-steps{display:flex;align-items:center;gap:6px;margin:0 2px 14px}
+.onb-steps i{flex:1;height:2px;background:var(--line);border-radius:2px}
+.onb-st{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap}
+.onb-st span{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1.5px solid var(--line);font-size:12px}
+.onb-st.on{color:var(--cini)}.onb-st.on span{border-color:var(--cini);background:var(--cini);color:#fff}
+.onb-st.ok{color:var(--yesil)}.onb-st.ok span{border-color:var(--yesil);background:var(--yesil);color:#fff}
+.onb-card{display:flex;flex-direction:column;gap:10px}
+.onb-card textarea{width:100%;border:1px solid #C7D0DD;border-radius:10px;padding:10px 12px;font:inherit;font-size:16px;resize:vertical}
+.onb-doc{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.onb-doc .grow{display:flex;flex-direction:column;min-width:0}.onb-doc .grow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.onb-doc.ok{border-color:#BFE3CF;background:var(--yesil-wash)}
+.onb-doc label.btn{cursor:pointer;flex:none}
+.onb-ct{margin-top:10px;max-height:46vh;overflow:auto;padding:14px;border:1px solid var(--line);border-radius:12px;background:#FAFBFD;font-size:14px;line-height:1.6;color:var(--ink-2);-webkit-overflow-scrolling:touch}
+.onb-cs{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.45;cursor:pointer}
+.onb-cs input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--cini)}
+.onb-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.onb-row>input[type=text]{flex:1 1 180px;min-width:0}
+.onb-row>select{flex:0 0 auto;width:auto;max-width:140px}
+.onb-req{display:flex;gap:6px;align-items:center;white-space:nowrap;color:var(--ink-2)}
 .tab{position:relative}
 .tab>.pill{position:absolute;top:2px;left:calc(50% + 6px);padding:0 5px!important;font-size:10.5px;line-height:16px;min-width:16px;text-align:center}
 @media(max-width:480px){#ps-chip{font-size:0!important;width:10px;height:10px;padding:0!important;border-radius:50%;min-width:0;overflow:hidden;flex:none}}
@@ -4327,7 +4352,7 @@ async function idAuth(kind, mode) {
     SBS.user = r.data.session.user; await sbLoadBiz();
     if (code) { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; await sbLoadBiz(); }
     if (!ID.mems.length) {
-      if (kind === 'emp') return fail('Bu hesaba bağlı işletme yok. İşvereninden davet kodu iste.');
+      if (kind === 'emp') return fail('Bu hesap henüz bir işletmeye katılmamış. "Davet koduyla katıl"a basıp kodunu gir.');
       if (!bn) return fail('Bu hesapta işletme yok. İşletme adını yazıp İşletmemi oluştur\'a bas.');
       const i = await c.from('businesses').insert({ name: bn, owner_id: SBS.user.id }); if (i.error) throw i.error;
       NAMES.u1 = { name: nm || 'İşveren', title: 'Patron' }; BIZ = bn; if (!((document.getElementById('id-demo') || {}).checked)) wipeData(); applyNames(); await sbLoadBiz();
@@ -5494,6 +5519,7 @@ function lxLogin() {
   let body;
   if (cloud && SBS.user && ID.mems.length > 1 && !ID.active) body = `<div class="stack"><p class="lbl">Hangi işletmeye girmek istiyorsun?</p>${ID.mems.map((m) => `<button type="button" class="btn sec block" data-a="idpick" data-id="${m.business_id}">${esc(m.businesses.name)} · ${esc(ROLE_LABEL[m.role])}</button>`).join('')}<button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div>`;
   else if (tab === 'sup') body = `<p class="lx-note">Tedarikçiysen teklif ve siparişlerini kendi panelinden yönetirsin. İşletme seni e-postanla davet eder.</p><a class="lx-go" href="/tedarikci"><span>Tedarikçi paneline git</span>${LXI.arrow}</a>`;
+  else if (cloud && tab === 'emp' && !(SBS.user && !ID.active && ID.mems.length === 0)) body = lxEmp(fields, err, go);
   else {
     const note = cloud && SBS.user && !ID.active && ID.mems.length === 0 ? `<div class="callout warn">${ic('alert')}<div>${esc(SBS.user.email || 'Bu hesap')} giriş yapmış ama bir işletmeye bağlı değil. <button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div></div>` : '';
     let extra = '';
@@ -5526,7 +5552,7 @@ H.idforgot = async () => {
 NEWM.newpw = () => sheet('Yeni şifre belirle', `<div class="stack"><p class="muted small">Hesabın için en az 8 karakterlik yeni bir şifre yaz.</p><div class="field"><label for="np-pw">Yeni şifre</label><input id="np-pw" type="password" autocomplete="new-password"></div><div class="err" id="np-err" role="alert"></div><button class="btn block" data-a="pwsave">Şifreyi kaydet</button></div>`);
 H.pwsave = async () => { const v = (document.getElementById('np-pw') || {}).value || ''; const e = document.getElementById('np-err'); if (v.length < 8) { if (e) e.textContent = 'En az 8 karakter yaz.'; return; } try { const r = await sbClient().auth.updateUser({ password: v }); if (r.error) throw r.error; S.modal = null; render(); toast('Şifren güncellendi.', 'ok'); } catch (x) { if (e) e.textContent = idMsg(x); } };
 const _idEnter35 = idEnter; idEnter = async function () { await _idEnter35(); if (RECOV && S.user && !S._recDone) { S._recDone = true; S.modal = { type: 'newpw' }; renderModal(); } };
-if (typeof document !== 'undefined') document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'idform') { e.preventDefault(); (S.lgCreate ? H.idnew : H.idin)(); } });
+if (typeof document !== 'undefined') document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'idform') { e.preventDefault(); (S.lgTab === 'emp' ? (S.empMode === 'login' ? H.idin : H.idnew) : (S.lgCreate ? H.idnew : H.idin))(); } });
 /* v41: tedarikçi davet kodu (e-posta şartı yok) */
 sbSyncSups = async function () {
   const c = sbClient(); if (!c || !SBS.biz) return;
@@ -5554,7 +5580,271 @@ function supCodeBox(t) {
 const _nmSup41 = NEWM.sup;
 NEWM.sup = (m) => { let h = _nmSup41(m); h = h.replace('E-posta (tedarikçi paneline davet için)', 'E-posta (isteğe bağlı)').replace('Boş bırakırsan teklifleri elle girersin', 'Boş bırakabilirsin'); const box = m.id ? supCodeBox(supById(m.id)) : ''; return box ? h.replace('<div class="field"><label for="sp-name">', box + '<div class="field"><label for="sp-name">') : h; };
 H.supcopy = async (el) => { const v = el.dataset.v || ''; try { await navigator.clipboard.writeText(v); toast('Davet mesajı kopyalandı.', 'ok'); } catch (e) { toast('Kopyalanamadı. Kodu elle gönder.', 'warn'); } };
-if (typeof window !== 'undefined') { window.__K = { BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v42: çalışan davet koduyla katılır + şartlar ve sözleşmeler (karşılama ekranı) */
+const ONB_DEF = () => ({
+  fields: [
+    { id: 'ad', label: 'Ad soyad', type: 'text', req: true },
+    { id: 'tc', label: 'T.C. kimlik no', type: 'tc', req: true },
+    { id: 'dogum', label: 'Doğum tarihi', type: 'date', req: true },
+    { id: 'tel', label: 'Telefon', type: 'tel', req: true },
+    { id: 'adres', label: 'Adres', type: 'textarea', req: true },
+    { id: 'iban', label: 'IBAN (maaş ödemesi için)', type: 'iban', req: true },
+    { id: 'acil', label: 'Acil durumda aranacak kişi ve telefonu', type: 'text', req: false }
+  ],
+  docs: [
+    { id: 'kimlik', label: 'Kimlik kartı (ön ve arka yüz)', req: true },
+    { id: 'ikamet', label: 'İkametgâh belgesi', req: false },
+    { id: 'saglik', label: 'Sağlık raporu', req: false },
+    { id: 'diploma', label: 'Diploma', req: false }
+  ],
+  consents: [
+    { id: 'kvkk', text: 'Kişisel verilerimin işlenmesine ilişkin aydınlatma metnini okudum.', req: true },
+    { id: 'kural', text: 'İşyeri kurallarını okudum ve uyacağımı kabul ediyorum.', req: true }
+  ],
+  contract: {
+    title: 'İş sözleşmesi',
+    text: 'İŞ SÖZLEŞMESİ\n\nİşveren: {isletme}\nÇalışan: {ad}\nT.C. kimlik no: {tc}\nGörev: {gorev}\nBaşlangıç tarihi: {tarih}\n\n1. Konu\nBu sözleşme, çalışanın işverenin işyerinde yukarıda yazılı görevle çalışmasına ilişkin şartları düzenler.\n\n2. Çalışma süresi\nHaftalık çalışma süresi 45 saattir. Günlük çalışma saatleri ve mola süreleri işveren tarafından belirlenir ve çalışana bildirilir.\n\n3. Ücret\nÜcret, her ay bordroya göre çalışanın bildirdiği banka hesabına ödenir.\n\n4. Deneme süresi\nDeneme süresi 2 aydır. Bu süre içinde taraflar sözleşmeyi bildirim süresine gerek olmadan ve tazminatsız sona erdirebilir.\n\n5. Gizlilik\nÇalışan, işyerine ait ticari bilgileri ve müşteri bilgilerini çalışırken ve ayrıldıktan sonra üçüncü kişilerle paylaşmaz.\n\n6. Diğer hükümler\nBu sözleşmede yer almayan konularda 4857 sayılı İş Kanunu ve ilgili mevzuat hükümleri uygulanır.'
+  }
+});
+const ONB = { cfg: null, ver: 0, loaded: false, missing: false, block: false, step: 1, sub: null, docs: {}, d: { answers: {}, consents: {}, sig: '' }, err: '', busy: false, cd: null, list: null, listBusy: false, upl: '' };
+const onbCloud = () => !!(sbClient() && SBS.user && ID.active);
+const onbBid = () => ID.active && ID.active.business_id;
+const onbNeeds = () => !!(S.user && ID.active && ['calisan', 'mudur'].includes(ID.active.role));
+const onbLocalKey = () => 'kp_onb_cfg_' + (BIZ || 'demo');
+async function onbLoadCfg() {
+  ONB.missing = false;
+  if (!onbCloud()) { try { const v = JSON.parse(localStorage.getItem(onbLocalKey()) || 'null'); ONB.cfg = v ? v.cfg : null; ONB.ver = v ? v.ver : 0; } catch (e) { ONB.cfg = null; ONB.ver = 0; } ONB.loaded = true; return; }
+  const r = await sbClient().from('onboard_config').select('config,version').eq('business_id', onbBid()).limit(1);
+  if (r.error) { if (/onboard_config|schema cache|does not exist/i.test(r.error.message || '')) { ONB.missing = true; ONB.cfg = null; ONB.ver = 0; ONB.loaded = true; return; } throw r.error; }
+  const row = r.data && r.data[0]; ONB.cfg = row ? row.config : null; ONB.ver = row ? row.version : 0; ONB.loaded = true;
+}
+async function onbLoadMine() {
+  const c = sbClient(); const bid = onbBid(); const uid = SBS.user.id;
+  const s = await c.from('onboard_sub').select('*').eq('business_id', bid).eq('user_id', uid).limit(1); if (s.error) throw s.error;
+  ONB.sub = s.data && s.data[0] || null;
+  const d = await c.from('onboard_docs').select('doc_id,name').eq('business_id', bid).eq('user_id', uid); if (d.error) throw d.error;
+  ONB.docs = {}; (d.data || []).forEach((x) => { ONB.docs[x.doc_id] = { name: x.name }; });
+  ONB.d = { answers: Object.assign({}, ONB.sub && ONB.sub.answers), consents: {}, sig: '' };
+  if (!ONB.d.answers.ad && S.user) ONB.d.answers.ad = S.user.name;
+}
+const onbFieldsOk = (cfg, a) => (cfg.fields || []).filter((f) => f.req).every((f) => String(a[f.id] || '').trim());
+const onbDocsOk = (cfg) => (cfg.docs || []).filter((f) => f.req).every((f) => ONB.docs[f.id]);
+function onbDecide() {
+  const cfg = ONB.cfg; if (!cfg || !ONB.ver) return false;
+  const a = (ONB.sub && ONB.sub.answers) || {}; const fOk = onbFieldsOk(cfg, a); const dOk = onbDocsOk(cfg); const cOk = ONB.sub && ONB.sub.contract_version >= ONB.ver && ONB.sub.accepted_at;
+  if (fOk && dOk && cOk) return false;
+  ONB.step = !fOk ? 1 : !dOk ? 2 : 3; ONB.reaccept = fOk && dOk && ONB.sub && ONB.sub.accepted_at && !cOk; return true;
+}
+async function onbGate() {
+  if (!onbNeeds() || !onbCloud()) { ONB.block = false; return; }
+  ONB.block = 'loading'; render();
+  try { await onbLoadCfg(); if (ONB.missing || !ONB.cfg) { ONB.block = false; render(); return; } await onbLoadMine(); ONB.block = onbDecide(); }
+  catch (e) { ONB.block = false; toast('Karşılama bilgileri yüklenemedi: ' + idMsg(e), 'warn'); }
+  render();
+}
+const _idEnter42 = idEnter; idEnter = async function () { ONB.loaded = false; ONB.list = null; ONB.cd = null; ONB.cfg = null; ONB.ver = 0; await _idEnter42(); if (S.user && ID.active) await onbGate(); };
+const onbFill = (txt) => { const a = Object.assign({}, (ONB.sub && ONB.sub.answers) || {}, ONB.d.answers); const u = S.user || {}; const map = { ad: a.ad || u.name || '', tc: a.tc || '', isletme: BIZ || '', tarih: new Date().toLocaleDateString('tr-TR'), gorev: u.title || ROLE_LABEL[u.role] || '' }; return String(txt || '').replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : (a[k] != null ? a[k] : m))); };
+function onbInput(f, v) {
+  const id = 'onb-f-' + f.id; const val = esc(v || ''); const req = f.req ? ' <span class="small" style="color:var(--nar)">*</span>' : '';
+  let inp;
+  if (f.type === 'textarea') inp = `<textarea id="${id}" rows="3" data-onbf="${esc(f.id)}">${val}</textarea>`;
+  else if (f.type === 'date') inp = `<input type="date" id="${id}" value="${val}" data-onbf="${esc(f.id)}">`;
+  else inp = `<input type="text" id="${id}" value="${val}" data-onbf="${esc(f.id)}"${f.type === 'tel' ? ' inputmode="tel" autocomplete="tel"' : f.type === 'tc' ? ' inputmode="numeric" maxlength="11"' : f.type === 'iban' ? ' autocapitalize="characters" placeholder="TR00 0000 0000 0000 0000 0000 00"' : ''}>`;
+  return `<div class="field"><label for="${id}">${esc(f.label)}${req}</label>${inp}</div>`;
+}
+function onbPage() {
+  if (ONB.block === 'loading') return `<div class="onb"><div class="onb-in"><p class="muted" style="text-align:center;padding:60px 0">Hazırlanıyor…</p></div></div>`;
+  const cfg = ONB.cfg; const u = S.user; const st = ONB.step;
+  const steps = [['Bilgiler', 1], ['Evraklar', 2], ['Sözleşme', 3]].map((x) => `<div class="onb-st${st === x[1] ? ' on' : st > x[1] ? ' ok' : ''}"><span>${st > x[1] ? ic('check', 14) : x[1]}</span>${x[0]}</div>`).join('<i></i>');
+  let body;
+  if (st === 1) body = `<h2>Bilgilerin</h2><p class="muted small">${esc(BIZ)} senden şu bilgileri istiyor. Yıldızlı alanlar zorunlu.</p><div class="stack" style="margin-top:12px">${(cfg.fields || []).map((f) => onbInput(f, ONB.d.answers[f.id])).join('')}</div>`;
+  else if (st === 2) body = `<h2>Evrakların</h2><p class="muted small">Fotoğrafını çekebilir ya da dosya (PDF) yükleyebilirsin. Yıldızlı evraklar zorunlu.</p><div class="stack" style="margin-top:12px">${(cfg.docs || []).map((d) => { const has = ONB.docs[d.id]; const busy = ONB.upl === d.id; return `<div class="onb-doc${has ? ' ok' : ''}"><div class="grow"><b>${esc(d.label)}${d.req ? ' <span style="color:var(--nar)">*</span>' : ''}</b><span class="small muted">${busy ? 'Yükleniyor…' : has ? 'Yüklendi · ' + esc(has.name || '') : d.req ? 'Zorunlu' : 'İsteğe bağlı'}</span></div>${has ? `<button class="btn sm sec" data-a="onbdocrm" data-id="${esc(d.id)}">Kaldır</button>` : `<label class="btn sm">${ic('camera', 16)} Yükle<input type="file" accept="image/*,application/pdf" data-ch="onbdoc" data-id="${esc(d.id)}" hidden></label>`}</div>`; }).join('') || '<p class="muted small">İstenen evrak yok.</p>'}</div>`;
+  else body = `<h2>${esc((cfg.contract && cfg.contract.title) || 'Sözleşme')}</h2>${ONB.reaccept ? `<div class="callout warn" style="margin-top:8px">${ic('alert')}<div>Sözleşme güncellendi. Devam etmek için yeni hâlini onaylaman gerekiyor.</div></div>` : '<p class="muted small">Lütfen dikkatlice oku. Onayladığında bir kopyası işletmeye ve muhasebeciye iletilir.</p>'}
+    <div class="onb-ct" tabindex="0">${esc(onbFill(cfg.contract && cfg.contract.text)).replace(/\n/g, '<br>')}</div>
+    <div class="stack" style="margin-top:12px">${(cfg.consents || []).map((c) => `<label class="onb-cs"><input type="checkbox" data-onbc="${esc(c.id)}"${ONB.d.consents[c.id] ? ' checked' : ''}><span>${esc(c.text)}${c.req ? ' <b style="color:var(--nar)">*</b>' : ''}</span></label>`).join('')}
+    <div class="field"><label for="onb-sig">İmza yerine adını soyadını yaz</label><input type="text" id="onb-sig" autocomplete="name" value="${esc(ONB.d.sig || '')}" placeholder="${esc(ONB.d.answers.ad || u.name)}"></div></div>`;
+  const nextLbl = st === 3 ? 'Okudum, onaylıyorum' : 'Devam et';
+  return `<div class="onb"><div class="onb-in">
+  <div class="onb-top"><div class="brand">${mark(26)}<span>KaisPilot</span></div><button class="btn sm sec" data-a="logout">Çıkış</button></div>
+  <div class="onb-hi"><h1>Hoş geldin, ${esc((u.name || '').split(' ')[0])}</h1><p class="muted">${esc(BIZ)} ekibine katıldın. Başlamadan önce birkaç adımı tamamla.</p></div>
+  <div class="onb-steps">${steps}</div>
+  <div class="card onb-card">${body}<div class="err" id="onb-err" role="alert">${esc(ONB.err)}</div>
+  <div class="row" style="gap:8px;margin-top:6px">${st > 1 && !ONB.reaccept ? '<button class="btn sec" data-a="onbback">Geri</button>' : ''}<button class="btn grow" data-a="onbnext"${ONB.busy ? ' disabled' : ''}>${ONB.busy ? 'Kaydediliyor…' : nextLbl}</button></div></div>
+  <p class="small muted" style="text-align:center;margin:14px 0 24px">Bilgilerin yalnızca işletme sahibi ve muhasebeci tarafından görülür.</p>
+  </div></div>`;
+}
+const _shell42 = shellHTML; shellHTML = function () { return ONB.block ? onbPage() : _shell42(); };
+function onbCollect() {
+  document.querySelectorAll('[data-onbf]').forEach((el) => { ONB.d.answers[el.dataset.onbf] = el.value; });
+  document.querySelectorAll('[data-onbc]').forEach((el) => { ONB.d.consents[el.dataset.onbc] = el.checked; });
+  const s = document.getElementById('onb-sig'); if (s) ONB.d.sig = s.value;
+}
+const onbErr = (t) => { ONB.err = t; const e = document.getElementById('onb-err'); if (e) e.textContent = t; return false; };
+function onbValidate1() {
+  const a = ONB.d.answers; for (const f of ONB.cfg.fields || []) {
+    const v = String(a[f.id] || '').trim();
+    if (f.req && !v) return onbErr(f.label + ' alanını doldur.');
+    if (v && f.type === 'tc' && !/^[1-9]\d{10}$/.test(v)) return onbErr('T.C. kimlik no 11 haneli olmalı.');
+    if (v && f.type === 'iban') { const x = v.replace(/\s/g, '').toUpperCase(); if (!/^TR\d{24}$/.test(x)) return onbErr('IBAN TR ile başlayıp 26 karakter olmalı.'); a[f.id] = x; }
+    if (v && f.type === 'tel' && v.replace(/\D/g, '').length < 10) return onbErr('Telefon numarasını kontrol et.');
+  }
+  return true;
+}
+async function onbSaveSub(extra) {
+  const row = Object.assign({ business_id: onbBid(), user_id: SBS.user.id, app_uid: ID.active.app_uid, answers: ONB.d.answers, updated_at: new Date().toISOString() }, extra || {});
+  const r = await sbClient().from('onboard_sub').upsert(row, { onConflict: 'business_id,user_id' }).select('*'); if (r.error) throw r.error;
+  ONB.sub = r.data && r.data[0] || Object.assign({}, ONB.sub, row);
+}
+H.onbback = () => { onbCollect(); ONB.err = ''; ONB.step = Math.max(1, ONB.step - 1); render(); };
+H.onbnext = async () => {
+  if (ONB.busy) return; onbCollect(); ONB.err = ''; const cfg = ONB.cfg;
+  try {
+    if (ONB.step === 1) { if (!onbValidate1()) return; ONB.busy = true; render(); await onbSaveSub(); ONB.busy = false; ONB.step = 2; render(); window.scrollTo && window.scrollTo(0, 0); return; }
+    if (ONB.step === 2) { const miss = (cfg.docs || []).find((d) => d.req && !ONB.docs[d.id]); if (miss) return onbErr(miss.label + ' yüklenmeli.'); ONB.step = 3; render(); window.scrollTo && window.scrollTo(0, 0); return; }
+    const mc = (cfg.consents || []).find((c) => c.req && !ONB.d.consents[c.id]); if (mc) return onbErr('Onay kutularının hepsini işaretle.');
+    if (String(ONB.d.sig || '').trim().length < 3) return onbErr('İmza için adını soyadını yaz.');
+    ONB.busy = true; render();
+    await onbSaveSub({ consents: ONB.d.consents, signature: ONB.d.sig.trim(), contract_version: ONB.ver, contract_snapshot: onbFill(cfg.contract && cfg.contract.text), accepted_at: new Date().toISOString() });
+    try { const p = PROFILES[S.user.id]; if (p && canW('ekip')) { p.contract = true; p.cAt = new Date().toISOString().slice(0, 10); } } catch (e) {}
+    ONB.busy = false; ONB.block = false; ONB.reaccept = false; render(); toast('Teşekkürler, her şey tamam. Hoş geldin!', 'ok');
+  } catch (e) { ONB.busy = false; render(); onbErr('Kaydedilemedi: ' + idMsg(e)); }
+};
+function onbReadFile(file) {
+  return new Promise((res, rej) => {
+    if (/^image\//.test(file.type)) {
+      const url = URL.createObjectURL(file); const im = new Image();
+      im.onload = () => { const k = Math.min(1, 1600 / Math.max(im.width, im.height)); const cv = document.createElement('canvas'); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url); res({ data: cv.toDataURL('image/jpeg', 0.75), mime: 'image/jpeg' }); };
+      im.onerror = () => rej(new Error('Fotoğraf okunamadı.')); im.src = url; return;
+    }
+    if (file.size > 3 * 1024 * 1024) return rej(new Error('Dosya 3 MB\'tan büyük. Fotoğrafını çekerek yükle.'));
+    const fr = new FileReader(); fr.onload = () => res({ data: fr.result, mime: file.type || 'application/pdf' }); fr.onerror = () => rej(new Error('Dosya okunamadı.')); fr.readAsDataURL(file);
+  });
+}
+H.onbdocrm = async (el) => { const id = el.dataset.id; try { const r = await sbClient().from('onboard_docs').delete().eq('business_id', onbBid()).eq('user_id', SBS.user.id).eq('doc_id', id); if (r.error) throw r.error; delete ONB.docs[id]; render(); } catch (e) { toast('Kaldırılamadı: ' + idMsg(e), 'warn'); } };
+/* muhasebeci: şartlar ve sözleşmeler */
+const onbClone = (o) => JSON.parse(JSON.stringify(o));
+async function onbLoadList() {
+  if (!onbCloud() || ONB.listBusy) return; ONB.listBusy = true;
+  try {
+    const c = sbClient(); const bid = onbBid();
+    const m = await c.from('members').select('user_id,role,app_uid,display_name,email').eq('business_id', bid); if (m.error) throw m.error;
+    const s = await c.from('onboard_sub').select('user_id,app_uid,answers,consents,signature,contract_version,accepted_at,updated_at,contract_snapshot').eq('business_id', bid); if (s.error) throw s.error;
+    const d = await c.from('onboard_docs').select('user_id,doc_id,name,mime').eq('business_id', bid); if (d.error) throw d.error;
+    ONB.list = (m.data || []).filter((x) => ['calisan', 'mudur'].includes(x.role)).map((x) => ({ m: x, s: (s.data || []).find((y) => y.user_id === x.user_id) || null, d: (d.data || []).filter((y) => y.user_id === x.user_id) }));
+  } catch (e) { ONB.list = { err: idMsg(e) }; }
+  ONB.listBusy = false;
+}
+function onbStatus(x) {
+  const cfg = ONB.cfg; if (!cfg || !ONB.ver) return ['p-mute', 'Yayında değil'];
+  const s = x.s; if (!s || !s.accepted_at) { const docs = {}; x.d.forEach((y) => { docs[y.doc_id] = 1; }); return s ? ['p-warn', 'Yarım kaldı'] : ['p-mute', 'Başlamadı']; }
+  if (s.contract_version < ONB.ver) return ['p-warn', 'Yeni sözleşmeyi onaylamadı'];
+  const docOk = (cfg.docs || []).filter((d) => d.req).every((d) => x.d.some((y) => y.doc_id === d.id));
+  if (!onbFieldsOk(cfg, s.answers || {}) || !docOk) return ['p-warn', 'Eksik var'];
+  return ['p-ok', 'Tamamlandı'];
+}
+function viewSartlar() {
+  if (!ONB.loaded && !ONB.cfgBusy) { ONB.cfgBusy = true; onbLoadCfg().catch(() => {}).then(() => { ONB.cfgBusy = false; ONB.cd = null; render(); }); return `<p class="muted">Yükleniyor…</p>`; }
+  if (!ONB.cd) ONB.cd = onbClone(ONB.cfg || ONB_DEF());
+  const cd = ONB.cd; const cloud = onbCloud();
+  if (cloud && ONB.list === null && !ONB.listBusy) onbLoadList().then(() => render());
+  const head = ONB.missing ? `<div class="callout warn">${ic('alert')}<div>Bu bölümün tabloları kurulmamış. <b>kaispilot_sozlesme.sql</b> dosyasını Supabase'de bir kez çalıştır.</div></div>`
+    : !cloud ? `<div class="callout">${ic('info')}<div>Demo modundasın. Ayarlar bu cihaza kaydedilir, gerçek çalışanlara gitmez.</div></div>`
+    : ONB.ver ? `<div class="callout">${ic('check')}<div>Yayında, sürüm ${ONB.ver}. Yeni katılan çalışan ve müdürler ilk girişte bu adımları tamamlar.</div></div>`
+    : `<div class="callout warn">${ic('alert')}<div>Henüz yayınlanmadı. Aşağıyı düzenleyip <b>Kaydet ve yayınla</b>'ya basınca çalışanların karşısına çıkar.</div></div>`;
+  const tsel = (i, t) => `<select data-ch="onbcf" data-k="fields" data-i="${i}" data-p="type" aria-label="Tür">${[['text', 'Yazı'], ['textarea', 'Uzun yazı'], ['date', 'Tarih'], ['tel', 'Telefon'], ['tc', 'T.C. kimlik'], ['iban', 'IBAN']].map((x) => `<option value="${x[0]}"${t === x[0] ? ' selected' : ''}>${x[1]}</option>`).join('')}</select>`;
+  const reqT = (k, i, v) => `<label class="small onb-req"><input type="checkbox" data-ch="onbcf" data-k="${k}" data-i="${i}" data-p="req"${v ? ' checked' : ''}> Zorunlu</label>`;
+  const del = (k, i) => `<button class="xbtn sm" data-a="onbdel" data-k="${k}" data-i="${i}" aria-label="Sil">${ic('x', 16)}</button>`;
+  const fields = cd.fields.map((f, i) => `<div class="onb-row"><input type="text" value="${esc(f.label)}" data-ch="onbcf" data-k="fields" data-i="${i}" data-p="label" aria-label="Alan adı">${tsel(i, f.type)}${reqT('fields', i, f.req)}${del('fields', i)}</div>`).join('');
+  const docs = cd.docs.map((f, i) => `<div class="onb-row"><input type="text" value="${esc(f.label)}" data-ch="onbcf" data-k="docs" data-i="${i}" data-p="label" aria-label="Evrak adı">${reqT('docs', i, f.req)}${del('docs', i)}</div>`).join('');
+  const cons = cd.consents.map((f, i) => `<div class="onb-row"><input type="text" value="${esc(f.text)}" data-ch="onbcf" data-k="consents" data-i="${i}" data-p="text" aria-label="Onay metni">${reqT('consents', i, f.req)}${del('consents', i)}</div>`).join('');
+  let list = '';
+  if (cloud && !ONB.missing) {
+    if (ONB.list === null || ONB.listBusy) list = '<p class="small muted">Yükleniyor…</p>';
+    else if (ONB.list.err) list = `<p class="small" style="color:var(--nar)">${esc(ONB.list.err)}</p>`;
+    else if (!ONB.list.length) list = '<p class="small muted">Henüz davetle katılan çalışan yok.</p>';
+    else list = ONB.list.map((x, i) => { const st = onbStatus(x); const nm = (x.s && x.s.answers && x.s.answers.ad) || x.m.display_name || x.m.email; return `<button class="emp go" data-a="onbsee" data-i="${i}"><div class="grow"><b style="font-weight:600">${esc(nm)}</b><div class="small muted">${esc(ROLE_LABEL[x.m.role] || '')}${x.s && x.s.accepted_at ? ' · onay ' + new Date(x.s.accepted_at).toLocaleDateString('tr-TR') : ''} · ${x.d.length} evrak</div></div><span class="pill ${st[0]}">${st[1]}</span></button>`; }).join('');
+  }
+  return `<div class="stack-lg">${head}
+  ${cloud && !ONB.missing ? `<div class="card flush"><div style="padding:16px 16px 4px"><h3>Çalışanların durumu</h3><p class="muted small">Davet koduyla katılanlar ve karşılama adımları.</p></div>${list}<div style="padding:8px 16px 14px"><button class="btn sm sec" data-a="onbref">Yenile</button></div></div>` : ''}
+  <div class="card stack"><div><h3>Doldurulacak bilgiler</h3><p class="muted small">Çalışan ilk girişte bu alanları doldurur.</p></div>${fields}<button class="btn sm sec" data-a="onbadd" data-k="fields">${ic('plus', 16)} Bilgi ekle</button></div>
+  <div class="card stack"><div><h3>İstenen evraklar</h3><p class="muted small">Fotoğraf ya da PDF olarak yüklenir.</p></div>${docs}<button class="btn sm sec" data-a="onbadd" data-k="docs">${ic('plus', 16)} Evrak ekle</button></div>
+  <div class="card stack"><div><h3>Onay maddeleri</h3><p class="muted small">Sözleşmenin altında işaretlenecek kutular.</p></div>${cons}<button class="btn sm sec" data-a="onbadd" data-k="consents">${ic('plus', 16)} Madde ekle</button></div>
+  <div class="card stack"><div><h3>Sözleşme</h3><p class="muted small">Şunlar otomatik doldurulur: {ad} {tc} {isletme} {gorev} {tarih}. Örnek metni kullanmadan önce kendi şartlarına göre düzenle ve gerekirse bir hukukçuya kontrol ettir.</p></div>
+   <div class="field"><label for="onb-ctt">Başlık</label><input type="text" id="onb-ctt" value="${esc(cd.contract.title)}" data-ch="onbcf" data-k="contract" data-p="title"></div>
+   <div class="field"><label for="onb-ctx">Metin</label><textarea id="onb-ctx" rows="14" data-ch="onbcf" data-k="contract" data-p="text" style="font-size:14px;line-height:1.5">${esc(cd.contract.text)}</textarea></div>
+   ${ONB.ver ? `<label class="small" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="onb-bump"${ONB.bump ? ' checked' : ''} data-ch="onbbump"> <span>Sözleşmeyi değiştirdim, mevcut çalışanlar da tekrar onaylasın</span></label>` : ''}
+   <div class="row wrap" style="gap:8px"><button class="btn sec" data-a="onbprev">Önizle</button><button class="btn grow" data-a="onbpub"${ONB.missing ? ' disabled' : ''}>${ONB.ver ? 'Kaydet' : 'Kaydet ve yayınla'}</button></div>
+   ${ONB.ver ? '<button class="btn sm sec" data-a="onbreset" style="align-self:flex-start">Örnek ayarlara dön</button>' : ''}</div>
+  </div>`;
+}
+const _och42 = onChange;
+onChange = function (e) {
+  const el = e.target; const ch = el.dataset && el.dataset.ch;
+  if (ch === 'onbcf' && ONB.cd) { const k = el.dataset.k; const p = el.dataset.p; const v = el.type === 'checkbox' ? el.checked : el.value; if (k === 'contract') ONB.cd.contract[p] = v; else { const it = ONB.cd[k][Number(el.dataset.i)]; if (it) it[p] = v; } return; }
+  if (ch === 'onbbump') { ONB.bump = el.checked; return; }
+  if (ch === 'onbdoc') {
+    const f = el.files && el.files[0]; const id = el.dataset.id; if (!f) return;
+    ONB.upl = id; render();
+    onbReadFile(f).then(async (r) => {
+      const row = { business_id: onbBid(), user_id: SBS.user.id, doc_id: id, name: f.name || id, mime: r.mime, data: r.data };
+      const q = await sbClient().from('onboard_docs').upsert(row, { onConflict: 'business_id,user_id,doc_id' }); if (q.error) throw q.error;
+      ONB.docs[id] = { name: row.name }; ONB.upl = ''; ONB.err = ''; render();
+    }).catch((x) => { ONB.upl = ''; render(); onbErr('Yüklenemedi: ' + (x.message || idMsg(x))); });
+    return;
+  }
+  return _och42(e);
+};
+H.onbadd = (el) => { const k = el.dataset.k; const n = 'x' + Date.now().toString(36); if (k === 'fields') ONB.cd.fields.push({ id: n, label: 'Yeni bilgi', type: 'text', req: false }); else if (k === 'docs') ONB.cd.docs.push({ id: n, label: 'Yeni evrak', req: false }); else ONB.cd.consents.push({ id: n, text: 'Yeni onay maddesi', req: true }); render(); };
+H.onbdel = (el) => { ONB.cd[el.dataset.k].splice(Number(el.dataset.i), 1); render(); };
+H.onbref = () => { ONB.list = null; ONB.loaded = false; ONB.cd = null; render(); };
+H.onbreset = () => { ONB.cd = ONB_DEF(); render(); toast('Örnek ayarlar yüklendi. Kaydedersen geçerli olur.'); };
+H.onbprev = () => { S.modal = { type: 'onbprev' }; renderModal(); };
+NEWM.onbprev = () => { const cd = ONB.cd || ONB_DEF(); return sheet('Çalışanın göreceği sözleşme', `<p class="small muted">Örnek isimle dolduruldu.</p><h3 style="margin-top:8px">${esc(cd.contract.title)}</h3><div class="onb-ct">${esc(String(cd.contract.text).replace(/\{(\w+)\}/g, (m, k) => ({ ad: 'Ayşe Yılmaz', tc: '12345678901', isletme: BIZ, gorev: 'Garson', tarih: new Date().toLocaleDateString('tr-TR') })[k] || m)).replace(/\n/g, '<br>')}</div><div class="stack" style="margin-top:10px">${cd.consents.map((c) => `<label class="onb-cs"><input type="checkbox" disabled><span>${esc(c.text)}</span></label>`).join('')}</div>`); };
+H.onbpub = async () => {
+  const cd = ONB.cd; if (!cd) return;
+  if (cd.fields.some((f) => !String(f.label).trim()) || cd.docs.some((f) => !String(f.label).trim()) || cd.consents.some((f) => !String(f.text).trim())) { toast('Boş bırakılan satırları doldur ya da sil.', 'warn'); return; }
+  if (!String(cd.contract.text).trim()) { toast('Sözleşme metni boş olamaz.', 'warn'); return; }
+  const prevText = ONB.cfg && ONB.cfg.contract ? ONB.cfg.contract.title + '\n' + ONB.cfg.contract.text : '';
+  const changed = prevText !== cd.contract.title + '\n' + cd.contract.text;
+  const ver = !ONB.ver ? 1 : (ONB.bump ? ONB.ver + 1 : ONB.ver);
+  if (!onbCloud()) { try { localStorage.setItem(onbLocalKey(), JSON.stringify({ cfg: cd, ver })); } catch (e) {} ONB.cfg = onbClone(cd); ONB.ver = ver; ONB.bump = false; render(); toast('Kaydedildi (bu cihazda).', 'ok'); return; }
+  try {
+    const r = await sbClient().from('onboard_config').upsert({ business_id: onbBid(), config: cd, version: ver, updated_at: new Date().toISOString(), updated_by: SBS.user.id }, { onConflict: 'business_id' }); if (r.error) throw r.error;
+    const was = ONB.ver; ONB.cfg = onbClone(cd); ONB.ver = ver; ONB.bump = false; render();
+    toast(!was ? 'Yayınlandı. Çalışanlar ilk girişte bu adımları görecek.' : ver > was ? 'Kaydedildi. Herkesten yeni sözleşme onayı istenecek.' : changed ? 'Kaydedildi. Mevcut onaylar geçerli kaldı.' : 'Kaydedildi.', 'ok');
+  } catch (e) { toast('Kaydedilemedi: ' + idMsg(e), 'warn'); }
+};
+H.onbsee = (el) => { S.modal = { type: 'onbsee', i: Number(el.dataset.i) }; renderModal(); };
+NEWM.onbsee = (m) => {
+  const x = ONB.list && ONB.list[m.i]; if (!x) return sheet('Çalışan', '<p class="muted">Bulunamadı.</p>');
+  const s = x.s || {}; const a = s.answers || {}; const cfg = ONB.cfg || ONB_DEF(); const st = onbStatus(x);
+  const known = (cfg.fields || []).map((f) => [f.label, a[f.id]]); Object.keys(a).forEach((k) => { if (!(cfg.fields || []).some((f) => f.id === k)) known.push([k, a[k]]); });
+  const docs = (cfg.docs || []).map((d) => { const y = x.d.find((z) => z.doc_id === d.id); return `<div class="row between" style="gap:8px;padding:6px 0;border-top:1px solid var(--line)"><span>${esc(d.label)}${d.req ? ' *' : ''}</span>${y ? `<button class="btn sm sec" data-a="onbopen" data-u="${esc(x.m.user_id)}" data-d="${esc(d.id)}">Aç</button>` : '<span class="small muted">Yok</span>'}</div>`; }).join('');
+  return sheet((a.ad || x.m.display_name || x.m.email || 'Çalışan'), `<div class="stack"><span class="pill ${st[0]}" style="align-self:flex-start">${st[1]}</span>
+  <div><p class="lbl">Bilgiler</p>${known.map((r) => `<div class="row between" style="gap:10px;padding:6px 0;border-top:1px solid var(--line)"><span class="small muted">${esc(r[0])}</span><span style="text-align:right;word-break:break-word">${esc(r[1] || '—')}</span></div>`).join('')}</div>
+  <div><p class="lbl">Evraklar</p>${docs || '<p class="small muted">İstenen evrak yok.</p>'}</div>
+  <div><p class="lbl">Sözleşme</p>${s.accepted_at ? `<p class="small">Sürüm ${s.contract_version} · ${new Date(s.accepted_at).toLocaleString('tr-TR')} · imza: <b>${esc(s.signature || '')}</b></p><p class="small muted">${Object.keys(s.consents || {}).filter((k) => s.consents[k]).length} onay kutusu işaretli</p><details><summary class="small" style="cursor:pointer">Onaylanan metni göster</summary><div class="onb-ct">${esc(s.contract_snapshot || '').replace(/\n/g, '<br>')}</div></details>` : '<p class="small muted">Henüz onaylamadı.</p>'}</div></div>`);
+};
+H.onbopen = async (el) => {
+  try { const r = await sbClient().from('onboard_docs').select('name,mime,data').eq('business_id', onbBid()).eq('user_id', el.dataset.u).eq('doc_id', el.dataset.d).limit(1); if (r.error) throw r.error; const d = r.data && r.data[0]; if (!d) throw new Error('Evrak bulunamadı.');
+    const b64 = d.data.split(',')[1] || ''; const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const blob = new Blob([u8], { type: d.mime || 'application/octet-stream' }); const ext = /pdf/.test(d.mime) ? '.pdf' : '.jpg'; saveBlob((d.name || el.dataset.d).replace(/\.[a-z0-9]+$/i, '') + ext, blob);
+  } catch (e) { toast('Açılamadı: ' + idMsg(e), 'warn'); }
+};
+NAV.muhasebeci.push(['sartlar', 'Şartlar ve sözleşmeler', 'file', 'more']); NAV.patron.push(['sartlar', 'Şartlar ve sözleşmeler', 'file', 'more']);
+TITLES.sartlar = 'Şartlar ve sözleşmeler';
+const viewHTMLV42 = viewHTML;
+viewHTML = function () { const r = S.user && S.user.role; if ((r === 'patron' || r === 'muhasebeci') && S.view === 'sartlar') return viewSartlar(); return viewHTMLV42(); };
+/* giriş: çalışan sekmesi davet koduyla */
+function lxEmp(fields, err, go) {
+  const join = S.empMode !== 'login';
+  if (!join) return `${fields}${err}${go}<button type="button" class="lx-link" style="align-self:center" data-a="empmode" data-v="join">İlk kez mi giriyorsun? Davet koduyla katıl</button>`;
+  const f2 = fields.replace(/<button type="button" class="lx-link" data-a="idforgot">[^<]*<\/button>/, '').replace('autocomplete="current-password"', 'autocomplete="new-password"').replace('placeholder="Şifre"', 'placeholder="En az 8 karakter"');
+  return `<div class="lx-f"><label for="id-code">Davet kodu</label><div class="lx-in">${ic('lock', 20)}<input id="id-code" type="text" autocapitalize="characters" autocomplete="one-time-code" maxlength="8" placeholder="Örn. K7M2QX" style="text-transform:uppercase;letter-spacing:1px"></div></div>${f2}${err}<button class="lx-go" type="button" data-a="idnew"><span>Davet koduyla katıl</span>${LXI.arrow}</button><p class="small muted" style="margin:-4px 2px 0;text-align:center">Kodu işvereninden al. Kod hangi işletmeden geldiyse otomatik oraya katılırsın.</p><button type="button" class="lx-link" style="align-self:center" data-a="empmode" data-v="login">Zaten hesabın var mı? Giriş yap</button>`;
+}
+H.empmode = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.empMode = el.dataset.v; S.loginErr = ''; render(); };
+const _logout42 = H.logout; H.logout = () => { ONB.block = false; ONB.loaded = false; ONB.cfg = null; ONB.list = null; ONB.cd = null; _logout42(); };
+if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
