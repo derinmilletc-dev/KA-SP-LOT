@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KaisPilot Tedarik</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--ink:#1d2a24;--mut:#6b776f;--line:#dfe5e0;--bg:#f6f7f5;--acc:#1f6f55;--bad:#b3392f}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:560px;margin:0 auto;padding:16px}h1{font-size:22px;margin:8px 0}h2{font-size:17px;margin:0 0 8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+button{padding:11px 14px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button.s{background:#e8eee9;color:var(--ink)}button.sm{padding:7px 10px;font-size:14px}button:disabled{opacity:.5}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.m{color:var(--mut);font-size:14px}.err{color:var(--bad);font-size:14px;min-height:20px}.ok{color:var(--acc)}
+.pill{font-size:12px;padding:2px 8px;border-radius:99px;background:#e8eee9}.ln{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
+</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="m" style="text-align:center">tedarikçi paneli · sürüm 5</p>
+<script>
+window.addEventListener('error',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+e.message+' ('+(e.lineno||'')+')';document.body.appendChild(d);});
+window.addEventListener('unhandledrejection',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+((e.reason&&e.reason.message)||e.reason);document.body.appendChild(d);});
+const SB_URL='https://bbcsbkgbwzciyfymvpxh.supabase.co';
+const SB_KEY='sb_publishable_Pc2JtwezlCiezDW4P4IKxw_gXFXUjnA';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=(s)=>document.querySelector(s); const app=$('#app');
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tl=(n)=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:2})+' ₺';
+let ME=null, MODE=null, BIZ=null, SUP=null, msg='';
+const say=(t,ok)=>{const e=$('#msg'); if(e){e.textContent=t||''; e.className='err'+(ok?' ok':'');}};
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession(); ME=session&&session.user;
+  if(!ME) return loginView();
+  await sb.rpc('claim_supplier');
+  const b=await sb.from('businesses').select('*').eq('owner_id',ME.id).limit(1);
+  if(b.data&&b.data[0]){BIZ=b.data[0];MODE='patron';return patronView();}
+  const s=await sb.from('suppliers').select('*').eq('user_id',ME.id).limit(1);
+  if(s.data&&s.data[0]){SUP=s.data[0];MODE='sup';return supView();}
+  return setupView();
+}
+function head(t,role){return `<div class="row"><div><h1>${esc(t)}</h1>${role?`<span class="pill">${esc(role)}</span>`:''}</div><button class="s sm" id="out">Çıkış</button></div>`}
+function bindOut(){const o=$('#out'); if(o) o.onclick=async()=>{await sb.auth.signOut();boot();};}
+function loginView(){
+  app.innerHTML=`<h1>KaisPilot Tedarik</h1><div class="card"><h2>Giriş</h2>
+  <label>E-posta</label><input id="em" type="email" autocomplete="email"><label>Şifre (en az 8 karakter)</label><input id="pw" type="password" autocomplete="current-password">
+  <p class="err" id="msg"></p><div class="row"><button id="in">Giriş yap</button><button class="s" id="up">Hesap oluştur</button></div>
+  <p class="m">Tedarikçiysen, sana davet gönderen işletmenin yazdığı e-posta ile hesap oluştur.</p></div>`;
+  const cred=()=>({email:$('#em').value.trim(),password:$('#pw').value});
+  $('#in').onclick=async()=>{const r=await sb.auth.signInWithPassword(cred()); if(r.error) say('Giriş olmadı: '+r.error.message); else boot();};
+  $('#up').onclick=async()=>{const c=cred(); if(c.password.length<8) return say('Şifre en az 8 karakter olmalı.');
+    const r=await sb.auth.signUp(c); if(r.error) return say(r.error.message);
+    if(r.data.session) boot(); else say('Hesap oluşturuldu. E-postana gelen onay bağlantısına tıkla, sonra giriş yap.',true);};
+}
+function setupView(){
+  app.innerHTML=head('Hoş geldin')+`<form class="card" id="bf" autocomplete="off"><h2>İşletmeni oluştur</h2><p class="m">Tedarikçiysen ve burayı görüyorsan, davet e-postası senin hesabınla eşleşmemiş olabilir. İşletme sahibine e-postanı doğru yazdırmasını söyle.</p>
+  <label for="bn">İşletme adı</label><input id="bn" name="bn" type="text" autocomplete="off" placeholder="Örn: Çınar Kafe &amp; Fırın"><p class="err" id="msg"></p><button type="submit" id="mk">İşletme oluştur</button></form>`; bindOut();
+  $('#bf').addEventListener('submit',async(ev)=>{ev.preventDefault();
+    const n=String(new FormData(ev.target).get('bn')||'').trim();
+    if(!n) return say('Ad alanı boş okundu (0 karakter). Bir kez tıklayıp yazmayı dene.');
+    $('#mk').disabled=true; say('Kaydediliyor…',true);
+    const r=await sb.from('businesses').insert({name:n,owner_id:ME.id});
+    if(r.error){$('#mk').disabled=false; say('Kaydedilemedi: '+r.error.message);} else boot();});
+}
+/* ---------- PATRON ---------- */
+async function patronView(){
+  const [sp,rf,qt,od]=await Promise.all([
+    sb.from('suppliers').select('*').eq('business_id',BIZ.id).order('created_at'),
+    sb.from('rfqs').select('*').eq('business_id',BIZ.id).order('created_at',{ascending:false}),
+    sb.from('quotes').select('*'),
+    sb.from('orders').select('*').eq('business_id',BIZ.id).order('created_at',{ascending:false})]);
+  const sups=sp.data||[], rfqs=rf.data||[], quotes=qt.data||[], orders=od.data||[];
+  const sn=(id)=>(sups.find(s=>s.id===id)||{}).name||'Tedarikçi';
+  app.innerHTML=head(BIZ.name,'Patron paneli')+`<p class="m">Asıl yönetim ekranın <a href="/">KaisPilot</a>. Bu sayfa tedarikçiler içindir.</p>
+  <div class="card"><h2>Tedarikçiler</h2>${sups.map(s=>`<div class="ln"><span>${esc(s.name)}<span class="m" style="display:block">${esc(s.invite_email||'')} · ${s.user_id?'<span class="ok">hesap bağlı</span>':'davet bekliyor'}</span></span></div>`).join('')||'<p class="m">Henüz yok.</p>'}
+  <label>Tedarikçi adı</label><input id="sn" placeholder="Örn: Anadolu Un"><label>Tedarikçinin e-postası (bu e-postayla hesap açacak)</label><input id="se" type="email"><p class="err" id="msg"></p><button id="sadd">Tedarikçi ekle</button></div>
+  <div class="card"><h2>Yeni teklif isteği</h2><p class="m">Hangi ürünlerden ne kadar lazım? Tedarikçiler bu listeye fiyat verecek.</p>
+  <div id="rrows"></div><datalist id="pl">${[...new Set(rfqs.flatMap(r=>r.lines.map(l=>l.name)))].map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+  <div class="row" style="margin-top:8px"><button class="s sm" id="radd1" type="button">+ Ürün ekle</button></div><p class="err" id="msg2"></p><button id="radd">Teklif iste</button></div>
+  <h2>Teklif istekleri</h2>${rfqs.map(r=>{const qs=quotes.filter(q=>q.rfq_id===r.id);
+    const best=r.lines.map((l,i)=>{let b=null;qs.forEach(q=>{const p=Number(q.prices[i]);if(p>0&&(!b||p<b.p))b={p,s:q.supplier_id};});return b;});
+    return `<div class="card"><div class="row"><b>${new Date(r.created_at).toLocaleDateString('tr-TR')}</b><span class="pill">${r.status==='acik'?'Açık':'Kapalı'}</span></div>
+    ${r.lines.map((l,i)=>`<div class="ln"><span>${esc(l.name)} · ${esc(l.qty)} ${esc(l.unit)}</span><span>${best[i]?esc(sn(best[i].s))+' <b>'+tl(best[i].p)+'</b>':'<span class="m">teklif yok</span>'}</span></div>`).join('')}
+    <p class="m">${qs.length} tedarikçi teklif verdi.</p>
+    ${r.status==='acik'&&best.every(Boolean)?`<button data-ord="${r.id}">En ucuz dağıtımla sipariş ver</button>`:''}</div>`;}).join('')||'<p class="m">Henüz yok.</p>'}
+  <div class="card"><h2>Siparişler</h2>${orders.map(o=>`<div class="ln"><span>${esc(sn(o.supplier_id))}<span class="m" style="display:block">${o.lines.map(l=>esc(l.qty)+' '+esc(l.unit)+' '+esc(l.name)).join(', ')}</span></span><span>${tl(o.total)}<span class="pill" style="display:block">${esc(o.status)}</span></span></div>`).join('')||'<p class="m">Henüz yok.</p>'}</div>`;
+  bindOut();
+  $('#sadd').onclick=async()=>{const n=$('#sn').value.trim(),e=$('#se').value.trim(); if(!n||!e) return say('Ad ve e-posta yaz.');
+    const r=await sb.from('suppliers').insert({business_id:BIZ.id,name:n,invite_email:e}); if(r.error) say(r.error.message); else patronView();};
+  const UNITS=['kg','adet','L','paket','koli','çuval','gr','kutu'];
+  const addRow=(v)=>{const d=document.createElement('div');d.className='row';d.style.cssText='gap:6px;margin:6px 0;flex-wrap:nowrap';
+    d.innerHTML=`<input list="pl" placeholder="Ürün adı" style="flex:3;min-width:0" class="rn"><input inputmode="decimal" placeholder="Miktar" style="flex:1.2;min-width:0" class="rq"><select class="ru" style="flex:1.3;min-width:0">${UNITS.map(u=>`<option>${u}</option>`).join('')}</select><button type="button" class="s sm rx" aria-label="Satırı sil">×</button>`;
+    d.querySelector('.rx').onclick=()=>{if(document.querySelectorAll('#rrows .rn').length>1) d.remove();};
+    if(v){d.querySelector('.rn').value=v.name||'';d.querySelector('.rq').value=v.qty||'';d.querySelector('.ru').value=v.unit||'kg';}
+    $('#rrows').appendChild(d);};
+  addRow(); addRow();
+  $('#radd1').onclick=()=>addRow();
+  $('#radd').onclick=async()=>{const e=$('#msg2'); const lines=[...document.querySelectorAll('#rrows .row')].map(r=>({name:r.querySelector('.rn').value.trim(),qty:Number(String(r.querySelector('.rq').value).replace(',','.')),unit:r.querySelector('.ru').value})).filter(l=>l.name&&l.qty>0);
+    if(!lines.length){e.textContent='En az bir ürünün adını ve miktarını yaz.';return;}
+    $('#radd').disabled=true; const r=await sb.from('rfqs').insert({business_id:BIZ.id,lines}); if(r.error){e.textContent='Kaydedilemedi: '+r.error.message;$('#radd').disabled=false;} else patronView();};
+  document.querySelectorAll('[data-ord]').forEach(b=>b.onclick=async()=>{
+    const r=rfqs.find(x=>x.id===b.dataset.ord), qs=quotes.filter(q=>q.rfq_id===r.id), g={};
+    r.lines.forEach((l,i)=>{let bb=null;qs.forEach(q=>{const p=Number(q.prices[i]);if(p>0&&(!bb||p<bb.p))bb={p,s:q.supplier_id};});(g[bb.s]=g[bb.s]||[]).push({name:l.name,unit:l.unit,qty:l.qty,price:bb.p});});
+    const rows=Object.keys(g).map(s=>({business_id:BIZ.id,supplier_id:s,lines:g[s],total:g[s].reduce((a,l)=>a+l.qty*l.price,0)}));
+    const o=await sb.from('orders').insert(rows); if(o.error) return alert(o.error.message);
+    await sb.from('rfqs').update({status:'kapali'}).eq('id',r.id); patronView();});
+}
+/* ---------- TEDARİKÇİ ---------- */
+async function supView(){
+  const [bz,rf,qt,od]=await Promise.all([
+    sb.from('businesses').select('*').eq('id',SUP.business_id).limit(1),
+    sb.from('rfqs').select('*').eq('business_id',SUP.business_id).eq('status','acik').order('created_at',{ascending:false}),
+    sb.from('quotes').select('*').eq('supplier_id',SUP.id),
+    sb.from('orders').select('*').eq('supplier_id',SUP.id).order('created_at',{ascending:false})]);
+  const biz=(bz.data&&bz.data[0])||{name:'İşletme'}, rfqs=rf.data||[], quotes=qt.data||[], orders=od.data||[];
+  app.innerHTML=head(SUP.name,'Tedarikçi paneli')+`<p class="m">${esc(biz.name)} için çalışıyorsun.</p>
+  <h2>Gelen teklif istekleri</h2>${rfqs.map(r=>{const q=(quotes.find(x=>x.rfq_id===r.id)||{}).prices||{};
+    return `<div class="card" data-r="${r.id}"><b>${new Date(r.created_at).toLocaleDateString('tr-TR')}</b>
+    ${r.lines.map((l,i)=>`<label>${esc(l.name)} · ${esc(l.qty)} ${esc(l.unit)} için birim fiyat (₺)</label><input inputmode="decimal" data-i="${i}" value="${q[i]||''}" placeholder="Veremiyorsan boş bırak">`).join('')}
+    <p class="err" data-e></p><button data-send>Teklifi gönder</button></div>`;}).join('')||'<p class="m">Açık teklif isteği yok.</p>'}
+  <div class="card"><h2>Siparişler</h2>${orders.map(o=>`<div class="card" style="margin:8px 0"><div class="row"><b>${tl(o.total)}</b><span class="pill">${esc(o.status)}</span></div>${o.lines.map(l=>`<div class="ln"><span>${esc(l.name)}</span><span>${esc(l.qty)} ${esc(l.unit)} × ${tl(l.price)}</span></div>`).join('')}${o.status==='gonderildi'?`<button data-ok="${o.id}" style="margin-top:8px">Siparişi onayla</button>`:''}</div>`).join('')||'<p class="m">Henüz sipariş yok.</p>'}</div>`;
+  bindOut();
+  document.querySelectorAll('[data-send]').forEach(b=>b.onclick=async()=>{
+    const c=b.closest('[data-r]'), prices={}; c.querySelectorAll('input').forEach(i=>{const v=Number(String(i.value).replace(',','.')); if(v>0) prices[i.dataset.i]=v;});
+    const e=c.querySelector('[data-e]'); if(!Object.keys(prices).length){e.textContent='En az bir fiyat yaz.';return;}
+    const r=await sb.from('quotes').upsert({rfq_id:c.dataset.r,supplier_id:SUP.id,prices},{onConflict:'rfq_id,supplier_id'});
+    if(r.error) e.textContent=r.error.message; else {e.textContent='Teklif gönderildi.';e.className='err ok';}});
+  document.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{const r=await sb.from('orders').update({status:'onaylandi'}).eq('id',b.dataset.ok); if(r.error) alert(r.error.message); else supView();});
+}
+sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT') loginView(); });
+boot();
+</script></body></html>
