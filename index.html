@@ -7665,7 +7665,7 @@ paketHTML = function (role) {
   return `<div class="stack-lg pk">
   <section class="pk-h ${ready ? 'ok' : ''}"><div class="pk-hh"><div><small>${PERIOD} paketi</small><b>${empty ? 'Henüz veri yok' : ready ? 'Hazır' : 'Hazırlanıyor'}</b></div><div class="cs-rg"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="7"/><circle cx="30" cy="30" r="25" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="${(157.1 * (1 - pct / 100)).toFixed(1)}" transform="rotate(-90 30 30)"/></svg><b>%${pct}</b></div></div><p>${esc(msg)}</p>
   <div class="pk-k"><div><small>Gelen</small><b>${fmt0(t.in)}</b></div><div><small>Giden</small><b>${fmt0(t.out)}</b></div><div><small>Belgesiz</small><b>${noDoc}</b></div></div></section>
-  <section class="pk-l">${it(true, 'Fişler okundu', `${RECEIPTS.length} fiş ve fatura kayıtlı`)}
+  <section class="pk-l" ${empty ? 'hidden' : ''}>${it(true, 'Fişler okundu', `${RECEIPTS.length} fiş ve fatura kayıtlı`)}
   ${missRows.length ? it(false, `${missRows.length} işlemin belgesi eksik`, 'Hangileri olduğunu görmek için dokun', missBody, 'miss') : it(true, 'Eksik belge yok', 'Tüm harcamalar belgeyle eşleşti')}
   ${open.length ? it(false, `${open.length} belge onay bekliyor`, 'Patron ya da muhasebeci onayında olanlar', openBody, 'open') : it(true, 'Bekleyen onay yok', 'Tüm belgeler onaylandı')}
   ${it(true, 'Gider tablosu güncel', `${gp().length} satır yazıldı, toplam ${fmt0(gsum)}`)}
