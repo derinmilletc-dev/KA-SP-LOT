@@ -1211,7 +1211,6 @@ function bugunPatron() {
   else if (MAILDOCS.some((d) => mailStatus(d) === 'yeni')) items.push(todo('mail', 'info', `${MAILDOCS.filter((d) => mailStatus(d) === 'yeni').length} fatura e-postanda bulundu`, 'Tek dokunuşla muhasebeye ekle', 'muhasebe', 'eposta'));
   const late = RECV.filter((a) => !a.paid && a.days > 0);
   if (late.length) items.push(todo('trend', 'bad', `${late.length} alacağın vadesi geçti`, `${late.map((a) => a.name).join(', ')}: ${fmt0(late.reduce((x, a) => x + a.amt, 0))}`, 'muhasebe', 'alacak'));
-  items.push(todo('trend', 'info', 'Yarın bir ödeme var', 'Ünlü Mamuller, 12.300,00 ₺ (her ayın 5. günü ödeniyor)', 'muhasebe', 'ekstre'));
   const t = totals();
   const cur = RECEIPTS.filter((f) => f.cat === 'Hammadde').reduce((a, f) => a + f.total, 0);
   const pct = Math.round((cur / AVG_HAM - 1) * 100);
@@ -1454,7 +1453,7 @@ function paketHTML(role) {
   ${chk(true, 'Tüm fişler okundu', `${RECEIPTS.length} fiş ve fatura kayıtlı`)}
   ${chk(miss === 0, miss === 0 ? 'Eksik belge yok' : `${miss} işlemin belgesi eksik`, miss === 0 ? 'Tüm harcamalar belgeyle eşleşti' : 'Fiş ekle ya da "fişim yok" olarak işaretle')}
   ${chk(pend === 0, pend === 0 ? 'Bekleyen masraf onayı yok' : `${pend} masraf fişi onay bekliyor`, 'Çalışanların yüklediği fişler')}
-  ${chk(true, 'Maaş ödemeleri listelendi', 'Dört ödeme ekstreden bulundu. Bordro hesabı bu üründe yok.')}
+  ${chk(true, 'Maaş ödemeleri listelendi', 'Maaşlar ekstreden okunur. Bordro hesabı bu üründe yok.')}
   <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="l">Gelen</div><div class="v num">${fmt0(t.in)}</div></div><div class="kpi"><div class="l">Giden</div><div class="v num">${fmt0(t.out)}</div></div><div class="kpi"><div class="l">Belgesiz</div><div class="v num">${countStatus('belgesiz')}</div></div></div></div>
   <div class="card stack"><div><h3>Excel / CSV çıktısı</h3><p class="muted small">Noktalı virgülle ayrılmış, Türkçe Excel'de doğrudan açılır.</p></div>
   <textarea class="csv" readonly aria-label="CSV önizleme" id="csvbox">${esc(csvText())}</textarea>
@@ -1499,7 +1498,6 @@ function ozetV2() {
   const unk = ROWS.find((r) => r.id === 'b15' && rowStatus(r) !== 'eslesti');
   if (unk) ins.push(['warn', 'alert', 'Yeni bir alıcıya 3.500,00 ₺ havale gitmiş', 'Bu alıcıya daha önce ödeme yapılmamış, fatura ya da açıklama da yok.', `${unk.date}: ${unk.desc}. Önceki 3 ayda aynı alıcıya ödeme: 0.`]);
   if (hamPct > 30) ins.push(['warn', 'trend', `Hammadde gideri ortalamanın %${hamPct} üzerinde`, 'Tedarikçi fiyatı ya da alınan miktar değişmiş olabilir.', `Son 3 ay ortalaması ${fmt0(AVG_HAM)}, ${PERIOD}: ${fmt0(ham)}, fark ${fmt0(ham - AVG_HAM)}.`]);
-  ins.push(['info', 'clock', 'Sabit ödeme bulundu: bulut yedekleme', 'Her ay 239,99 ₺. Aynı tutarda gelirse uyarı vermez, değişirse haber verir.', '24 Eki: BULUT YEDEKLEME ABONELİĞİ −239,99 ₺']);
   const up = UPCOMING.reduce((a, x) => a + x.a, 0);
   return `<div class="stack-lg">
   <div class="card stack"><div><h3>Son üç ay</h3><p class="muted small">Gelen ve giden toplamları</p></div>${chartHTML()}</div>
@@ -2230,8 +2228,8 @@ function paketHTML(role) {
   ${plain(true, 'Tüm fişler okundu', `${RECEIPTS.length} fiş ve fatura kayıtlı`)}
   ${missRows.length ? exp('miss', `${missRows.length} işlemin belgesi eksik`, 'Hangileri olduğunu görmek için dokun', missBody) : plain(true, 'Eksik belge yok', 'Tüm harcamalar belgeyle eşleşti')}
   ${open.length ? exp('open', `${open.length} belge onay bekliyor`, 'Patron ya da muhasebeci onayında olanlar', openBody) : plain(true, 'Bekleyen onay yok', 'Tüm belgeler onaylandı')}
-  ${plain(true, 'Gider tablosu güncel', `${gp().length} Ekim gider satırı yazıldı, toplam ${fmt0(gp().reduce((a, r) => a + (Number(r.total) || 0), 0))}`)}
-  ${plain(true, 'Maaş ödemeleri listelendi', 'Dört ödeme ekstreden bulundu. Bordro hesabı bu üründe yok.')}
+  ${plain(true, 'Gider tablosu güncel', `${gp().length} gider satırı yazıldı, toplam ${fmt0(gp().reduce((a, r) => a + (Number(r.total) || 0), 0))}`)}
+  ${plain(true, 'Maaş ödemeleri listelendi', 'Maaşlar ekstreden okunur. Bordro hesabı bu üründe yok.')}
   <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="l">Gelen</div><div class="v num">${fmt0(t.in)}</div></div><div class="kpi"><div class="l">Giden</div><div class="v num">${fmt0(t.out)}</div></div><div class="kpi"><div class="l">Belgesiz</div><div class="v num">${countStatus('belgesiz')}</div></div></div></div>
   <div class="card stack"><div><h3>Excel / CSV çıktısı</h3><p class="muted small">Gider tablosundan üretilir. Noktalı virgülle ayrılmış, Türkçe Excel'de doğrudan açılır.</p></div>
   <textarea class="csv" readonly aria-label="CSV önizleme" id="csvbox">${esc(csvText())}</textarea>
@@ -3456,7 +3454,7 @@ viewAyarlar = function () {
   const card = `<div class="card flush"><div style="padding:16px 16px 6px"><h3>Hesap güvenliği</h3><p class="muted small" style="margin-top:2px">Şifreler karıştırılarak saklanır. Sıfırlanan şifreyi çalışan ilk girişte değiştirir.</p></div>
   ${USERS.map((u) => `<div class="emp">${avatar(u, 36)}<div class="grow"><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">${AUTH.h[u.id] ? 'Kendi şifresi var' : 'Demo şifresi'}${AUTH.must[u.id] ? ' · ilk girişte değiştirecek' : ''}</div></div><button class="btn sec sm" data-a="pwreset" data-id="${u.id}">Sıfırla</button></div>`).join('')}
   <div style="padding:12px 16px"><button class="btn sec" data-a="demotoggle">${AUTH.demo === false ? 'Demo girişlerini aç' : 'Demo girişlerini kapat'}</button><p class="small muted" style="margin-top:8px">Bu prototipte şifre denetimi sayfanın içinde yapılır. Gerçek bir sunucu kimlik doğrulamasının yerini tutmaz.</p></div></div>`;
-  return viewAyarlarV7().replace(/<\/div>\s*$/, card + '</div>');
+  return viewAyarlarV7();
 };
 
 /* ---- giriş kodu ve giriş-çıkış kaydı ---- */
@@ -6578,6 +6576,15 @@ H.tplai = async () => {
   } catch (e) { toast(e && e.kind === 'user' ? e.message : 'Şu an öneri alınamadı. Hazır şablonları kullanabilirsin.', 'warn'); }
   S.tplBusy = false; render();
 };
+
+/* v55: sahte verilerden arındırma (gerçek sürüm) */
+(function () {
+  AUTH.demo = false;
+  const wd = wipeData;
+  wipeData = function () { wd(); [CUSTOMERS, CAMPAIGNS, RULES, MAILDOCS, MONTHS, UPCOMING, RECV].forEach((a) => { a.length = 0; }); if (!(SBS && SBS.user)) { NAMES.u1 = { name: 'İşveren', title: 'Patron' }; } USERS.forEach((u) => { u.email = ''; }); try { applyNames(); } catch (e) {} };
+  wipeData();
+  const pa = pApply; pApply = function (s) { AUTH.demo = false; return pa(s); };
+})();
 if (typeof window !== 'undefined') { window.__K = { ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
