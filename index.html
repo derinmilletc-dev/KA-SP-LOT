@@ -1013,6 +1013,19 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .rzc-nt{display:flex;gap:6px;align-items:flex-start;margin:0;font-size:13px;color:var(--ink);background:#F4F7FB;border-radius:10px;padding:6px 9px}.rzc-nt .ic{flex:none;margin-top:2px;color:var(--cini)}
 .rzc-a{display:flex;gap:6px;margin-top:2px}.rzc-a .btn{flex:1 1 0;min-width:0;min-height:38px;padding:0 4px;font-size:13.5px;white-space:nowrap}.rzc-a .btn:first-child{flex:1.3}.rzc-no{color:var(--nar)!important}
 .rzc-l{display:flex;border-top:1px solid #EDF1F7;margin:2px -4px 0;padding-top:2px}.rzc-l>*{flex:1;border:0;background:none;color:var(--cini);font-size:13px;font-weight:600;white-space:nowrap;font-family:inherit;padding:9px 2px;text-align:center;text-decoration:none}.rzc-l>*+*{border-left:1px solid #EDF1F7}
+
+.ai-card,.ai-doc{background:#fff;border:1px solid #DCE6E0;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(16,60,40,.05)}
+.ai-ah{display:flex;gap:10px;align-items:center}.ai-ah>span{flex:none;width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:#E4F5EE;color:#0F7B5F}.ai-ah b{display:block;font-size:15.5px}.ai-ah small{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.3}
+.ai-bt{display:flex;gap:8px;flex-wrap:wrap}.ai-bt .btn{flex:1 1 auto;min-height:42px}
+.ai-ok{display:flex;gap:8px;align-items:flex-start;background:#E4F5EE;color:#0B6A50;border-radius:14px;padding:10px 12px;font-size:14px;font-weight:600;line-height:1.4}.ai-ok .ic{flex:none;margin-top:1px}
+.ai-nt{margin:0;font-size:13px;color:var(--ink-2);line-height:1.45}.ai-wn{display:flex;gap:8px;align-items:flex-start;background:#FFF3DB;color:#8A5200;border-radius:12px;padding:9px 11px;font-size:13.5px;line-height:1.4}.ai-wn .ic{flex:none;margin-top:1px}
+.ai-pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ai-pk>div{background:#F3F7F5;border-radius:12px;padding:8px 11px;min-width:0}.ai-pk small,.ai-pp small{display:block;font-size:12px;color:var(--ink-2)}.ai-pk b,.ai-pp b{font-size:14.5px;overflow-wrap:anywhere}
+.ai-paper{background:#FFFEFB;border:1px solid #E6E0D2;border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 0 0 4px #FFFEFB,inset 0 0 0 5px #EFE9DA}
+.ai-pt{text-align:center;font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:17px;letter-spacing:2px;color:#2A2A2A}
+.ai-pp{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:Georgia,serif}
+.ai-paper details{font-size:13px;line-height:1.55;font-family:Georgia,serif;color:#2A2A2A}.ai-paper summary{cursor:pointer;color:#0F7B5F;font-weight:600;font-family:inherit;padding:4px 0}.ai-paper details p{margin:8px 0}
+.ai-sg{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:6px}.ai-sg span{border-top:1px solid #9A9484;padding-top:4px;font-size:12px;color:#6B6657;text-align:center;font-family:Georgia,serif}
+.ai-mem{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-2);padding:2px 4px}.ai-mem .ic{color:#0F7B5F;flex:none}.ai-mem button{margin-left:auto;border:0;background:none;color:#0F7B5F;font-weight:600;font-size:12.5px;font-family:inherit;padding:4px}
 .mg{display:flex;flex-direction:column;gap:14px}
 .mg-hi h2{margin:0;font-size:26px;letter-spacing:-.3px}.mg-hi p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 .mg-q{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mg-q button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 10px;border:1px solid #E1E8F2;border-radius:16px;background:#fff;color:var(--cini-d);font-family:inherit;box-shadow:0 3px 10px rgba(13,40,80,.05)}.mg-q svg{color:var(--cini)}.mg-q span{font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap}
@@ -7216,6 +7229,145 @@ rzCard = function (r) {
   ${r.note ? `<p class="rzc-nt">${ic('info', 14)}<span>${esc(r.note)}</span></p>` : ''}
   ${a.length ? `<div class="rzc-a">${a.join('')}</div>` : ''}
   <div class="rzc-l">${links}</div></div>`;
+};
+/* ===== v70: Kais AI asistan: geniş veri, yeni eylemler, hafıza ===== */
+const AI_TYPES = ['fatura_kaydet', 'excel_indir', 'siparis_olustur', 'stok_guncelle', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'hafiza_kaydet'];
+const AI_STATE = { none: 'henüz gelmedi', working: 'çalışıyor', break: 'molada', pending: 'kaydı onay bekliyor', out: 'çıktı', done: 'çıktı' };
+const aiMemKey = () => 'kp_aimem_' + ((SBS.biz && SBS.biz.id) || 'x') + '_' + ((S.user && S.user.id) || 'u');
+const aiMemGet = () => { try { const o = JSON.parse(localStorage.getItem(aiMemKey()) || 'null'); return o && typeof o === 'object' ? o : { msgs: [], notes: [] }; } catch (e) { return { msgs: [], notes: [] }; } };
+const aiMemSet = (o) => { try { localStorage.setItem(aiMemKey(), JSON.stringify(o)); } catch (e) {} };
+function aiMemLoad() {
+  const k = aiMemKey(); if (AIC.memKey === k) return; AIC.memKey = k; const m = aiMemGet(); AIC.notes = m.notes || [];
+  if (!AIC.msgs.length) AIC.msgs = (m.msgs || []).map((x) => ({ role: x.role, content: x.content, att: x.att, acts: (x.acts || []).map((a) => (a.st === 'open' ? { ...a, st: 'skip' } : a)) }));
+}
+function aiMemSave() { const m = aiMemGet(); aiMemSet({ notes: AIC.notes || m.notes || [], msgs: AIC.msgs.slice(-60).map((x) => ({ role: x.role, content: x.content, att: x.att, acts: (x.acts || []).map((a) => ({ type: a.type, args: a.args, st: a.st, msg: a.msg })) })) }); }
+const aiCtxV69 = aiContext;
+aiContext = function () {
+  const c = aiCtxV69(); const r = S.user.role; const mgr = ['patron', 'mudur'].includes(r); const t = (f) => { try { return f(); } catch (e) { return undefined; } };
+  c.simdi = hhmm(new Date()); c.hafiza_notlari = (AIC.notes || []).slice(-20);
+  if (mgr) {
+    c.ekip = t(() => EMP_IDS.map((id) => { const u = byId(id); const a = ATT[id] || {}; const p = PROFILES[id] || {}; const l = izLeft(id); const o = { id, ad: u.name, gorev: u.title || '', durum: AI_STATE[a.state] || a.state, giris: a.inAt || null, mola_dk: a.breakMin || 0, gec_kalma_dk: a.late || 0, kalan_yillik_izin_gun: l ? l.left : null, ise_giris: p.hire || null }; if (r === 'patron') { o.maas = p.salary; o.maas_turu = p.stype; } return o; }));
+    c.izin_talepleri = t(() => LVREQ.slice(-20).map((q) => ({ id: q.id, kisi: (byId(q.uid) || {}).name, tur: q.type, tarih: q.txt, gun: q.days, durum: q.status, karsi_teklif: q.counter ? q.counter.txt : null, son_mesaj: q.thread && q.thread.length ? q.thread[q.thread.length - 1].text : '' })));
+    c.duyurular = t(() => MSGS.slice(-8).map((m) => ({ tur: m.type, baslik: m.title, zaman: m.time, alici: m.to.length, okuyan: m.reads.filter((x) => m.to.includes(x)).length, kabul: m.type === 'mesai' ? m.to.filter((x) => m.res[x] === 'kabul').length : undefined, red: m.type === 'mesai' ? m.to.filter((x) => m.res[x] === 'red').length : undefined })));
+    c.rezervasyonlar = t(() => RESV.filter((x) => x.date >= REF_ISO && x.date <= addDays(REF_ISO, 14) && rzActive(x)).sort((a, b) => (a.date + a.time < b.date + b.time ? -1 : 1)).slice(0, 40).map((x) => ({ id: x.id, ad: x.name, kisi: x.n, tarih: x.date, saat: x.time, sure_dk: x.dur, durum: x.st, masa: rzNames(x.tids), not: x.note || '' })));
+    c.masalar = t(() => ({ acilis: RCFG.open, kapanis: RCFG.close, liste: TABLES.map((x) => ({ id: x.id, ad: x.name, kapasite: x.cap, bolge: x.zone })) }));
+    c.izinli_ve_mola = t(() => LEAVES.slice(-15).map((x) => ({ kisi: (byId(x.uid) || {}).name, tur: x.type, gun: x.days, tarih: x.txt || x.date })));
+  } else if (r === 'calisan') {
+    c.ben = t(() => { const id = S.user.id; const a = ATT[id] || {}; const l = izLeft(id); return { durum: AI_STATE[a.state] || a.state, giris: a.inAt || null, mola_dk: a.breakMin || 0, kalan_yillik_izin_gun: l ? l.left : null, izin_taleplerim: LVREQ.filter((q) => q.uid === id).map((q) => ({ tarih: q.txt, gun: q.days, durum: q.status })) }; });
+  }
+  if (mgr || r === 'muhasebeci') {
+    c.tedarikciler = t(() => SUPPLIERS.map((sp) => ({ id: sp.id, ad: sp.name, teslim_gun: sp.lead, min_siparis: sp.minAmt, fiyatlar: Object.entries(sp.items || {}).map(([sid, pr]) => ({ urun: (stById(sid) || {}).name, birim_fiyat: pr })).filter((x) => x.urun) })));
+    c.tedarikci_performans = t(() => supPerf().map((x) => ({ ad: x.sp.name, siparis: x.n, zamaninda_yuzde: x.ontime == null ? null : Math.round(x.ontime * 100), ort_teslim_gun: x.avgLead == null ? null : Math.round(x.avgLead * 10) / 10, fiyat_degisimi_yuzde: x.price == null ? null : Math.round(x.price), puan: x.score })));
+    c.fiyat_artislari = t(() => priceAlerts().slice(0, 8).map((i) => ({ urun: i.st.name, artis_yuzde: Math.round(i.pct), son_satici: i.last && i.last.who })));
+  }
+  let s = JSON.stringify(c); if (s.length > 44000) { ['izinli_ve_mola', 'duyurular', 'recete_marji', 'defter'].forEach((k) => { if (JSON.stringify(c).length > 44000) delete c[k]; }); }
+  return c;
+};
+aiAsk = async function (text) {
+  aiMemLoad(); const mode = AIC.mode; AIC.mode = null; const c = sbClient(); AIC.err = ''; const atts = AIC.files.slice(); AIC.files = [];
+  AIC.msgs.push({ role: 'user', content: text, att: atts.map((a) => a.name) }); AIC.busy = true; render();
+  try {
+    if (!c || !SBS.user || !SBS.biz) throw new Error('Kais AI için bulut hesabına giriş yapmalısın.');
+    const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode: mode || undefined, messages: AIC.msgs.slice(-20).map((m) => ({ role: m.role, content: m.content })), context: aiContext(), attachments: atts.map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
+    if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'Kais AI sunucusu kurulmamış. Kurulum adımlarını uygula.' : 'Kais AI şu an yanıt vermedi.')); }
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    const acts = ((r.data && r.data.actions) || []).filter((a) => a && AI_TYPES.includes(a.type)).map((a) => ({ type: a.type, args: a.args || {}, st: 'open' }));
+    acts.forEach((a) => { if (a.type === 'hafiza_kaydet') { const n = String(a.args.not || '').trim().slice(0, 300); if (n) { AIC.notes = (AIC.notes || []).concat([n]).slice(-30); a.st = 'done'; a.msg = 'Hafızaya kaydettim: ' + n; } else a.st = 'skip'; } });
+    AIC.msgs.push({ role: 'assistant', content: (r.data && r.data.reply) || 'Yanıt gelmedi.', acts });
+  } catch (e) { AIC.err = e.message || 'Hata'; AIC.msgs.pop(); AIC.draft = text; AIC.files = atts; AIC.mode = mode || null; }
+  AIC.busy = false; aiMemSave(); render(); const el = document.getElementById('ai-end'); if (el && el.scrollIntoView) el.scrollIntoView();
+};
+const aiClearV69 = H.aiclear; H.aiclear = () => { aiClearV69(); AIC.memKey = aiMemKey(); aiMemSave(); };
+H.aimemclr = () => { AIC.notes = []; aiMemSave(); render(); toast('Hafıza notları silindi.', 'ok'); };
+['patron', 'mudur'].forEach((k) => { AI_Q[k] = ['Kim molada, kim geç kaldı?', 'Bekleyen izin taleplerini özetle', 'Tedarikçileri karşılaştır', 'Yarın 20:00 için 4 kişilik rezervasyon ekle', 'Herkese "Cuma stok sayımı var" duyurusu gönder', 'Yeni çalışan için sözleşme hazırla'].concat(AI_Q[k].slice(0, 2)); });
+AI_Q.calisan = AI_Q.calisan.concat(['Kalan yıllık iznim kaç gün?']);
+const aiPeople = (a) => { const l = Array.isArray(a) ? a : a ? [a] : []; if (!l.length || l.some((x) => /herkes|hepsi|tüm|tum|ekip/i.test(String(x)))) return EMP_IDS.slice(); const out = []; l.forEach((x) => { const s = String(x).toLocaleLowerCase('tr'); const id = EMP_IDS.find((i) => i === x || (byId(i).name || '').toLocaleLowerCase('tr') === s) || EMP_IDS.find((i) => (byId(i).name || '').toLocaleLowerCase('tr').includes(s)); if (id && !out.includes(id)) out.push(id); }); return out; };
+const aiDoneCard = (a) => `<div class="ai-ok">${ic('check', 18)}<span>${esc(a.msg || 'Tamamlandı.')}</span></div>`;
+const aiHead = (ico, t, s) => `<div class="ai-ah"><span>${ic(ico, 20)}</span><div><b>${t}</b><small>${s}</small></div></div>`;
+const aiBtns = (i, j, ok, no) => `<div class="ai-bt"><button class="btn sm" data-a="aiact2" data-i="${i}" data-j="${j}">${ok}</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">${no || 'Vazgeç'}</button></div>`;
+function aiContractD(g) { const hire = /^\d{4}-\d{2}-\d{2}$/.test(g.baslangic || '') ? g.baslangic : ''; return { name: String(g.ad_soyad || '').trim(), pos: String(g.gorev || '').trim(), hire, salary: Number(g.maas) > 0 ? Number(g.maas) : 0, stype: g.maas_turu === 'brut' ? 'brut' : 'net', hours: Number(g.haftalik_saat) > 0 ? Number(g.haftalik_saat) : 45, trial: g.deneme_ay != null && g.deneme_ay !== '' && Number(g.deneme_ay) >= 0 ? Number(g.deneme_ay) : 2, payday: 30 }; }
+function aiContractCard(a, i, j) {
+  const d = aiContractD(a.args); const body = contractText(d); const parts = body.split('\n\n'); const miss = [!d.pos && 'görev', !d.hire && 'başlangıç tarihi', !d.salary && 'maaş'].filter(Boolean);
+  const row = (k, v) => `<div><small>${k}</small><b>${esc(v || '________')}</b></div>`;
+  return `<div class="ai-card ai-doc">${aiHead('file', 'İş sözleşmesi taslağı', 'Kontrol et, taslak olarak kaydet ya da PDF al')}
+  <div class="ai-paper"><div class="ai-pt">İŞ SÖZLEŞMESİ</div><div class="ai-pp"><div><small>İşveren</small><b>${esc(BIZ)}</b></div><div><small>Çalışan</small><b>${esc(d.name || '________')}</b></div></div>
+  <div class="ai-pk">${row('Görev', d.pos)}${row('Başlangıç', d.hire ? isoTxt(d.hire) : '')}${row('Ücret', d.salary ? fmt(d.salary) + (d.stype === 'brut' ? ' brüt' : ' net') : '')}${row('Haftalık süre', d.hours + ' saat')}${row('Deneme', d.trial + ' ay')}${row('Ödeme günü', 'Her ayın ' + d.payday + '. günü')}</div>
+  <details><summary>Tüm maddeleri gör</summary>${parts.slice(2, -2).map((p) => `<p>${esc(p).replace(/^(Madde \d+ - [^\n]+)\n/, '<b>$1</b><br>')}</p>`).join('')}</details>
+  <div class="ai-sg"><span>İşveren imzası</span><span>Çalışan imzası</span></div></div>
+  ${miss.length ? `<div class="ai-wn">${ic('alert', 16)}<span>Yazılmadığı için boş bıraktım: ${miss.join(', ')}. Maaş net mi brüt mü belirtilmediyse net varsaydım.</span></div>` : ''}
+  <div class="ai-bt"><button class="btn sm" data-a="aiact2" data-i="${i}" data-j="${j}" data-k="save">Taslak olarak kaydet</button><button class="btn sm sec" data-a="aiact2" data-i="${i}" data-j="${j}" data-k="pdf">PDF / Yazdır</button><button class="btn sm sec" data-a="aiact2" data-i="${i}" data-j="${j}" data-k="copy">Kopyala</button></div><p class="ai-nt">Bu metin taslaktır. İmzadan önce iş hukukçusu kontrol etmelidir.</p></div>`;
+}
+const aiCardV69 = aiActCard;
+aiActCard = function (a, i, j) {
+  if (!['duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'hafiza_kaydet'].includes(a.type)) return aiCardV69(a, i, j);
+  if (a.st === 'done') return aiDoneCard(a); if (a.st === 'skip') return `<div class="small muted">Vazgeçildi.</div>`;
+  const g = a.args || {}; const id = (k) => `aa-${i}-${j}-${k}`;
+  if (a.type === 'sozlesme_olustur') return aiContractCard(a, i, j);
+  if (a.type === 'duyuru_gonder') {
+    const to = aiPeople(g.alicilar); const mesai = g.tur === 'mesai';
+    if (!to.length) return `<div class="callout warn">${ic('alert')}<div>Alıcı bulunamadı. Kimlere gideceğini yaz.</div></div>`;
+    return `<div class="ai-card">${aiHead(mesai ? 'clock' : 'megaphone', mesai ? 'Mesai teklifi' : 'Duyuru', to.length === EMP_IDS.length ? 'Herkese gidecek' : to.map((x) => esc(byId(x).name)).join(', '))}
+    <div class="field"><label for="${id('t')}">Başlık</label><input id="${id('t')}" type="text" value="${esc(g.baslik || '')}"></div>
+    <div class="field"><label for="${id('b')}">Mesaj</label><textarea id="${id('b')}">${esc(g.mesaj || '')}</textarea></div>
+    ${mesai ? `<div class="row wrap"><div class="field grow"><label for="${id('h')}">Ek süre (saat)</label><input id="${id('h')}" type="text" inputmode="decimal" value="${esc(String(g.saat || 1))}"></div><div class="field grow"><label for="${id('p')}">Kişi başı ek ücret (₺)</label><input id="${id('p')}" type="text" inputmode="decimal" value="${esc(String(g.ucret == null ? 0 : g.ucret))}"></div></div>` : ''}
+    ${aiBtns(i, j, mesai ? 'Teklifi gönder' : 'Duyuruyu gönder')}</div>`;
+  }
+  if (a.type === 'rezervasyon_ekle') {
+    const m = { date: g.tarih, time: g.saat, dur: Number(g.sure_dk) > 0 ? Number(g.sure_dk) : 90, n: Number(g.kisi), tid: 'auto' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(m.date || '') || m.date < REF_ISO || !/^\d{1,2}:\d{2}$/.test(m.time || '') || !(m.n >= 1)) return `<div class="callout warn">${ic('alert')}<div>Rezervasyon için tarih, saat ve kişi sayısı eksik ya da geçersiz.</div></div>`;
+    const c = rzCheck(m);
+    return `<div class="ai-card">${aiHead('cal', 'Rezervasyon', esc(rzDayName(m.date)) + ' · ' + esc(m.time))}
+    <div class="ai-pk"><div><small>Misafir</small><b>${esc(g.ad || '—')}</b></div><div><small>Kişi</small><b>${m.n}</b></div><div><small>Süre</small><b>${m.dur} dk</b></div><div><small>Masa</small><b>${c.res ? esc(rzNames(c.res)) : 'yok'}</b></div></div>
+    ${g.not ? `<p class="ai-nt">Not: ${esc(g.not)}</p>` : ''}
+    ${c.res ? aiBtns(i, j, 'Rezervasyonu ekle') : `<div class="ai-wn">${ic('alert', 16)}<span>${esc(c.msg || 'Bu saatte uygun masa yok.')}${c.alt.length ? ' Uygun saatler: ' + c.alt.join(', ') + '.' : ''}</span></div><div class="ai-bt"><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Kapat</button></div>`}</div>`;
+  }
+  if (a.type === 'rezervasyon_durum') {
+    const r = RESV.find((x) => x.id === g.rezervasyon_id); const lab = { geldi: 'Geldi', gelmedi: 'Gelmedi', iptal: 'İptal et', bitti: 'Masa boşaldı', onay: 'Onayla' }[g.durum];
+    if (!r || !lab) return `<div class="callout warn">${ic('alert')}<div>Rezervasyon bulunamadı.</div></div>`;
+    return `<div class="ai-card">${aiHead('cal', 'Rezervasyon durumu', esc(r.name) + ' · ' + esc(r.time))}<p class="ai-nt">Durum şuna çevrilecek: <b>${lab}</b></p>${aiBtns(i, j, lab)}</div>`;
+  }
+  if (a.type === 'izin_karar') {
+    const q = LVREQ.find((x) => x.id === g.talep_id); if (!q || !['bekliyor', 'yanit'].includes(q.status)) return `<div class="callout warn">${ic('alert')}<div>Karar bekleyen böyle bir izin talebi yok.</div></div>`;
+    const ok = g.karar !== 'reddet'; const e = lrEff(q);
+    return `<div class="ai-card">${aiHead('clock', 'İzin talebi', esc((byId(q.uid) || {}).name) + ' · ' + esc(e.txt) + ' · ' + e.days + ' gün')}<p class="ai-nt">${ok ? 'Onay ekranını açarım, kesintiyi ve türü sen kontrol edip kaydedersin.' : 'Red için açıklama yazman gerekir, ekranı açarım.'}</p>${g.neden ? `<p class="ai-nt">Önerim: ${esc(g.neden)}</p>` : ''}${aiBtns(i, j, ok ? 'Onay ekranını aç' : 'Red ekranını aç')}</div>`;
+  }
+  return '';
+};
+H.aiact2 = async (el) => {
+  const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; if (!a || a.st !== 'open') return;
+  const g = a.args || {}; const gv = (k) => (document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-${k}`) || {}).value; const done = (m) => { a.st = 'done'; a.msg = m; aiMemSave(); render(); };
+  const need = (roles) => { if (!roles.includes(S.user.role)) { toast('Bu işlem için yetkin yok.', 'warn'); return false; } return !locked(); };
+  if (a.type === 'duyuru_gonder') {
+    if (!need(['patron', 'mudur'])) return; const to = aiPeople(g.alicilar); const title = (gv('t') || '').trim(); const body = (gv('b') || '').trim(); const mesai = g.tur === 'mesai';
+    if (!title || !body) { toast('Başlık ve mesaj boş olamaz.', 'warn'); return; }
+    const m = { id: 'm' + ++seq, type: mesai ? 'mesai' : 'duyuru', title, body, to, time: 'Bugün ' + hhmm(new Date()), reads: [], res: {} };
+    if (mesai) { const h = trNum(gv('h')); const p = trNum(gv('p')); if (!(h > 0) || !(p >= 0)) { toast('Süre ve ücreti kontrol et.', 'warn'); return; } m.hours = String(h); m.pay = String(p); }
+    MSGS.push(m); done((mesai ? 'Mesai teklifi ' : 'Duyuru ') + to.length + ' kişiye gönderildi.'); return;
+  }
+  if (a.type === 'rezervasyon_ekle') {
+    if (!need(['patron', 'mudur'])) return; const m = { date: g.tarih, time: g.saat, dur: Number(g.sure_dk) > 0 ? Number(g.sure_dk) : 90, n: Number(g.kisi), tid: 'auto' }; const c = rzCheck(m);
+    if (!c.res) { toast(c.msg || 'Bu saatte uygun masa yok.', 'warn'); return; }
+    RESV.push({ id: 'r' + (++seq), name: String(g.ad || 'Misafir').trim(), phone: String(g.telefon || '').trim(), n: m.n, date: m.date, time: m.time, dur: m.dur, tids: c.res, src: 'Kais AI', note: String(g.not || ''), st: 'onay', by: S.user.id });
+    S.rzDate = m.date; done('Rezervasyon eklendi: ' + (g.ad || 'Misafir') + ', ' + m.time + ', masa ' + rzNames(c.res) + '.'); return;
+  }
+  if (a.type === 'rezervasyon_durum') {
+    if (!need(['patron', 'mudur'])) return; const r = RESV.find((x) => x.id === g.rezervasyon_id); if (!r) return; H.rzst({ dataset: { id: r.id, s: g.durum } }); if (r.st === g.durum) done(r.name + ' için durum güncellendi.'); return;
+  }
+  if (a.type === 'izin_karar') {
+    if (!need(['patron', 'mudur'])) return; a.st = 'done'; a.msg = g.karar === 'reddet' ? 'Red ekranı açıldı.' : 'Onay ekranı açıldı.'; aiMemSave(); (g.karar === 'reddet' ? H.lrrej : H.lrok)({ dataset: { id: g.talep_id } }); render(); return;
+  }
+  if (a.type === 'sozlesme_olustur') {
+    if (!need(['patron', 'mudur'])) return; const d = aiContractD(g); const body = contractText(d); const k = el.dataset.k;
+    if (k === 'copy') { cpy(body, 'Sözleşme metni kopyalandı.'); return; }
+    if (k === 'pdf') { const w = window.open('', '_blank'); if (!w) { toast('Açılır pencere engellendi. Kopyala düğmesini kullan.', 'warn'); return; } w.document.write('<!doctype html><meta charset="utf-8"><title>İş sözleşmesi</title><style>body{font:15px/1.6 Georgia,serif;max-width:720px;margin:32px auto;padding:0 20px;white-space:pre-wrap}</style>' + esc(body).replace(/^(Madde \d+ - .*)$/gm, '<b>$1</b>')); w.document.close(); setTimeout(() => { try { w.print(); } catch (e) {} }, 400); return; }
+    DRAFTS.unshift({ id: 'df' + ++seq, kind: 'is', name: d.name || 'Çalışan', title: 'İş sözleşmesi: ' + (d.name || 'Çalışan'), body, date: isoShort(REF_ISO) }); done('Sözleşme taslağı kaydedildi. Çalışanlar, Sözleşmeler sekmesinde duruyor.'); return;
+  }
+};
+const viewKaisV69 = viewKaisAI;
+viewKaisAI = function () {
+  aiMemLoad(); const h = viewKaisV69(); const n = (AIC.notes || []).length;
+  const foot = `<div class="ai-mem">${ic('sparkle', 16)}<span>Sohbet geçmişini bu cihazda hatırlarım${n ? ', ' + n + ' not tuttum' : ''}.</span>${n ? '<button data-a="aimemclr">Notları sil</button>' : ''}</div>`;
+  return h.replace(/<\/div>\s*$/, foot + '</div>');
 };
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
