@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KaisPilot Tedarik</title>
+<meta name="theme-color" content="#164169">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--ink:#1d2a24;--mut:#6b776f;--line:#dfe5e0;--bg:#f6f7f5;--acc:#1f6f55;--bad:#b3392f}
@@ -14,7 +17,40 @@ button.s{background:#e8eee9;color:var(--ink)}button.sm{padding:7px 10px;font-siz
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .m{color:var(--mut);font-size:14px}.err{color:var(--bad);font-size:14px;min-height:20px}.ok{color:var(--acc)}
 .pill{font-size:12px;padding:2px 8px;border-radius:99px;background:#e8eee9}.ln{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
-</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="m" style="text-align:center">tedarikçi paneli · sürüm 5</p>
+
+/* KaisPilot giriş dili: tedarikçi girişi */
+body.lg{background:linear-gradient(180deg,#1F5182 0,#1F5182 150px,#A9C0D8 260px,#E6EDF5 400px,#F2F6FB 560px) no-repeat,#F2F6FB;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#12213B;-webkit-font-smoothing:antialiased}
+body.lg main{max-width:none;padding:0}
+.th{position:relative;overflow:hidden;color:#fff;background:radial-gradient(120% 90% at 85% 10%,rgba(91,227,224,.16),transparent 55%),linear-gradient(160deg,#123A63 0,#1B4770 60%,#1F5182 100%);padding:max(20px,env(safe-area-inset-top)) 22px 46px}
+.th-in{max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.th-brand{display:flex;align-items:center;gap:9px;font:700 19px 'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;letter-spacing:-.2px}
+.th h1{margin:16px 0 0;font:700 27px/1.1 'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;letter-spacing:-.4px;color:#fff}
+.th p{margin:6px 0 0;font-size:15px;color:#DCE8F5}
+.th-ic{flex:none;width:76px;height:76px;border-radius:20px;display:grid;place-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(5,25,50,.25),inset 0 1px 0 rgba(255,255,255,.18);color:#fff}
+.tc{position:relative;max-width:480px;margin:-26px 16px 0;background:#fff;border:1px solid #E1E8F1;border-radius:24px;box-shadow:0 10px 30px rgba(9,40,80,.12);padding:22px 20px 20px}
+@media(min-width:520px){.tc{margin:-26px auto 0}}
+.tc h2{margin:0;font:700 26px/1.1 'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;letter-spacing:-.4px;color:#12213B}
+.tc .sub{margin:4px 0 16px;font-size:14.5px;color:#3B4A63}
+.tf{display:flex;flex-direction:column;gap:10px}
+.tf .f{display:flex;flex-direction:column;gap:5px}
+.tf .f>label{margin:0;font-size:14px;font-weight:600;color:#12213B}
+.ti{display:flex;align-items:center;gap:12px;min-height:54px;padding:0 14px;border:1px solid #D3DCE8;border-radius:14px;background:#fff;color:#66738A}
+.ti:focus-within{border-color:#0D56A6;box-shadow:0 0 0 3px rgba(13,86,166,.15)}
+.ti input{flex:1;min-width:0;border:0;outline:0;padding:12px 0;background:transparent;font:16px 'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#12213B}
+.ti input::placeholder{color:#8895A9}
+.ti .eye{flex:none;background:transparent;color:#66738A;padding:8px;margin:-8px -6px -8px 0;min-width:40px;min-height:40px;display:grid;place-items:center;border-radius:10px}
+body.lg .err{margin:0;font-size:14px;min-height:0}body.lg .err:empty{display:none}body.lg .err.ok{color:#1F7753}
+.tb{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;border-radius:14px;font:600 17px 'IBM Plex Sans','Segoe UI',system-ui,sans-serif}
+.tb.p{margin-top:4px;background:linear-gradient(180deg,#0F5AAE,#093F7A);color:#fff;box-shadow:0 4px 10px rgba(9,63,122,.2)}
+.tb.o{background:#fff;color:#0D56A6;border:1px solid #0D56A6;min-height:50px;font-size:16px}
+.tb.o span{color:#12213B}
+.tb:active{transform:translateY(1px)}
+.tn{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:11px 12px;border-radius:12px;background:#EEF4FB;color:#3B4A63;font-size:13.5px;line-height:1.45}
+.tn svg{flex:none;color:#0D56A6;margin-top:1px}
+.tfoot{margin:14px 0 calc(18px + env(safe-area-inset-bottom));text-align:center;font-size:12.5px;color:#8895A9}
+body:not(.lg) .tfoot{margin-top:4px}
+body.lg .th{box-sizing:border-box;height:clamp(160px,calc(100vh - 560px),220px);height:clamp(160px,calc(100svh - 560px),220px);display:flex;flex-direction:column;justify-content:center}body.lg .th-in{width:100%}
+</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="tfoot">KaisPilot Tedarik · v5</p>
 <script>
 window.addEventListener('error',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+e.message+' ('+(e.lineno||'')+')';document.body.appendChild(d);});
 window.addEventListener('unhandledrejection',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+((e.reason&&e.reason.message)||e.reason);document.body.appendChild(d);});
@@ -27,6 +63,7 @@ const tl=(n)=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:2})+' ₺'
 let ME=null, MODE=null, BIZ=null, SUP=null, msg='';
 const say=(t,ok)=>{const e=$('#msg'); if(e){e.textContent=t||''; e.className='err'+(ok?' ok':'');}};
 async function boot(){
+  document.body.classList.remove('lg');
   const {data:{session}}=await sb.auth.getSession(); ME=session&&session.user;
   if(!ME) return loginView();
   await sb.rpc('claim_supplier');
@@ -39,10 +76,23 @@ async function boot(){
 function head(t,role){return `<div class="row"><div><h1>${esc(t)}</h1>${role?`<span class="pill">${esc(role)}</span>`:''}</div><button class="s sm" id="out">Çıkış</button></div>`}
 function bindOut(){const o=$('#out'); if(o) o.onclick=async()=>{await sb.auth.signOut();boot();};}
 function loginView(){
-  app.innerHTML=`<h1>KaisPilot Tedarik</h1><div class="card"><h2>Giriş</h2>
-  <label>E-posta</label><input id="em" type="email" autocomplete="email"><label>Şifre (en az 8 karakter)</label><input id="pw" type="password" autocomplete="current-password">
-  <p class="err" id="msg"></p><div class="row"><button id="in">Giriş yap</button><button class="s" id="up">Hesap oluştur</button></div>
-  <p class="m">Tedarikçiysen, sana davet gönderen işletmenin yazdığı e-posta ile hesap oluştur.</p></div>`;
+  document.body.classList.add('lg');
+  const sv=(b,n)=>`<svg width="${n||20}" height="${n||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
+  const mark=`<svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.6" aria-hidden="true"><circle cx="20" cy="20" r="11"/><circle cx="20" cy="20" r="4.4" fill="#fff" stroke="none"/>${[0,45,90,135,180,225,270,315].map(a=>`<circle cx="${(20+16.5*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(20+16.5*Math.sin(a*Math.PI/180)).toFixed(1)}" r="2.3" fill="#fff" stroke="none"/>`).join('')}</svg>`;
+  app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>KaisPilot Tedarik</h1><p>Tedarikçi hesabınıza giriş yapın.</p></div>
+   <div class="th-ic">${sv('<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.2" r="1.7"/><circle cx="16.5" cy="17.2" r="1.7"/><path d="M5 7V4.5h6V7M8 4.5V7"/>',40)}</div></div></header>
+  <section class="tc"><h2>Giriş yap</h2><p class="sub">Tedarikçi hesabınıza devam edin.</p>
+  <form class="tf" id="tfm" novalidate>
+   <div class="f"><label for="em">E-posta</label><div class="ti">${sv('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7.5l8 6 8-6"/>')}<input id="em" type="email" autocomplete="email" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com"></div></div>
+   <div class="f"><label for="pw">Şifre</label><div class="ti">${sv('<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>')}<input id="pw" type="password" autocomplete="current-password" placeholder="En az 8 karakter"><button type="button" class="eye" id="eye" aria-label="Şifreyi göster veya gizle">${sv('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}</button></div></div>
+   <p class="err" id="msg" role="alert"></p>
+   <button type="button" class="tb p" id="in">Giriş yap ${sv('<path d="M4 12h15M13 6l6 6-6 6"/>',22)}</button>
+   <button type="button" class="tb o" id="up">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',20)}<span>Hesap oluştur</span></button>
+  </form>
+  <div class="tn">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',18)}<span>Tedarikçiysen, sana davet gönderen işletmenin yazdığı e-posta ile hesap oluştur.</span></div></section>`;
+  $('#eye').onclick=()=>{const i=$('#pw'); i.type=i.type==='password'?'text':'password';};
+  $('#tfm').onsubmit=(e)=>e.preventDefault();
+  ['#em','#pw'].forEach(k=>$(k).addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();$('#in').onclick();}}));
   const cred=()=>({email:$('#em').value.trim(),password:$('#pw').value});
   $('#in').onclick=async()=>{const r=await sb.auth.signInWithPassword(cred()); if(r.error) say('Giriş olmadı: '+r.error.message); else boot();};
   $('#up').onclick=async()=>{const c=cred(); if(c.password.length<8) return say('Şifre en az 8 karakter olmalı.');
