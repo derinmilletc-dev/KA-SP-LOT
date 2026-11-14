@@ -4873,7 +4873,56 @@ H.pospoll = () => { posPoll(true); };
 const viewSatisV27 = viewSatis; viewSatis = function () { const h = viewSatisV27(); const i = h.indexOf('<div class="card stack"><div><h3>Satış dosyası yükle'); return i < 0 ? h : h.slice(0, i) + posCard() + h.slice(i); };
 if (typeof setInterval === 'function' && typeof window !== 'undefined' && !window.__noPosTimer) setInterval(() => { if (posCan() && POS.token) posPoll(false); }, 30000);
 const sbLoadBizV27 = sbLoadBiz; sbLoadBiz = async function () { await sbLoadBizV27(); POS.token = ''; if (posCan()) posPoll(false); };
-if (typeof window !== 'undefined') { window.__K = { POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
+/* v28: Kais AI sohbet (Claude, Supabase Edge Function üzerinden) */
+const AIC = { msgs: [], busy: false, err: '', draft: '' };
+const AI_ROLES = ['patron', 'mudur', 'muhasebeci', 'calisan'];
+function aiContext() {
+  const r = S.user.role; const mgr = ['patron', 'mudur'].includes(r); const stokR = ['patron', 'mudur', 'calisan'].includes(r); const money = ['patron', 'muhasebeci'].includes(r);
+  const c = { isletme: BIZ, tarih: REF_ISO, rol: r }; const t = (f) => { try { return f(); } catch (e) { return undefined; } };
+  if (stokR) {
+    c.stok = STOCK.slice(0, 60).map((x) => ({ ad: x.name, miktar: x.qty, birim: x.unit, min: x.min }));
+    c.uyarilar = t(() => notifList().slice(0, 12).map((n) => n.text));
+    c.skt_yakin = t(() => sktSoon(5).slice(0, 8).map((l) => { const st = stById(l.sid); return st ? st.name + ' ' + l.qty + ' ' + st.unit + ', ' + l.exp : ''; }).filter(Boolean));
+    c.rezervasyon_bugun = RESV.filter((x) => x.date === REF_ISO && x.st !== 'iptal').map((x) => ({ saat: x.time, kisi: x.n }));
+  }
+  if (mgr || money) {
+    c.satis = t(() => { const st = salesStats(); return { ciro_kdv_dahil: Math.round(st.t.total), maliyet: Math.round(st.t.cost), brut_kar: Math.round(st.kar), urunler: st.list.slice(0, 10).map((o) => ({ ad: o.name, adet: o.qty, net_ciro: Math.round(o.net), maliyet: o.rc ? Math.round(o.cost) : null })) }; });
+    c.recete_marji = t(() => costRows().slice(0, 15).map((o) => ({ urun: o.name, maliyet: Math.round(o.cost * 100) / 100, marj_yuzde: o.margin == null ? null : Math.round(o.margin * 100), fiyat_zammi_yuzde: Math.round(o.drift) })));
+  }
+  if (mgr) c.siparisler = t(() => ORDERS.slice(0, 15).map((o) => ({ durum: o.status, tedarikci: (supById(o.supId) || {}).name })));
+  if (money) c.defter = t(() => ({ kayit_sayisi: LEDGER.length, toplam: Math.round(LEDGER.reduce((a, x) => a + (x.total || 0), 0)), son: LEDGER.slice(-25).map((x) => ({ tarih: x.date, aciklama: x.desc, hesap: x.acc, tutar: x.total })) }));
+  return c;
+}
+async function aiAsk(text) {
+  const c = sbClient(); AIC.err = '';
+  AIC.msgs.push({ role: 'user', content: text }); AIC.busy = true; render();
+  try {
+    if (!c || !SBS.user || !SBS.biz) throw new Error('Kais AI için bulut hesabına giriş yapmalısın.');
+    const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, messages: AIC.msgs.slice(-12), context: aiContext() } });
+    if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'Kais AI sunucusu kurulmamış. Kurulum adımlarını uygula.' : 'Kais AI şu an yanıt vermedi.')); }
+    if (r.data && r.data.error) throw new Error(r.data.error);
+    AIC.msgs.push({ role: 'assistant', content: (r.data && r.data.reply) || 'Yanıt gelmedi.' });
+  } catch (e) { AIC.err = e.message || 'Hata'; AIC.msgs.pop(); AIC.draft = text; }
+  AIC.busy = false; render(); const el = document.getElementById('ai-end'); if (el && el.scrollIntoView) el.scrollIntoView();
+}
+const AI_Q = { patron: ['Bu hafta neye dikkat etmeliyim?', 'Kârlılığı en düşük ürünler hangileri?', 'Bugün hangi stokları sipariş etmeliyim?'], mudur: ['Bugün hangi stokları sipariş etmeliyim?', 'Yakında bozulacak ürün var mı?', 'Bugünkü rezervasyonları özetle'], muhasebeci: ['Son kayıtlarda dikkat çeken bir şey var mı?', 'Gider dağılımını özetle', 'Bu ayki brüt kâr nasıl?'], calisan: ['Hangi ürünler azaldı?', 'Bugün rezervasyon var mı?', 'Yakında bozulacak ürün var mı?'] };
+function viewKaisAI() {
+  const r = S.user.role; const ok = sbOK() && SBS.user && SBS.biz;
+  return `<div class="stack-lg"><div><h2>Kais AI</h2><p class="muted small" style="margin-top:4px">İşletmenin stok, satış ve kayıtlarına bakarak soruları yanıtlar. Rolünün göremediği veriyi görmez.</p></div>
+  ${!ok ? `<div class="callout warn">${ic('alert')}<div>Kais AI için bulut hesabıyla giriş yapmış olman gerekir.</div></div>` : ''}
+  <div class="stack">${AIC.msgs.length ? AIC.msgs.map((m) => `<div class="card" style="${m.role === 'user' ? 'margin-left:32px' : 'margin-right:32px'}"><div class="small muted">${m.role === 'user' ? 'Sen' : 'Kais AI'}</div><div style="white-space:pre-wrap;margin-top:4px">${esc(m.content)}</div></div>`).join('') : `<div class="stack">${(AI_Q[r] || AI_Q.calisan).map((q) => `<button class="btn sec" style="justify-content:flex-start;text-align:left" data-a="aiq" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`}
+  ${AIC.busy ? `<div class="card muted small">Kais AI düşünüyor…</div>` : ''}${AIC.err ? `<div class="callout warn">${ic('alert')}<div>${esc(AIC.err)}</div></div>` : ''}<span id="ai-end"></span></div>
+  <div class="field"><label for="ai-q">Sorun</label><textarea id="ai-q" style="min-height:70px" placeholder="Örnek: Bu ay en çok hangi üründen kazandım?">${esc(AIC.draft)}</textarea></div>
+  <div class="row wrap"><button class="btn grow" data-a="aisend" ${ok && !AIC.busy ? '' : 'disabled'}>Gönder</button>${AIC.msgs.length ? '<button class="btn sec" data-a="aiclear">Yeni sohbet</button>' : ''}</div>
+  <p class="small muted">Yanıtlar yalnızca uygulamadaki veriye dayanır ve hata içerebilir. Vergi ve hukuk konularında muhasebecine danış.</p></div>`;
+}
+H.aisend = () => { const el = document.getElementById('ai-q'); const t = ((el && el.value) || '').trim(); if (!t || AIC.busy) return; AIC.draft = ''; aiAsk(t); };
+H.aiq = (el) => { if (!AIC.busy) aiAsk(el.dataset.q); };
+H.aiclear = () => { AIC.msgs = []; AIC.err = ''; AIC.draft = ''; render(); };
+const viewHTMLV28 = viewHTML; viewHTML = function () { if (S.view === 'kaisai' && S.user && AI_ROLES.includes(S.user.role)) return viewKaisAI(); return viewHTMLV28(); };
+TITLES.kaisai = 'Kais AI'; ICONS.sparkle = ICONS.sparkle || '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>';
+AI_ROLES.forEach((r) => { if (NAV[r] && !NAV[r].some((x) => x[0] === 'kaisai')) NAV[r].push(['kaisai', 'Kais AI', 'sparkle', 'more']); });
+if (typeof window !== 'undefined') { window.__K = { AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
 </script>
