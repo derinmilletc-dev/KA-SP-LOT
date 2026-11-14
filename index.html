@@ -4880,7 +4880,7 @@ function aiContext() {
   const r = S.user.role; const mgr = ['patron', 'mudur'].includes(r); const stokR = ['patron', 'mudur', 'calisan'].includes(r); const money = ['patron', 'muhasebeci'].includes(r);
   const c = { isletme: BIZ, tarih: REF_ISO, rol: r }; const t = (f) => { try { return f(); } catch (e) { return undefined; } };
   if (stokR) {
-    c.stok = STOCK.slice(0, 60).map((x) => ({ ad: x.name, miktar: x.qty, birim: x.unit, min: x.min }));
+    c.stok = STOCK.slice(0, 60).map((x) => ({ id: x.id, ad: x.name, miktar: x.qty, birim: x.unit, min: x.min, tedarikci: (supById(x.sup) || {}).name || null, birim_maliyet: x.cost || null }));
     c.uyarilar = t(() => notifList().slice(0, 12).map((n) => n.text));
     c.skt_yakin = t(() => sktSoon(5).slice(0, 8).map((l) => { const st = stById(l.sid); return st ? st.name + ' ' + l.qty + ' ' + st.unit + ', ' + l.exp : ''; }).filter(Boolean));
     c.rezervasyon_bugun = RESV.filter((x) => x.date === REF_ISO && x.st !== 'iptal').map((x) => ({ saat: x.time, kisi: x.n }));
@@ -4951,7 +4951,7 @@ async function aiAsk(text) {
     const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, messages: AIC.msgs.slice(-12).map((m) => ({ role: m.role, content: m.content })), context: aiContext(), attachments: atts.map((a) => ({ type: a.type, media_type: a.media_type, data: a.data })) } });
     if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'Kais AI sunucusu kurulmamış. Kurulum adımlarını uygula.' : 'Kais AI şu an yanıt vermedi.')); }
     if (r.data && r.data.error) throw new Error(r.data.error);
-    const acts = ((r.data && r.data.actions) || []).filter((a) => a && ['fatura_kaydet', 'excel_indir'].includes(a.type)).map((a) => ({ type: a.type, args: a.args || {}, st: 'open' }));
+    const acts = ((r.data && r.data.actions) || []).filter((a) => a && ['fatura_kaydet', 'excel_indir', 'siparis_olustur', 'stok_guncelle'].includes(a.type)).map((a) => ({ type: a.type, args: a.args || {}, st: 'open' }));
     AIC.msgs.push({ role: 'assistant', content: (r.data && r.data.reply) || 'Yanıt gelmedi.', acts });
   } catch (e) { AIC.err = e.message || 'Hata'; AIC.msgs.pop(); AIC.draft = text; AIC.files = atts; }
   AIC.busy = false; render(); const el = document.getElementById('ai-end'); if (el && el.scrollIntoView) el.scrollIntoView();
@@ -4959,10 +4959,41 @@ async function aiAsk(text) {
 function aiAttachBar() {
   return `<div class="field"><label>Fatura ya da belge ekle</label><div class="row wrap">${AIC.files.map((f, k) => `<span class="chip">${esc(f.name)} <button class="btn sm sec" data-a="aifrm" data-k="${k}" style="padding:0 6px">×</button></span>`).join('')}${AIC.files.length < 3 ? `<label class="btn sm sec" for="ai-file" style="cursor:pointer">${ic('camera', 16)} Fotoğraf / PDF seç</label><input id="ai-file" type="file" accept="image/*,application/pdf" multiple data-ch="aifile" style="position:absolute;opacity:0;width:1px;height:1px">` : ''}</div></div>`;
 }
+const aiStock = (x) => STOCK.find((t) => t.id === x.stok_id) || STOCK.find((t) => t.name.toLowerCase() === String(x.stok_ad || x.ad || '').toLowerCase());
+function aiOrderLines(args) {
+  const plan = stockPlan();
+  return (Array.isArray(args.urunler) ? args.urunler : []).slice(0, 30).map((x) => {
+    const st = aiStock(x); const qty = Number(x.miktar); if (!st || !(qty > 0)) return { ok: false, name: String(x.stok_id || x.ad || '?') };
+    const p = plan.find((y) => y.st.id === st.id); const sup = p && p.pick ? p.pick : supById(st.sup); const price = p && p.pick ? p.price : st.cost || 0;
+    return sup ? { ok: true, st, sup, qty, price } : { ok: false, name: st.name + ' (tedarikçi yok)' };
+  });
+}
+function aiStockOps(args) {
+  return (Array.isArray(args.islemler) ? args.islemler : []).slice(0, 30).map((x) => {
+    const st = aiStock(x); const m = Number(x.miktar); if (!st || !isFinite(m) || m < 0) return { ok: false, name: String(x.stok_id || x.ad || '?') };
+    const tur = x.tur === 'say' ? 'say' : x.tur === 'dus' ? 'dus' : 'ekle'; const to = r3(Math.max(0, tur === 'say' ? m : tur === 'dus' ? st.qty - m : st.qty + m));
+    return { ok: true, st, to, why: (tur === 'say' ? 'Sayım: ' : tur === 'dus' ? 'Düş: ' : 'Ekle: ') + (x.neden || 'Kais AI'), neden: x.neden || 'Kais AI', tur };
+  });
+}
 function aiActCard(a, i, j) {
   if (a.st === 'done') return `<div class="callout info">${ic('info')}<div>${esc(a.msg || 'Tamamlandı.')}</div></div>`;
   if (a.st === 'skip') return `<div class="small muted">Vazgeçildi.</div>`;
   if (a.type === 'excel_indir') return `<div class="card stack"><div><b>Excel dosyası</b><div class="small muted">Giderler, gelirler, bordro girdisi ve diğer sayfalar.</div></div><div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">İndir</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+  if (a.type === 'siparis_olustur') {
+    const rs = aiOrderLines(a.args); const bad = rs.filter((x) => !x.ok);
+    if (!rs.some((x) => x.ok)) return `<div class="callout warn">${ic('alert')}<div>Sipariş için eşleşen ürün ya da tedarikçi bulunamadı.</div></div>`;
+    const groups = {}; rs.forEach((x, k) => { if (x.ok) (groups[x.sup.id] = groups[x.sup.id] || { sup: x.sup, rows: [] }).rows.push([x, k]); });
+    return `<div class="card stack"><div><b>Sipariş önerisi</b><div class="small muted">Miktarları düzeltebilirsin. Onaylayınca sipariş kaydedilir ve tedarikçiye gidecek mesaj kopyalanır.</div></div>
+    ${Object.values(groups).map((gr) => `<div><b style="font-weight:600">${esc(gr.sup.name)}</b>${gr.rows.map(([x, k]) => `<div class="logline" style="padding:8px 0"><span>${esc(x.st.name)}<span class="small muted" style="display:block">${fq(x.price)} ₺ / ${esc(x.st.unit)}</span></span><span class="row" style="gap:6px"><input id="aa-${i}-${j}-q${k}" type="text" inputmode="decimal" style="width:70px;text-align:right" value="${esc(String(x.qty).replace('.', ','))}"><span class="small muted">${esc(x.st.unit)}</span></span></div>`).join('')}</div>`).join('')}
+    ${bad.length ? `<div class="small muted">Eşleşmeyen: ${bad.map((x) => esc(x.name)).join(', ')}</div>` : ''}
+    <div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">Siparişi kaydet</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+  }
+  if (a.type === 'stok_guncelle') {
+    const rs = aiStockOps(a.args); if (!rs.some((x) => x.ok)) return `<div class="callout warn">${ic('alert')}<div>Güncellenecek ürün bulunamadı.</div></div>`;
+    return `<div class="card stack"><div><b>Stok güncelleme önerisi</b><div class="small muted">Yeni miktarı kontrol et, sonra uygula.</div></div>
+    ${rs.map((x, k) => x.ok ? `<div class="logline" style="padding:8px 0"><span>${esc(x.st.name)}<span class="small muted" style="display:block">${esc(x.why)} · şu an ${q1(x.st.qty)} ${esc(x.st.unit)}</span></span><span class="row" style="gap:6px"><span class="small muted">→</span><input id="aa-${i}-${j}-n${k}" type="text" inputmode="decimal" style="width:70px;text-align:right" value="${esc(String(x.to).replace('.', ','))}"><span class="small muted">${esc(x.st.unit)}</span></span></div>` : `<div class="small muted">Eşleşmedi: ${esc(x.name)}</div>`).join('')}
+    <div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">Uygula</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+  }
   const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`;
   return `<div class="card stack"><div><b>Gider kaydı önerisi</b><div class="small muted">Kontrol et, gerekirse düzelt, sonra kaydet.</div></div>
   <div class="field"><label for="${id('s')}">Satıcı</label><input id="${id('s')}" type="text" value="${esc(g.satici || '')}"></div>
@@ -4983,6 +5014,24 @@ H.aiact = async (el) => {
   if (a.type === 'excel_indir') {
     if (!['patron', 'muhasebeci'].includes(S.user.role)) { toast('Excel indirme yetkin yok.', 'warn'); return; }
     try { await saveBlob('kaispilot-muhasebe-' + REF_ISO.slice(0, 7) + '.xlsx', new Blob(buildXlsx(), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); a.st = 'done'; a.msg = 'Excel dosyası hazırlandı.'; } catch (e) { toast('Excel indirilemedi.', 'warn'); } render(); return;
+  }
+  if (a.type === 'siparis_olustur') {
+    if (!['patron', 'mudur'].includes(S.user.role)) { toast('Sipariş oluşturma yetkin yok.', 'warn'); return; }
+    if (locked()) return;
+    const rs = aiOrderLines(a.args); const groups = {};
+    for (let k = 0; k < rs.length; k++) { const x = rs[k]; if (!x.ok) continue; const q = trNum((document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-q${k}`) || {}).value); if (!(q > 0)) continue; (groups[x.sup.id] = groups[x.sup.id] || { sup: x.sup, lines: [] }).lines.push({ sid: x.st.id, name: x.st.name, unit: x.st.unit, qty: q, price: x.price }); }
+    const gl = Object.values(groups); if (!gl.length) { toast('Miktarları kontrol et.', 'warn'); return; }
+    const msgs = []; gl.forEach((gr) => { const total = Math.round(gr.lines.reduce((t, l) => t + l.qty * l.price, 0) * 100) / 100; const ord = { id: 'o' + (++seq), supId: gr.sup.id, date: isoShort(REF_ISO), iso: REF_ISO, lines: gr.lines, total, status: 'gonderildi', msg: orderMsg(gr.sup, gr.lines) }; ORDERS.unshift(ord); auditAdd({ type: 'ord', text: 'Sipariş kaydedildi (Kais AI): ' + gr.sup.name + ', ' + fmt(total) }); msgs.push(ord.msg); });
+    a.st = 'done'; a.msg = gl.length + ' sipariş kaydedildi (' + gl.map((g) => g.sup.name).join(', ') + '). Mesajlar Satın alma sayfasından kopyalanıp tedarikçiye gönderilebilir.';
+    render(); cpy(msgs.join('\n\n---\n\n'), 'Sipariş kaydedildi, mesaj kopyalandı.'); return;
+  }
+  if (a.type === 'stok_guncelle') {
+    if (!['patron', 'mudur', 'calisan'].includes(S.user.role)) { toast('Stok güncelleme yetkin yok.', 'warn'); return; }
+    if (locked()) return;
+    const rs = aiStockOps(a.args); let n = 0;
+    rs.forEach((x, k) => { if (!x.ok) return; const raw = (document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-n${k}`) || {}).value; if (String(raw == null ? '' : raw).trim() === '') return; const v = trNum(raw); if (!(v >= 0) || v === x.st.qty) return; const d = r3(v - x.st.qty); x.st.qty = r3(v); mv(x.st, d, 'elle', 'Kais AI: ' + x.neden); n++; });
+    if (!n) { toast('Değişen miktar yok.', 'warn'); return; }
+    a.st = 'done'; a.msg = n + ' üründe stok güncellendi.'; render(); toast('Stok güncellendi.', 'ok'); return;
   }
   if (locked()) return;
   const gv = (k) => (document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-${k}`) || {}).value;
