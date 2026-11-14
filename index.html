@@ -1142,6 +1142,10 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .ms-lh{display:flex;justify-content:space-between;align-items:center;gap:8px}.ms-lh b,.ms-lh h3{font-size:15.5px}.ms-lh span{font-size:13.5px;color:var(--ink-2)}.ms-hv small{display:block;font-size:12.5px;opacity:.8}.ms-hv b{font-size:20px}
 .ms-rt{border-bottom:1px solid #EEF2F8;padding:2px 0}.ms-rt summary{display:flex;align-items:center;gap:8px;list-style:none;padding:11px 0;cursor:pointer;font-size:14.5px}.ms-rt summary::-webkit-details-marker{display:none}.ms-rt summary span{flex:1}.ms-rt summary b{color:var(--cini)}.ms-rt summary .ic{color:#9AA8BC}.ms-rt p{margin:0 0 10px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
 .cb-hn{display:flex;align-items:center;gap:10px;background:#FFF3DB;color:#6B4200;border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.4}.cb-hn span{flex:1}.cb-hn button{flex:none;font-family:inherit;font-size:13px;font-weight:600;border:0;background:#fff;color:#8A5200;border-radius:999px;padding:8px 13px;min-height:36px}
+
+.geo{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:6px 0 10px}.geo-i{width:60px;height:60px;border-radius:50%;background:var(--cini-wash);color:var(--cini);display:inline-flex;align-items:center;justify-content:center}.geo-i.bad{background:#FDE8EB;color:#C13049}.geo-i.spin{animation:geoP 1.4s ease-in-out infinite}@keyframes geoP{50%{transform:scale(1.08)}}@media (prefers-reduced-motion:reduce){.geo-i.spin{animation:none}}.geo b{font-size:18px}.geo p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.5}
+.geo-os{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.geo-o{display:flex;flex-direction:column;gap:2px;text-align:left;font-family:inherit;color:var(--ink);background:#fff;border:1px solid #D3DCE9;border-radius:14px;padding:10px}.geo-o b{font-size:15px}.geo-o small{font-size:12px;color:var(--ink-2);line-height:1.3}.geo-o[aria-pressed=true]{border-color:var(--cini);background:var(--cini-wash);box-shadow:0 0 0 1px var(--cini)}
+.geo-s{display:flex;flex-direction:column;gap:8px;border-radius:14px;padding:10px 12px}.geo-s.ok{background:#E3F6EA;color:#14804A}.geo-s.no{background:#FFF3DB;color:#8A5200}.geo-s>div{display:flex;gap:8px;align-items:flex-start;font-size:13.5px}.geo-s .btn{align-self:flex-start}
 .mg{display:flex;flex-direction:column;gap:14px}
 .mg-hi h2{margin:0;font-size:26px;letter-spacing:-.3px}.mg-hi p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 .mg-q{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mg-q button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 10px;border:1px solid #E1E8F2;border-radius:16px;background:#fff;color:var(--cini-d);font-family:inherit;box-shadow:0 3px 10px rgba(13,40,80,.05)}.mg-q svg{color:var(--cini)}.mg-q span{font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap}
@@ -1634,7 +1638,7 @@ function bugunCalisanV2() {
   ${offers ? `<div class="stack">${todo('megaphone', 'warn', `${offers} mesai teklifi cevap bekliyor`, 'Kabul ya da reddet', 'duyuru')}</div>` : ''}
   ${unread && !offers ? `<div class="stack">${todo('megaphone', 'info', `${unread} yeni duyuru`, 'Okumak için dokun', 'duyuru')}</div>` : ''}
   <div class="card"><h3>Bugünkü kaydın</h3>${a.log.length ? a.log.map((l) => `<div class="logline"><span>${esc(l[0])}</span><span class="muted num">${esc(l[1])}</span></div>`).join('') : '<p class="muted" style="margin-top:6px">Henüz kayıt yok.</p>'}
-    <p class="small muted" style="margin-top:10px">Sistem yalnızca giriş, çıkış ve mola süresini saklar. Konum, kamera ve biyometri kullanılmaz.</p></div>
+    <p class="small muted" style="margin-top:10px">Sistem yalnızca giriş, çıkış ve mola süresini saklar. Konum yalnızca girişte dükkâna yakınlığı doğrulamak için bir kez kontrol edilir, kaydedilmez. Kamera ve biyometri kullanılmaz.</p></div>
   </div>`;
 }
 
@@ -1993,7 +1997,7 @@ function viewAyarlar() {
   ${tg('reminders', 'Mola hatırlatmaları', 'Çalışana en fazla iki bildirim gider: bitmeden 2 dk önce ve bitişte.')}</div>
   <div class="card"><h3>Kais'in öğrendikleri</h3><p class="muted small">Sorduğun şeyleri hatırlar ve bir daha sormaz. İstediğini unutturabilirsin.</p>
   ${RULES.map((r, i) => `<div class="toggle"><span><b style="font-weight:600">${esc(r.k)}</b> <span class="muted">→ ${esc(r.v)}</span></span><button class="btn sm sec" data-a="forget" data-i="${i}">Unut</button></div>`).join('') || '<p class="muted" style="margin-top:8px">Henüz bir şey öğrenmedi.</p>'}</div>
-  <div class="card"><h3>Veri ve gizlilik</h3><p class="muted small" style="margin-top:4px">Çalışanlara kayıtların neden tutulduğu açıkça gösterilir. Saklama süresi iş hukuku danışmanıyla belirlenir. Konum, kamera ve biyometrik takip kullanılmaz.</p></div></div>`;
+  <div class="card"><h3>Veri ve gizlilik</h3><p class="muted small" style="margin-top:4px">Çalışanlara kayıtların neden tutulduğu açıkça gösterilir. Saklama süresi iş hukuku danışmanıyla belirlenir. Kamera ve biyometrik takip kullanılmaz. Konum yalnızca girişte dükkâna yakınlığı doğrulamak için bir kez kontrol edilir, kaydedilmez.</p></div></div>`;
 }
 
 /* ---------- modal ---------- */
@@ -3837,7 +3841,7 @@ function codeFor(slot) { let h = 2166136261; const s = AUTH.secret + ':' + slot;
 const curSlot = () => Math.floor(Date.now() / 60000);
 const shopCode = () => codeFor(curSlot());
 const codeOk = (c) => { const s = curSlot(); return /^\d{6}$/.test(String(c).trim()) && [s, s - 1].some((x) => codeFor(x) === String(c).trim()); };
-const codeCard = () => `<div class="card stack"><div><h3>Giriş kodu</h3><p class="muted small" style="margin-top:2px">Çalışan işe başlarken bu kodu girer. Kod her dakika değişir, dükkândan uzakta kullanılamaz.</p></div><div class="num" id="shop-code" style="font-size:40px;font-weight:700;letter-spacing:.14em;text-align:center">${shopCode()}</div><button type="button" class="btn sec sm" style="align-self:center" data-a="codecopy">Kodu kopyala</button><p class="small muted" style="text-align:center">Yenilenmesine <span id="code-left">${60 - new Date().getSeconds()}</span> sn</p></div>`;
+let codeCard = () => `<div class="card stack"><div><h3>Giriş kodu</h3><p class="muted small" style="margin-top:2px">Çalışan işe başlarken bu kodu girer. Kod her dakika değişir, dükkândan uzakta kullanılamaz.</p></div><div class="num" id="shop-code" style="font-size:40px;font-weight:700;letter-spacing:.14em;text-align:center">${shopCode()}</div><button type="button" class="btn sec sm" style="align-self:center" data-a="codecopy">Kodu kopyala</button><p class="small muted" style="text-align:center">Yenilenmesine <span id="code-left">${60 - new Date().getSeconds()}</span> sn</p></div>`;
 const bugunPatronV7 = bugunPatron; bugunPatron = function () { return bugunPatronV7().replace(/<\/div>\s*$/, codeCard() + '</div>'); };
 const bugunMudurV7 = bugunMudur; bugunMudur = function () { return bugunMudurV7().replace(/<\/div>\s*$/, codeCard() + '</div>'); };
 const tickV7 = tick;
@@ -3862,7 +3866,7 @@ H.clockout = () => { const uid = S.user.id; _co(); clkOut(uid); render(); };
 const empDetailV7 = empDetail;
 empDetail = function (uid, mine, ro) {
   const rows = CLOCK.filter((c) => c.uid === uid).slice(0, 5);
-  const card = `<div class="card stack"><div><h3>Giriş-çıkış kayıtları</h3><p class="muted small" style="margin-top:2px">Puantaj ve mesai, çıkış yapılınca bu kayıttan hesaplanır.</p></div>${rows.length ? rows.map((c) => `<div class="logline"><span>${esc(isoShort(c.date))} · ${esc(c.in)} – ${esc(c.out || 'devam ediyor')}<span class="small muted" style="display:block">Mola ${c.brk} dk${c.via === 'kod' ? ' · kodla girdi' : ''}</span></span><b class="num">${c.out ? c.hrs + ' sa' : '—'}</b></div>`).join('') : '<p class="muted small">Henüz kayıt yok. Çalışan giriş kodunu girince burada görünür.</p>'}</div>`;
+  const card = `<div class="card stack"><div><h3>Giriş-çıkış kayıtları</h3><p class="muted small" style="margin-top:2px">Puantaj ve mesai, çıkış yapılınca bu kayıttan hesaplanır.</p></div>${rows.length ? rows.map((c) => `<div class="logline"><span>${esc(isoShort(c.date))} · ${esc(c.in)} – ${esc(c.out || 'devam ediyor')}<span class="small muted" style="display:block">Mola ${c.brk} dk${c.via === 'kod' ? ' · kodla girdi' : c.via === 'konum' ? ' · konumla girdi' : ''}</span></span><b class="num">${c.out ? c.hrs + ' sa' : '—'}</b></div>`).join('') : '<p class="muted small">Henüz kayıt yok. Çalışan giriş kodunu girince burada görünür.</p>'}</div>`;
   return empDetailV7(uid, mine, ro).replace(/<\/div>\s*$/, card + '</div>');
 };
 
@@ -7774,7 +7778,7 @@ bugunCalisan = function () {
   ${hint.length ? `<section class="cb-s"><h3>Kais önerileri</h3>${hint.map((x) => `<div class="cb-hn"><span>${x[0]}</span>${x[1] ? (x[1].startsWith('nav:') ? `<button data-a="nav" data-v="${x[1].slice(4)}">${x[2]}</button>` : `<button data-a="${x[1]}">${x[2]}</button>`) : ''}</div>`).join('')}</section>` : ''}
   ${items.length ? `<section class="cb-s"><h3>Seni bekleyenler</h3><div class="stack">${items.join('')}</div></section>` : ''}
   ${tiles}
-  <section class="cb-s"><h3>Bugünkü kaydın</h3>${log}<p class="cb-n">Sistem yalnızca giriş, çıkış ve mola süresini saklar. Konum, kamera ve biyometri kullanılmaz.</p></section></div>`;
+  <section class="cb-s"><h3>Bugünkü kaydın</h3>${log}<p class="cb-n">Sistem yalnızca giriş, çıkış ve mola süresini saklar. Konum yalnızca girişte dükkâna yakınlığı doğrulamak için bir kez kontrol edilir, kaydedilmez. Kamera ve biyometri kullanılmaz.</p></section></div>`;
 };
 /* ===== v78: Çalışan Duyurular ===== */
 function deCard(m, fresh) {
@@ -7862,7 +7866,7 @@ viewMaasim = function () {
     <section class="ms-c"><div class="ms-lh"><b>Yıllık fazla mesai sınırı</b><span>${p.otYear} / 270 saat</span></div><div class="cs-bar"><i style="width:${otPct}%;background:${otPct > 80 ? '#E8A317' : '#1F66BD'}"></i></div><p class="ms-n">${otPct > 80 ? 'Yıllık sınıra yaklaşıyorsun.' : `Haftalık ${p.hours} saati aşan çalışma yüzde 50 zamlı ödenir.`}</p></section>
     <section class="ms-c"><h3>Kabul ettiğin teklifler</h3>${d.offers.length ? d.offers.map((m) => msRow(esc(m.title), '+' + fmt0(Number(m.pay)), `${esc(m.hours)} saat ek çalışma`)).join('') : '<p class="ms-n">Bu ay kabul edilmiş mesai teklifi yok.</p>'}</section>
     <section class="ms-c">${puantaj(uid)}</section>
-    <section class="ms-c"><h3>Giriş-çıkış kayıtları</h3>${rows.length ? rows.map((c) => msRow(`${esc(isoShort(c.date))} · ${esc(c.in)} – ${esc(c.out || 'devam ediyor')}`, c.out ? c.hrs + ' sa' : '—', `Mola ${c.brk} dk${c.via === 'kod' ? ' · kodla girdi' : ''}`)).join('') : '<p class="ms-n">Henüz kayıt yok. Giriş yapınca burada görünür.</p>'}</section>`;
+    <section class="ms-c"><h3>Giriş-çıkış kayıtları</h3>${rows.length ? rows.map((c) => msRow(`${esc(isoShort(c.date))} · ${esc(c.in)} – ${esc(c.out || 'devam ediyor')}`, c.out ? c.hrs + ' sa' : '—', `Mola ${c.brk} dk${c.via === 'kod' ? ' · kodla girdi' : c.via === 'konum' ? ' · konumla girdi' : ''}`)).join('') : '<p class="ms-n">Henüz kayıt yok. Giriş yapınca burada görünür.</p>'}</section>`;
   } else if (cur === 'izin') {
     const upct = ent ? Math.min(100, Math.round(used / ent * 100)) : 0;
     body = `<section class="cs-h"><div class="cs-hh"><div><small>Kalan yıllık izin</small><b>${ent ? left + ' gün' : 'Henüz yok'}</b></div>${ent ? ring(upct) : ''}</div>${ent ? `<div class="cs-hr"><div><small>Yıllık hak</small><b>${ent} gün</b></div><div><small>Kullanılan</small><b>${used} gün</b></div></div>` : `<p class="cs-hp">Yıllık izin hakkı 1 yıl dolunca doğar (${esc(isoTxt(String(Number(p.hire.slice(0, 4)) + 1) + p.hire.slice(4)))}).</p>`}</section>
@@ -7894,6 +7898,72 @@ notifList = function () {
   const pp = PROFILES[u.id]; if (pp && pp.salary > 0) { const pd = msPayday(pp); const dd = dueOf(u.id); if (pd.n >= 0 && pd.n <= 3 && dd.left > 0) add('pay', 'info', 'Maaş günü ' + (pd.n === 0 ? 'bugün' : pd.n + ' gün sonra') + '.', 'maasim', 'maas'); }
   const rank = { bad: 0, warn: 1, info: 2 }; return out.sort((x, y) => rank[x.sev] - rank[y.sev]);
 };
+/* ===== v81: konumla giriş ===== */
+if (!S.settings.clockMode) S.settings.clockMode = 'konum';
+if (!S.settings.shopR) S.settings.shopR = 1000;
+const gMode = () => S.settings.clockMode || 'konum';
+const gShopOK = () => !!(S.settings.shop && isFinite(S.settings.shop.lat) && isFinite(S.settings.shop.lng));
+const gDist = (la1, lo1, la2, lo2) => { const R = 6371000; const t = (x) => x * Math.PI / 180; const dl = t(la2 - la1); const dn = t(lo2 - lo1); const a = Math.sin(dl / 2) ** 2 + Math.cos(t(la1)) * Math.cos(t(la2)) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(a)); };
+const gTxt = (m) => m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m) + ' m';
+function gGet(cb) {
+  if (!navigator.geolocation) { cb({ err: 'unsup' }); return; }
+  navigator.geolocation.getCurrentPosition((p) => cb({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0 }), (e) => cb({ err: e && e.code === 1 ? 'deny' : e && e.code === 3 ? 'time' : 'err' }), { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+}
+const _codeCardG = codeCard; codeCard = function () { return gMode() === 'kod' ? _codeCardG() : ''; };
+const _cceG = codeCardEkip; codeCardEkip = function () { return gMode() === 'kod' ? _cceG() : ''; };
+const _clkInG = H.clockin;
+H.clockin = () => {
+  if (gMode() === 'yok') { _ci(); clkIn(S.user.id); return; }
+  if (gMode() !== 'konum') return _clkInG();
+  if (!gShopOK()) { toast('İşveren dükkân konumunu henüz belirlemedi.', 'warn'); S.modal = { type: 'geo', st: 'noshop' }; renderModal(); return; }
+  H.geotry();
+};
+H.geotry = () => {
+  S.modal = { type: 'geo', st: 'wait' }; renderModal();
+  gGet((g) => {
+    if (!S.modal || S.modal.type !== 'geo') return;
+    if (g.err) { S.modal = { type: 'geo', st: g.err }; renderModal(); return; }
+    const sh = S.settings.shop; const d = gDist(g.lat, g.lng, sh.lat, sh.lng); const eff = Math.max(0, d - Math.min(g.acc, 100));
+    if (eff <= (S.settings.shopR || 1000)) { S.modal = null; _ci(); clkIn(S.user.id); if (CLOCK[0]) { CLOCK[0].via = 'konum'; CLOCK[0].dist = Math.round(d); } toast('Giriş kaydedildi, dükkâna ' + gTxt(d) + ' uzaklıktasın.', 'ok'); }
+    else { S.modal = { type: 'geo', st: 'far', d: Math.round(d) }; renderModal(); }
+  });
+};
+NEWM.geo = () => {
+  const m = S.modal; const r = S.settings.shopR || 1000;
+  const body = {
+    wait: `<div class="geo"><span class="geo-i spin">${ic('clock', 28)}</span><b>Konumun kontrol ediliyor</b><p>Tarayıcı izin isterse "İzin ver"e dokun. Konum yalnızca giriş anında bir kez kontrol edilir, kaydedilmez.</p></div>`,
+    far: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Dükkândan ${gTxt(m.d || 0)} uzaktasın</b><p>Giriş için dükkâna en fazla ${gTxt(r)} yakın olmalısın. Yaklaşınca tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
+    deny: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Konum izni kapalı</b><p>Giriş için konum izni gerekir. iPhone'da Ayarlar > Gizlilik > Konum Servisleri > Safari'den izni aç, sonra tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
+    time: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Konum alınamadı</b><p>Sinyal zayıf olabilir. Açık alana çıkıp tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
+    err: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Konum alınamadı</b><p>Konum servisleri kapalı olabilir. Açıp tekrar dene.</p><button class="btn block" data-a="geotry">Tekrar dene</button></div>`,
+    unsup: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Bu cihaz konumu desteklemiyor</b><p>İşverenine haber ver, giriş yöntemini değiştirsin.</p></div>`,
+    noshop: `<div class="geo"><span class="geo-i bad">${ic('alert', 28)}</span><b>Dükkân konumu belirlenmemiş</b><p>İşveren Ayarlar > Giriş yöntemi bölümünden dükkân konumunu kaydedince giriş yapabilirsin.</p></div>`,
+  }[m.st] || '';
+  return sheet('Konumla giriş', body);
+};
+H.shopset = () => {
+  toast('Konum alınıyor…');
+  gGet((g) => {
+    if (g.err) { toast(g.err === 'deny' ? 'Konum izni kapalı. Tarayıcı ayarından izin ver.' : 'Konum alınamadı, tekrar dene.', 'warn'); return; }
+    S.settings.shop = { lat: Math.round(g.lat * 1e5) / 1e5, lng: Math.round(g.lng * 1e5) / 1e5, acc: Math.round(g.acc), at: new Date().toLocaleDateString('tr-TR') };
+    render(); toast('Dükkân konumu kaydedildi.', 'ok'); if (typeof pSched === 'function') pSched();
+  });
+};
+H.clkmode = (el) => { S.settings.clockMode = el.dataset.v; render(); if (typeof pSched === 'function') pSched(); };
+const _viewAyG = viewAyarlar;
+viewAyarlar = function () {
+  const h = _viewAyG(); const md = gMode(); const sh = S.settings.shop; const r = S.settings.shopR || 1000;
+  const opt = (v, t, s) => `<button class="geo-o" data-a="clkmode" data-v="${v}" aria-pressed="${md === v}"><b>${t}</b><small>${s}</small></button>`;
+  const card = `<div class="card stack"><div><h3>Giriş yöntemi</h3><p class="muted small" style="margin-top:2px">Çalışan işe başlarken nasıl doğrulansın?</p></div>
+  <div class="geo-os">${opt('konum', 'Konum', 'Dükkâna yakınsa girer')}${opt('kod', 'Kod', 'Dükkândaki kodu yazar')}${opt('yok', 'Kapalı', 'Doğrulama yok')}</div>
+  ${md === 'konum' ? `<div class="geo-s ${gShopOK() ? 'ok' : 'no'}"><div>${ic(gShopOK() ? 'check' : 'alert', 18)}<span>${gShopOK() ? 'Dükkân konumu kayıtlı (' + esc(sh.at || '') + ', ±' + (sh.acc || 0) + ' m)' : 'Dükkân konumu henüz kayıtlı değil'}</span></div><button class="btn sm ${gShopOK() ? 'sec' : ''}" data-a="shopset">${ic('send', 16)} ${gShopOK() ? 'Konumu güncelle' : 'Şu anki konumu dükkân yap'}</button></div>
+  <div class="field"><label for="shop-r">Giriş mesafesi</label><select id="shop-r" data-ch="shopr">${[200, 500, 1000, 2000].map((x) => `<option value="${x}" ${x === r ? 'selected' : ''}>${gTxt(x)} içinde</option>`).join('')}</select></div>
+  <p class="small muted">Dükkânda dururken "Şu anki konumu dükkân yap"a dokun. Çalışanın konumu yalnızca giriş anında bir kez kontrol edilir, kaydedilmez. Sadece giriş yapılan mesafe ve saat tutulur.</p>` : md === 'kod' ? '<p class="small muted">Kod, patron ve müdürün Bugün sayfasında görünür ve her dakika değişir.</p>' : '<p class="small muted">Giriş doğrulanmaz, çalışan dokununca saat kaydedilir.</p>'}</div>`;
+  const i = h.indexOf('<div class="card"><h3>Yetkiler</h3>');
+  return i >= 0 ? h.slice(0, i) + card + h.slice(i) : h.replace(/<\/div>\s*$/, card + '</div>');
+};
+const _och81 = onChange;
+onChange = function (e) { const el = e.target; if (el.dataset && el.dataset.ch === 'shopr') { S.settings.shopR = Number(el.value) || 1000; toast('Giriş mesafesi güncellendi.'); if (typeof pSched === 'function') pSched(); return; } return _och81(e); };
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
