@@ -14,7 +14,7 @@ button.s{background:#e8eee9;color:var(--ink)}button.sm{padding:7px 10px;font-siz
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .m{color:var(--mut);font-size:14px}.err{color:var(--bad);font-size:14px;min-height:20px}.ok{color:var(--acc)}
 .pill{font-size:12px;padding:2px 8px;border-radius:99px;background:#e8eee9}.ln{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
-</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="m" style="text-align:center">sürüm 3</p>
+</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="m" style="text-align:center">sürüm 4</p>
 <script>
 window.addEventListener('error',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+e.message+' ('+(e.lineno||'')+')';document.body.appendChild(d);});
 window.addEventListener('unhandledrejection',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+((e.reason&&e.reason.message)||e.reason);document.body.appendChild(d);});
@@ -36,7 +36,7 @@ async function boot(){
   if(s.data&&s.data[0]){SUP=s.data[0];MODE='sup';return supView();}
   return setupView();
 }
-function head(t){return `<div class="row"><h1>${esc(t)}</h1><button class="s sm" id="out">Çıkış</button></div>`}
+function head(t,role){return `<div class="row"><div><h1>${esc(t)}</h1>${role?`<span class="pill">${esc(role)}</span>`:''}</div><button class="s sm" id="out">Çıkış</button></div>`}
 function bindOut(){const o=$('#out'); if(o) o.onclick=async()=>{await sb.auth.signOut();boot();};}
 function loginView(){
   app.innerHTML=`<h1>KaisPilot Tedarik</h1><div class="card"><h2>Giriş</h2>
@@ -68,11 +68,12 @@ async function patronView(){
     sb.from('orders').select('*').eq('business_id',BIZ.id).order('created_at',{ascending:false})]);
   const sups=sp.data||[], rfqs=rf.data||[], quotes=qt.data||[], orders=od.data||[];
   const sn=(id)=>(sups.find(s=>s.id===id)||{}).name||'Tedarikçi';
-  app.innerHTML=head(BIZ.name)+`
+  app.innerHTML=head(BIZ.name,'Patron paneli')+`
   <div class="card"><h2>Tedarikçiler</h2>${sups.map(s=>`<div class="ln"><span>${esc(s.name)}<span class="m" style="display:block">${esc(s.invite_email||'')} · ${s.user_id?'<span class="ok">hesap bağlı</span>':'davet bekliyor'}</span></span></div>`).join('')||'<p class="m">Henüz yok.</p>'}
-  <label>Ad</label><input id="sn"><label>Tedarikçinin e-postası (bu e-postayla hesap açacak)</label><input id="se" type="email"><p class="err" id="msg"></p><button id="sadd">Tedarikçi ekle</button></div>
-  <div class="card"><h2>Yeni teklif isteği</h2><label>Ürünler (her satıra: ad ; miktar ; birim)</label>
-  <textarea id="rl" rows="4" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Un ; 100 ; kg&#10;Süt ; 40 ; L"></textarea><p class="err" id="msg2"></p><button id="radd">Teklif iste</button></div>
+  <label>Tedarikçi adı</label><input id="sn" placeholder="Örn: Anadolu Un"><label>Tedarikçinin e-postası (bu e-postayla hesap açacak)</label><input id="se" type="email"><p class="err" id="msg"></p><button id="sadd">Tedarikçi ekle</button></div>
+  <div class="card"><h2>Yeni teklif isteği</h2><p class="m">Hangi ürünlerden ne kadar lazım? Tedarikçiler bu listeye fiyat verecek.</p>
+  <div id="rrows"></div><datalist id="pl">${[...new Set(rfqs.flatMap(r=>r.lines.map(l=>l.name)))].map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+  <div class="row" style="margin-top:8px"><button class="s sm" id="radd1" type="button">+ Ürün ekle</button></div><p class="err" id="msg2"></p><button id="radd">Teklif iste</button></div>
   <h2>Teklif istekleri</h2>${rfqs.map(r=>{const qs=quotes.filter(q=>q.rfq_id===r.id);
     const best=r.lines.map((l,i)=>{let b=null;qs.forEach(q=>{const p=Number(q.prices[i]);if(p>0&&(!b||p<b.p))b={p,s:q.supplier_id};});return b;});
     return `<div class="card"><div class="row"><b>${new Date(r.created_at).toLocaleDateString('tr-TR')}</b><span class="pill">${r.status==='acik'?'Açık':'Kapalı'}</span></div>
@@ -83,9 +84,17 @@ async function patronView(){
   bindOut();
   $('#sadd').onclick=async()=>{const n=$('#sn').value.trim(),e=$('#se').value.trim(); if(!n||!e) return say('Ad ve e-posta yaz.');
     const r=await sb.from('suppliers').insert({business_id:BIZ.id,name:n,invite_email:e}); if(r.error) say(r.error.message); else patronView();};
-  $('#radd').onclick=async()=>{const lines=$('#rl').value.split('\n').map(x=>x.split(';').map(y=>y.trim())).filter(a=>a[0]&&Number(a[1])>0).map(a=>({name:a[0],qty:Number(a[1]),unit:a[2]||'adet'}));
-    const e=$('#msg2'); if(!lines.length){e.textContent='Satır biçimi: ad ; miktar ; birim';return;}
-    const r=await sb.from('rfqs').insert({business_id:BIZ.id,lines}); if(r.error) e.textContent=r.error.message; else patronView();};
+  const UNITS=['kg','adet','L','paket','koli','çuval','gr','kutu'];
+  const addRow=(v)=>{const d=document.createElement('div');d.className='row';d.style.cssText='gap:6px;margin:6px 0;flex-wrap:nowrap';
+    d.innerHTML=`<input list="pl" placeholder="Ürün adı" style="flex:3;min-width:0" class="rn"><input inputmode="decimal" placeholder="Miktar" style="flex:1.2;min-width:0" class="rq"><select class="ru" style="flex:1.3;min-width:0">${UNITS.map(u=>`<option>${u}</option>`).join('')}</select><button type="button" class="s sm rx" aria-label="Satırı sil">×</button>`;
+    d.querySelector('.rx').onclick=()=>{if(document.querySelectorAll('#rrows .rn').length>1) d.remove();};
+    if(v){d.querySelector('.rn').value=v.name||'';d.querySelector('.rq').value=v.qty||'';d.querySelector('.ru').value=v.unit||'kg';}
+    $('#rrows').appendChild(d);};
+  addRow(); addRow();
+  $('#radd1').onclick=()=>addRow();
+  $('#radd').onclick=async()=>{const e=$('#msg2'); const lines=[...document.querySelectorAll('#rrows .row')].map(r=>({name:r.querySelector('.rn').value.trim(),qty:Number(String(r.querySelector('.rq').value).replace(',','.')),unit:r.querySelector('.ru').value})).filter(l=>l.name&&l.qty>0);
+    if(!lines.length){e.textContent='En az bir ürünün adını ve miktarını yaz.';return;}
+    $('#radd').disabled=true; const r=await sb.from('rfqs').insert({business_id:BIZ.id,lines}); if(r.error){e.textContent='Kaydedilemedi: '+r.error.message;$('#radd').disabled=false;} else patronView();};
   document.querySelectorAll('[data-ord]').forEach(b=>b.onclick=async()=>{
     const r=rfqs.find(x=>x.id===b.dataset.ord), qs=quotes.filter(q=>q.rfq_id===r.id), g={};
     r.lines.forEach((l,i)=>{let bb=null;qs.forEach(q=>{const p=Number(q.prices[i]);if(p>0&&(!bb||p<bb.p))bb={p,s:q.supplier_id};});(g[bb.s]=g[bb.s]||[]).push({name:l.name,unit:l.unit,qty:l.qty,price:bb.p});});
@@ -101,7 +110,7 @@ async function supView(){
     sb.from('quotes').select('*').eq('supplier_id',SUP.id),
     sb.from('orders').select('*').eq('supplier_id',SUP.id).order('created_at',{ascending:false})]);
   const biz=(bz.data&&bz.data[0])||{name:'İşletme'}, rfqs=rf.data||[], quotes=qt.data||[], orders=od.data||[];
-  app.innerHTML=head(SUP.name)+`<p class="m">${esc(biz.name)} için çalışıyorsun.</p>
+  app.innerHTML=head(SUP.name,'Tedarikçi paneli')+`<p class="m">${esc(biz.name)} için çalışıyorsun.</p>
   <h2>Gelen teklif istekleri</h2>${rfqs.map(r=>{const q=(quotes.find(x=>x.rfq_id===r.id)||{}).prices||{};
     return `<div class="card" data-r="${r.id}"><b>${new Date(r.created_at).toLocaleDateString('tr-TR')}</b>
     ${r.lines.map((l,i)=>`<label>${esc(l.name)} · ${esc(l.qty)} ${esc(l.unit)} için birim fiyat (₺)</label><input inputmode="decimal" data-i="${i}" value="${q[i]||''}" placeholder="Veremiyorsan boş bırak">`).join('')}
