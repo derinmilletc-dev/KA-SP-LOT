@@ -92,38 +92,44 @@ async function boot(){
 }
 function head(t,role){return `<div class="row"><div><h1>${esc(t)}</h1>${role?`<span class="pill">${esc(role)}</span>`:''}</div><button class="s sm" id="out">Çıkış</button></div>`}
 function bindOut(){const o=$('#out'); if(o) o.onclick=async()=>{await sb.auth.signOut();boot();};}
-function loginView(){
+function loginView(mode){
+  mode=mode==='up'?'up':'in';
   document.body.classList.add('lg');
+  const prev=(document.getElementById('em')||{}).value||'';
   const sv=(b,n)=>`<svg width="${n||20}" height="${n||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
   const mark=`<svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.6" aria-hidden="true"><circle cx="20" cy="20" r="11"/><circle cx="20" cy="20" r="4.4" fill="#fff" stroke="none"/>${[0,45,90,135,180,225,270,315].map(a=>`<circle cx="${(20+16.5*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(20+16.5*Math.sin(a*Math.PI/180)).toFixed(1)}" r="2.3" fill="#fff" stroke="none"/>`).join('')}</svg>`;
-  app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>KaisPilot Tedarik</h1><p>Tedarikçi hesabınıza giriş yapın.</p></div>
+  app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>KaisPilot Tedarik</h1><p>${mode==='up'?'Yeni tedarikçi hesabı oluşturun.':'Tedarikçi hesabınıza giriş yapın.'}</p></div>
    <div class="th-ic">${sv('<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.2" r="1.7"/><circle cx="16.5" cy="17.2" r="1.7"/><path d="M5 7V4.5h6V7M8 4.5V7"/>',40)}</div></div></header>
-  <section class="tc"><h2>Giriş yap</h2><p class="sub">Tedarikçi hesabınıza devam edin.</p>
+  <section class="tc"><h2>${mode==='up'?'Hesap oluştur':'Giriş yap'}</h2><p class="sub">${mode==='up'?'Tedarikçi hesabını birkaç saniyede aç.':'Tedarikçi hesabınıza devam edin.'}</p>
   <form class="tf" id="tfm" novalidate>
    <div class="f"><label for="em">E-posta</label><div class="ti">${sv('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7.5l8 6 8-6"/>')}<input id="em" type="email" autocomplete="email" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com"></div></div>
-   <div class="f"><label for="pw">Şifre</label><div class="ti">${sv('<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>')}<input id="pw" type="password" autocomplete="current-password" placeholder="En az 8 karakter"><button type="button" class="eye" id="eye" aria-label="Şifreyi göster veya gizle">${sv('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}</button></div></div>
+   <div class="f"><label for="pw">Şifre</label><div class="ti">${sv('<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>')}<input id="pw" type="password" autocomplete="${mode==='up'?'new-password':'current-password'}" placeholder="En az 8 karakter"><button type="button" class="eye" id="eye" aria-label="Şifreyi göster veya gizle">${sv('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}</button></div></div>
+   ${mode==='up'?`<div class="f"><label for="pw2">Şifre tekrar</label><div class="ti">${sv('<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>')}<input id="pw2" type="password" autocomplete="new-password" placeholder="Şifreni tekrar yaz"></div></div>`:''}
    <p class="err" id="msg" role="alert"></p>
-   <button type="button" class="tb p" id="in">Giriş yap ${sv('<path d="M4 12h15M13 6l6 6-6 6"/>',22)}</button>
-   <div class="tor"><span>veya</span></div>
-   <button type="button" class="tb o" id="up">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',20)}<span>Hesap oluştur</span></button>
+   <button type="button" class="tb p" id="in">${mode==='up'?'Hesap oluştur':'Giriş yap'} ${sv('<path d="M4 12h15M13 6l6 6-6 6"/>',22)}</button>
+   <div class="tor"><span>${mode==='up'?'zaten hesabın var mı?':'veya'}</span></div>
+   <button type="button" class="tb o" id="up">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',20)}<span>${mode==='up'?'Giriş yap':'Hesap oluştur'}</span></button>
   </form>
-  <div class="tn">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',18)}<span>Tedarikçiysen istediğin e-postayla hesap oluştur. Giriş yaptıktan sonra işletmenin sana verdiği davet kodunu girerek bağlanırsın.</span></div><p class="tback">İşveren ya da çalışan mısın? <a href="/">Ana girişe dön</a></p></section>`;
+  <div class="tn">${sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',18)}<span>${mode==='up'?'Hesabı açtıktan sonra işletmenin sana verdiği davet kodunu girerek ona bağlanırsın.':'Yeni misin? Önce hesap oluştur, sonra işletmenin verdiği davet kodunu girerek bağlan.'}</span></div><p class="tback">İşveren ya da çalışan mısın? <a href="/">Ana girişe dön</a></p></section>`;
+  if(prev) $('#em').value=prev;
   $('#eye').onclick=()=>{const i=$('#pw'); i.type=i.type==='password'?'text':'password';};
   $('#tfm').onsubmit=(e)=>e.preventDefault();
   ['#em','#pw'].forEach(k=>$(k).addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();$('#in').onclick();}}));
   const cred=()=>({email:$('#em').value.trim(),password:$('#pw').value});
   const tr=(m)=>{m=String(m||''); if(/rate limit|too many|security purposes/i.test(m)) return 'Kısa sürede çok fazla deneme yapıldı. Birkaç dakika bekleyip tekrar dene.'; if(/invalid login/i.test(m)) return 'E-posta ya da şifre yanlış.'; if(/email not confirmed/i.test(m)) return 'E-postanı henüz onaylamadın. Gelen kutundaki onay bağlantısına tıkla.'; if(/valid email|invalid.*email|email.*invalid/i.test(m)) return 'E-posta adresi geçersiz görünüyor.'; if(/password/i.test(m)) return 'Şifre en az 8 karakter olmalı.'; if(/signups? not allowed|disabled/i.test(m)) return 'Yeni hesap açma şu an kapalı. İşletmeye haber ver.'; if(/fetch|network/i.test(m)) return 'Bağlantı kurulamadı. İnterneti kontrol edip tekrar dene.'; return m;};
-  const busy=(b,on,t)=>{b.disabled=on; const sp=b.querySelector('span'); if(b.id==='up'&&sp){sp.textContent=on?'Oluşturuluyor…':'Hesap oluştur';} if(b.id==='in'){b.style.opacity=on?.7:'';}};
-  const chk=()=>{const c=cred(); if(!/^\S+@\S+\.\S+$/.test(c.email)){say('Geçerli bir e-posta adresi yaz.'); return null;} if(c.password.length<8){say('Şifre en az 8 karakter olmalı.'); return null;} return c;};
-  $('#in').onclick=async()=>{say(''); const c=chk(); if(!c) return; const b=$('#in'); busy(b,true); try{const r=await sb.auth.signInWithPassword(c); if(r.error) say(tr(r.error.message)); else boot();}catch(e){say(tr(e&&e.message));} busy(b,false);};
-  $('#up').onclick=async()=>{say(''); const c=chk(); if(!c) return; const b=$('#up'); busy(b,true);
+  const busy=(b,on)=>{b.disabled=on; b.style.opacity=on?.7:''; const sp=b.querySelector('span'); if(mode==='up'&&b.id==='in'){b.firstChild.textContent=on?'Oluşturuluyor… ':'Hesap oluştur ';}};
+  const chk=()=>{const c=cred(); if(!/^\S+@\S+\.\S+$/.test(c.email)){say('Geçerli bir e-posta adresi yaz.'); return null;} if(c.password.length<8){say('Şifre en az 8 karakter olmalı.'); return null;} if(mode==='up'&&$('#pw2').value!==c.password){say('İki şifre aynı değil.'); return null;} return c;};
+  $('#up').onclick=()=>loginView(mode==='up'?'in':'up');
+  $('#in').onclick=async()=>{say(''); const c=chk(); if(!c) return; const b=$('#in'); busy(b,true);
     try{
-      let r=await sb.auth.signUp(c);
-      if(r.error && /already (registered|been registered)/i.test(r.error.message||'')) r=await sb.auth.signInWithPassword(c);
-      if(r.error){say(tr(r.error.message));}
-      else if(r.data && r.data.session){boot();}
-      else if(r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length===0){say('Bu e-postayla zaten bir hesap var. "Giriş yap"a bas. Şifreni unuttuysan işletmeden yardım iste.');}
-      else say('Hesap oluşturuldu. '+c.email+' adresine bir onay bağlantısı gönderdik. Tıkladıktan sonra buradan giriş yap. Gelmediyse spam klasörüne bak.',true);
+      if(mode==='in'){const r=await sb.auth.signInWithPassword(c); if(r.error) say(tr(r.error.message)); else boot();}
+      else{
+        const r=await sb.auth.signUp(c);
+        if(r.error){say(/already (registered|been registered)/i.test(r.error.message||'')?'Bu e-postayla zaten bir hesap var. Giriş yapmayı dene.':tr(r.error.message));}
+        else if(r.data&&r.data.user&&Array.isArray(r.data.user.identities)&&r.data.user.identities.length===0){say('Bu e-postayla zaten bir hesap var. Giriş yapmayı dene.');}
+        else if(r.data&&r.data.session){boot();}
+        else say('Hesap oluşturuldu. '+c.email+' adresine bir onay bağlantısı gönderdik. Tıkladıktan sonra buradan giriş yap. Gelmediyse spam klasörüne bak.',true);
+      }
     }catch(e){say(tr(e&&e.message));}
     busy(b,false);};
 }

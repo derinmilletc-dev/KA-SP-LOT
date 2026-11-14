@@ -5622,7 +5622,7 @@ H.idforgot = async () => {
 NEWM.newpw = () => sheet('Yeni şifre belirle', `<div class="stack"><p class="muted small">Hesabın için en az 8 karakterlik yeni bir şifre yaz.</p><div class="field"><label for="np-pw">Yeni şifre</label><input id="np-pw" type="password" autocomplete="new-password"></div><div class="err" id="np-err" role="alert"></div><button class="btn block" data-a="pwsave">Şifreyi kaydet</button></div>`);
 H.pwsave = async () => { const v = (document.getElementById('np-pw') || {}).value || ''; const e = document.getElementById('np-err'); if (v.length < 8) { if (e) e.textContent = 'En az 8 karakter yaz.'; return; } try { const r = await sbClient().auth.updateUser({ password: v }); if (r.error) throw r.error; S.modal = null; render(); toast('Şifren güncellendi.', 'ok'); } catch (x) { if (e) e.textContent = idMsg(x); } };
 const _idEnter35 = idEnter; idEnter = async function () { await _idEnter35(); if (RECOV && S.user && !S._recDone) { S._recDone = true; S.modal = { type: 'newpw' }; renderModal(); } };
-if (typeof document !== 'undefined') document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'idform') { e.preventDefault(); (S.lgTab === 'emp' ? (S.empMode === 'login' ? H.idin : H.idnew) : (S.lgCreate ? H.idnew : H.idin))(); } });
+if (typeof document !== 'undefined') document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'idform') { e.preventDefault(); (S.lgTab === 'emp' ? (S.empMode !== 'join' ? H.idin : H.idnew) : (S.lgCreate ? H.idnew : H.idin))(); } });
 /* v41: tedarikçi davet kodu (e-posta şartı yok) */
 sbSyncSups = async function () {
   const c = sbClient(); if (!c || !SBS.biz) return;
@@ -5907,7 +5907,7 @@ const viewHTMLV42 = viewHTML;
 viewHTML = function () { const r = S.user && S.user.role; if ((r === 'patron' || r === 'muhasebeci') && S.view === 'sartlar') return viewSartlar(); return viewHTMLV42(); };
 /* giriş: çalışan sekmesi davet koduyla */
 function lxEmp(fields, err, go) {
-  const join = S.empMode !== 'login';
+  const join = S.empMode === 'join';
   const arrow = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>`;
   if (!join) return `${fields}${err}${go}<div class="lx-sep"></div><p class="lx-have">İlk kez mi giriyorsun? <button type="button" class="lx-link" data-a="empmode" data-v="join">Davet koduyla katıl ${arrow}</button></p>`;
   const f2 = fields.replace(/<button type="button" class="lx-link" data-a="idforgot">[^<]*<\/button>/, '').replace('autocomplete="current-password"', 'autocomplete="new-password"').replace('placeholder="Şifre"', 'placeholder="En az 8 karakter"');
@@ -5917,7 +5917,7 @@ function lxEmp(fields, err, go) {
 H.codepaste = async () => { const i = document.getElementById('id-code'); try { const t = await navigator.clipboard.readText(); const m = String(t || '').toUpperCase().match(/[A-Z0-9]{6,8}/); if (m && i) { i.value = m[0]; i.focus(); } else toast('Panoda davet kodu bulunamadı.', 'warn'); } catch (e) { toast('Kodu elle yaz ya da yapıştır.', 'warn'); if (i) i.focus(); } };
 const _lgHTML43 = loginHTML; loginHTML = function () { const h = _lgHTML43(); return sbOK() && (S.lgTab || 'own') === 'emp' ? h.replace('<div class="login lx">', '<div class="login lx lx-emp">') : h; };
 if (typeof Image !== 'undefined') { try { new Image().src = '/login-hero-emp.jpg'; } catch (e) {} }
-if (typeof document !== 'undefined') document.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; const t = e.target; if (!t || t.tagName !== 'INPUT' || t.type === 'checkbox' || !t.closest || !t.closest('#idform')) return; e.preventDefault(); const fn = S.lgTab === 'emp' ? (S.empMode === 'login' ? H.idin : H.idnew) : (S.lgCreate ? H.idnew : H.idin); fn(); });
+if (typeof document !== 'undefined') document.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; const t = e.target; if (!t || t.tagName !== 'INPUT' || t.type === 'checkbox' || !t.closest || !t.closest('#idform')) return; e.preventDefault(); const fn = S.lgTab === 'emp' ? (S.empMode !== 'join' ? H.idin : H.idnew) : (S.lgCreate ? H.idnew : H.idin); fn(); });
 H.empmode = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.empMode = el.dataset.v; S.loginErr = ''; render(); };
 const _logout42 = H.logout; H.logout = () => { ONB.block = false; ONB.loaded = false; ONB.cfg = null; ONB.list = null; ONB.cd = null; _logout42(); };
 /* v44: tedarikçi sekmesi doğrudan tedarikçi girişine */
