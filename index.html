@@ -12494,6 +12494,63 @@ if (typeof document !== 'undefined') {
 
 /* ===== v128: Vardiya tablosu yana kaydırırken sütunlar karışmıyor ===== */
 (function () { try { const st = document.createElement('style'); st.textContent = '.vd-gr .nm{align-self:stretch;display:flex;align-items:center;background:#fff;z-index:3;overflow:hidden;text-overflow:ellipsis;margin-right:-3px;padding-right:8px;box-shadow:7px 0 7px -7px rgba(20,50,100,.22)}.vd-gr>div:first-child{position:sticky;left:0;top:0;z-index:5;background:#fff;align-self:stretch;min-height:34px;margin-right:-3px}.vd-gr .dh{z-index:2}.vd-gr .dh.td{position:sticky;top:0}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v129: Patron ana sayfası: para özeti, onay kutusu, Kais uyarıları, haftalık özet, kısayollar ===== */
+const PPW = { on: true, last: '' }; P_OBJ.push(['PPW', () => PPW]); P_SCOPE.PPW = 'ekip';
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.pp-hero{position:relative;overflow:hidden;border-radius:22px;padding:18px 18px 16px;color:#fff;background:radial-gradient(120% 90% at 85% -10%,#3A86E0 0,transparent 55%),linear-gradient(160deg,#0F4C9A,#0A2F63);box-shadow:0 14px 30px -14px rgba(10,47,99,.55)}
+.pp-hero small{display:block;font:600 12px system-ui;color:#BFD6F5;letter-spacing:.02em}.pp-net{font:800 34px/1.1 system-ui;letter-spacing:-.02em;margin:6px 0 2px;font-variant-numeric:tabular-nums}.pp-net.neg{color:#FFC9C4}
+.pp-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.18);margin:12px 0 10px}.pp-bar i{display:block;background:#7FE0B0;transition:width .6s cubic-bezier(.2,.8,.2,1)}.pp-bar i+i{background:#FFB4AB}
+.pp-io{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pp-io div{background:rgba(255,255,255,.1);border-radius:14px;padding:9px 12px}.pp-io span{display:block;font:600 11px system-ui;color:#BFD6F5}.pp-io b{font:700 16px system-ui;font-variant-numeric:tabular-nums}
+.pp-q{display:flex;gap:8px;margin:2px 0 4px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.pp-q::-webkit-scrollbar{display:none}.pp-q button{flex:0 0 auto;display:flex;align-items:center;gap:7px;border:1px solid #DDE5F1;background:#fff;border-radius:99px;padding:9px 14px;font:600 13px system-ui;color:#0E2B4D;cursor:pointer;transition:transform .12s,box-shadow .12s}.pp-q button:active{transform:scale(.96)}.pp-q button:hover{box-shadow:0 6px 14px -8px rgba(15,76,154,.5)}
+.pp-box{margin-bottom:10px;border:1px solid #E1E8F3;background:#fff;border-radius:20px;padding:14px 14px 10px}.pp-h{display:flex;align-items:center;gap:9px;margin-bottom:8px}.pp-h h3{margin:0;font:700 16px system-ui;flex:1}.pp-n{background:#E8F1FD;color:#1B5FB8;border-radius:99px;font:700 12px system-ui;padding:3px 9px}
+.pp-r{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EEF2F8;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;font:inherit;color:inherit}.pp-box>.pp-r:first-of-type{border-top:0}.pp-r .grow{min-width:0}.pp-r b{display:block;font:600 14px system-ui;color:#0E2B4D}.pp-r small{display:block;font:500 12px system-ui;color:#6B7A90;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-r .pp-ic{flex:0 0 34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#EEF3FB;color:#1B5FB8}.pp-r .pp-ic.warn{background:#FFF3DC;color:#B26A00}.pp-r .pp-ic.bad{background:#FDE7E5;color:#C0392B}
+.pp-b{display:flex;gap:6px}.pp-b button{border:0;border-radius:10px;padding:8px 12px;font:700 12px system-ui;cursor:pointer;background:#EEF3FB;color:#1B5FB8}.pp-b button.ok{background:#1B5FB8;color:#fff}
+.pp-all{width:100%;margin-top:6px;border:0;border-radius:12px;padding:11px;background:#1B5FB8;color:#fff;font:700 14px system-ui;cursor:pointer}
+.pp-wk{display:flex;align-items:center;gap:12px;border:1px solid #E1E8F3;background:linear-gradient(135deg,#F4F8FE,#fff);border-radius:20px;padding:14px}.pp-wk .grow{flex:1;min-width:0}.pp-wk b{display:block;font:700 14px system-ui;color:#0E2B4D}.pp-wk small{font:500 12px system-ui;color:#6B7A90}
+.pp-sw{flex:0 0 46px;height:28px;border-radius:99px;border:0;background:#CBD5E4;position:relative;cursor:pointer;transition:background .2s}.pp-sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .2s}.pp-sw[aria-pressed=true]{background:#1B5FB8}.pp-sw[aria-pressed=true]::after{transform:translateX(18px)}
+.pp-sh{border:0;background:#EEF3FB;color:#1B5FB8;border-radius:10px;padding:8px 11px;font:700 12px system-ui;cursor:pointer}
+.pp-fade{animation:ppIn .5s cubic-bezier(.2,.8,.2,1) both}@keyframes ppIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+`; document.head.appendChild(st); } catch (e) {} })();
+const ppHello = () => { const u = S.user || {}; const n = String(u.name || '').split(' ')[0]; const g = kaHello(); return (!n || /^[iİ][şs]veren$/i.test(n)) ? g : g + ', ' + n; };
+function ppAlerts() {
+  const o = [];
+  try { const al = priceAlerts(); if (al.length) o.push({ i: 'trend', t: 'bad', x: al.length + ' üründe fiyat artışı', s: 'Tedarikçi fiyatlarını karşılaştır', v: 'satinalma' }); } catch (e) {}
+  try { const sk = sktSoon(3); if (sk.length) o.push({ i: 'clock', t: 'warn', x: sk.length + ' ürünün son kullanma tarihi yaklaştı', s: 'Önce bunları kullan ya da fiyatını düşür', v: 'stok' }); } catch (e) {}
+  try { const t = totals(); if (t.out > t.in && t.out > 0) o.push({ i: 'alert', t: 'bad', x: 'Bu dönem giderin gelirini aştı', s: 'Net ' + fmt0(t.in - t.out) + ' · gider kalemlerine bak', v: 'muhasebe' }); } catch (e) {}
+  return o;
+}
+function ppWeekText() {
+  const t = totals(); const pr = pendingReceipts().length; const lv = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status)).length; const al = ppAlerts();
+  return 'KaisPilot haftalık özet\n' + PERIOD + '\nGelen: ' + fmt0(t.in) + '\nGiden: ' + fmt0(t.out) + '\nNet: ' + fmt0(t.in - t.out) + '\nOnay bekleyen: ' + (pr + lv) + (al.length ? '\nDikkat: ' + al.map((a) => a.x).join('; ') : '\nDikkat gerektiren bir şey yok.');
+}
+function ppHome() {
+  const t = totals(); const net = t.in - t.out; const tot = (t.in + t.out) || 1; const empty = !t.in && !t.out;
+  const hero = `<section class="pp-hero pp-fade"><small>${esc(ppHello())} · ${esc(PERIOD)}</small><div class="pp-net ${net < 0 ? 'neg' : ''}">${empty ? '₺0' : (net < 0 ? '−' : '') + fmt0(Math.abs(net))}</div><small>${empty ? 'Fiş ya da ekstre ekledikçe burada net durumun görünür' : 'Net durum'}</small>${empty ? '' : `<div class="pp-bar"><i style="width:${Math.round(t.in / tot * 100)}%"></i><i style="width:${Math.round(t.out / tot * 100)}%"></i></div><div class="pp-io"><div><span>Gelen</span><b>${fmt0(t.in)}</b></div><div><span>Giden</span><b>${fmt0(t.out)}</b></div></div>`}</section>`;
+  const q = `<div class="pp-q pp-fade"><button type="button" data-a="nav" data-v="muhasebe">${ic('receipt', 16)}Fiş ekle</button><button type="button" data-a="ppinv">${ic('users', 16)}Muhasebeci davet et</button><button type="button" data-a="nav" data-v="satinalma">${ic('box', 16)}Satın alma</button><button type="button" data-a="nav" data-v="kaisai">${ic('sparkle', 16)}Kais'e sor</button></div>`;
+  const pr = pendingReceipts(); const lv = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status)); const pa = (typeof pendingAtt === 'function') ? pendingAtt() : [];
+  const n = pr.length + lv.length + pa.length;
+  const recRow = (f) => `<div class="pp-r"><span class="pp-ic">${ic('receipt', 17)}</span><div class="grow"><b>${esc(f.seller)}</b><small>${esc(f.cat)} · ${fmt0(f.total)} · ${esc(f.date)}</small></div><div class="pp-b"><button type="button" data-a="reject" data-id="${f.id}">Reddet</button><button type="button" class="ok" data-a="approve" data-id="${f.id}">Onayla</button></div></div>`;
+  const goRow = (ico, x, sv, v, sb) => `<button type="button" class="pp-r" data-a="nav" data-v="${v}" data-s="${sb}"><span class="pp-ic warn">${ic(ico, 17)}</span><div class="grow"><b>${esc(x)}</b><small>${esc(sv)}</small></div>${ic('chevron', 16)}</button>`;
+  const box = n ? `<section class="pp-box pp-fade"><div class="pp-h"><h3>Onayını bekleyenler</h3><span class="pp-n">${n}</span></div>${pr.slice(0, 3).map(recRow).join('')}${pr.length > 3 ? goRow('receipt', (pr.length - 3) + ' fiş daha', 'Muhasebede gör', 'muhasebe', '') : ''}${lv.length ? goRow('clock', lv.length + ' izin talebi', byId(lv[0].uid).name + ': ' + lv[0].txt, 'ekip', 'talep') : ''}${pa.length ? goRow('clock', pa.length + ' mola dönüşü', 'Onayını bekliyor', 'ekip', 'bugun') : ''}${pr.length > 1 ? `<button type="button" class="pp-all" data-a="ppappall">${pr.length} fişi birden onayla</button>` : ''}</section>` : '';
+  const al = ppAlerts();
+  const albox = al.length ? `<section class="pp-box pp-fade"><div class="pp-h"><h3>Kais dikkat çekiyor</h3><span class="pp-n">${al.length}</span></div>${al.map((a) => `<button type="button" class="pp-r" data-a="nav" data-v="${a.v}"><span class="pp-ic ${a.t}">${ic(a.i, 17)}</span><div class="grow"><b>${esc(a.x)}</b><small>${esc(a.s)}</small></div>${ic('chevron', 16)}</button>`).join('')}</section>` : '';
+  const wk = `<section class="pp-wk pp-fade"><span class="pp-ic" style="flex:0 0 38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#E8F1FD;color:#1B5FB8">${ic('mail', 18)}</span><div class="grow"><b>Haftalık özet</b><small>${PPW.on ? 'Pazartesi sabahı bildirim gelir' : 'Kapalı'}</small></div><button type="button" class="pp-sh" data-a="ppshare">Paylaş</button><button type="button" class="pp-sw" data-a="ppwk" aria-pressed="${PPW.on}" aria-label="Haftalık özet"></button></section>`;
+  return hero + q + box + albox + wk;
+}
+H.ppwk = () => { PPW.on = !PPW.on; try { pSched(); } catch (e) {} render(); toast(PPW.on ? 'Haftalık özet açıldı.' : 'Haftalık özet kapatıldı.', 'ok'); };
+H.ppshare = async () => { const tx = ppWeekText(); try { if (navigator.share) { await navigator.share({ text: tx }); return; } await navigator.clipboard.writeText(tx); toast('Özet kopyalandı.', 'ok'); } catch (e) {} };
+H.ppappall = () => { if (typeof locked === 'function' && locked()) return; const l = pendingReceipts(); l.forEach((f) => { f.status = 'onayli'; }); render(); toast(l.length + ' fiş onaylandı.', 'ok'); };
+H.ppinv = () => { if (ID.active) { S.view = 'ekip'; S.sub.ekip = 'hesap'; render(); } else toast('Muhasebeci daveti işletme hesabıyla çalışır. Giriş yapınca buradan davet edebilirsin.'); };
+const bugunPatronV129 = bugunPatron;
+bugunPatron = function () { const h = bugunPatronV129(); const add = ppHome(); const m = h.match(/^\s*<div class="stack-lg dash">/); return m ? h.replace(m[0], m[0] + add) : h.replace(/<div class="stack-lg dash">/, '<div class="stack-lg dash">' + add); };
+const kaCardV129 = kaCard;
+kaCard = function () { const h = kaCardV129(); return h.replace(/(<h3>(?:İyi geceler|Günaydın|İyi günler|İyi akşamlar)) İşveren<\/h3>/, '$1</h3>'); };
+(function () { const n = NAV.patron; const f = (id, more) => { const x = n.find((y) => y[0] === id); if (x) { if (more) x[3] = 'more'; else x.length = 3; } }; f('musteri', true); f('kaisai', false); const i = n.findIndex((y) => y[0] === 'kaisai'); if (i > 3) n.splice(3, 0, n.splice(i, 1)[0]); })();
+
+const kbTidyV129 = kbTidy;
+kbTidy = function () { const r = kbTidyV129.apply(this, arguments); try { const m = document.querySelector('main'); if (m && S.user && S.user.role === 'patron' && S.view === 'bugun') { const f = m.firstElementChild; Array.from(m.querySelectorAll('.dash>.pp-hero,.dash>.pp-q,.dash>.pp-box')).forEach((e) => m.insertBefore(e, f)); } } catch (e) {} return r; };
 </script>
 </body>
 </html>
