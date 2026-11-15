@@ -1023,6 +1023,9 @@ div.now{font-size:11px}
 .su-f{display:flex;flex-direction:column;gap:6px;align-items:center}.su-lk{border:0;background:none;color:var(--ink-2);font:inherit;font-size:14px;text-decoration:underline;padding:10px;min-height:40px;cursor:pointer}
 .su-bn{display:flex;align-items:center;gap:10px;background:#EAF1FB;border:1px solid #CFE0F7;border-radius:16px;padding:10px 12px}.su-bn b{display:block;font-size:14.5px}.su-bn small{color:var(--ink-2);font-size:12.5px}.su-bi{flex:none;width:30px;height:30px;border-radius:9px;background:#fff;color:var(--cini);display:grid;place-items:center}.su-x{border:0;background:none;color:var(--ink-2);width:36px;height:36px;border-radius:10px;display:grid;place-items:center;cursor:pointer}
 .kfb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:-4px 4px 0 4px;font-size:13px;color:var(--ink-2)}.kfb-s{display:inline-flex;align-items:center;gap:5px}.kfb-b{border:1px solid #E3EAF4;background:#fff;border-radius:12px;min-width:44px;min-height:40px;font-size:17px;cursor:pointer}.kfb-b:active{background:#F1F5FB}
+.kr-r{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F5F8FD;border-radius:12px;padding:10px 12px;font-size:14.5px}.kr-r span{min-width:0;overflow-wrap:anywhere}.tb-p{white-space:nowrap;font-size:11.5px}
+.vd-hint{display:none;margin:0}.iz-sc:has(>.vd-gr){background:linear-gradient(to left,#fff 30%,rgba(255,255,255,0)) right center/36px 100% no-repeat local,linear-gradient(to left,rgba(20,50,100,.16),rgba(20,50,100,0)) right center/14px 100% no-repeat scroll}
+@media(max-width:899px){.vd-hint{display:block}}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -7788,7 +7791,7 @@ function vdView(segH) {
   const ins = vdInsights(y, m); const nAs = Array.from({ length: dim }, (_, i) => VD_F[vdYmd(y, m, i + 1)]).filter(Boolean).length;
   const tw2 = (k, t, sub) => { const on = S.settings[k] !== false; return `<div class="toggle"><div><b style="font-weight:600">${t}</b><div class="small muted">${sub}</div></div><button class="sw" role="switch" aria-checked="${on}" aria-label="${t}" data-a="vdtog" data-k="${k}"></button></div>`; };
   const bar = `<div class="vd-tb"><button class="btn" data-a="vdauto">${ic('sparkle', 16)} Kais planlasın</button><button class="btn sec" data-a="vdcopy">Önceki dört haftayı kopyala</button><button class="btn sec" data-a="vdtpl">Vardiya türleri</button>${nAs ? '<button class="btn sec" data-a="vdclear">Temizle</button>' : ''}<button class="btn ${pub ? 'sec' : ''}" data-a="vdpub" ${nAs ? '' : 'disabled'}>${pub ? 'Yeniden bildir' : 'Yayınla ve çalışanlara bildir'}</button></div>`;
-  return `<div class="stack-lg">${segH}<div class="ek"><div class="ek-main"><section class="mg-card"><div class="iz-nv"><button type="button" data-a="vdm" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h2>${VD_MON[m]} ${y} vardiya planı</h2><span class="pill ${pub ? 'p-ok' : 'p-warn'}">${pub ? 'Yayında' : nAs ? 'Taslak' : 'Plan yok'}</span>${(S.vdM || 0) !== 0 ? ' <button type="button" class="mg-lnk" data-a="vdm0" style="border:0;width:auto;height:auto">Bu aya dön</button>' : ''}</div><button type="button" data-a="vdm" data-v="1" aria-label="Sonraki ay" style="transform:scaleX(-1)">${ic('back', 18)}</button></div>${bar}<div class="iz-sc"><div class="vd-gr" style="grid-template-columns:130px repeat(${dim},minmax(32px,1fr))"><div></div>${heads}${rows}<div class="nm" style="color:var(--ink-2)">Çalışan sayısı</div>${cov}</div></div><div class="vd-lg">${VD_T.map((t) => `<span><i style="background:${t.c}"></i>${esc(t.n)} ${t.s}–${vdEnd(t)}</span>`).join('')}<span><i style="background:#E4E9F2"></i>Haftalık izin</span><span><i style="background:#CFE1FA"></i>Onaylı izin</span><span><i style="background:repeating-linear-gradient(45deg,#E6E9EF 0 3px,#F5F6F9 3px 6px)"></i>Resmi tatil, kapalı</span></div></section></div>
+  return `<div class="stack-lg">${segH}<div class="ek"><div class="ek-main"><section class="mg-card"><div class="iz-nv"><button type="button" data-a="vdm" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h2>${VD_MON[m]} ${y} vardiya planı</h2><span class="pill ${pub ? 'p-ok' : 'p-warn'}">${pub ? 'Yayında' : nAs ? 'Taslak' : 'Plan yok'}</span>${(S.vdM || 0) !== 0 ? ' <button type="button" class="mg-lnk" data-a="vdm0" style="border:0;width:auto;height:auto">Bu aya dön</button>' : ''}</div><button type="button" data-a="vdm" data-v="1" aria-label="Sonraki ay" style="transform:scaleX(-1)">${ic('back', 18)}</button></div>${bar}<p class="small muted vd-hint">Yana kaydırarak tüm günleri gör.</p><div class="iz-sc"><div class="vd-gr" style="grid-template-columns:130px repeat(${dim},minmax(32px,1fr))"><div></div>${heads}${rows}<div class="nm" style="color:var(--ink-2)">Çalışan sayısı</div>${cov}</div></div><div class="vd-lg">${VD_T.map((t) => `<span><i style="background:${t.c}"></i>${esc(t.n)} ${t.s}–${vdEnd(t)}</span>`).join('')}<span><i style="background:#E4E9F2"></i>Haftalık izin</span><span><i style="background:#CFE1FA"></i>Onaylı izin</span><span><i style="background:repeating-linear-gradient(45deg,#E6E9EF 0 3px,#F5F6F9 3px 6px)"></i>Resmi tatil, kapalı</span></div></section></div>
   <div class="ek-side"><section class="mg-card"><div class="ek-h"><h2>Kais'in kontrolü</h2></div><div class="vd-ins">${ins.map((x) => `<div class="vd-in ${x.t}">${ic(x.t === 'ok' ? 'check' : 'alert', 16)}<span>${esc(x.x)}</span></div>`).join('')}</div></section>
   ${vdHolCard(y, m)}
   <section class="mg-card"><div class="ek-h"><h2>Otomatik hatırlatma</h2></div>${tw2('shRem24', '24 saat önce haber ver', 'Yarınki vardiyanız şu saatte başlıyor diye nazik bir bildirim gider.')}${tw2('shRem10', '10 dakika kala haber ver', 'Vardiyanın başlamasına 10 dakika kaldı diye bildirim gider.')}${tw2('shAuto', 'Her ay taslağı kendisi hazırlasın', 'Ayın 20\'sinden sonra sonraki ayın taslağını Kais hazırlar. Yayınlamayı sen yaparsın.')}<b style="font-size:14px;display:block;margin-top:10px">Günde en az kaç kişi çalışsın?</b><div class="mb-o">${[1, 2, 3].map((v) => `<button type="button" data-a="vdmin" data-v="${v}" aria-pressed="${min === v}">${v} kişi</button>`).join('')}<label class="vd-mn">veya<input id="vd-min" type="number" inputmode="numeric" min="1" max="${Math.max(1, EMP_IDS.length)}" value="${min}" aria-label="Günlük en az çalışan sayısı">kişi</label></div><p class="small muted">Bildirimler, uygulama yönetici cihazında açıkken gönderilir.</p></section></div></div></div>`;
@@ -8459,7 +8462,7 @@ function aiMemSave() { const m = aiMemGet(); aiMemSet({ notes: AIC.notes || m.no
 const aiCtxV69 = aiContext;
 aiContext = function () {
   const c = aiCtxV69(); const r = S.user.role; const mgr = ['patron', 'mudur'].includes(r); const t = (f) => { try { return f(); } catch (e) { return undefined; } };
-  c.simdi = hhmm(new Date()); c.hafiza_notlari = (AIC.notes || []).slice(-20);
+  c.simdi = hhmm(new Date()); c.hafiza_notlari = (AIC.notes || []).slice(-20).concat((typeof KR !== 'undefined' ? KR.rules : []).map((x) => 'Şirket kuralı: ' + x.t));
   if (mgr) {
     c.ekip = t(() => EMP_IDS.map((id) => { const u = byId(id); const a = ATT[id] || {}; const p = PROFILES[id] || {}; const l = izLeft(id); const o = { id, ad: u.name, gorev: u.title || '', durum: AI_STATE[a.state] || a.state, giris: a.inAt || null, mola_dk: a.breakMin || 0, gec_kalma_dk: a.late || 0, kalan_yillik_izin_gun: l ? l.left : null, ise_giris: p.hire || null }; if (r === 'patron') { o.maas = p.salary; o.maas_turu = p.stype; } return o; }));
     c.izin_talepleri = t(() => LVREQ.slice(-20).map((q) => ({ id: q.id, kisi: (byId(q.uid) || {}).name, tur: q.type, tarih: q.txt, gun: q.days, durum: q.status, karsi_teklif: q.counter ? q.counter.txt : null, son_mesaj: q.thread && q.thread.length ? q.thread[q.thread.length - 1].text : '' })));
@@ -11241,6 +11244,114 @@ H.aifb = (el) => {
     const bar = `<div class="kfb">${m.src ? `<span class="kfb-s">${ic('info', 14)} Baktığım veri: ${esc(m.src)}</span>` : ''}${m.fb ? `<span class="kfb-s">${m.fb === 'up' ? 'Faydalı bulundu' : 'Geliştirilecek'}</span>` : `<span class="kfb-q">Faydalı mıydı?</span><button type="button" class="kfb-b" data-a="aifb" data-i="${li}" data-v="up" aria-label="Faydalı">👍</button><button type="button" class="kfb-b" data-a="aifb" data-i="${li}" data-v="down" aria-label="Faydasız">👎</button>`}</div>`;
     return h.replace('<span id="ai-end">', bar + '<span id="ai-end">');
   };
+}
+
+/* ===== v103: şirket kuralları (ortak hafıza), izin komutu, tablo teyit etiketi ===== */
+const KR = { rules: [], key: '', off: false };
+const krMgr = () => !!(S.user && ['patron', 'mudur'].includes(S.user.role));
+async function krPull() {
+  const c = sbOK() && sbClient(); if (!c || !SBS.user || !SBS.biz || KR.off) return; const k = SBS.biz.id + ':' + SBS.user.id; if (KR.key === k) return; KR.key = k;
+  try {
+    const r = await c.from('kais_memory').select('id,content,created_at').eq('business_id', SBS.biz.id).is('user_id', null).eq('kind', 'rule').order('created_at', { ascending: true }).limit(40);
+    if (r.error) { if (/relation|schema cache|permission/i.test(r.error.message || '')) KR.off = true; KR.key = ''; return; }
+    KR.rules = (r.data || []).map((x) => ({ id: x.id, t: x.content })); if (S.view === 'kaisai') render();
+  } catch (e) { KR.key = ''; }
+}
+async function krAdd(text) {
+  const t = String(text || '').trim().slice(0, 300); if (t.length < 4 || !krMgr()) return false;
+  if (KR.rules.some((x) => kaFold(x.t) === kaFold(t))) return true;
+  const c = sbOK() && sbClient();
+  if (c && SBS.user && SBS.biz) { const r = await c.from('kais_memory').insert({ business_id: SBS.biz.id, user_id: null, kind: 'rule', content: t }).select('id'); if (r.error) { toast('Kural kaydedilemedi.', 'warn'); return false; } KR.rules.push({ id: r.data && r.data[0] && r.data[0].id, t }); }
+  else KR.rules.push({ id: 'l' + (++seq), t });
+  try { auditAdd({ type: 'kais', text: 'Şirket kuralı eklendi: ' + t }); } catch (e) {} return true;
+}
+H.krad = async () => { const el = document.getElementById('kr-in'); if (!el) return; const ok = await krAdd(el.value); if (ok) { toast('Kural eklendi. Kais bundan sonra bunu bilecek.', 'ok'); render(); } };
+H.krdel = async (el) => {
+  if (!krMgr()) return; const i = KR.rules.findIndex((x) => String(x.id) === el.dataset.id); if (i < 0) return;
+  const c = sbOK() && sbClient(); if (c && SBS.biz && !/^l\d+$/.test(String(KR.rules[i].id))) { const r = await c.from('kais_memory').delete().eq('id', KR.rules[i].id); if (r.error) { toast('Silinemedi.', 'warn'); return; } }
+  KR.rules.splice(i, 1); render();
+};
+function krCard() {
+  if (!S.user || S.user.role === 'calisan') return '';
+  const mg = krMgr();
+  return `<details class="card kr" ${KR.rules.length ? 'open' : ''}><summary class="check"><span class="dot tone-info">${ic('sparkle', 16)}</span><div class="grow"><b style="font-weight:600">Şirket kuralları</b><div class="small muted">${KR.rules.length ? KR.rules.length + ' kural, yöneticilerin hepsi için geçerli' : 'Kais\'in herkes için hatırlaması gereken kurallar'}</div></div></summary>
+  <div class="stack" style="margin-top:10px">${KR.rules.map((x) => `<div class="kr-r"><span>${esc(x.t)}</span>${mg ? `<button type="button" class="xbtn sm" data-a="krdel" data-id="${esc(String(x.id))}" aria-label="Kuralı sil">${ic('trash', 16)}</button>` : ''}</div>`).join('') || '<p class="small muted" style="margin:0">Henüz kural yok.</p>'}
+  ${mg ? `<div class="row"><input id="kr-in" class="grow" type="text" maxlength="300" placeholder="Örnek: Pazartesi kapalıyız" autocomplete="off"><button class="btn sm" data-a="krad">Ekle</button></div><p class="small muted" style="margin:0">Sohbette de yazabilirsin: "kural: cuma günleri erken kapatıyoruz".</p>` : ''}</div></details>`;
+}
+{
+  const _v = viewKaisAI;
+  viewKaisAI = function () { krPull(); const h = _v(); const c = krCard(); return c ? h.replace('<div class="stack">', c + '<div class="stack">') : h; };
+}
+const KA_MO = ['ocak', 'subat', 'mart', 'nisan', 'mayis', 'haziran', 'temmuz', 'agustos', 'eylul', 'ekim', 'kasim', 'aralik'];
+function kaDates(f) {
+  const y = Number(REF_ISO.slice(0, 4)); const mk = (d, m) => { let iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (iso < REF_ISO) iso = (y + 1) + iso.slice(4); return iso; };
+  const mr = '(' + KA_MO.join('|') + ')'; let m = f.match(new RegExp('(\\d{1,2})\\s*' + mr + '?\\s*(?:-|ile|ila)\\s*(\\d{1,2})\\s*' + mr));
+  if (m) { const m2 = KA_MO.indexOf(m[4]); const m1 = m[2] ? KA_MO.indexOf(m[2]) : m2; const a = mk(+m[1], m1); let b = mk(+m[3], m2); if (b < a) b = a; return [a, b]; }
+  m = f.match(new RegExp('(\\d{1,2})\\s*' + mr)); if (m) { const a = mk(+m[1], KA_MO.indexOf(m[2])); return [a, a]; }
+  const n = f.match(/\b(\d{1,2})\s*gun/); const st = /\bbugun\b/.test(f) ? REF_ISO : /\bobur gun\b/.test(f) ? addDays(REF_ISO, 2) : addDays(REF_ISO, 1);
+  if (n && +n[1] >= 1 && +n[1] <= 60) return [st, addDays(st, +n[1] - 1)];
+  return [st, st];
+}
+function kaLeaveAct(text) {
+  if (!kaMgr()) return kaDeny('İzin kaydetmek patron ve müdürün işi.');
+  const f = kaFold(text); const uid = kaUidFrom(f); if (!uid || uid === 'all') return { content: 'Kimin izni? Şöyle yaz: "Ali yarın izinli" ya da "Ayşe 20-22 Kasım izinli".', src: 'Ekip listesi' };
+  const [a, b] = kaDates(f); const type = /\brapor/.test(f) ? 'rapor' : /\bucretsiz/.test(f) ? 'ucretsiz' : /\byillik/.test(f) ? 'yillik' : 'mazeret';
+  return { content: byId(uid).name.split(' ')[0] + ' için izni hazırladım. Tarihi ve türü kontrol edip onayla.', src: 'Ekip ve izin kayıtları', acts: [{ type: 'izin_ver', args: { uid, type, a, b }, st: 'open' }] };
+}
+const kaLvTxt = (a, b) => (a === b ? isoShort(a) : isoShort(a) + '–' + isoShort(b));
+{
+  const _k = kaIntent;
+  kaIntent = function (text) {
+    const f = kaFold(text); if (f.length > 160) return _k(text);
+    const m = f.match(/^(?:sirket )?(?:kural|kurali)(?: ekle)?\s*[:\-]\s*(.{4,})$/) || f.match(/^(?:hatirla|unutma)\s*[:\-]\s*(?:herkes icin\s*)?(.{4,})$/);
+    if (m) { if (!krMgr()) return kaDeny('Şirket kuralını yalnızca patron ve müdür ekleyebilir.'); const t = text.slice(text.search(/[:\-]/) + 1).trim(); return { content: 'Şu kuralı tüm yöneticiler için kaydedeyim mi?', src: 'Şirket kuralları', acts: [{ type: 'kural_ekle', args: { t }, st: 'open' }] }; }
+    if (/\b(izinli|izin ver|izne cik|raporlu|izin yaz|izin gir)\b/.test(f) && !/\?|\b(kim|kimler|kac|ne zaman|var mi)\b/.test(f)) return kaLeaveAct(text);
+    return _k(text);
+  };
+}
+{
+  const _c = aiActCard;
+  aiActCard = function (a, i, j) {
+    if (a.type === 'kural_ekle') {
+      if (a.st !== 'open') return a.st === 'done' ? `<div class="callout info">${ic('info')}<div>${esc(a.msg || 'Kaydedildi.')}</div></div>` : '<div class="small muted">Vazgeçildi.</div>';
+      return `<div class="card stack kc-act"><div class="kc-h"><span>${ic('sparkle', 16)}</span><div><b>Şirket kuralı</b><div class="small muted">Yöneticilerin hepsi için hatırlanır</div></div></div><div class="field"><input id="aa-${i}-${j}-t" type="text" maxlength="300" value="${esc(a.args.t)}" aria-label="Kural"></div><div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">Kaydet</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+    }
+    if (a.type === 'izin_ver') {
+      if (a.st !== 'open') return a.st === 'done' ? `<div class="callout info">${ic('info')}<div>${esc(a.msg || 'Kaydedildi.')}</div></div>` : '<div class="small muted">Vazgeçildi.</div>';
+      const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`; const us = USERS.filter((u) => u.role !== 'patron');
+      return `<div class="card stack kc-act"><div class="kc-h"><span>${ic('calendar', 16)}</span><div><b>İzin kaydı</b><div class="small muted">Vardiya planında o günler izinli görünür</div></div></div>
+      <div class="row wrap"><div class="field grow"><label for="${id('u')}">Kim</label><select id="${id('u')}">${us.map((u) => `<option value="${u.id}"${g.uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></div>
+      <div class="field grow"><label for="${id('y')}">Tür</label><select id="${id('y')}">${Object.keys(LV_KIND).map((k) => `<option value="${k}"${g.type === k ? ' selected' : ''}>${LV_KIND[k]}</option>`).join('')}</select></div></div>
+      <div class="row wrap"><div class="field grow"><label for="${id('a')}">Başlangıç</label><input id="${id('a')}" type="date" value="${esc(g.a)}"></div><div class="field grow"><label for="${id('b')}">Bitiş</label><input id="${id('b')}" type="date" value="${esc(g.b)}"></div></div>
+      <div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">İzni kaydet</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+    }
+    return _c(a, i, j);
+  };
+  const _a = H.aiact;
+  H.aiact = async function (el) {
+    const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; if (!a || a.st !== 'open' || !['kural_ekle', 'izin_ver'].includes(a.type)) return _a.call(this, el);
+    const g = (k) => ((document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-${k}`) || {}).value || '').trim(); const done = (m) => { a.st = 'done'; a.msg = m; try { aiMemSave(); } catch (e) {} render(); };
+    if (!kaMgr()) return kpDeny();
+    if (a.type === 'kural_ekle') { const t = g('t'); if (t.length < 4) { toast('Kuralı yaz.', 'warn'); return; } if (await krAdd(t)) { done('Kural kaydedildi: ' + t); toast('Kural kaydedildi.', 'ok'); } return; }
+    const uid = g('u'), type = g('y'), s = g('a'), e = g('b') || s; if (!byId(uid) || !LV_KIND[type]) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(e) || e < s) { toast('Tarihleri kontrol et.', 'warn'); return; }
+    const days = dayDiff(s, e) + 1; if (days > 60) { toast('En fazla 60 gün girebilirsin.', 'warn'); return; }
+    if (type === 'yillik') { const i = yizInfo(uid); if (days > i.left) { toast(i.tot ? 'Kalan yıllık izin ' + Math.max(0, i.left) + ' gün.' : 'Yıllık izin hakkı henüz doğmadı.', 'warn'); return; } }
+    if (LEAVES.some((x) => x.uid === uid && x.txt === kaLvTxt(s, e))) { done('Bu izin zaten kayıtlı.'); return; }
+    LEAVES.push({ id: 'lv' + ++seq, uid, type, txt: kaLvTxt(s, e), days }); vdSave();
+    try { auditAdd({ type: 'kais', text: 'Kais izin kaydetti: ' + byId(uid).name + ' ' + kaLvTxt(s, e) }); } catch (x) {}
+    try { pushSend([uid], 'İznin kaydedildi', LV_KIND[type] + ': ' + kaLvTxt(s, e)); } catch (x) {}
+    done(byId(uid).name + ': ' + LV_KIND[type] + ', ' + kaLvTxt(s, e) + ' (' + days + ' gün) kaydedildi.'); toast('İzin kaydedildi.', 'ok');
+  };
+}
+/* Tablo: muhasebeci teyidi bekleyen satırlara etiket */
+{
+  const _t = ledgerTr;
+  ledgerTr = function (r, dis) { const h = _t.apply(this, arguments); return r.pend ? h.replace(`id="ls-${r.id}">`, `id="ls-${r.id}"><span class="pill p-warn tb-p">Teyit bekliyor</span> `) : h; };
+}
+{
+  const _tc = tbCard;
+  tbCard = function (r) { const h = _tc.apply(this, arguments); return r.pend ? h.replace('<div class="tb-ch">', '<div class="tb-ch"><span class="pill p-warn tb-p">Teyit bekliyor</span>') : h; };
 }
 </script>
 </body>
