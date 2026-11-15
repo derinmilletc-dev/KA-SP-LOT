@@ -1027,6 +1027,7 @@ div.now{font-size:11px}
 .vd-hint{display:none;margin:0}.iz-sc:has(>.vd-gr){background:linear-gradient(to left,#fff 30%,rgba(255,255,255,0)) right center/36px 100% no-repeat local,linear-gradient(to left,rgba(20,50,100,.16),rgba(20,50,100,0)) right center/14px 100% no-repeat scroll}
 @media(max-width:899px){.vd-hint{display:block}}
 .lg-yasal{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;margin:14px 0 4px;font-size:13px;color:#7A8AA2}.lg-yasal a{color:#5B6F8F;text-decoration:underline;padding:6px 2px}.lg-yasal.lg-in{justify-content:flex-start;margin:6px 0 0}.lg-ok{margin:10px 2px 0;font-size:12.5px;line-height:1.5;color:#6B7B94}.lg-ok a{color:#3B5E99;text-decoration:underline}
+.os-p{white-space:pre-wrap;background:#F5F8FD;border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.5;max-height:34vh;overflow:auto;margin-bottom:12px}.os-b{display:flex;flex-direction:column;gap:8px}.os-b small{margin:-2px 4px 4px;font-size:12.5px}.os-wa{background:#1FA855;border-color:#1FA855;color:#fff}.os-ok{color:#1E8F55;display:flex;align-items:center;gap:6px;margin:0 0 10px}.os-lk{border:0;background:none;color:var(--ink-2);font:inherit;font-size:14px;text-decoration:underline;padding:10px;min-height:44px;cursor:pointer}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -9279,7 +9280,7 @@ saOrdersCard = function () {
   if (!ORDERS.length) return '';
   return `<div class="card flush"><div style="padding:16px 16px 6px"><h3>Verilen siparişler</h3></div>${ORDERS.map((o) => { const t = supById(o.supId); const rec = o.recv && o.recv.short > 0;
     return `<div class="rrow"><div><b style="font-weight:600">${esc(t ? t.name : 'Tedarikçi')}</b><div class="small muted">${esc(o.date)} · ${o.lines.map((l) => l.qty + ' ' + l.unit + ' ' + l.name.split(' (')[0]).join(', ')}</div>${rec ? `<div class="small" style="color:var(--nar)">Eksik teslim: ${fmt0(o.recv.short)} düşüldü</div>${recStat(o)}` : ''}${typeof ordExtra === 'function' ? ordExtra(o) : ''}</div><b class="num">${fmt0(o.total)}</b><div class="rfoot"><span class="pill ${ORD_ST[o.status][0]}">${ORD_ST[o.status][1]}</span>${o.conf ? ' <span class="pill p-ok">Tedarikçi onayladı</span>' : ''}
-    ${o.status === 'gonderildi' ? `<button class="btn sm" data-a="ordrecv" data-id="${o.id}">Teslim aldım</button><button class="btn sm sec" data-a="ordwa" data-id="${o.id}">WhatsApp</button><button class="btn sm sec" data-a="ordcopy" data-id="${o.id}">Kopyala</button><button class="btn sm sec" data-a="ordcancel" data-id="${o.id}">İptal</button>` : ''}
+    ${o.status === 'gonderildi' ? `<button class="btn sm" data-a="ordrecv" data-id="${o.id}">Teslim aldım</button><button class="btn sm sec" data-a="ordsendopen" data-id="${o.id}">${o.wa || o.mailed ? 'Tekrar gönder' : 'Gönder'}</button><button class="btn sm sec" data-a="ordcopy" data-id="${o.id}">Kopyala</button><button class="btn sm sec" data-a="ordcancel" data-id="${o.id}">İptal</button>` : ''}
     ${o.status === 'teslim' ? `${rec ? `<button class="btn sm" data-a="shortwa" data-id="${o.id}">Eksiği WhatsApp'tan bildir</button>` : ''}<button class="btn sm sec" data-a="ordrec" data-id="${o.id}">Her hafta tekrarla</button>` : ''}</div></div>`; }).join('')}</div>`;
 };
 /* tekrarlayan sipariş */
@@ -9395,7 +9396,7 @@ H.drok = async (el) => { const r = ORDDR.find((x) => x.id === el.dataset.id); co
 H.drno = async (el) => { const r = ORDDR.find((x) => x.id === el.dataset.id); const c = sbClient(); if (!r || !c) return; const u = await c.from('orders').update({ status: 'iptal' }).eq('id', r.id); if (u.error) { toast('Reddedilemedi: ' + sbMsg(u.error), 'warn'); return; } ORDDR.splice(ORDDR.indexOf(r), 1); ordNotify({ sbid: r.id }, 'iptal'); render(); toast('Sipariş reddedildi.'); };
 H.ordremind = (el) => { const o = ORDERS.find((x) => x.id === el.dataset.id); if (!o) return; const t = supById(o.supId); const txt = 'Merhaba, ' + BIZ + ' olarak ' + o.date + ' tarihli ' + fmt0(o.total) + ' tutarındaki siparişimizi KaisPilot panelinizden onaylayabilir misiniz? Teslim tarihini de yazarsanız sevinirim.'; window.open(waLink(t && t.phone, txt), '_blank', 'noopener'); };
 const _ow88 = H.ordwa; H.ordwa = (el) => { const o = ORDERS.find((x) => x.id === el.dataset.id); if (o && !o.wa) o.wa = REF_ISO; _ow88(el); };
-const _soc88 = saOrdersCard; saOrdersCard = function () { return drCard() + _soc88().replace(/(<button class="btn sm sec" data-a="ordwa" data-id="([^"]+)">WhatsApp<\/button>)/g, (m, b, id) => { const o = ORDERS.find((x) => x.id === id); return b + (o && o.sbid && !o.conf ? `<button class="btn sm sec" data-a="ordremind" data-id="${id}">Hatırlat</button>` : ''); }); };
+const _soc88 = saOrdersCard; saOrdersCard = function () { return drCard() + _soc88().replace(/(<button class="btn sm sec" data-a="ordsendopen" data-id="([^"]+)">[^<]*<\/button>)/g, (m, b, id) => { const o = ORDERS.find((x) => x.id === id); return b + (o && o.sbid && !o.conf ? `<button class="btn sm sec" data-a="ordremind" data-id="${id}">Hatırlat</button>` : ''); }); };
 const _nl88 = notifList; notifList = function () { const out = _nl88(); const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role)) return out; ORDDR.forEach((r) => { const t = SUPPLIERS.find((x) => x.sbid === r.supplier_id); out.push({ key: 'dr' + r.id, sev: 'info', text: (t ? t.name : 'Toptancı') + ' senin için ' + fmt0(r.total) + ' tutarında sipariş hazırladı. Onayını bekliyor.', view: 'satinalma', tab: null }); }); const rank = { bad: 0, warn: 1, info: 2 }; return out.sort((a, b) => rank[a.sev] - rank[b.sev]); };
 /* v89: teklif bağı, çevrimdışı uyarısı, fiyat geçmişi, teslimat takibi, sipariş değişikliği */
 (function () { if (typeof document === 'undefined') return; const d = document.createElement('div'); d.id = 'kp-off'; d.setAttribute('role', 'alert'); d.textContent = 'Bağlantı yok. Değişiklikler bağlantı gelince eşitlenir.'; d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:300;background:#b3392f;color:#fff;font:600 13px/1.3 system-ui,sans-serif;padding:8px 14px;text-align:center;display:none'; document.body.appendChild(d);
@@ -9863,7 +9864,7 @@ function sa2Order(o) {
   const when = o.status === 'gonderildi' ? `<span class="sa2-eta ${dd < 0 ? 'r' : dd <= 1 ? 'a' : ''}">Tahmini geliş: <b>${esc(isoShort(eta))}</b> · ${sa2When(eta)}</span>` : o.status === 'teslim' ? `<span class="sa2-eta g">Teslim alındı</span>` : '';
   const stp = o.status === 'iptal' ? '' : `<div class="sa2-st">${lab.map((x, i) => `<div class="${i <= step ? 'on' : ''}"><i></i><span>${x}</span></div>`).join('')}</div>`;
   const lines = o.lines.map((l) => `<div class="sa2-l"><div><b>${esc(sa2Short(l.name))}</b><span>${fq(l.qty)} ${esc(l.unit)} × ${fmt(l.price)}</span></div><div class="sa2-lr"><b>${fmt0(l.qty * l.price)}</b></div></div>`).join('');
-  const btn = o.status === 'gonderildi' ? `<button class="btn sm" data-a="ordrecv" data-id="${o.id}">Teslim aldım</button><button class="btn sm sec" data-a="ordwa" data-id="${o.id}">WhatsApp</button>${o.sbid && !o.conf ? `<button class="btn sm sec" data-a="ordremind" data-id="${o.id}">Hatırlat</button>` : ''}<button class="btn sm sec" data-a="ordcopy" data-id="${o.id}">Kopyala</button>${o.sbid && !(o.chg && o.chg.status === 'bekliyor') ? `<button class="btn sm sec" data-a="chg" data-id="${o.id}">Değişiklik</button>` : ''}<button class="btn sm sec" data-a="ordcancel" data-id="${o.id}">İptal</button>`
+  const btn = o.status === 'gonderildi' ? `<button class="btn sm" data-a="ordrecv" data-id="${o.id}">Teslim aldım</button><button class="btn sm sec" data-a="ordsendopen" data-id="${o.id}">${o.wa || o.mailed ? 'Tekrar gönder' : 'Gönder'}</button>${o.sbid && !o.conf ? `<button class="btn sm sec" data-a="ordremind" data-id="${o.id}">Hatırlat</button>` : ''}<button class="btn sm sec" data-a="ordcopy" data-id="${o.id}">Kopyala</button>${o.sbid && !(o.chg && o.chg.status === 'bekliyor') ? `<button class="btn sm sec" data-a="chg" data-id="${o.id}">Değişiklik</button>` : ''}<button class="btn sm sec" data-a="ordcancel" data-id="${o.id}">İptal</button>`
     : o.status === 'teslim' ? `${rec ? `<button class="btn sm" data-a="shortwa" data-id="${o.id}">Eksiği bildir</button>` : ''}<button class="btn sm sec" data-a="ordrec" data-id="${o.id}">Her hafta tekrarla</button>` : '';
   return `<article class="sa2-c"><div class="sa2-ch"><div class="sa2-cn"><b>${esc(t ? t.name : 'Tedarikçi')}</b><span>Verildi ${esc(o.date)} · ${o.lines.length} kalem</span></div><div class="sa2-tt"><b class="sa2-tot">${fmt0(o.total)}</b><span class="pill ${ORD_ST[o.status][0]}">${ORD_ST[o.status][1]}</span></div></div>
   ${when ? `<div class="sa2-wh">${when}${o.conf ? '<span class="pill p-ok">Tedarikçi onayladı</span>' : ''}</div>` : ''}${stp}<div class="sa2-ln">${lines}</div>
@@ -11368,6 +11369,29 @@ const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlili
 {
   const _h = hesapHTML;
   hesapHTML = function () { const h = _h.apply(this, arguments); return h + `<div class="card"><h3>Yasal</h3><div class="lg-yasal lg-in">${LEGAL_LINKS}</div></div>`; };
+}
+
+/* ===== v105: siparişi tedarikçiye tek dokunuşla gönder ===== */
+NEWM.ordsend = (m) => {
+  const o = ORDERS.find((x) => x.id === m.id); if (!o) return sheet('Sipariş', '<p class="muted">Sipariş bulunamadı.</p>');
+  const t = supById(o.supId) || {}; const msg = o.msg || orderMsg(t.lead != null ? t : { lead: 2 }, o.lines); const ph = waPhone(t.phone); const em = String(t.email || '').trim();
+  const sent = [o.wa ? 'WhatsApp' : '', o.mailed ? 'e-posta' : ''].filter(Boolean).join(' ve ');
+  return sheet((t.name || 'Tedarikçi') + ' siparişi', `<div class="os-w"><div class="os-p">${esc(msg)}</div>
+  ${sent ? `<p class="small os-ok">${ic('check', 14)} ${esc(sent)} ile gönderildi.</p>` : ''}
+  <div class="os-b"><button class="btn block os-wa" data-a="ordsendwa" data-id="${esc(o.id)}">${ic('send', 18)} WhatsApp'ta gönder</button><small class="muted">${ph ? '+' + esc(ph) + ' numarasına açılır' : 'Telefon kayıtlı değil, kişiyi WhatsApp\'ta kendin seçersin'}</small>
+  <button class="btn sec block" data-a="ordsendmail"${em ? '' : ' disabled'} data-id="${esc(o.id)}">${ic('mail', 18)} E-posta ile gönder</button>${em ? `<small class="muted">${esc(em)}</small>` : '<small class="muted">E-posta kayıtlı değil. Tedarikçi kartından ekleyebilirsin.</small>'}
+  <button class="btn sec block" data-a="ordcopy" data-id="${esc(o.id)}">${ic('copy', 18)} Mesajı kopyala</button><button class="os-lk" data-a="closemodal">Sonra gönderirim</button></div></div>`);
+};
+H.ordsendopen = (el) => { if (!ORDERS.find((x) => x.id === el.dataset.id)) return; S.modal = { type: 'ordsend', id: el.dataset.id }; renderModal(); };
+H.ordsendwa = (el) => { H.ordwa(el); const o = ORDERS.find((x) => x.id === el.dataset.id); if (o) { try { pSched(); } catch (e) {} } renderModal(); render(); };
+H.ordsendmail = (el) => {
+  const o = ORDERS.find((x) => x.id === el.dataset.id); if (!o) return; const t = supById(o.supId) || {}; const em = String(t.email || '').trim(); if (!em) { toast('Tedarikçinin e-postası yok.', 'warn'); return; }
+  const msg = o.msg || orderMsg(t.lead != null ? t : { lead: 2 }, o.lines); o.mailed = REF_ISO; try { pSched(); } catch (e) {}
+  window.location.href = 'mailto:' + encodeURIComponent(em).replace('%40', '@') + '?subject=' + encodeURIComponent(BIZ + ' sipariş') + '&body=' + encodeURIComponent(msg); renderModal(); render();
+};
+{
+  const _oc = H.ordcreate;
+  H.ordcreate = function (el) { const n = ORDERS.length; _oc.apply(this, arguments); if (ORDERS.length > n) { const o = ORDERS[0]; const t = supById(o.supId); if (!(t && t.sbid)) { S.modal = { type: 'ordsend', id: o.id }; renderModal(); } } };
 }
 </script>
 </body>
