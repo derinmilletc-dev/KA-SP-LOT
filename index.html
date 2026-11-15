@@ -1026,6 +1026,7 @@ div.now{font-size:11px}
 .kr-r{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F5F8FD;border-radius:12px;padding:10px 12px;font-size:14.5px}.kr-r span{min-width:0;overflow-wrap:anywhere}.tb-p{white-space:nowrap;font-size:11.5px}
 .vd-hint{display:none;margin:0}.iz-sc:has(>.vd-gr){background:linear-gradient(to left,#fff 30%,rgba(255,255,255,0)) right center/36px 100% no-repeat local,linear-gradient(to left,rgba(20,50,100,.16),rgba(20,50,100,0)) right center/14px 100% no-repeat scroll}
 @media(max-width:899px){.vd-hint{display:block}}
+.lg-yasal{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;margin:14px 0 4px;font-size:13px;color:#7A8AA2}.lg-yasal a{color:#5B6F8F;text-decoration:underline;padding:6px 2px}.lg-yasal.lg-in{justify-content:flex-start;margin:6px 0 0}.lg-ok{margin:10px 2px 0;font-size:12.5px;line-height:1.5;color:#6B7B94}.lg-ok a{color:#3B5E99;text-decoration:underline}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -11352,6 +11353,21 @@ const kaLvTxt = (a, b) => (a === b ? isoShort(a) : isoShort(a) + '–' + isoShor
 {
   const _tc = tbCard;
   tbCard = function (r) { const h = _tc.apply(this, arguments); return r.pend ? h.replace('<div class="tb-ch">', '<div class="tb-ch"><span class="pill p-warn tb-p">Teyit bekliyor</span>') : h; };
+}
+
+/* ===== v104: yasal metinler (KVKK aydınlatma, gizlilik, kullanım şartları) ===== */
+const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlilik</a><span aria-hidden="true">·</span><a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma</a><span aria-hidden="true">·</span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartları</a>';
+{
+  const _l = loginHTML;
+  loginHTML = function () {
+    let h = _l.apply(this, arguments);
+    if (h.indexOf('data-a="idnew"') >= 0 && h.indexOf('lg-yasal') < 0) h = h.replace('<button class="lx-go" type="button" data-a="idnew">', '<p class="lg-ok">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p><button class="lx-go" type="button" data-a="idnew">');
+    return h.replace(/<\/form>/, '</form><div class="lg-yasal" id="lg-yasal">' + LEGAL_LINKS + '</div>');
+  };
+}
+{
+  const _h = hesapHTML;
+  hesapHTML = function () { const h = _h.apply(this, arguments); return h + `<div class="card"><h3>Yasal</h3><div class="lg-yasal lg-in">${LEGAL_LINKS}</div></div>`; };
 }
 </script>
 </body>
