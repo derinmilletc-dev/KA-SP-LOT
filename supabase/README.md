@@ -20,3 +20,11 @@ Uygulama kapalıyken de çalışır:
 - Aynı bildirim iki kez gitmez (`mail_log` tablosu).
 - Uygulamada Rezervasyon → Kais ayarları → "Otomatik e-posta" kapatılırsa sunucu o işletme için e-posta göndermez.
 - Mantığı test etmek için: `node --experimental-strip-types supabase/test.mjs`
+
+## İşletme izolasyonu (v90)
+
+1. `sql/tenant_hardening.sql` dosyasını SQL editöründe bir kez çalıştır (tekrar çalıştırılabilir).
+   Çalışanın finans verisine erişimini kapatır, tedarikçinin sipariş ve teklif sınırlarını sıkılaştırır,
+   `audit_log` ve `kais_memory` tablolarını ve `delete_my_account()` fonksiyonunu ekler.
+2. `sql/tenant_attack_test.sql` dosyasındaki 5 kimliği doldurup çalıştır. Sonuçta `BAŞARISIZ` satır olmamalı.
+3. Yerel Postgres 16 üzerinde, mevcut kuralların birebir kopyasıyla denendi: önce 2 başarısız, sonra 46/46 geçti.
