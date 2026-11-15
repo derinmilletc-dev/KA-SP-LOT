@@ -28,3 +28,6 @@ Uygulama kapalıyken de çalışır:
    `audit_log` ve `kais_memory` tablolarını ve `delete_my_account()` fonksiyonunu ekler.
 2. `sql/tenant_attack_test.sql` dosyasındaki 5 kimliği doldurup çalıştır. Sonuçta `BAŞARISIZ` satır olmamalı.
 3. Yerel Postgres 16 üzerinde, mevcut kuralların birebir kopyasıyla denendi: önce 2 başarısız, sonra 46/46 geçti.
+
+## Ekip verisi koruması (v100)
+`sql/tenant_state_guard.sql` dosyasını SQL Editor'de çalıştır. Çalışan hesabı ekip kaydını yazarken ayar, yetki, ad, vardiya planı ve masa düzeni gibi bölümleri değiştiremez (sunucu eski haline geri koyar). Müdür yetki ayarlarını (SETTINGS.perm) ve rolleri değiştiremez. Patron serbesttir.
