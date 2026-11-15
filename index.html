@@ -11965,6 +11965,43 @@ borcAlacakHTML = function (role) {
   ${rl.length ? rl.slice().sort((a, b) => b.days - a.days).map(bzRecv).join('') : `<div class="bz-e0">${ic('check', 26)}<b>Açık alacak yok</b></div>`}${mail}</section></div>`;
 };
 (function () { try { const st = document.createElement('style'); st.textContent = '.bz,.bz>*{min-width:0;box-sizing:border-box}.bz-h{background:linear-gradient(145deg,#1F66BD,#0B2F6B);color:#fff;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:14px}.bz-hr{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bz-hr small{display:block;opacity:.8;font-size:13px}.bz-hr b{display:block;font-size:22px;margin-top:2px;letter-spacing:-.01em}.bz-bar{height:8px;border-radius:5px;background:#5fd08a;overflow:hidden}.bz-bar i{display:block;height:100%;background:#f0a3a3}.bz-net{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding-top:2px}.bz-net b{font-size:18px;color:#bdf2d0}.bz-net.neg b{color:#ffd0d0}.bz-sm{display:flex;flex-direction:column;gap:8px}.bz-in{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;background:#EAF2FE;color:#18407a;width:100%}.bz-in svg{flex:0 0 auto;margin-top:2px}.bz-in.bad{background:#FBECEE;color:#8a2230}.bz-in.wn{background:#FDF3DC;color:#7a5412}.bz-in.ok{background:#E8F6EE;color:#1d6b40}.bz-s2{display:flex;flex-direction:column;gap:12px}.bz-sh{display:flex;justify-content:space-between;align-items:center;gap:10px}.bz-sh h3{margin:0}.bz-sh p{margin:2px 0 0;font-size:13px;color:var(--muted)}.bz-g{display:flex;flex-direction:column;gap:10px}.bz-gt{margin:6px 0 0;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.bz-gt span{background:var(--canvas);border-radius:999px;padding:1px 8px;margin-left:4px}.bz-c{background:#fff;border:1px solid #E1E8F2;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}.bz-c:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C9D5E5}.bz-c.bad:before{background:#C8525F}.bz-c.wn:before{background:#E0A03A}.bz-t{display:flex;justify-content:space-between;gap:12px}.bz-n{min-width:0}.bz-n b{display:block;font-size:15.5px}.bz-n small{display:block;font-size:13px;color:var(--muted);margin-top:2px}.bz-a{text-align:right;flex:0 0 auto}.bz-a b{display:block;font-size:16px}.bz-w{display:inline-block;margin-top:4px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;background:#EEF2F8;color:var(--ink-2)}.bz-w.bad{background:#FBECEE;color:#8a2230}.bz-w.wn{background:#FDF3DC;color:#7a5412}.bz-w.ok{background:#E8F6EE;color:#1d6b40}.bz-m{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}.bz-m em{font-style:normal;font-weight:600;color:var(--cini);background:#EAF2FE;border-radius:999px;padding:1px 8px;font-size:12px}.bz-f{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:10px}.bz-ok{margin-left:auto}.bz-bell{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;height:36px;padding:0 12px;cursor:pointer}.bz-bell.on{background:#EAF2FE;border-color:#cfe0f7;color:var(--cini)}.bz-s{height:36px;border:1px solid var(--line);border-radius:10px;padding:0 6px;font:inherit;font-size:13px;background:#fff}.bz-e0{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px;background:#fff;border:1px dashed #C9D5E5;border-radius:16px;color:#1E9E5A}.bz-pd{background:#fff;border:1px solid #E1E8F2;border-radius:16px;padding:10px 12px}.bz-pd summary{font-size:14px;color:var(--ink-2);padding:4px 0}.bz-pd .bz-c{margin-top:10px}@media(max-width:380px){.bz-f{flex-wrap:wrap}.bz-ok{margin-left:0;flex:1 1 100%}}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v119: Üretici ağı: satıcı türü, doğrulama rozeti, puan ===== */
+const SG_KIND = { uretici: 'Doğrudan üretici', toptanci: 'Yerel toptancı', dagitici: 'Distribütör', seyyar: 'Seyyar satıcı', sevkiyat: 'Sevkiyatçı' };
+{
+  const _pg = sgPull;
+  sgPull = async function () {
+    const ch = await _pg.apply(this, arguments); let c2 = false;
+    try {
+      const c = sbClient(); const ids = SUPPLIERS.filter((t) => t.sbid).map((t) => t.sbid); if (!c || !ids.length) return ch;
+      const [pf, st] = await Promise.all([c.from('supplier_profiles').select('supplier_id,kind,origin,verify').in('supplier_id', ids), c.rpc('supplier_stats', { ids })]);
+      SUPPLIERS.forEach((t) => {
+        if (!t.sbid) return; const p = !pf.error && (pf.data || []).find((x) => x.supplier_id === t.sbid); const r = !st.error && (st.data || []).find((x) => x.supplier_id === t.sbid);
+        const k = JSON.stringify([t.kind, t.origin, t.verify, t.rate]);
+        t.kind = p ? p.kind || null : t.kind; t.origin = p ? p.origin || null : t.origin; t.verify = p ? p.verify || 'yok' : t.verify;
+        t.rate = r ? { n: Number(r.n) || 0, stars: Number(r.stars) || 0, ot: Number(r.on_time) || 0, full: Number(r.complete) || 0 } : t.rate;
+        if (k !== JSON.stringify([t.kind, t.origin, t.verify, t.rate])) c2 = true;
+      });
+    } catch (e) {}
+    return ch || c2;
+  };
+}
+{
+  const _sc = sgScore;
+  sgScore = function (t) {
+    const sc = _sc(t); let v = sc.v; const tags = sc.tags.slice(); const why = sc.why.slice();
+    if (t.kind === 'uretici') { tags.unshift('Doğrudan üretici'); why.push('aracısız, doğrudan üretici' + (t.origin ? ' (' + t.origin + ')' : '')); }
+    else if (t.kind && SG_KIND[t.kind]) tags.unshift(SG_KIND[t.kind]);
+    if (t.verify === 'uretici') { v += 5; tags.unshift('✓ Doğrulanmış üretici'); why.push('üretici doğrulaması yapılmış'); }
+    else if (t.verify === 'kimlik') { v += 3; tags.unshift('✓ Kimliği doğrulanmış'); why.push('kimliği doğrulanmış'); }
+    const r = t.rate;
+    if (r && r.n >= 3) {
+      v += Math.max(-9, Math.min(9, (r.stars - 3.5) * 6)); if (r.ot && r.ot < 70) v -= 4;
+      tags.push(r.stars.toFixed(1) + ' ★ (' + r.n + ')'); why.push(r.n + ' değerlendirme, ort. ' + r.stars.toFixed(1) + ', %' + r.ot + ' zamanında');
+    } else if (t.sbid) tags.push('Yeni satıcı');
+    return { v: Math.max(0, Math.min(100, Math.round(v))), tags, why };
+  };
+}
 </script>
 </body>
 </html>
