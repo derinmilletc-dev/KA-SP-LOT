@@ -2351,5 +2351,82 @@ body.sp[data-tab=ozet] .oz-pg{display:flex;flex-direction:column}
 }
 `; document.head.appendChild(st);})();
 
+/* ===== v13: Ürünler ekranı yeniden tasarım (kompakt, akıllı) ===== */
+(function(){const st=document.createElement('style'); st.textContent=`
+.up-top{display:flex;gap:8px;align-items:center;margin:0 0 10px}.up-top .sp-s{flex:1;min-width:0}
+.up-top .sp-s input{padding:11px 0;width:100%}
+.up-sort{flex:none;width:auto;max-width:150px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:600 13.5px system-ui;color:var(--ink)}
+.up-top .sp-add{flex:none;padding:11px 16px;font-size:14px}
+.up-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.up-k{display:inline-flex;gap:7px;align-items:center;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font:600 13px system-ui}
+.up-k b{font:700 13px system-ui;color:var(--mut)}.up-k i{width:8px;height:8px;border-radius:50%;background:#9aa7a0;display:block}
+.up-k.warn i{background:#e0a21a}.up-k.bad i{background:#d6483d}.up-k.ok i{background:var(--acc)}.up-k.info i{background:#3a78b8}
+.up-k.on{background:var(--ink);color:#fff;border-color:var(--ink)}.up-k.on b{color:#cfd8d2}
+.up-sp{flex:1}
+.up-act{display:flex;gap:2px;flex-wrap:wrap}.up-act button{display:inline-flex;gap:6px;align-items:center;background:transparent;color:var(--acc);padding:7px 9px;border-radius:10px;font:600 13px system-ui}
+.up-act button:hover{background:#eaf3ee}
+.up-cr{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px;border-bottom:1px solid #eef1ee}.up-cr .up-act{flex:none;padding-bottom:4px}.up-cr .up-cats{padding:0;min-width:0}.up-cats{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}.up-cats::-webkit-scrollbar{display:none}
+.up-cats button{flex:none;background:transparent;color:var(--mut);border:0;border-bottom:2px solid transparent;border-radius:0;padding:6px 10px;font:600 13.5px system-ui}
+.up-cats button.on{color:var(--ink);border-bottom-color:var(--acc)}
+.up-tip{display:flex;align-items:center;gap:10px;background:#f1f7f3;border:1px solid #d9e8df;border-radius:12px;padding:9px 12px;margin:0 0 12px;font:500 13.5px/1.35 system-ui;color:#25483a}
+.up-tip.warn{background:#fff8e8;border-color:#f1e2b8;color:#6e4d07}.up-tip.bad{background:#fdf0ee;border-color:#f3d3cf;color:#8f2f27}
+.up-tip svg{flex:none}.up-tip span{flex:1;min-width:0}.up-tip button{flex:none;background:#fff;color:var(--ink);border:1px solid rgba(0,0,0,.1);padding:6px 11px;border-radius:9px;font:600 13px system-ui}
+.up-cnt{grid-column:1/-1;font:500 13px system-ui;color:var(--mut);padding:0 2px}
+.up-c{margin:0!important;padding:14px!important;display:flex;flex-direction:column;gap:10px}
+.up-h{display:flex;gap:11px;align-items:flex-start}
+.up-im{flex:none;width:46px;height:46px;border-radius:13px;overflow:hidden;display:grid;place-items:center;font:700 18px system-ui}
+.up-im img{width:100%;height:100%;object-fit:cover;display:block}
+.up-nm{flex:1;min-width:0}.up-nm b{display:block;font:650 15px/1.25 system-ui;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up-nm span{display:block;font:500 12.5px system-ui;color:var(--mut);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up-pr{flex:none;text-align:right}.up-pr s{display:block;font:500 12px system-ui;color:#9aa7a0}.up-pr b{display:block;font:700 17px/1.1 system-ui;color:var(--ink);font-variant-numeric:tabular-nums}.up-pr span{display:block;font:500 11.5px system-ui;color:var(--mut);margin-top:2px}
+.up-st{display:flex;flex-direction:column;gap:5px}.up-st p{margin:0;display:flex;justify-content:space-between;gap:8px;font:500 12.5px system-ui;color:var(--mut)}.up-st p b{color:var(--ink);font-weight:650}.up-st p em{font-style:normal}.up-st p em.bad{color:var(--bad);font-weight:650}
+.up-bar{height:5px;border-radius:9px;background:#e9eeea;overflow:hidden}.up-bar i{display:block;height:100%;border-radius:9px;background:var(--acc)}.up-bar i.warn{background:#e0a21a}.up-bar i.bad{background:#d6483d}
+.up-bg{display:flex;flex-wrap:wrap;gap:6px}.up-bg .sp-b{font-size:12px;padding:4px 9px}
+.up-ac{display:flex;gap:4px;border-top:1px solid #eef1ee;padding-top:8px;margin-top:auto}.up-ac button{display:inline-flex;gap:5px;align-items:center;background:transparent;color:var(--acc);padding:6px 9px;border-radius:9px;font:600 13px system-ui}.up-ac button:hover{background:#eaf3ee}.up-ac button:last-child{margin-left:auto;color:var(--mut)}
+body[data-tab=urun][data-sub=kat] .sp-body>div:not([class]){grid-template-columns:repeat(auto-fill,minmax(290px,1fr))!important;gap:14px!important;align-items:stretch!important}
+body[data-tab=urun][data-sub=kat] .sp-body>.sp-seg{max-width:560px;margin-left:auto;margin-right:auto}
+body[data-tab=urun][data-sub=kat] .sp-empty{grid-column:1/-1}
+@media(max-width:640px){.up-top{flex-wrap:wrap}.up-sort{max-width:none;flex:1}.up-top .sp-s{flex:1 1 100%}.up-sp{display:none}.up-cr{flex-direction:column;align-items:stretch;gap:2px}.up-cr .up-act{overflow-x:auto;scrollbar-width:none}.up-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;margin-right:-2px}.up-row::-webkit-scrollbar{display:none}.up-k,.up-act{flex:none}.up-act{flex-wrap:nowrap}.up-act button{white-space:nowrap}.up-k{white-space:nowrap}}
+`; document.head.appendChild(st);
+const HUE=s=>{let h=0; for(const c of String(s||'x')) h=(h*31+c.charCodeAt(0))%360; return h;};
+const _fil13=spFiltered; spFiltered=function(){let L=_fil13(); if(SPS.pfl==='kamp') L=L.filter(p=>unitLeft(p)); return L;};
+spListHTML=function(){const L=spFiltered();
+  if(!SPS.prods.length) return `<div class="sp-empty">${SPI('box',30)}<b>Henüz ürün yok</b><span>İlk ürününü ekle ya da bir listeyi toplu yükle.</span><button class="sp-pri" data-sp="pnew">Ürün ekle</button></div>`;
+  if(!L.length) return '<div class="sp-empty"><b>Sonuç yok</b><span>Aramayı ya da filtreyi değiştir.</span></div>';
+  const R=spRes();
+  const cnt=(L.length!==SPS.prods.length)?`<div class="up-cnt">${L.length} ürün gösteriliyor</div>`:'';
+  return cnt+L.map(p=>{const s=SP_ST[p.stock||'var']; const k=sktInfo(p); const tiers=(p.tiers||[]).slice().sort((a,b)=>a.q-b.q); const sk=spStk(p,R); const promo=unitLeft(p); const h=HUE(p.category||p.name);
+    const img=(p.photos&&p.photos[0])?`<img src="${esc(p.photos[0])}" alt="" loading="lazy">`:esc(String(p.name||'?').trim().charAt(0).toLocaleUpperCase('tr'));
+    const imS=(p.photos&&p.photos[0])?'':` style="background:hsl(${h} 38% 92%);color:hsl(${h} 42% 30%)"`;
+    const tone=sk.short?'bad':sk.crit?'warn':''; const mx=Math.max(sk.qty,Number(p.min_stock||0)*3,sk.res,1); const pct=Math.max(0,Math.min(100,Math.round(Math.max(sk.avail,0)/mx*100)));
+    const stock=sk.tracked?`<div class="up-st"><p><span>Elde <b>${fmt2(sk.qty)} ${esc(p.unit||'')}</b>${sk.res>0?' · rezerve '+fmt2(sk.res):''}</span><em class="${sk.avail<0?'bad':''}">${sk.avail<0?fmt2(-sk.avail)+' eksik':'satılabilir '+fmt2(sk.avail)}</em></p><div class="up-bar"><i class="${tone}" style="width:${pct}%"></i></div></div>`:'';
+    const mg=(p.cost>0&&p.price>0)?Math.round((p.price-p.cost)/p.price*100):null;
+    return `<div class="sp-pc up-c${p.active===false?' off':''}" data-pid="${p.id}"><div class="up-h"><div class="up-im"${imS}>${img}</div><div class="up-nm"><b>${esc(p.name)}</b><span>${esc([p.brand,p.category].filter(Boolean).join(' · ')||'Kategorisiz')}</span></div><div class="up-pr">${promo?`<s>${tl(p.price)}</s>`:''}<b>${tl(promo?p.price*(1-p.promo_pct/100):p.price)}</b><span>/ ${esc(p.unit)}${p.vat!=null?' · KDV %'+p.vat:''}</span></div></div>
+    ${stock}<div class="up-bg"><button class="sp-b ${s[1]}" data-sp="stock" data-id="${p.id}">${s[0]}</button>${k?`<span class="sp-b ${k[1]}">${esc(k[0])}</span>`:''}${promo?`<span class="sp-b promo">Kampanya %${p.promo_pct}${p.promo_until?' · '+dLeft(p.promo_until)+' gün':''}</span>`:''}${tiers.map(t=>`<span class="sp-b tier">${fmt2(t.q)}+ ${esc(p.unit)} %${t.p}</span>`).join('')}${p.min_qty>1?`<span class="sp-b mut">En az ${fmt2(p.min_qty)} ${esc(p.unit)}</span>`:''}${mg!=null?`<span class="sp-b ${mg<10?'warn':'mut'}">Marj %${mg}</span>`:''}</div>
+    <div class="up-ac"><button data-sp="pedit" data-id="${p.id}">${SPI('edit',15)} Düzenle</button><button data-sp="ptoggle" data-id="${p.id}">${p.active===false?'Satışa aç':'Satışa kapat'}</button></div></div>`;}).join('');};
+const _urun13=spUrun;
+spUrun=function(){ if(SPS.sub&&SPS.sub!=='kat') return _urun13();
+  const seg=`<div class="sp-seg"><button data-sp="sub" data-v="kat" class="on">Katalog</button><button data-sp="sub" data-v="stok">Stok</button><button data-sp="sub" data-v="hrk">Hareketler</button></div>`;
+  const P=SPS.prods, R=spRes(); const cats=['Tümü',...new Set(P.map(p=>p.category).filter(Boolean))];
+  const az=P.filter(p=>{const s=spStk(p,R);return s.short||s.crit;}), skt=P.filter(p=>p.lot_exp&&dLeft(p.lot_exp)<=14&&dLeft(p.lot_exp)>=0), kamp=P.filter(p=>unitLeft(p)), foto=P.filter(p=>!(p.photos&&p.photos.length)), kap=P.filter(p=>p.active===false);
+  const old=P.filter(p=>p.active!==false&&p.updated_at&&(Date.now()-Date.parse(p.updated_at))/864e5>30);
+  const K=[['','Hepsi',P.length,'',SPS.pfl===''&&SPS.cat!=='skt'],['az','Stoğu az',az.length,'warn',SPS.pfl==='az'],['skt','SKT yakın',skt.length,'bad',SPS.cat==='skt'],['kamp','Kampanyada',kamp.length,'ok',SPS.pfl==='kamp'],['foto','Fotoğrafsız',foto.length,'info',SPS.pfl==='foto'],['kapali','Kapalı',kap.length,'',SPS.pfl==='kapali']].filter(x=>x[0]===''||x[2]>0||x[4]);
+  let tip=null;
+  if(az.length) tip=['bad','Stok',az.length+' ürünün stoğu kritik: '+az.slice(0,2).map(p=>p.name).join(', ')+(az.length>2?' ve diğerleri':'')+'.','Gör','az'];
+  else if(skt.length) tip=['warn','clock',skt.length+' ürünün SKT\'si 14 günden az. Kampanya yapmak zararı azaltır.','Kampanya yap','cmp'];
+  else if(old.length) tip=['','tag',old.length+' ürünün fiyatı 30 günden uzun süredir güncellenmedi.','Toplu fiyat','bulk'];
+  else if(foto.length&&P.length) tip=['','spark',foto.length+' ürünün fotoğrafı yok. Fotoğraflı ürünler işletmelerde daha çok dikkat çeker.','Gör','foto'];
+  const ic={Stok:'box',clock:'clock',tag:'tag',spark:'spark'};
+  const so=SPS.psort||'yeni';
+  return seg+`<div class="up-top"><label class="sp-s">${SPI('search',18)}<input id="sp-q" placeholder="Ürün ara" value="${esc(SPS.q)}" autocomplete="off"></label><select class="up-sort" id="up-sort" aria-label="Sırala">${[['yeni','Yeni eklenen'],['ad','Ada göre'],['f1','Fiyat ↑'],['f2','Fiyat ↓'],['stok','Stok ↑']].map(o=>`<option value="${o[0]}"${so===o[0]?' selected':''}>${o[1]}</option>`).join('')}</select><button class="sp-add" data-sp="pnew">${SPI('plus',18)}<span>Ürün</span></button></div>
+  <div class="up-row">${K.map(x=>`<button class="up-k ${x[3]}${x[4]?' on':''}" data-sp="upf" data-v="${x[0]}"><i></i>${x[1]} <b>${x[2]}</b></button>`).join('')}</div>
+  <div class="up-cr">${cats.length>2?`<div class="up-cats">${cats.map(c=>`<button data-sp="cat" data-v="${esc(c)}" class="${SPS.cat===c?'on':''}">${esc(c)}</button>`).join('')}</div>`:'<span></span>'}<div class="up-act"><button data-sp="katopen">${SPI('doc',16)} Katalog PDF</button><button data-sp="cmpopen">${SPI('tag',16)} Kampanya</button><button data-sp="import">${SPI('up',16)} Toplu yükle</button><button data-sp="bulk">${SPI('tag',16)} Toplu fiyat</button></div></div>
+  ${tip?`<div class="up-tip ${tip[0]}">${SPI(ic[tip[1]]||'spark',18)}<span>${esc(tip[2])}</span><button data-sp="${tip[4]==='cmp'?'cmpopen':tip[4]==='bulk'?'bulk':'upf'}" data-v="${tip[4]==='cmp'||tip[4]==='bulk'?'':tip[4]}">${tip[3]}</button></div>`:''}
+  <div id="sp-list">${spListHTML()}</div>`;};
+SPA.upf=(el)=>{const v=el.dataset.v; if(v==='skt'){SPS.cat=SPS.cat==='skt'?'Tümü':'skt'; SPS.pfl='';} else if(v===''){SPS.pfl='';SPS.cat='Tümü';} else {SPS.pfl=SPS.pfl===v?'':v;} spRender(true);};
+document.addEventListener('change',e=>{const t=e.target; if(t&&t.id==='up-sort'){SPS.psort=t.value; spRender(true);}});
+(function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
+})();
+
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
 </script></body></html>
