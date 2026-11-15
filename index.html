@@ -992,6 +992,12 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .kc-wrap{display:flex;flex-direction:column;gap:8px}.kc-lab{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ink-2)}.kc-lab em{font-style:normal;font-weight:500;color:#7A8CA5;font-size:12px}
 .kc-row{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;margin:0 -2px}.kc-row::-webkit-scrollbar{display:none}.kc-p{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid #D7E4DD;background:#F6FBF8;color:#0B4D2E;border-radius:999px;min-height:38px;padding:0 14px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}.kc-p:active{background:#E4F4EB}
 .kc-act{border-color:#CFE3D8;background:#FBFEFC}.kc-h{display:flex;gap:10px;align-items:center}.kc-h>span{display:inline-flex;width:30px;height:30px;border-radius:9px;align-items:center;justify-content:center;background:#E4F4EB;color:#0B6B3F}
+.dl-w{display:flex;gap:12px;align-items:flex-start;background:#FBEAED;color:#8C2434;border-radius:14px;padding:14px}.dl-w p{margin:2px 0 0;color:#8C2434}
+.dl-b{background:#F5F7FA;border-radius:12px;padding:12px 14px;margin-top:10px}.dl-b ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.5}.dl-b.soft{background:#EEF6F1}
+.dl-go{background:var(--nar)!important;border-color:var(--nar)!important}.dl-go:disabled{opacity:.4}
+.dl-link{display:block;margin:6px auto 0;border:0;background:none;color:#A33;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:8px}
+.dl-card .btn{color:var(--nar);border-color:#E7B8C0}
+.au-card{display:flex;flex-direction:column;gap:10px}.au-l{display:flex;flex-direction:column;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}.au-r{display:flex;gap:12px;padding:10px 12px;border-bottom:1px solid #EEF2F7;font-size:14px}.au-r:last-child{border-bottom:0}.au-r b{display:block;font-weight:600}.au-r small{color:var(--ink-2);font-size:12px}.au-t{flex:none;width:78px;color:var(--ink-2);font-size:12px;font-variant-numeric:tabular-nums}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -10789,6 +10795,98 @@ function kaIntent(text) {
   };
 }
 H.kafill = (el) => { const t = document.getElementById('ai-q'); if (t) { t.value = el.dataset.q; AIC.draft = t.value; t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (e) {} } };
+
+/* ===== v95: Hesabı sil (mağaza şartı) ve sunucu denetim kaydı ===== */
+const DEL = { busy: false, err: '' };
+const delCloud = () => !!(SBS.user && SBS.biz && sbOK());
+const delOwner = () => { try { const a = ID.active; return !!(a && a.businesses && SBS.user && a.businesses.owner_id === SBS.user.id) || (!!SBS.biz && !!SBS.user && SBS.biz.owner_id === SBS.user.id); } catch (e) { return false; } };
+H.delopen = () => { DEL.busy = false; DEL.err = ''; S.modal = { type: 'delacc' }; renderModal(); };
+NEWM.delacc = () => {
+  const cloud = delCloud(); const own = cloud && delOwner();
+  const li = (t) => `<li>${esc(t)}</li>`;
+  const gone = cloud ? ['Giriş hesabın ve şifren', 'Bildirim kayıtların ve cihaz bağlantıların', 'Yüklediğin belgeler ve imzaladığın sözleşme formu', 'Kais ile olan notların'].concat(own ? ['İşletmedeki tüm ekip, stok, satış, muhasebe ve rezervasyon verisi', 'Çalışanların ve müdürün erişimi'] : []) : ['Bu cihazdaki tüm KaisPilot verileri'];
+  return sheet(own ? 'İşletmeyi ve hesabı sil' : 'Hesabımı sil', `<div class="dl-w">${ic('alert', 22)}<div><b>Bu işlem geri alınamaz.</b><p>${cloud ? (own ? 'İşletmen ve hesabın kalıcı olarak silinir.' : 'Hesabın kalıcı olarak silinir. İşletme verisine dokunulmaz.') : 'Bulut hesabı bağlı değil; yalnızca bu cihazdaki veriler silinir.'}</p></div></div>
+  <div class="dl-b"><b>Silinecekler</b><ul>${gone.map(li).join('')}</ul></div>
+  ${own ? '<div class="dl-b soft"><b>Saklanacaklar</b><ul><li>Tedarikçilerle ortak ticari kayıtlar (sipariş, cari) yasal saklama süresi boyunca, adın ve işletme bilgin olmadan tutulur.</li></ul><p class="small muted" style="margin:6px 0 0">Silmeden önce muhasebe paketini indirmek istersen Muhasebe, Aylık paket sayfasını kullan.</p></div>' : ''}
+  <div class="field"><label for="del-c">Onaylamak için <b>SİL</b> yaz</label><input id="del-c" type="text" autocomplete="off" autocapitalize="characters" placeholder="SİL"></div>
+  <div class="err" id="del-e" role="alert">${esc(DEL.err)}</div>
+  <button class="btn block dl-go" id="del-go" data-a="delgo" disabled>${DEL.busy ? 'Siliniyor…' : own ? 'İşletmeyi ve hesabı kalıcı olarak sil' : 'Hesabımı kalıcı olarak sil'}</button>
+  <button class="btn sec block" data-a="closemodal">Vazgeç</button>`);
+};
+document.addEventListener('input', (e) => { const el = e.target; if (!el || el.id !== 'del-c') return; const b = document.getElementById('del-go'); if (b) b.disabled = DEL.busy || kaFold(el.value) !== 'sil'; });
+const delMsg = (e) => { const m = String((e && e.message) || e || ''); return /owner_required|delete_blocked/.test(m) ? 'Hesap şu an silinemedi. Bağlı kayıtlar var; destek ile iletişime geç.' : /delete_my_account|schema cache|does not exist/i.test(m) ? 'Hesap silme sunucuda kurulu değil. tenant_account.sql dosyasını çalıştır.' : /not_signed_in/.test(m) ? 'Oturum süresi dolmuş. Tekrar giriş yapıp dene.' : 'Silinemedi. Bağlantını kontrol edip tekrar dene.'; };
+function delLocal() { try { Object.keys(localStorage).filter((k) => /^kp/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) {} try { sessionStorage.clear(); } catch (e) {} }
+H.delgo = async () => {
+  const el = document.getElementById('del-c'); if (DEL.busy || !el || kaFold(el.value) !== 'sil') return;
+  DEL.busy = true; DEL.err = ''; renderModal(); const bt = document.getElementById('del-go'); if (bt) bt.disabled = true;
+  try {
+    if (delCloud()) {
+      try { clearTimeout(PS.timer); } catch (e) {}
+      const r = await sbClient().rpc('delete_my_account'); if (r.error) throw r.error;
+      try { cloudOff(); } catch (e) {} try { await sbClient().auth.signOut(); } catch (e) {}
+    }
+    delLocal(); try { wipeData(); } catch (e) {}
+    SBS.user = null; SBS.biz = null; SBS.sups = []; try { ID.mems = []; ID.active = null; ID.team = null; ID.pref = null; } catch (e) {}
+    S.user = null; S.modal = null; DEL.busy = false;
+    if (typeof location !== 'undefined' && location.reload && !global_noreload()) location.reload(); else render();
+  } catch (e) { DEL.busy = false; DEL.err = delMsg(e); renderModal(); const i = document.getElementById('del-c'); if (i) { i.value = 'SİL'; const b = document.getElementById('del-go'); if (b) b.disabled = false; } }
+};
+{
+  const _rm = renderModal;
+  renderModal = function () {
+    _rm.apply(this, arguments); const m = S.modal; const root = $('#modal-root'); if (!root || !m || m.type !== 'menu') return;
+    if (root.querySelector('[data-a="delopen"]')) return; const b = '<button class="dl-link" data-a="delopen">Hesabımı sil</button>';
+    const p = root.querySelector('.sheet p.small.muted'); if (p) p.insertAdjacentHTML('beforebegin', b); else { const s = root.querySelector('.sheet'); if (s) s.insertAdjacentHTML('beforeend', b); }
+  };
+}
+
+/* --- sunucu denetim kaydı --- */
+const SLG = { q: [], t: null, off: false };
+function slog(action, detail) {
+  if (SLG.off || !SBS.user || !SBS.biz || !S.user) return;
+  SLG.q.push({ business_id: SBS.biz.id, role: S.user.role, action: String(action).slice(0, 80), detail: detail || {} }); if (SLG.q.length > 100) SLG.q.shift();
+  clearTimeout(SLG.t); SLG.t = setTimeout(slogFlush, 3000);
+}
+async function slogFlush() {
+  const c = sbOK() && sbClient(); if (!c || !SLG.q.length) return; const rows = SLG.q.splice(0, 50);
+  try { const r = await c.from('audit_log').insert(rows); if (r.error) { if (/relation|schema cache|permission|violates/i.test(r.error.message)) SLG.off = true; } else AUD.loaded = false; } catch (e) {}
+}
+{ const _au = auditAdd; auditAdd = function (e) { const r = _au.apply(this, arguments); try { if (e && e.type && e.type !== 'cell') slog(e.type, { text: String(e.text || '').slice(0, 200) }); } catch (x) {} return r; }; }
+{ const _p = H.perm; H.perm = function (el) { const before = JSON.stringify(S.settings.perm || {}); const r = _p.apply(this, arguments); if (JSON.stringify(S.settings.perm || {}) !== before) slog('yetki', { text: 'Müdür yetkisi değişti: ' + el.dataset.k }); return r; }; }
+{ const _p = H.permpre; H.permpre = function (el) { const r = _p.apply(this, arguments); slog('yetki', { text: 'Müdür yetki şablonu: ' + el.dataset.v }); return r; }; }
+{ const _p = H.invmake; if (_p) H.invmake = async function (el) { const r = await _p.apply(this, arguments); try { if (S.modal && S.modal.type === 'invcode') { const u = byId(el.dataset.id); slog('davet', { text: 'Davet kodu üretildi: ' + (u ? u.name : '') }); } } catch (e) {} return r; }; }
+{ const _p = H.memrm; if (_p) H.memrm = async function (el) { const armed = S.rmArm === el.dataset.id; const r = await _p.apply(this, arguments); if (armed) slog('uye', { text: 'Bir üyenin erişimi kapatıldı' }); return r; }; }
+
+const AUD = { rows: [], busy: false, err: '', loaded: false, f: 'all' };
+const AUD_L = { uye_katildi: ['Üye katıldı', 'uye'], uye: ['Erişim', 'uye'], davet: ['Davet', 'uye'], yetki: ['Yetki', 'yetki'], kais: ['Kais', 'kais'], ord: ['Sipariş', 'ord'] };
+async function audLoad() {
+  if (AUD.busy || !delCloud()) return; AUD.busy = true; AUD.err = '';
+  try { const r = await sbClient().from('audit_log').select('id,role,action,detail,created_at').eq('business_id', SBS.biz.id).order('created_at', { ascending: false }).limit(120); if (r.error) throw r.error; AUD.rows = r.data || []; AUD.loaded = true; }
+  catch (e) { AUD.err = /relation|schema cache|permission/i.test(String((e && e.message) || e)) ? 'Denetim kaydı sunucuda kurulu değil (tenant_hardening.sql).' : 'Kayıtlar yüklenemedi.'; AUD.loaded = true; }
+  AUD.busy = false; if (S.view === 'ayarlar') render();
+}
+function audCard() {
+  if (!delCloud()) return '';
+  const fl = [['all', 'Tümü'], ['kais', 'Kais'], ['ord', 'Sipariş'], ['uye', 'Üye ve davet'], ['yetki', 'Yetki']];
+  const rows = AUD.rows.filter((r) => AUD.f === 'all' || (AUD_L[r.action] || ['', 'x'])[1] === AUD.f);
+  const when = (iso) => { const d = new Date(iso); return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }); };
+  const txt = (r) => (r.detail && r.detail.text) || (r.action === 'uye_katildi' ? (r.detail && r.detail.ad ? r.detail.ad + ' işletmeye katıldı' : 'Yeni üye katıldı') : r.action);
+  return `<div class="card au-card"><div class="row between wrap"><div><h3>Denetim kaydı</h3><p class="muted small" style="margin-top:2px">Kim, ne zaman, neyi değiştirdi. Yalnızca patron görür, kimse silemez.</p></div><button class="btn sm sec" data-a="audref">${AUD.busy ? 'Yükleniyor…' : 'Yenile'}</button></div>
+  <div class="kp-pre">${fl.map((x) => `<button type="button" data-a="audf" data-v="${x[0]}" aria-pressed="${AUD.f === x[0]}">${x[1]}</button>`).join('')}</div>
+  ${AUD.err ? `<div class="callout warn">${ic('alert')}<div>${esc(AUD.err)}</div></div>` : ''}
+  <div class="au-l">${rows.length ? rows.map((r) => `<div class="au-r"><span class="au-t">${esc(when(r.created_at))}</span><div class="grow"><b>${esc(txt(r))}</b><small>${esc((AUD_L[r.action] || [r.action])[0])} · ${esc(({ patron: 'Patron', mudur: 'Müdür', muhasebeci: 'Muhasebeci', calisan: 'Çalışan' })[r.role] || r.role || '')}</small></div></div>`).join('') : `<p class="muted small" style="margin:8px 0 0">${AUD.busy ? '' : AUD.loaded ? 'Henüz kayıt yok.' : ''}</p>`}</div></div>`;
+}
+H.audref = () => { AUD.loaded = false; audLoad(); render(); };
+H.audf = (el) => { AUD.f = el.dataset.v; render(); };
+{
+  const _v = viewHTML;
+  viewHTML = function () {
+    let h = _v(); const u = S.user; if (!u || u.role !== 'patron' || S.view !== 'ayarlar' || h.includes('au-card')) return h;
+    if (!AUD.loaded && !AUD.busy && delCloud()) setTimeout(audLoad, 0);
+    const danger = `<div class="card dl-card"><h3>Hesap ve veri</h3><p class="muted small" style="margin:2px 0 10px">Hesabını ve işletme verini kalıcı olarak silebilirsin.</p><button class="btn sec" data-a="delopen">${delCloud() && delOwner() ? 'İşletmeyi ve hesabı sil' : 'Hesabımı sil'}</button></div>`;
+    const i = h.lastIndexOf('</div>'); return i < 0 ? h : h.slice(0, i) + audCard() + danger + h.slice(i);
+  };
+}
 </script>
 </body>
 </html>
