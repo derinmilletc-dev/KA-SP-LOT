@@ -901,6 +901,18 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .stx .stepper{background:#F1F5FA;border-radius:14px;padding:4px;gap:2px;align-items:center}.stx .stepper button{width:34px;height:34px;border-radius:10px;border:0;background:#fff;box-shadow:0 1px 3px rgba(13,40,80,.12);font-size:18px;color:var(--cini-d)}.stx .stepper b{min-width:38px;text-align:center;font-size:15px}
 .stx details.rt>summary{padding:10px 16px;font-size:13px;color:var(--cini);background:#F8FAFD}
 .stx .empty{padding:34px 16px;color:var(--ink-2)}
+.main:has(.stx){max-width:1360px}
+.sx2{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start}
+.sx2-l{display:flex;flex-direction:column;gap:12px;min-width:0}.sx2-r{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sx2-k{background:linear-gradient(180deg,#F2F7FE,#fff);border:1px solid #D6E4F5;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.sx2-kh{display:flex;align-items:center;gap:8px;color:var(--cini)}.sx2-kh b{color:var(--ink);font-size:15px}
+.sx2-k ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.sx2-k li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.4}
+.sx2-k li i{flex:none;width:8px;height:8px;border-radius:50%;margin-top:6px;background:#9AA8BC}.sx2-k li.r i{background:var(--nar)}.sx2-k li.a i{background:#E3A21A}.sx2-k li.g i{background:#1E9E5A}.sx2-k li.i i{background:var(--cini)}
+.sx2-r .callout{margin:0}
+.sx2-list{max-height:calc(100vh - 330px);min-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.stx-ks{gap:12px}.stx-k{padding:16px;display:grid;grid-template-columns:44px 1fr;column-gap:12px;row-gap:0;align-items:center}.stx-k .stx-ki{margin:0;width:44px;height:44px;border-radius:13px;grid-row:1/3}.stx-k b{font-size:24px;align-self:end}.stx-k .stx-kl{align-self:start;font-size:13px}
+@media(max-width:1100px){.sx2{display:flex;flex-direction:column;align-items:stretch}.sx2-list{max-height:none}.sx2-r{display:contents}.sx2-r>*{order:5}.sx2-r>.sx2-k,.sx2-r>.callout{order:-1}}
+@media(max-width:700px){.stx-k{display:flex;flex-direction:column;align-items:flex-start;padding:12px}.stx-k .stx-ki{width:32px;height:32px;margin-bottom:6px}.stx-k b{font-size:19px;align-self:flex-start}}
 
 .rz-head{display:flex;align-items:flex-start;gap:12px}.rz-head h2{margin:0;font-size:28px;letter-spacing:-.3px}.rz-head p{margin:4px 0 0;font-size:14px;color:var(--ink-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rz-rel{background:var(--cini-wash);color:var(--cini-d);border-radius:99px;padding:2px 9px;font-size:12px;font-weight:600}
@@ -9631,6 +9643,45 @@ function dzView() {
     <div class="dz-lst">${list.length ? list.map(dzCard).join('') : `<div class="dy-e">${ic('megaphone', 30)}<b>${MSGS.length ? 'Bu türde mesaj yok' : 'İlk mesajını gönder'}</b><p>${MSGS.length ? 'Başka bir filtre seç.' : 'Gönderdiklerin, kimin okuduğuyla birlikte burada görünür.'}</p></div>`}</div></section></div></div>`;
 }
 { const _v = viewDuyuru; viewDuyuru = function () { return S.user.role === 'calisan' ? _v() : dzView(); }; }
+/* ===== v82: Stok listesi, geniş yerleşim ===== */
+{
+  const _vs82 = viewStok;
+  viewStok = function () {
+    const h = _vs82();
+    if (!/stx-find/.test(h)) return h;
+    const box = document.createElement('div'); box.innerHTML = h; const root = box.firstElementChild;
+    if (!root || !root.classList.contains('stx')) return h;
+    const kids = [...root.children]; const top = []; const L = []; const R = []; let seenList = false;
+    kids.forEach((c) => {
+      if (c.classList.contains('stx-head') || c.classList.contains('stx-tools') || c.classList.contains('seg') || c.classList.contains('stx-ks')) top.push(c);
+      else if (c.classList.contains('stx-find') || c.classList.contains('stx-chips') || c.classList.contains('stx-view')) L.push(c);
+      else if (c.matches('.card.flush') && !seenList && L.length >= 3) { seenList = true; c.classList.add('sx2-list'); L.push(c); }
+      else if (c.tagName === 'P' && seenList) L.push(c);
+      else R.push(c);
+    });
+    let k = '';
+    try {
+      const rows = stokRows(); const acil = rows.filter((p) => p.lvl === 'acil'); const az = rows.filter((p) => p.lvl === 'azalan');
+      const soon = rows.filter((p) => p.left !== Infinity && p.left < 14).sort((a, b) => a.left - b.left)[0];
+      const need = rows.filter((p) => p.pick && p.qty).length; const skt = sktSoon(3).length;
+      const ln = [];
+      if (acil.length) ln.push(`<li class="r"><i></i><span><b>${acil.length} ürün acil:</b> ${esc(acil.slice(0, 3).map((p) => p.st.name.split(' (')[0]).join(', '))}</span></li>`);
+      if (az.length) ln.push(`<li class="a"><i></i><span><b>${az.length} ürün azalıyor:</b> ${esc(az.slice(0, 3).map((p) => p.st.name.split(' (')[0]).join(', '))}</span></li>`);
+      if (soon) ln.push(`<li class="i"><i></i><span><b>${esc(soon.st.name.split(' (')[0])}</b> yaklaşık ${soon.left < 10 ? q1(soon.left) : Math.round(soon.left)} gün içinde biter</span></li>`);
+      if (skt) ln.push(`<li class="r"><i></i><span><b>${skt} parti</b> 3 gün içinde bozulacak</span></li>`);
+      if (need) ln.push(`<li class="a"><i></i><span><b>${need} ürün</b> için sipariş gerekiyor</span></li>`);
+      if (!ln.length) ln.push('<li class="g"><i></i><span><b>Her şey yolunda.</b> Acil ya da azalan ürün yok.</span></li>');
+      k = `<section class="sx2-k"><div class="sx2-kh">${ic('sparkle', 18)}<b>Kais özeti</b></div><ul>${ln.join('')}</ul></section>`;
+    } catch (e) {}
+    root.innerHTML = '';
+    top.forEach((c) => root.appendChild(c));
+    const wrap = document.createElement('div'); wrap.className = 'sx2';
+    const l = document.createElement('div'); l.className = 'sx2-l'; L.forEach((c) => l.appendChild(c));
+    const r = document.createElement('aside'); r.className = 'sx2-r'; r.innerHTML = k; R.forEach((c) => r.appendChild(c));
+    wrap.appendChild(l); wrap.appendChild(r); root.appendChild(wrap);
+    return root.outerHTML;
+  };
+}
 </script>
 </body>
 </html>
