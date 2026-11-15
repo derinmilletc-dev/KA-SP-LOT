@@ -2713,7 +2713,7 @@ function empDetail(uid, mine, ro) {
   const u = byId(uid); const p = PROFILES[uid]; const mm = monthsBetween(p.hire); const d = dueOf(uid);
   const pct = d.total ? Math.max(0, Math.min(100, Math.round((d.paid / d.total) * 100))) : 0;
   const lv = LEAVES.filter((x) => x.uid === uid);
-  const ent = leaveDays(mm);
+  const ent = leaveDays(mm) + yizCarry(uid);
   const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0);
   const left = Math.max(0, ent - used);
   const pays = PAYS.filter((x) => x.uid === uid && x.per === NEXTP);
@@ -2945,7 +2945,7 @@ H.lvok = (el) => {
   if (!(days >= 1)) { g('lv-err').textContent = 'Gün sayısını yaz.'; return; }
   if (!txt) { g('lv-err').textContent = 'Tarihi yaz.'; return; }
   if (type === 'yillik') {
-    const ent = leaveDays(monthsBetween(PROFILES[uid].hire));
+    const ent = (leaveDays(monthsBetween(PROFILES[uid].hire)) + yizCarry(uid));
     const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
     if (days > ent - used) { g('lv-err').textContent = ent ? `Kalan yıllık izin ${ent - used} gün. Daha fazlası için ücretsiz izin seç.` : 'Yıllık izin hakkı henüz doğmadı.'; return; }
   }
@@ -3076,7 +3076,7 @@ function talepHTML() {
 }
 const lappSum = (m) => { const r = LVREQ.find((x) => x.id === m.id); const d = lrEff(r).days; return m.kind === 'ucretsiz' ? (m.ded ? `${d} gün × ${fmt(m.perDay)} = maaştan ${fmt(Math.round(m.perDay * d))} kesilecek` : `${d} gün ücretsiz, maaştan kesinti yapılmayacak`) : `${d} gün ücretli, maaştan kesinti yapılmaz`; };
 function lvreqModal() {
-  const p = PROFILES[S.user.id]; const ent = leaveDays(monthsBetween(p.hire));
+  const p = PROFILES[S.user.id]; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(S.user.id);
   const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
   return sheet('İzin talebi', `<div class="callout">${ic('info')}<div>Yıllık iznin: ${ent} gün hak, ${used} gün kullanıldı, ${Math.max(0, ent - used)} gün kaldı.</div></div>
   <div class="field"><label for="lq-type">İzin türü</label><select id="lq-type"><option value="yillik">Ücretli yıllık izin</option><option value="ucretsiz">Ücretsiz izin</option></select></div>
@@ -3117,7 +3117,7 @@ H.lrsend = () => {
   if (!(days >= 1)) return er('Gün sayısını yaz.');
   if (why.length < 5) return er('Nedenini yaz. Nedensiz talep gönderilemez.');
   if (type === 'yillik') {
-    const ent = leaveDays(monthsBetween(PROFILES[S.user.id].hire));
+    const ent = (leaveDays(monthsBetween(PROFILES[S.user.id].hire)) + yizCarry(S.user.id));
     const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
     if (days > ent - used) return er(ent ? `Kalan yıllık iznin ${ent - used} gün. Daha fazlası için ücretsiz izin seç.` : 'Yıllık izin hakkın henüz doğmadı. Ücretsiz izin isteyebilirsin.');
   }
@@ -3154,7 +3154,7 @@ H.lrok = (el) => {
 H.lrfinal = () => {
   const m = S.modal; const r = LVREQ.find((x) => x.id === m.id); const e = lrEff(r);
   if (m.kind === 'yillik') {
-    const ent = leaveDays(monthsBetween(PROFILES[r.uid].hire));
+    const ent = (leaveDays(monthsBetween(PROFILES[r.uid].hire)) + yizCarry(r.uid));
     const used = LEAVES.filter((x) => x.uid === r.uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
     if (e.days > ent - used) { document.getElementById('la-err').textContent = ent ? `Kalan yıllık izin ${ent - used} gün. Türü ücretsiz ya da mazeret izni yap.` : 'Yıllık izin hakkı henüz doğmadı. Türü değiştir.'; return; }
   }
@@ -7468,9 +7468,10 @@ const _viewEkip71 = viewEkip;
 viewEkip = function () {
   if (!S.user || !['patron', 'mudur'].includes(S.user.role)) return _viewEkip71();
   const isP = S.user.role === 'patron'; const cur0 = S.sub.ekip; const nReq = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status)).length;
-  const items = [['bugun', 'Bugün'], ['vardiya', 'Vardiya' + (vdNeed() ? ' •' : '')], ['izin', 'İzin takvimi'], ['mola', 'Mola ayarları'], ['talep', 'İzin talepleri' + (nReq ? ' (' + nReq + ')' : '')]].concat(isP ? [['maas', 'Maaş ve haklar']] : []).concat(isP && ID.active ? [['hesap', 'Hesap bağlantıları']] : []).concat([['siralama', 'Aylık sıralama']]);
+  const items = [['bugun', 'Bugün'], ['vardiya', 'Vardiya' + (vdNeed() ? ' •' : '')], ['izin', 'İzin takvimi'], ['yiz', 'Yıllık izin'], ['mola', 'Mola ayarları'], ['talep', 'İzin talepleri' + (nReq ? ' (' + nReq + ')' : '')]].concat(isP ? [['maas', 'Maaş ve haklar']] : []).concat(isP && ID.active ? [['hesap', 'Hesap bağlantıları']] : []).concat([['siralama', 'Aylık sıralama']]);
   const cur = items.some((x) => x[0] === cur0) ? cur0 : 'bugun'; const segH = seg('ekip', items, cur).replace('<div class="seg"', '<div class="seg seg-b"');
   if (cur === 'vardiya') return vdView(segH);
+  if (cur === 'yiz') return yizView(segH);
   if (cur === 'izin') return `<div class="stack-lg">${segH}${izinTakvim()}</div>`;
   if (cur === 'mola') return `<div class="stack-lg">${segH}${molaAyar()}</div>`;
   if (cur === 'bugun') { const tk = ekipTasks(); return `<div class="stack-lg">${segH}<div class="ek"><div class="ek-main">${kzCard('ekip')}${ekTeam()}</div><div class="ek-side">${ekipKais()}${ekUpcoming()}${tk.length ? `<section class="dsec"><div class="dsec-h"><h2>Bugün ne yapmalısın?</h2><p class="muted">Ekibinle ilgili ${tk.length} konu seni bekliyor.</p></div><div class="dtodo">${tk.join('')}</div></section>` : ''}${codeCardEkip()}</div></div></div>`; }
@@ -7779,6 +7780,67 @@ H.vdhpsave = () => { const ds = S.modal.d; const old = Object.assign({}, VD_HP[d
   h = h.slice(0, i) + nk + h.slice(j); return h.replace(/(<div class="ek-side">)/, '$1' + vdHolPayCard(b.getFullYear(), b.getMonth())); }; }
 /* Ekip Bugün: yaklaşan resmi tatil kartı + maaş dökümü */
 {const _ve = viewEkip; viewEkip = function () { let h = _ve.apply(this, arguments); try { if (S.user && ['patron', 'mudur'].includes(S.user.role) && (S.sub.ekip || 'bugun') === 'bugun') { const c = vdHolSoonCard(); if (c) h = h.replace('<div class="ek-side">', '<div class="ek-side">' + c); } } catch (e) {} return h; }; }
+/* ===== v75: Yıllık izin takibi ===== */
+{const st=document.createElement('style'); st.textContent=`
+.yz-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.yz-c{background:#fff;border:1px solid #E1E8F2;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 3px 10px rgba(13,40,80,.04)}
+.yz-t{display:flex;align-items:center;gap:11px}.yz-t b{display:block;font-size:15px}.yz-t span{font-size:12.5px;color:var(--ink-2)}.yz-t .big{margin-left:auto;text-align:right}.yz-t .big b{font-size:22px;line-height:1}.yz-t .big span{display:block;margin-top:2px}
+.yz-b{height:10px;border-radius:9px;background:#E8EEF7;overflow:hidden;display:flex}.yz-b i{display:block;height:100%}.yz-b .u{background:linear-gradient(90deg,#3F86DD,#6AA6EE)}.yz-b .c{background:repeating-linear-gradient(45deg,#BCD3F2 0 4px,#DCE8FA 4px 8px)}
+.yz-m{display:flex;flex-wrap:wrap;gap:6px}.yz-m span{background:#F2F5FA;border-radius:99px;padding:4px 10px;font-size:12px;color:var(--ink-2)}.yz-m span.w{background:#FDF1DC;color:#8F5A00}.yz-m span.g{background:#E8F6EE;color:#1F6B42}
+.yz-c .act{display:flex;gap:8px}.yz-c .act .btn{flex:1;min-height:38px;border-radius:12px;font-size:13px}
+.yz-in{display:flex;flex-direction:column;gap:8px}.yz-i{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:10px 12px;font-size:13.5px;background:#F2F6FC}.yz-i.w{background:#FDF1DC;color:#8F5A00}.yz-i.ok{background:#E8F6EE;color:#1F6B42}
+.yz-lg{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #F0F3F8}.yz-lg:first-of-type{border-top:0}.yz-lg .grow{min-width:0}.yz-lg b{display:block;font-size:14px}.yz-lg small{color:var(--ink-2);font-size:12px}.yz-lg button{flex:none;border:1px solid #E1E8F2;background:#fff;border-radius:10px;width:36px;height:36px;display:grid;place-items:center;color:#8A96A8}
+.yz-f{display:grid;gap:10px;margin:10px 0}.yz-f label{font-size:13px;color:var(--ink-2);display:grid;gap:4px}.yz-f input{min-height:44px;border:1px solid #D8E1EE;border-radius:12px;padding:0 12px;font:inherit;box-sizing:border-box;width:100%}
+`; document.head.appendChild(st);}
+const YZ_CARRY = {}; P_OBJ.push(['YZ_CARRY', () => YZ_CARRY]);
+function yizCarry(uid) { return Math.max(0, Number(YZ_CARRY[uid]) || 0); }
+function yizInfo(uid) {
+  const p = PROFILES[uid] || {}; const mm = p.hire ? monthsBetween(p.hire) : 0; const ent = leaveDays(mm), carry = yizCarry(uid), tot = ent + carry;
+  const L = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik'); const used = L.reduce((a, x) => a + x.days, 0); const left = tot - used;
+  let next = null, nextDays = 0;
+  if (p.hire) { const a = p.hire.split('-').map(Number); let ny = REF.y; if (REF.m > a[1] || (REF.m === a[1] && REF.d >= a[2])) ny++; if (mm < 12) ny = a[0] + 1; const iso = ny + '-' + String(a[1]).padStart(2, '0') + '-' + String(a[2]).padStart(2, '0'); const days = Math.round((new Date(iso) - new Date(REF.y, REF.m - 1, REF.d)) / 86400000); next = { iso, days }; nextDays = leaveDays((Math.floor(mm / 12) + 1) * 12); }
+  const pend = LVREQ.filter((r) => r.uid === uid && r.type === 'yillik' && ['bekliyor', 'yanit'].includes(r.status)).reduce((a, r) => a + lrEff(r).days, 0);
+  return { p, mm, ent, carry, tot, used, left, L, next, nextDays, pend };
+}
+function yizCard(id) {
+  const u = byId(id), i = yizInfo(id); const pc = (n) => (i.tot ? Math.min(100, Math.round(n / i.tot * 100)) : 0);
+  const chips = [];
+  if (i.mm < 12) chips.push(`<span class="g">İlk hak: ${isoTxt(i.next.iso)}</span>`); else if (i.next) chips.push(`<span>Yeni hak ${isoTxt(i.next.iso)}, +${i.nextDays} gün</span>`);
+  if (i.carry) chips.push(`<span>Devreden ${i.carry} gün</span>`); if (i.pend) chips.push(`<span class="w">${i.pend} gün talep bekliyor</span>`); if (i.left >= 10 && i.mm >= 12) chips.push('<span class="w">Birikmiş izin</span>'); if (i.left < 0) chips.push('<span class="w">Hakkı aşmış</span>');
+  const last = i.L.length ? i.L[i.L.length - 1].txt : '';
+  return `<div class="yz-c"><div class="yz-t">${avatar(u, 42)}<div><b>${esc(u.name)}</b><span>Kıdem ${i.mm ? tenureTxt(i.mm) : '1 aydan az'}</span></div><div class="big"><b>${i.tot ? i.left : '—'}</b><span>${i.tot ? 'gün kaldı' : 'hak yok'}</span></div></div>${i.tot ? `<div class="yz-b" title="Kullanılan ${i.used}, kalan ${Math.max(0, i.left)}"><i class="u" style="width:${pc(i.used)}%"></i></div><div class="small muted" style="display:flex;justify-content:space-between"><span>${i.used} gün kullanıldı</span><span>Toplam hak ${i.tot} gün</span></div>` : ''}<div class="yz-m">${chips.join('') || '<span>Kayıtlı kullanım yok</span>'}${last ? `<span>Son: ${esc(last)}</span>` : ''}</div><div class="act"><button class="btn sec" data-a="yizd" data-id="${id}">Ayrıntı</button><button class="btn" data-a="yizadd" data-id="${id}">${ic('plus', 15)} İzin kaydet</button></div></div>`;
+}
+function yizView(segH) {
+  const I = EMP_IDS.map((id) => ({ id, i: yizInfo(id) })); const tot = I.reduce((a, x) => a + x.i.tot, 0), used = I.reduce((a, x) => a + x.i.used, 0), left = tot - used; const soon = I.filter((x) => x.i.mm < 12 && x.i.next && x.i.next.days <= 120).length;
+  const ins = []; I.forEach(({ id, i }) => { const n = byId(id).name;
+    if (i.mm >= 12 && i.left >= 10) ins.push({ t: 'w', x: `${n}: ${i.left} gün kullanılmamış izin var. Planlamasını öner.` });
+    if (i.left < 0) ins.push({ t: 'w', x: `${n}: hakkından ${-i.left} gün fazla izin kullanmış görünüyor. Kaydı kontrol et.` });
+    if (i.mm < 12 && i.next) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde ilk yıllık izin hakkını kazanacak (${leaveDays(12)} gün).` });
+    else if (i.next && i.next.days <= 60 && i.nextDays > i.ent) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde izin hakkı ${i.ent} günden ${i.nextDays} güne çıkacak.` }); });
+  if (!ins.length) ins.push({ t: 'ok', x: 'Herkesin izin durumu düzenli. Biriken veya aşan izin yok.' });
+  return `<div class="stack-lg">${segH}<div class="iz-t"><div><span>Toplam hak</span><b>${tot}<small>gün</small></b></div><div><span>Kullanılan</span><b>${used}<small>gün</small></b></div><div class="${left < 0 ? 'bad' : ''}"><span>Kalan</span><b>${left}<small>gün</small></b></div><div><span>Yakında hak kazanan</span><b>${soon}<small>kişi</small></b></div></div>
+  <div class="ek"><div class="ek-main"><section class="mg-card"><div class="ek-h"><h2>Yıllık izin durumu</h2><span>${EMP_IDS.length} kişi</span></div><div class="yz-g">${EMP_IDS.map(yizCard).join('')}</div></section></div><div class="ek-side"><section class="mg-card"><div class="ek-h"><h2>Kais'in notları</h2></div><div class="yz-in">${ins.slice(0, 8).map((x) => `<div class="yz-i ${x.t}">${ic(x.t === 'ok' ? 'check' : 'info', 16)}<span>${esc(x.x)}</span></div>`).join('')}</div></section><section class="mg-card"><div class="ek-h"><h2>Nasıl hesaplanır?</h2></div><p class="small muted" style="margin:0">İş Kanunu'na göre 1 yılı dolduran çalışan, kıdemine göre yıllık izin kazanır: 1–5 yıl 14, 5–15 yıl 20, 15 yıl ve üstü 26 gün. Geçmiş yıllardan kalan günleri "Ayrıntı" bölümünde devreden olarak girebilirsin.</p></section></div></div></div>`;
+}
+H.yizd = (el) => { S.modal = { type: 'yizd', id: el.dataset.id }; renderModal(); };
+H.yizadd = (el) => { S.modal = { type: 'yizadd', id: el.dataset.id }; renderModal(); };
+function yizDetail() {
+  const id = S.modal.id, u = byId(id), i = yizInfo(id); const oth = LEAVES.filter((x) => x.uid === id && x.type !== 'yillik'); const R = (k, v, sub) => `<div class="dr-r"><span>${k}${sub ? `<small>${sub}</small>` : ''}</span><b>${v}</b></div>`;
+  const hist = i.L.length ? i.L.map((x) => `<div class="yz-lg"><div class="grow"><b>${esc(x.txt)}</b><small>${x.days} gün${x.note ? ' · ' + esc(x.note) : ''}</small></div><button data-a="yizdel" data-i="${x.id}" aria-label="Kaydı sil" title="${S.yizDel === x.id ? 'Silmek için tekrar dokun' : 'Sil'}" style="${S.yizDel === x.id ? 'background:#FDECEA;color:#D9534F;border-color:#F3C9C5' : ''}">${ic('trash', 16)}</button></div>`).join('') : '<p class="muted small" style="margin:0">Kayıtlı yıllık izin kullanımı yok.</p>';
+  return sheet(u.name + ' · yıllık izin', `<div class="dr-k"><div><span>Toplam hak</span><b>${i.tot} gün</b></div><div><span>Kullanılan</span><b>${i.used} gün</b></div><div><span>Kalan</span><b>${i.left} gün</b></div></div><div class="dr-bar"><i style="width:${i.tot ? Math.min(100, Math.round(i.used / i.tot * 100)) : 0}%"></i></div>
+  <div class="dr-s"><h4>Hak bilgisi</h4>${R('İşe giriş', i.p.hire ? esc(isoTxt(i.p.hire)) : '—', 'Kıdem ' + (i.mm ? tenureTxt(i.mm) : '1 aydan az'))}${R('Bu yılın hakkı', i.ent ? i.ent + ' gün' : 'Henüz doğmadı')}${R('Devreden', i.carry + ' gün', 'Geçmiş yıllardan kalan')}${i.next ? R(i.mm < 12 ? 'İlk hak tarihi' : 'Sonraki yenileme', esc(isoTxt(i.next.iso)), i.next.days + ' gün sonra, +' + i.nextDays + ' gün') : ''}${i.pend ? R('Bekleyen talep', i.pend + ' gün') : ''}</div>
+  <div class="yz-f"><label>Devreden gün sayısı<input id="yz-carry" type="number" min="0" inputmode="numeric" value="${i.carry || ''}" placeholder="0"></label><button class="btn sec" data-a="yizcarry">Devreden günü kaydet</button></div>
+  <div class="dr-s"><h4>Kullanım geçmişi</h4>${hist}</div>${oth.length ? `<div class="dr-s"><h4>Diğer izinler</h4>${oth.map((x) => R(`<span class="pill ${LV_PILL[x.type] || 'p-mute'}">${LV_KIND[x.type] || x.type}</span> ${esc(x.txt)}`, x.days + ' gün')).join('')}</div>` : ''}<div class="dr-a"><button class="btn" data-a="yizadd" data-id="${id}">${ic('plus', 16)} İzin kaydet</button></div>`).replace('class="sheet"', 'class="sheet empw"');
+}
+H.yizcarry = () => { const id = S.modal.id; const v = Math.max(0, Math.round(Number((document.getElementById('yz-carry') || {}).value) || 0)); if (v) YZ_CARRY[id] = v; else delete YZ_CARRY[id]; vdSave(); renderModal(); render(); toast('Devreden izin kaydedildi.', 'ok'); };
+H.yizdel = (el) => { const id = el.dataset.i; if (S.yizDel !== id) { S.yizDel = id; renderModal(); return; } S.yizDel = null; const k = LEAVES.findIndex((x) => x.id === id); if (k >= 0) LEAVES.splice(k, 1); vdSave(); renderModal(); render(); toast('Kayıt silindi.', 'ok'); };
+function yizAddSheet() { const id = S.modal.id, u = byId(id), i = yizInfo(id);
+  return sheet(u.name + ' · izin kaydet', `<p class="small muted" style="margin:0">Kalan yıllık izin: <b>${i.left} gün</b>. Geçmişte kullandığı izni de buradan kaydedebilirsin.</p><div class="yz-f"><label>Tarih<input id="yz-txt" placeholder="Örnek: 18–22 Ağu" autocomplete="off"></label><label>Gün sayısı<input id="yz-days" type="number" min="1" inputmode="numeric" placeholder="5"></label><label>Not (isteğe bağlı)<input id="yz-note" placeholder="Örnek: Tatil" autocomplete="off"></label></div><p id="yz-err" class="small" style="color:#D9534F;min-height:18px;margin:0"></p><div class="dr-a"><button class="btn" data-a="yizsave">Kaydet</button></div>`); }
+H.yizsave = () => { const g = (k) => document.getElementById(k), id = S.modal.id, i = yizInfo(id); const txt = (g('yz-txt').value || '').trim(), days = Number(g('yz-days').value), note = (g('yz-note').value || '').trim(); const er = (t) => { g('yz-err').textContent = t; };
+  if (!txt) return er('Tarihi yaz.'); if (!(days >= 1)) return er('Gün sayısını yaz.'); if (days > i.left) return er(i.tot ? `Kalan yıllık izin ${Math.max(0, i.left)} gün. Daha fazlası kaydedilemez.` : 'Yıllık izin hakkı henüz doğmadı.');
+  const o = { id: 'lv' + ++seq, uid: id, type: 'yillik', txt, days }; if (note) o.note = note; LEAVES.push(o); vdSave(); S.modal = { type: 'yizd', id }; renderModal(); render(); toast('İzin kaydedildi.', 'ok'); };
+{const _r = renderModal; renderModal = function () { const t = S.modal && S.modal.type; if (t === 'yizd' || t === 'yizadd') { const root = $('#modal-root'); if (!root) return; try { root.innerHTML = t === 'yizd' ? yizDetail() : yizAddSheet(); } catch (e) { root.innerHTML = ''; S.modal = null; } return; } return _r.apply(this, arguments); };}
+/* mevcut ekranlara devreden izin */
+{const _eb = ekBal; ekBal = function (id) { const r = _eb.apply(this, arguments); const c = yizCarry(id); if (c) { r.ent += c; r.left = Math.max(0, r.ent - r.used); } return r; };}
 /* Ayarlar: tüm verileri sıfırla */
 const viewAyarlarV66 = viewAyarlar;
 viewAyarlar = function () {
@@ -7798,7 +7860,7 @@ const izOrd = (t) => {
   if (m && mi(m[2]) >= 0) { const o = mi(m[2]) * 40 + Number(m[1]); return [o, o]; }
   return null;
 };
-const izLeft = (uid) => { const p = PROFILES[uid]; if (!p || !p.hire) return null; const ent = leaveDays(monthsBetween(p.hire)); const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; };
+const izLeft = (uid) => { const p = PROFILES[uid]; if (!p || !p.hire) return null; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(uid); const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; };
 function izHints(r) {
   const h = []; const e = lrEff(r); const p = PROFILES[r.uid];
   if (['onayli', 'reddedildi'].includes(r.status)) return '';
@@ -8417,7 +8479,7 @@ viewMaasim = function () {
   const u = byId(uid); const p = PROFILES[uid]; const mm = monthsBetween(p.hire); const d = dueOf(uid); const pr = empPayroll(uid);
   const tabs = [['maas', 'Maaş'], ['mesai', 'Mesai'], ['izin', 'İzin'], ['hak', 'Haklar']]; const hasCtr = LVREQ.some((r) => r.uid === uid && (r.status === 'karsi' || r.unreadEmp)); const cur = tabs.some((x) => x[0] === S.sub.maasim) ? S.sub.maasim : (hasCtr || S.msUnread ? 'izin' : 'maas');
   const pct = d.total ? Math.max(0, Math.min(100, Math.round(d.paid / d.total * 100))) : 0; const pdy = msPayday(p);
-  const lv = LEAVES.filter((x) => x.uid === uid); const ent = leaveDays(mm); const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0); const left = Math.max(0, ent - used);
+  const lv = LEAVES.filter((x) => x.uid === uid); const ent = leaveDays(mm) + yizCarry(uid); const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0); const left = Math.max(0, ent - used);
   const hour15 = d.hourly * 1.5; const otPct = Math.min(100, Math.round(p.otYear / 270 * 100)); const pays = PAYS.filter((x) => x.uid === uid && x.per === NEXTP); const last = PAYS.find((x) => x.uid === uid && x.kind === 'maas' && x.per === PERIOD);
   const ring = (v, tone) => `<div class="cs-rg"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="7"/><circle cx="30" cy="30" r="25" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="${(157.1 * (1 - v / 100)).toFixed(1)}" transform="rotate(-90 30 30)"/></svg><b>%${v}</b></div>`;
   let body = '';
