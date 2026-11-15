@@ -934,6 +934,22 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .sa2-spi{flex:1;min-width:0;display:flex;flex-direction:column}.sa2-spi b{font-size:15px}.sa2-spi span{font-size:12.5px;color:var(--ink-2);line-height:1.4}
 @media(max-width:1100px){.sa2-two{display:flex;flex-direction:column}.sa2-side{position:static;max-height:none;order:-1}.sa2 .dz-sts{grid-template-columns:repeat(2,1fr)}.sa2-gr{grid-template-columns:1fr}}
 @media(max-width:700px){.sa2-tb{grid-template-columns:repeat(2,1fr)!important}}
+.main:has(.rz2){max-width:1360px}
+.rz2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}.rz2-l{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rz2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}
+.rzk{background:linear-gradient(180deg,#F2F7FE,#fff);border:1px solid #D6E4F5;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.rzk-h{display:flex;align-items:center;gap:8px;color:var(--cini)}.rzk-h b{color:var(--ink);font-size:15px;flex:1}
+.rzk-cap{background:#fff;border:1px solid #E6ECF4;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}.rzk-cap>div:first-child{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2)}.rzk-cap b{font-size:18px;color:var(--ink)}.rzk-cap em{font-style:normal;font-size:12px;color:var(--ink-2)}
+.rzk-bar{height:8px;border-radius:999px;background:#E8EDF4;overflow:hidden}.rzk-bar i{display:block;height:100%;border-radius:999px}
+.rzk-t{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px}.rzk-t em{font-style:normal;font-size:12px;background:#fff;border:1px solid #D6E4F5;border-radius:999px;padding:0 8px}
+.rzk-q{display:flex;flex-direction:column;gap:8px}.rzk-m{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid #E6ECF4;border-radius:14px;padding:10px 12px;flex-wrap:wrap}.rzk-m b{font-size:14px;display:block}.rzk-m span{font-size:12px;color:var(--ink-2)}.rzk-b{display:flex;gap:6px}
+.rzk-ok{margin:0;font-size:13px;color:var(--ink-2);line-height:1.45}.rzk-tl{display:flex;flex-direction:column;gap:12px}
+.rzk-set{border-top:1px solid #E6ECF4;padding-top:8px}.rzk-set summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--cini);list-style:none}.rzk-set summary::-webkit-details-marker{display:none}
+.rzk-sw{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #EEF2F7}.rzk-sw b{display:block;font-size:13.5px}.rzk-sw em{font-style:normal;font-size:12px;color:var(--ink-2)}
+.rzk-hr{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 0;font-size:13px}.rzk-hr span{margin-right:4px}.rzk-hr button{border:1px solid #D5DEEA;background:#fff;border-radius:999px;padding:5px 11px;font-family:inherit;font-size:12.5px}.rzk-hr button[aria-pressed=true]{background:var(--cini);color:#fff;border-color:var(--cini)}
+.rzk-pre{white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5;background:#F4F7FB;border-radius:14px;padding:12px;margin:10px 0;max-height:260px;overflow:auto}
+@media(max-width:1100px){.rz2{display:flex;flex-direction:column}.rz2-r{position:static;max-height:none;order:-1}}
+.rzk-q{max-height:320px;overflow-y:auto;scrollbar-width:thin}@media(max-width:1100px){.rzk-q{max-height:240px}.rzk-tl{max-height:360px;overflow-y:auto}}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -9818,6 +9834,127 @@ viewSatinAlma = function () {
   <div class="tq-sg sa2-tb" role="group" aria-label="Satın alma bölümleri">${seg.map((x) => `<button data-a="satab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${esc(x[1])}</button>`).join('')}</div>${body}</div>`;
 };
 H.saof = (el) => { S.saOf = el.dataset.v; render(); };
+/* ===== v85: Rezervasyon, Kais asistan ===== */
+Object.assign(PROF, { kap: PROF.kap || '', masa: PROF.masa || '' });
+PF_FIELDS.splice(5, 0, ['kap', 'Kişi kapasitesi'], ['masa', 'Masa sayısı']);
+RCFG.k = RCFG.k || { on: true, conf: true, rem: true, hrs: 3, warn: true, ns: true };
+const rzK = () => { const k = RCFG.k = RCFG.k || {}; ['on', 'conf', 'rem', 'warn', 'ns'].forEach((x) => { if (k[x] == null) k[x] = true; }); if (!k.hrs) k.hrs = 3; return k; };
+const rzCap = () => Number(PROF.kap) || TABLES.reduce((a, t) => a + (Number(t.cap) || 0), 0);
+function rzLoad(date, extra) {
+  const out = []; for (let x = RCFG.open * 60; x < RCFG.close * 60; x += 30) { let p = 0; RESV.filter((r) => r.date === date && rzActive(r) && (!extra || r.id !== extra.id)).forEach((r) => { const rs = toMin(r.time); if (rs <= x && x < rs + r.dur) p += Number(r.n) || 0; }); if (extra) { const rs = toMin(extra.time); if (rs <= x && x < rs + extra.dur) p += Number(extra.n) || 0; } out.push({ t: fromMin(x), p }); } return out;
+}
+const rzPeak = (date) => rzLoad(date).reduce((a, b) => (b.p > a.p ? b : a), { t: '', p: 0 });
+const rzTitle = (r) => String(r.name || '').split(' ')[0];
+function rzConfMsg(r) {
+  const h = rzHist(r.phone, r.id); const t = rzNames(r.tids); const n = String(r.note || '').toLowerCase();
+  let s = `Merhaba ${rzTitle(r)}, ${BIZ} olarak rezervasyonunuzu aldık.\n\n📅 ${rzDayName(r.date)} · ${r.time}\n👥 ${r.n} kişi${t ? '\n🪑 Masa ' + t : ''}\n`;
+  if (/doğum|dogum/.test(n)) s += '\n🎂 Doğum gününüz için hazırlık yapacağız, şimdiden kutlu olsun!\n'; else if (/yıl dönümü|evlilik|nişan|kutlama/.test(n)) s += '\n🎉 Özel gününüz için elimizden geleni yapacağız.\n'; else if (r.note) s += '\n📝 Notunuz: ' + r.note + '. Not aldık.\n';
+  if (r.n >= 6) s += '\nBüyük grup olduğunuz için masaları sizin için hazırlıyoruz.\n';
+  s += h.n >= 2 ? '\nBizi yeniden tercih ettiğiniz için teşekkür ederiz.' : '';
+  s += h.miss ? '\nPlanınız değişirse lütfen önceden haber verin, yerinizi başka misafire verebiliriz.' : '\nDeğişiklik ya da iptal için bu mesaja cevap yazabilirsiniz.';
+  return s + '\n\nGörüşmek üzere, Kais iyi günler diler.';
+}
+function rzRemMsg(r) {
+  const h = rzHist(r.phone, r.id); const left = Math.max(1, Math.round((toMin(r.time) - (new Date().getHours() * 60 + new Date().getMinutes())) / 60));
+  return `Merhaba ${rzTitle(r)}, bugün saat ${r.time} için ${r.n} kişilik rezervasyonunuza yaklaşık ${left} saat kaldı. ${BIZ} olarak sizi bekliyoruz.\n\n${h.miss ? 'Geleceğinizi teyit etmek için bu mesaja EVET yazabilir misiniz? ' : ''}Gelemeyecekseniz lütfen haber verin, yerinizi başka misafire verebiliriz.\n\nKais iyi günler diler.`;
+}
+const rzMail = (r, kind) => { const msg = kind === 'rem' ? rzRemMsg(r) : rzConfMsg(r); return 'mailto:' + encodeURIComponent(r.email || '') + '?subject=' + encodeURIComponent(BIZ + (kind === 'rem' ? ' · Rezervasyon hatırlatma' : ' · Rezervasyonunuz alındı')) + '&body=' + encodeURIComponent(msg); };
+function rzQueue() {
+  const k = rzK(); const q = []; const now = new Date().getHours() * 60 + new Date().getMinutes();
+  RESV.filter((r) => rzActive(r) && r.date >= REF_ISO && (r.phone || r.email)).forEach((r) => {
+    if (k.conf && !r.cs) q.push({ r, kind: 'conf' });
+    if (k.rem && !r.rs && r.date === REF_ISO && r.st === 'onay') { const dt = toMin(r.time) - now; if (dt > 0 && dt <= k.hrs * 60) q.push({ r, kind: 'rem' }); }
+  });
+  return q;
+}
+function rzTips() {
+  const T = []; const cap = rzCap(); const k = rzK();
+  if (!PROF.kap) T.push(['a', 'Kişi kapasiteni gir', 'Doluluğu ve dolu gün uyarılarını doğru hesaplayabilmem için aynı anda kaç kişi ağırlayabildiğini yaz.', 'pfopen', 'kap', 'Kapasiteyi gir']);
+  if (!TABLES.length) T.push(['a', 'Masalarını ekle', 'Masa planı olmadan otomatik masa atayamam.', 'rztables', '', 'Masalar']);
+  if (k.warn && cap) for (let i = 0; i < 7; i++) { const d = addDays(REF_ISO, i); const pk = rzPeak(d); if (pk.p >= cap * 0.9) T.push([pk.p >= cap ? 'r' : 'a', (i === 0 ? 'Bugün' : i === 1 ? 'Yarın' : rzDayName(d)) + (pk.p >= cap ? ' kapasite dolu' : ' neredeyse dolu'), `${pk.t} civarı ${pk.p}/${cap} kişi. Yeni rezervasyon almadan önce emin ol.`, 'rzday', d, 'Güne git']); }
+  if (k.ns) { RESV.filter((r) => r.date >= REF_ISO && r.st === 'onay' && rzHist(r.phone, r.id).miss > 0).slice(0, 2).forEach((r) => T.push(['a', r.name + ' daha önce gelmedi', rzDayName(r.date) + ' ' + r.time + ' rezervasyonu için hatırlatmayı erken gönder, gerekirse teyit iste.', 'rzday', r.date, 'Güne git'])); }
+  RESV.filter((r) => r.date >= REF_ISO && r.st === 'onay' && r.n >= 6).slice(0, 1).forEach((r) => T.push(['i', r.n + ' kişilik grup: ' + r.name, rzDayName(r.date) + ' ' + r.time + '. Masaların birleştiğini ve mutfağı önceden bilgilendirmeyi unutma.']));
+  const reg = {}; RESV.filter((r) => ['geldi', 'bitti'].includes(r.st)).forEach((r) => { const kk = rzDigits(r.phone) || r.name; (reg[kk] = reg[kk] || { name: r.name, c: 0 }).c++; });
+  RESV.filter((r) => r.date >= REF_ISO && rzActive(r)).forEach((r) => { const x = reg[rzDigits(r.phone) || r.name]; if (x && x.c >= 2 && T.length < 8) T.push(['g', x.name + ' sık gelen misafir', x.c + ' kez geldi. Özel karşılama ya da küçük bir ikram iyi olur.']); });
+  const quiet = [1, 2, 3].map((o) => addDays(REF_ISO, o)).find((d) => cap && rzPeak(d).p < cap * 0.25 && ![5, 6, 0].includes(dowOf(d)));
+  if (quiet && cap) T.push(['i', rzDayName(quiet) + ' sakin görünüyor', 'Doluluk %25\'in altında. Sık gelen misafirlere kampanya mesajı göndermek için Müşteri sayfasına bak.']);
+  return T;
+}
+function rzKaisCard() {
+  const k = rzK(); const q = k.on ? rzQueue() : []; const tips = k.on ? rzTips() : []; const cap = rzCap(); const pk = rzPeak(S.rzDate); const pct = cap ? Math.min(100, Math.round(pk.p / cap * 100)) : 0;
+  const nt = typeof Notification !== 'undefined'; const on = !!RCFG.notif && nt && Notification.permission === 'granted';
+  const sw = (key, label, sub) => `<label class="rzk-sw"><span><b>${label}</b><em>${sub}</em></span><span class="sz-sw"><input type="checkbox" data-ch="rzk" data-k="${key}"${k[key] ? ' checked' : ''}><span class="sz-tr"></span></span></label>`;
+  const qh = q.length ? `<div class="rzk-q"><div class="rzk-t">Gönderilecek mesajlar <em>${q.length}</em></div>${q.slice(0, 8).map((x) => `<div class="rzk-m"><div><b>${esc(x.r.name)}</b><span>${x.kind === 'conf' ? 'Rezervasyon onayı' : 'Hatırlatma'} · ${x.kind === 'conf' && x.r.date !== REF_ISO ? esc(rzDayName(x.r.date)) + ' ' : ''}${esc(x.r.time)}</span></div><div class="rzk-b">${x.r.phone ? `<button class="btn sm" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="wa">WhatsApp</button>` : ''}${x.r.email ? `<button class="btn sm sec" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="mail">E-posta</button>` : ''}<button class="btn sm sec" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="skip" aria-label="Gönderildi say">✓</button></div></div>`).join('')}</div>` : (k.on ? '<p class="rzk-ok">Bekleyen mesaj yok. Yeni rezervasyonlar için onay, gelmeden önce hatırlatma hazırlarım.</p>' : '');
+  return `<section class="rzk"><div class="rzk-h">${ic('sparkle', 18)}<b>Kais asistan</b><label class="sz-sw rzk-m1"><input type="checkbox" data-ch="rzk" data-k="on"${k.on ? ' checked' : ''}><span class="sz-tr"></span></label></div>
+  ${k.on ? `<div class="rzk-cap"><div><span>${esc(rzDayName(S.rzDate))} en yoğun</span><b>${pk.p}${cap ? ' / ' + cap : ''} kişi</b></div><div class="rzk-bar"><i style="width:${pct}%;background:${pct >= 100 ? 'var(--nar)' : pct >= 80 ? '#E3A21A' : 'var(--cini)'}"></i></div><em>${cap ? (PROF.kap ? 'Kapasite: ' + cap + ' kişi' : 'Masa kapasitesine göre (' + cap + ')') : 'Kapasite girilmedi'}${pk.t ? ' · ' + pk.t : ''}</em></div>${qh}
+  ${tips.length ? `<div class="rzk-t">Kais önerileri <em>${tips.length}</em></div><div class="rzk-tl">${tips.slice(0, 6).map((t) => `<div class="sa2-ti ${t[0]}"><i></i><div><b>${esc(t[1])}</b><p>${esc(t[2])}</p>${t[3] ? `<button class="btn sm sec" data-a="${t[3]}" data-${t[3] === 'rzday' ? 'd' : 'f'}="${t[4]}">${esc(t[5])}</button>` : ''}</div></div>`).join('')}</div>` : ''}
+  <details class="rzk-set"><summary>Kais ayarları</summary>${sw('conf', 'Onay mesajı', 'Rezervasyon alınınca müşteriye hazırlanır')}${sw('rem', 'Hatırlatma', 'Gelmeden önce müşteriye hazırlanır')}<div class="rzk-hr"><span>Hatırlatma zamanı</span>${[1, 2, 3, 4].map((h) => `<button data-a="rzkh" data-h="${h}" aria-pressed="${k.hrs === h}">${h} saat</button>`).join('')}</div>${sw('warn', 'Dolu gün uyarısı', 'Kapasite dolunca sormadan almam')}${sw('ns', 'Gelmeyenleri takip et', 'Önceden gelmeyenleri işaretlerim')}${nt ? `<label class="rzk-sw"><span><b>Bildirim</b><em>Misafir gelmeden 30 dk önce haber ver</em></span><span class="sz-sw"><input type="checkbox" data-ch="rznotif"${on ? ' checked' : ''}><span class="sz-tr"></span></span></label>` : ''}</details>` : '<p class="rzk-ok">Kais kapalı. Açarsan rezervasyonları takip eder, müşteri mesajlarını hazırlar, dolu günleri uyarır.</p>'}</section>`;
+}
+{
+  const _v85 = viewRezerv;
+  viewRezerv = function () {
+    const h = _v85(); const box = document.createElement('div'); box.innerHTML = h; const root = box.firstElementChild; if (!root) return h;
+    const kids = [...root.children]; const top = []; const body = [];
+    kids.forEach((c) => { if (c.classList.contains('rz-head') || c.classList.contains('rz-bar') || c.classList.contains('rz-week') || c.classList.contains('rz-cal') || c.classList.contains('stx-ks')) top.push(c); else if (c.matches('section.rz-card') && c.querySelector('.rz-nt')) { /* eski bildirim kartı */ } else body.push(c); });
+    const role = S.user && S.user.role; root.innerHTML = ''; top.forEach((c) => root.appendChild(c));
+    const w = document.createElement('div'); w.className = 'rz2'; const l = document.createElement('div'); l.className = 'rz2-l'; body.forEach((c) => l.appendChild(c)); w.appendChild(l);
+    if (role === 'patron' || role === 'mudur') { const r = document.createElement('aside'); r.className = 'rz2-r'; r.innerHTML = rzKaisCard(); w.appendChild(r); }
+    root.appendChild(w); return root.outerHTML;
+  };
+}
+H.rzkh = (el) => { rzK().hrs = Number(el.dataset.h); pSched(); render(); };
+H.rzday = ((p) => (el) => { if (el.dataset.d) { S.rzDate = el.dataset.d; S.rzMonth = rzMon(S.rzDate); S.rzCal = false; render(); } else p(el); })(H.rzday);
+{ const _oc = onChange; onChange = function (e) { const el = e.target; if (el && el.dataset && el.dataset.ch === 'rzk') { rzK()[el.dataset.k] = !!el.checked; pSched(); render(); return; } return _oc(e); }; }
+H.rzsend = (el) => {
+  const r = RESV.find((x) => x.id === el.dataset.id); if (!r) return; const kind = el.dataset.kind; const ch = el.dataset.ch; const msg = kind === 'rem' ? rzRemMsg(r) : rzConfMsg(r);
+  if (ch === 'wa') { const u = rzWa(r, msg); if (u) window.open(u, '_blank', 'noopener'); } else if (ch === 'mail') { window.open(rzMail(r, kind), '_blank'); }
+  const f = kind === 'rem' ? 'rs' : 'cs'; r[f] = { t: Date.now(), ch }; pSched(); if (S.modal && S.modal.type === 'rzmsg') S.modal = null; render(); if (ch === 'skip') toast('Gönderildi olarak işaretlendi.'); 
+};
+/* modal: e-posta alanı, kapasite uyarısı */
+{ const _n = NEWM.rznew; NEWM.rznew = function (m) {
+  let h = _n(m); h = h.replace(/(<div class="field"><label for="rz-phone">[\s\S]*?<\/div>)/, `$1<div class="field"><label for="rz-email">E-posta <span class="small muted">(isteğe bağlı)</span></label><input type="email" id="rz-email" inputmode="email" autocapitalize="none" value="${esc(m.email || '')}" placeholder="misafir@eposta.com" data-ch="rzf" data-k="email"></div>`);
+  if (m.warn) h = h.replace('<div class="field"><label for="rz-name">', `<div class="callout warn" style="margin-bottom:10px">${ic('alert')}<div><b>Emin misin?</b><p style="margin-top:2px">${esc(m.warn)}</p><div class="row wrap" style="gap:8px;margin-top:8px"><button class="btn sm" data-a="rzforce">Yine de ekle</button><button class="btn sm sec" data-a="rzunwarn">Vazgeç</button></div></div></div>$&`);
+  return h; }; }
+H.rzforce = () => { if (S.modal) { S.modal.force = true; S.modal.warn = ''; } H.rzsave(); };
+H.rzunwarn = () => { if (S.modal) { S.modal.warn = ''; S.modal.force = false; renderModal(); } };
+{ const _n1 = H.rznew; H.rznew = function () { _n1.apply(this, arguments); if (S.modal) { S.modal.email = ''; } }; const _e1 = H.rzedit; H.rzedit = function (el) { _e1.apply(this, arguments); const r = RESV.find((x) => x.id === el.dataset.id); if (S.modal && r) S.modal.email = r.email || ''; }; }
+{ const _s = H.rzsave; H.rzsave = function () {
+  const m = S.modal; if (!m || m.type !== 'rznew') return _s.apply(this, arguments); const g = (id) => (document.getElementById(id) || {}).value;
+  m.name = (g('rz-name') || m.name || '').trim(); m.phone = (g('rz-phone') || m.phone || '').trim(); m.email = (g('rz-email') != null ? g('rz-email') : m.email || '').trim();
+  const isNew = !m.id; const k = rzK(); const c = rzCheck(m); const cap = rzCap(); let warn = '';
+  if (m.name && m.n >= 1 && m.date >= REF_ISO && k.on && k.warn) { const ld = rzLoad(m.date, m.id ? { id: m.id, time: m.time, dur: m.dur, n: m.n } : { id: '_', time: m.time, dur: m.dur, n: m.n }); const pk = ld.reduce((a, b) => (b.p > a.p ? b : a), { p: 0 });
+    if (!c.res) warn = (c.msg || 'Bu saatte uygun masa yok') + (cap ? `. Bu saatte ${pk.p}/${cap} kişi olur.` : '.') + ' Bugün o masa dolu ya da kişi kapasitemiz dolu, emin misin?';
+    else if (cap && pk.p > cap) warn = `Kişi kapasitesi (${cap}) aşılıyor: bu rezervasyonla ${pk.p} kişi olur. Emin misin?`; }
+  if (warn && !m.force) { m.warn = warn; renderModal(); return; }
+  const before = RESV.length;
+  if (m.force && !c.res) { const base = { name: m.name, phone: m.phone, email: m.email, n: m.n, date: m.date, time: m.time, dur: m.dur, src: m.src, note: m.note || '', tids: [] };
+    if (m.id) { const r = RESV.find((x) => x.id === m.id); if (r) Object.assign(r, base); } else RESV.push(Object.assign({ id: 'r' + (++seq), st: 'onay', by: S.user ? S.user.id : '' }, base));
+    S.rzDate = m.date; S.modal = null; render(); toast('Rezervasyon masa atanmadan kaydedildi.', 'warn'); }
+  else _s.apply(this, arguments);
+  const nr = isNew ? RESV[RESV.length - 1] : RESV.find((x) => x.id === m.id);
+  if (nr && (RESV.length > before || !isNew)) { nr.email = m.email; if (isNew) { const dt = toMin(nr.time) - (new Date().getHours() * 60 + new Date().getMinutes()); if (nr.date === REF_ISO && dt < k.hrs * 60) nr.rs = { t: Date.now(), ch: 'skip' }; pSched();
+    if (k.on && k.conf && (nr.phone || nr.email) && !S.modal) { S.modal = { type: 'rzmsg', id: nr.id }; renderModal(); } } }
+}; }
+NEWM.rzmsg = (m) => { const r = RESV.find((x) => x.id === m.id); if (!r) return sheet('Mesaj', '<p>Rezervasyon bulunamadı.</p>');
+  return sheet('Müşteriye onay mesajı', `<div class="callout">${ic('sparkle')}<div>Kais ${esc(rzTitle(r))} için onay mesajını hazırladı. Gönder ya da sonra kuyruktan gönder.</div></div><pre class="rzk-pre">${esc(rzConfMsg(r))}</pre>
+  <div class="row wrap" style="gap:8px">${r.phone ? `<button class="btn grow" data-a="rzsend" data-id="${r.id}" data-kind="conf" data-ch="wa">WhatsApp ile gönder</button>` : ''}${r.email ? `<button class="btn sec grow" data-a="rzsend" data-id="${r.id}" data-kind="conf" data-ch="mail">E-posta ile gönder</button>` : ''}<button class="btn sec" data-a="closemodal">Sonra</button></div><p class="small muted" style="margin-top:8px">Hatırlatma mesajı, rezervasyondan ${rzK().hrs} saat önce Kais'in kuyruğuna düşer.</p>`); };
+/* profil: kapasite alanları */
+{ const _p = NEWM.prof; NEWM.prof = function (m) { let h = _p(m); const f = `<div class="pf-row pf-2"><div class="pf-s" data-pfk="kap"><label class="pf-l">Kişi kapasitesi <span class="pf-h">aynı anda en fazla</span></label><input id="pf-kap" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Örn. 60" value="${esc(PROF.kap)}"></div><div class="pf-s" data-pfk="masa"><label class="pf-l">Masa sayısı</label><input id="pf-masa" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="Örn. 15" value="${esc(PROF.masa)}"></div></div>`;
+  return h.replace(/(<div class="pf-s" data-pfk="cal">)/, f + '$1'); }; }
+{ const _ps = H.pfsave; H.pfsave = function () { const g = (id) => ((document.getElementById(id) || {}).value || '').replace(/\D/g, '').slice(0, 4); if (document.getElementById('pf-kap')) { PROF.kap = g('pf-kap'); PROF.masa = g('pf-masa'); } return _ps.apply(this, arguments); }; }
+/* bildirimler */
+{ const _nl = notifList; notifList = function () { const out = _nl(); const u = S.user; if (!u) return out; const add = (key, sev, text, view, tab) => out.push({ key: key + '|' + REF_ISO, sev, text, view, tab });
+  if (u.role === 'patron') { const miss = pfMissing(); if (miss.length) add('prof' + miss.length, 'warn', 'Kais seni ve işletmeni daha iyi analiz edip daha iyi hizmet sunabilsin diye profil bilgilerinin hepsini doldur (' + miss.length + ' eksik: ' + miss.slice(0, 3).map((x) => x[1]).join(', ') + (miss.length > 3 ? '…' : '') + ').', 'bugun'); }
+  if (['patron', 'mudur'].includes(u.role) && rzK().on) { const q = rzQueue(); const rem = q.filter((x) => x.kind === 'rem'); if (rem.length) add('rzrem' + rem.length, 'warn', rem.length + ' misafire hatırlatma mesajı gönderme zamanı geldi.', 'rezerv'); const cf = q.filter((x) => x.kind === 'conf'); if (cf.length) add('rzconf' + cf.length, 'info', cf.length + ' rezervasyon için onay mesajı hazır.', 'rezerv');
+    const cap = rzCap(); if (cap && rzK().warn) for (let i = 0; i < 3; i++) { const d = addDays(REF_ISO, i); const pk = rzPeak(d); if (pk.p >= cap) add('rzfull' + d, 'bad', (i === 0 ? 'Bugün' : i === 1 ? 'Yarın' : rzDayName(d)) + ' kişi kapasitesi doldu (' + pk.p + '/' + cap + ').', 'rezerv'); } }
+  return out; }; }
+/* profil kartı metni */
+{ const _pc = profCard; profCard = function () { return _pc().replace(/<p>İşletmen için \d+ kısa bilgi kaldı\. Kais ekranları sana göre hazırlar\.<\/p>/, (m) => '<p>Kais sizi ve işletmenizi daha iyi analiz edip daha iyi hizmet sunabilmesi için lütfen bilgilerin hepsini doldurun.</p>'); }; }
+/* hatırlatma zamanlayıcı: uygulama açıkken müdür/patrona haber */
+if (!window.__rzK85) { window.__rzK85 = setInterval(() => { try { const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role) || !rzK().on) return; window.__rzN = window.__rzN || {};
+  rzQueue().filter((x) => x.kind === 'rem').forEach((x) => { if (window.__rzN[x.r.id]) return; window.__rzN[x.r.id] = 1; toast(rzTitle(x.r) + ' için hatırlatma zamanı. Kais mesajı hazırladı.', 'warn'); try { pushSend([u.id], 'Rezervasyon hatırlatma', x.r.name + ' · ' + x.r.time + ' · ' + x.r.n + ' kişi. Hatırlatma mesajı hazır.'); } catch (e) {} if (S.view === 'rezerv' && !S.modal) render(); }); } catch (e) {} }, 60000); }
+/* profil kartı: Bugün sayfasında garanti göster */
+{ const _vh85 = viewHTML; viewHTML = function () { let h = _vh85(); if (S.user && S.user.role === 'patron' && S.view === 'bugun' && !h.includes('pf-card')) { const c = profCard(); if (c) h = h.replace(/<div class="stack-lg[^"]*">/, (m) => m + c); } return h; }; }
 </script>
 </body>
 </html>
