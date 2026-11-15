@@ -10887,6 +10887,70 @@ H.audf = (el) => { AUD.f = el.dataset.v; render(); };
     const i = h.lastIndexOf('</div>'); return i < 0 ? h : h.slice(0, i) + audCard() + danger + h.slice(i);
   };
 }
+
+/* ===== v96: işletme devri ve Kais hafızasını sunucuya senkronlama ===== */
+{
+  const _tc = teamCard;
+  teamCard = function () {
+    let h = _tc(); if (!ID.team || !ID.active || ID.active.role !== 'patron') return h;
+    ID.team.members.filter((m) => m.role === 'mudur').forEach((m) => { h = h.replace(`<button class="btn sm sec" data-a="memrm" data-id="${m.id}">`, `<button class="btn sm sec" data-a="trnopen" data-id="${m.id}">Sahipliği devret</button><button class="btn sm sec" data-a="memrm" data-id="${m.id}">`); });
+    return h;
+  };
+}
+const TRN = { busy: false, err: '' };
+H.trnopen = (el) => { TRN.busy = false; TRN.err = ''; S.modal = { type: 'trn', id: el.dataset.id }; renderModal(); };
+NEWM.trn = (m) => {
+  const mem = ID.team && ID.team.members.find((x) => x.id === m.id); const u = mem && byId(mem.app_uid); const nm = (mem && mem.display_name) || (u && u.name) || 'Müdür';
+  return sheet('Sahipliği devret', `<div class="dl-w">${ic('alert', 22)}<div><b>${esc(nm)} işletmenin sahibi olur.</b><p>Sen müdür olursun. Veri yerinde kalır. Bunu yalnızca yeni sahip geri alabilir.</p></div></div>
+  <div class="dl-b"><b>Ne değişir</b><ul><li>${esc(nm)} patron yetkilerini alır (finans, ekip, davetler, hesap silme).</li><li>Sen müdür yetkilerine inersin.</li><li>Devirden sonra yeniden giriş yaparsın.</li></ul></div>
+  <div class="field"><label for="trn-c">Onaylamak için <b>DEVRET</b> yaz</label><input id="trn-c" type="text" autocomplete="off" autocapitalize="characters" placeholder="DEVRET"></div>
+  <div class="err" id="trn-e" role="alert">${esc(TRN.err)}</div>
+  <button class="btn block dl-go" id="trn-go" data-a="trngo" data-id="${esc(m.id)}" disabled>${TRN.busy ? 'Devrediliyor…' : 'Sahipliği devret'}</button><button class="btn sec block" data-a="closemodal">Vazgeç</button>`);
+};
+document.addEventListener('input', (e) => { const el = e.target; if (!el || el.id !== 'trn-c') return; const b = document.getElementById('trn-go'); if (b) b.disabled = TRN.busy || kaFold(el.value) !== 'devret'; });
+H.trngo = async (el) => {
+  const c = document.getElementById('trn-c'); if (TRN.busy || !c || kaFold(c.value) !== 'devret' || !ID.active) return;
+  TRN.busy = true; TRN.err = ''; const id = el.dataset.id; renderModal();
+  try {
+    try { clearTimeout(PS.timer); if (CL.on) await pFlush(); } catch (e) {}
+    const r = await sbClient().rpc('transfer_business', { p_business: ID.active.business_id, p_member: id }); if (r.error) throw r.error;
+    TRN.busy = false; S.modal = null; await idSignOut();
+  } catch (e) { TRN.busy = false; const m = String((e && e.message) || e); TRN.err = /transfer_business|schema cache|does not exist/i.test(m) ? 'Devir sunucuda kurulu değil. tenant_transfer.sql dosyasını çalıştır.' : /not_owner/.test(m) ? 'Yalnızca işletme sahibi devredebilir.' : /target_must/.test(m) ? 'Devir yalnızca müdüre yapılabilir.' : 'Devredilemedi. Bağlantını kontrol et.'; renderModal(); }
+};
+
+{
+  const _hh = hesapHTML;
+  hesapHTML = function () {
+    let h = _hh(); if (!ID.team || !ID.active || ID.active.role !== 'patron') return h;
+    ID.team.members.filter((m) => m.role === 'mudur').forEach((m) => { h = h.replace(`<button class="hb sec" data-a="memrm" data-id="${m.id}">`, `<button class="hb sec" data-a="trnopen" data-id="${m.id}">Devret</button><button class="hb sec" data-a="memrm" data-id="${m.id}">`); });
+    return h;
+  };
+}
+/* Kais notları: cihazlar arası (kais_memory) */
+const KM = { key: '', synced: '[]', t: null, off: false };
+async function kmPull() {
+  const c = sbOK() && sbClient(); if (!c || !SBS.user || !SBS.biz || KM.off) return; const k = aiMemKey(); if (KM.key === k) return; KM.key = k;
+  try {
+    const r = await c.from('kais_memory').select('content,created_at').eq('business_id', SBS.biz.id).eq('user_id', SBS.user.id).eq('kind', 'fact').order('created_at', { ascending: true }).limit(60);
+    if (r.error) { if (/relation|schema cache|permission/i.test(r.error.message)) KM.off = true; return; }
+    const srv = (r.data || []).map((x) => x.content); const loc = AIC.notes || []; const all = srv.concat(loc.filter((n) => !srv.includes(n))).slice(-30);
+    KM.synced = JSON.stringify(srv); if (JSON.stringify(all) !== JSON.stringify(loc)) { AIC.notes = all; aiMemSave(); if (S.view === 'kaisai') render(); } else if (all.length !== srv.length) kmSched();
+  } catch (e) {}
+}
+function kmSched() { clearTimeout(KM.t); KM.t = setTimeout(kmPush, 1500); }
+async function kmPush() {
+  const c = sbOK() && sbClient(); if (!c || !SBS.user || !SBS.biz || KM.off) return; const notes = (AIC.notes || []).slice(-30); const j = JSON.stringify(notes); if (j === KM.synced) return;
+  try {
+    const d = await c.from('kais_memory').delete().eq('business_id', SBS.biz.id).eq('user_id', SBS.user.id).eq('kind', 'fact'); if (d.error) throw d.error;
+    if (notes.length) { const i = await c.from('kais_memory').insert(notes.map((n) => ({ business_id: SBS.biz.id, user_id: SBS.user.id, kind: 'fact', content: String(n).slice(0, 500) }))); if (i.error) throw i.error; }
+    KM.synced = j;
+  } catch (e) { if (/relation|schema cache|permission/i.test(String((e && e.message) || e))) KM.off = true; }
+}
+{
+  const _ml = aiMemLoad; aiMemLoad = function () { const r = _ml.apply(this, arguments); kmPull(); return r; };
+  const _ms = aiMemSave; aiMemSave = function () { const r = _ms.apply(this, arguments); if (KM.key === aiMemKey()) kmSched(); return r; };
+  const _mc = H.aimemclr; if (_mc) H.aimemclr = function () { const r = _mc.apply(this, arguments); AIC.notes = []; kmSched(); return r; };
+}
 </script>
 </body>
 </html>
