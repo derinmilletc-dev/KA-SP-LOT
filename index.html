@@ -11758,12 +11758,12 @@ function viewVardiyam() {
     cells.push(`<div class="vm-c${today ? ' t' : ''}${s.k === 'shift' ? ' s' : ''}"><span>${d}</span>${inner}</div>`); }
   const shifts = wk.filter((x) => x.s.k === 'shift'); const wkH = shifts.reduce((t, x) => t + vdHours(x.s.t), 0); const nOff = wk.filter((x) => x.pub && ['off', 'leave', 'hol'].includes(x.s.k)).length;
   const nextOff = wk.find((x) => x.k > 0 && ['off', 'leave'].includes(x.s.k));
-  const myTk = REQS.filter((r) => r.uid === me && r.kind === 'takas' && r.st === 'bekliyor'); const myIz = REQS.filter((r) => r.uid === me && r.kind === 'izin' && r.st === 'bekliyor');
+  const myTk = REQS.filter((r) => r.uid === me && r.kind === 'takas' && r.st === 'bekliyor'); const myIz = LVREQ.filter((r) => r.uid === me && ['bekliyor', 'yanit', 'karsi'].includes(r.status));
   const ins = [];
   if (wkH > 45) ins.push(['w', `Önümüzdeki 7 gün ${Math.round(wkH * 10) / 10} saat planlı. Haftalık 45 saati aşıyor, fazla mesai konusunu müdürle konuş.`]);
   if (nextOff) ins.push(['i', `Sıradaki ${nextOff.s.k === 'leave' ? 'izinli' : 'izin'} günün ${DOWN[nextOff.dt.getDay()]}${nextOff.k === 1 ? ' (yarın)' : ''}.`]);
   if (myTk.length) ins.push(['i', `Vardiya değişimi talebin onay bekliyor${myTk[0].date ? ' (' + esc(isoShort(myTk[0].date)) + ')' : ''}.`]);
-  if (myIz.length) ins.push(['i', 'İzin talebin onay bekliyor.']);
+  if (myIz.length) ins.push([myIz[0].status === 'karsi' ? 'w' : 'i', myIz[0].status === 'karsi' ? 'İzin talebine karşı teklif geldi, cevabını bekliyor.' : 'İzin talebin onay bekliyor.']);
   const day = (x) => { const s = x.s; const t = s.k === 'shift' ? `<b>${esc(s.t.s)}</b><small>${esc(s.t.e)}</small>` : s.k === 'off' ? '<small>İzin</small>' : s.k === 'leave' ? '<small class="l">İzinli</small>' : s.k === 'hol' ? '<small>Tatil</small>' : '<small>—</small>'; return `<div class="vw-d${x.k === 0 ? ' t' : ''}${s.k === 'shift' ? ' s' : ''}"><span>${x.k === 0 ? 'Bugün' : ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'][x.dt.getDay()]}</span><em>${x.dt.getDate()}</em>${s.k === 'shift' ? `<i style="background:${s.t.c || '#3F86DD'}"></i>` : ''}${t}</div>`; };
   const hdr = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((x) => `<div class="vm-h">${x}</div>`).join('');
   return `<div class="stack-lg vw"><div><h2>Vardiyam</h2><p class="muted" style="margin-top:4px">${esc(DOWN[n.getDay()])}, ${n.getDate()} ${VD_MON[n.getMonth()]}</p></div>
@@ -11776,6 +11776,67 @@ function viewVardiyam() {
   ${pub ? `<div class="vm-g">${hdr}${cells.join('')}</div>` : '<p class="op-em" style="padding:14px 0">Bu ay için vardiya planı henüz yayınlanmadı. Müdür yayınlayınca burada görünür.</p>'}</details></div>`;
 }
 (function () { try { const st = document.createElement('style'); st.textContent = '.vw-h{border-radius:22px;padding:20px;color:#fff;display:flex;flex-direction:column;gap:6px;background:linear-gradient(135deg,#2f62b5,#173068);box-shadow:0 10px 28px rgba(23,48,104,.22)}.vw-h.ok{background:linear-gradient(135deg,#1f8f6a,#0f5a46)}.vw-h.mute{background:#fff;color:var(--ink);box-shadow:none;border:1px solid var(--line)}.vw-tag{align-self:flex-start;font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.18)}.vw-h.mute .vw-tag{background:var(--canvas);color:var(--ink-2)}.vw-big{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}.vw-h p{margin:0;opacity:.85;font-size:14px}.vw-pr{height:6px;border-radius:4px;background:rgba(255,255,255,.25);margin-top:8px;overflow:hidden}.vw-pr i{display:block;height:100%;background:#fff;border-radius:4px}.vw-b{margin-top:12px;border:0;border-radius:14px;padding:13px;background:#fff;color:#173068;font:inherit;font-weight:600;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer}.vw-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}.vw-d{border:1px solid var(--line);border-radius:12px;padding:8px 2px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:92px;position:relative}.vw-d span{font-size:10.5px;color:var(--muted)}.vw-d em{font-style:normal;font-weight:700;font-size:15px}.vw-d b{font-size:12px}.vw-d small{font-size:10.5px;color:var(--muted)}.vw-d small.l{color:var(--safran)}.vw-d i{width:18px;height:3px;border-radius:2px;margin:3px 0 1px}.vw-d.s{background:var(--cini-wash);border-color:transparent}.vw-d.t{outline:2px solid var(--cini);outline-offset:-1px}.vw-in{display:flex;flex-direction:column;gap:8px}.vw-i{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--cini-wash);color:var(--ink-2);font-size:13.5px}.vw-i svg{flex:0 0 auto;margin-top:2px}.vw-i.w{background:var(--safran-wash);color:var(--safran)}.vw-ac{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vw-m summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between}.vw-m summary::-webkit-details-marker{display:none}.vw-m summary small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}.vw-m summary:after{content:"›";font-size:20px;color:var(--muted);transform:rotate(90deg)}.vw-m[open] summary:after{transform:rotate(-90deg)}@media(min-width:900px){.vw{max-width:760px}}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v114: izin talebi yeniden tasarım (ücretli mazeret izni, tarih aralığı, akıllı özet) ===== */
+const LQ_T = [['yillik', 'Yıllık izin', 'Ücretli, hakkından düşer', 'clock'], ['mazeret', 'Ücretli mazeret', 'Evlilik, yakın kaybı, babalık', 'heart'], ['ucretsiz', 'Ücretsiz izin', 'Maaştan kesilebilir', 'wallet']];
+const LQ_S = [['Evlilik', 3, 'Evlilik'], ['Yakın kaybı', 3, 'Yakınımı kaybettim'], ['Babalık izni', 5, 'Bebeğimiz doğdu'], ['Diğer', 1, '']];
+const LQ_W = { yillik: ['Tatil', 'Dinlenmek istiyorum', 'Ailevi bir işim var'], ucretsiz: ['Ailevi bir işim var', 'Şehir dışına gitmem gerekiyor', 'Kişisel bir işim var'] };
+const lqIso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function lqRange(m) {
+  const a = m.d1, b = m.d2 && m.d2 >= m.d1 ? m.d2 : m.d1; if (!a) return null; const out = []; const s = new Date(a + 'T00:00:00'); const e = new Date(b + 'T00:00:00');
+  for (let d = new Date(s), i = 0; d <= e && i < 60; d.setDate(d.getDate() + 1), i++) out.push(new Date(d)); return out;
+}
+function lqCalc(m) {
+  const me = S.user.id; const r = lqRange(m); if (!r) return null; let work = 0, off = 0; const clash = {};
+  r.forEach((d) => { const y = d.getFullYear(), mo = d.getMonth(), dd = d.getDate(); const ym = y + '-' + vdP(mo + 1); const pub = !!(VD_M[ym] && VD_M[ym].pub); const s = pub ? vdState(y, mo, dd, me) : { k: 'shift' };
+    if (s.k === 'shift') work++; else off++;
+    EMP_IDS.forEach((id) => { if (id !== me && vdOnLeave(id, mo, dd)) clash[id] = 1; }); });
+  const cal = r.length; return { cal, work, off, clash: Object.keys(clash).length, txt: m.d1 === (m.d2 || m.d1) || !m.d2 || m.d2 < m.d1 ? isoShort(m.d1) : isoShort(m.d1) + '–' + isoShort(m.d2) };
+}
+function lqEnt() { const p = PROFILES[S.user.id]; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(S.user.id); const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; }
+function lvreqModal() {
+  const m = S.modal; if (!m.kind) { m.kind = 'yillik'; m.sub = 0; m.d1 = ''; m.d2 = ''; m.why = ''; m.days = null; }
+  const e = lqEnt(); const c = lqCalc(m); const days = m.days != null ? m.days : (c ? Math.max(c.work, c ? (c.work ? c.work : 1) : 1) : 1);
+  const mz = m.kind === 'mazeret';
+  const types = `<div class="lq-t">${LQ_T.map((t) => `<button type="button" class="lq-tt" data-a="lqkind" data-v="${t[0]}" aria-pressed="${m.kind === t[0]}"><span>${ic(t[3] === 'heart' ? 'users' : t[3], 18)}</span><b>${t[1]}</b><small>${t[0] === 'yillik' ? e.left + ' gün kaldı' : t[2]}</small></button>`).join('')}</div>`;
+  const subs = mz ? `<div class="field"><label>Hangi durum için?</label><div class="chips">${LQ_S.map((s, i) => `<button type="button" class="chip" data-a="lqsub" data-v="${i}" aria-pressed="${m.sub === i}">${s[0]}${s[1] > 1 ? ' · ' + s[1] + ' gün' : ''}</button>`).join('')}</div></div>` : '';
+  const sug = (LQ_W[m.kind] || []).length ? `<div class="chips lq-sg">${LQ_W[m.kind].map((t) => `<button type="button" class="chip" data-a="lqwhy" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : '';
+  let info = '';
+  if (c) {
+    const lines = [];
+    lines.push(`<b>${esc(c.txt)}</b> · ${c.cal} takvim günü${c.off ? `, bunun ${c.off} günü zaten izin veya tatil` : ''}`);
+    if (m.kind === 'yillik') { const after = e.left - days; lines.push(after >= 0 ? `Onaylanırsa ${after} gün yıllık iznin kalır.` : `Yıllık hakkın ${e.left} gün, ${-after} gün fazla. Ücretsiz izne çevirmeyi düşün.`); }
+    else if (mz) lines.push('Ücretli mazeret izninde maaştan kesinti yapılmaz. Süreyi işyerinin kuralı ve yönetici belirler.');
+    else lines.push('Ücretsiz izinde yönetici maaştan kesinti yapıp yapmayacağını seçer.');
+    if (c.clash) lines.push(`Aynı günlerde ${c.clash} arkadaşın da izinli. Yönetici yoğunluğa bakabilir.`);
+    if (!c.work && m.d1) lines.push('Bu günlerde zaten vardiyan görünmüyor.');
+    info = `<div class="lq-i${(m.kind === 'yillik' && e.left - days < 0) || c.clash ? ' w' : ''}">${lines.map((x) => `<p>${x}</p>`).join('')}</div>`;
+  }
+  return sheet('İzin talebi', `<div class="stack">${types}${subs}
+  <div class="row"><div class="field grow"><label for="lq-d1">Başlangıç</label><input id="lq-d1" type="date" min="${REF_ISO}" value="${esc(m.d1)}" data-ch="lqf" data-k="d1"></div><div class="field grow"><label for="lq-d2">Bitiş</label><input id="lq-d2" type="date" min="${esc(m.d1 || REF_ISO)}" value="${esc(m.d2)}" data-ch="lqf" data-k="d2"></div></div>
+  ${c ? `<div class="lq-n"><span>Gün sayısı</span><div><button type="button" data-a="lqd" data-v="-1" aria-label="Azalt">−</button><b>${days}</b><button type="button" data-a="lqd" data-v="1" aria-label="Artır">+</button></div></div>` : ''}${info}
+  <div class="field"><label for="lq-why">${mz ? 'Açıklama' : 'Neden izin istiyorsun?'}</label><textarea id="lq-why" rows="2" placeholder="Örnek: Kardeşimin düğünü var." data-ch="lqf" data-k="why">${esc(m.why)}</textarea>${sug}</div>
+  <div class="err" id="lq-err" role="alert"></div><button class="btn block" data-a="lrsend">${ic('send')} Yöneticiye gönder</button><p class="small muted">Talep patrona ve müdüre gider. Onaylanınca izin kaydedilir.</p></div>`);
+}
+H.lqkind = (el) => { const m = S.modal; if (!m || m.type !== 'lvreq') return; m.kind = el.dataset.v; if (m.kind === 'mazeret') { m.sub = 0; m.days = LQ_S[0][1]; if (!m.why) m.why = LQ_S[0][2]; } else m.days = null; renderModal(); };
+H.lqsub = (el) => { const m = S.modal; const i = Number(el.dataset.v); const prev = LQ_S[m.sub]; m.sub = i; m.days = LQ_S[i][1]; if (!m.why || (prev && m.why === prev[2])) m.why = LQ_S[i][2]; renderModal(); };
+H.lqwhy = (el) => { const m = S.modal; m.why = el.dataset.t; renderModal(); };
+H.lqd = (el) => { const m = S.modal; const c = lqCalc(m); const cur = m.days != null ? m.days : Math.max(1, c ? c.work : 1); m.days = Math.max(1, Math.min(60, cur + Number(el.dataset.v))); renderModal(); };
+document.addEventListener('input', (e) => { const el = e.target; if (!el || !el.dataset || el.dataset.ch !== 'lqf' || !S.modal || S.modal.type !== 'lvreq') return; const m = S.modal; m[el.dataset.k] = el.value; });
+document.addEventListener('change', (e) => { const el = e.target; if (!el || !el.dataset || el.dataset.ch !== 'lqf' || !S.modal || S.modal.type !== 'lvreq') return; const m = S.modal; m[el.dataset.k] = el.value; if (el.dataset.k === 'd1' && (!m.d2 || m.d2 < m.d1)) m.d2 = m.d1; if (['d1', 'd2'].includes(el.dataset.k)) { m.days = null; renderModal(); } });
+H.lrsend = () => {
+  const m = S.modal; if (!m || m.type !== 'lvreq') return; const er = (t) => { const x = document.getElementById('lq-err'); if (x) x.textContent = t; };
+  const c = lqCalc(m); if (!c) return er('Tarihleri seç.'); const days = m.days != null ? m.days : Math.max(1, c.work); const why = (m.why || '').trim();
+  if (why.length < 5) return er('Nedenini yaz. Nedensiz talep gönderilemez.');
+  if (m.kind === 'yillik') { const e = lqEnt(); if (days > e.left) return er(e.ent ? `Kalan yıllık iznin ${e.left} gün. Daha fazlası için ücretsiz izin seç.` : 'Yıllık izin hakkın henüz doğmadı. Ücretsiz izin isteyebilirsin.'); }
+  const r = { id: 'r' + ++seq, uid: S.user.id, type: m.kind, txt: c.txt, days, status: 'bekliyor', thread: [{ by: S.user.id, text: (m.kind === 'mazeret' ? LQ_S[m.sub][0] + ': ' : '') + why, time: nowT() }] }; if (m.kind === 'mazeret') r.sub = LQ_S[m.sub][0];
+  LVREQ.push(r); S.modal = null; render(); toast('Talebin patrona ve müdüre gitti.', 'ok');
+};
+{
+  const _lc = lrCard;
+  lrCard = function (r, who) { let h = _lc.apply(this, arguments); if (r.type === 'mazeret') h = h.replace('Ücretli yıllık izin ister', 'Ücretli mazeret izni ister' + (r.sub ? ' · ' + esc(r.sub) : '')); return h; };
+}
+(function () { try { const st = document.createElement('style'); st.textContent = '.lq-t{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.lq-tt{border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:10px 8px;text-align:left;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}.lq-tt span{color:var(--cini)}.lq-tt b{font-size:13px;font-weight:600}.lq-tt small{font-size:11px;color:var(--muted);line-height:1.25}.lq-tt[aria-pressed=true]{border-color:var(--cini);background:var(--cini-wash)}.lq-n{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-size:14px}.lq-n div{display:flex;align-items:center;gap:12px}.lq-n button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer}.lq-n b{min-width:22px;text-align:center;font-size:17px}.lq-i{background:var(--cini-wash);border-radius:14px;padding:12px 14px;font-size:13.5px;color:var(--ink-2)}.lq-i p{margin:0 0 4px}.lq-i p:last-child{margin:0}.lq-i.w{background:var(--safran-wash);color:var(--safran)}.lq-sg{margin-top:8px}'; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
