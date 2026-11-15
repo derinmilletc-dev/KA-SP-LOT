@@ -1054,6 +1054,23 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .dz-to{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-2)}
 @media(max-width:900px){.dz-g{grid-template-columns:1fr}.dz-cm{position:static}.dz-lst{max-height:none}}
 
+.main:has(.dz){max-width:1360px}
+.dz{gap:16px}.dz-hd h2{font-size:28px}
+.dz-sts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.dz-st{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #E6ECF4;border-radius:18px;padding:14px 16px}
+.dz-st>span{width:42px;height:42px;border-radius:13px;background:#EEF3FA;color:var(--cini);display:flex;align-items:center;justify-content:center;flex:none}
+.dz-st b{display:block;font-size:26px;line-height:1.1;letter-spacing:-.5px}.dz-st small{font-size:12.5px;color:var(--ink-2)}
+.dz-st.w>span{background:#FFF1CC;color:#9A5B00}.dz-st.g>span{background:#DDF3E6;color:#14804A}.dz-st.i>span{background:var(--cini-wash);color:var(--cini)}
+.dz-g{grid-template-columns:minmax(380px,480px) minmax(0,1fr);gap:18px}
+.dz-cm{padding:20px;gap:14px;border-radius:22px;box-shadow:0 4px 18px rgba(16,40,80,.06)}
+.dz-ct h3{margin:0;font-size:19px}.dz-ct span{font-size:13px;color:var(--ink-2)}
+.dz-tp{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dz-tp button{border:1px solid #D5DEEA;background:#F7F9FC;border-radius:999px;padding:7px 12px;font-size:13px;font-family:inherit;color:var(--ink)}
+.dz-ls{background:transparent}.dz-lst{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;max-height:calc(100vh - 300px);align-content:start}
+.dz-c{padding:16px;gap:11px;border-radius:20px}.dz-p{font-size:14px;-webkit-line-clamp:3}
+.dz-lst .dy-e{grid-column:1/-1;padding:60px 20px}
+@media(max-width:1100px){.dz-sts{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.dz-g{grid-template-columns:1fr}.dz-lst{grid-template-columns:1fr}.dz-st b{font-size:22px}.dz-cm{padding:16px}}
+
 .rz-it .card.rzc,.card.rzc{padding:12px 12px 8px;gap:6px}
 .rzc-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.rzc-n{min-width:0;display:flex;flex-direction:column}.rzc-n b{font-size:16px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rzc-t{font-size:13px;font-weight:600;color:var(--cini);font-variant-numeric:tabular-nums}
 .rzc-m{display:flex;flex-wrap:wrap;align-items:center;gap:2px 0;font-size:13px;color:var(--ink-2)}.rzc-m>span+span:before{content:"·";margin:0 6px}.rzc-m .rzc-tg{margin-left:8px;padding:1px 8px;border-radius:999px;font-weight:600;font-size:12px}.rzc-m .rzc-tg:before{content:none}
@@ -9594,14 +9611,16 @@ function dzView() {
   const waiting = MSGS.reduce((a, m) => a + (m.type === 'mesai' ? m.to.filter((id) => !m.res[id]).length : 0), 0);
   const unr = MSGS.reduce((a, m) => a + m.to.filter((id) => !m.reads.includes(id)).length, 0);
   const seg = (v, t) => `<button data-a="sub" data-g="msgtype" data-v="${v}" aria-pressed="${d.type === v}">${ic(v === 'mesai' ? 'clock' : 'megaphone', 16)}${t}</button>`;
-  const kais = MSGS.length ? `<div class="dz-k">${ic('sparkle', 16)}<span>${waiting || unr ? `<b>${[waiting ? waiting + ' cevap bekleniyor' : '', unr ? unr + ' okunmamış mesaj' : ''].filter(Boolean).join(' · ')}</b>` : '<b>Her şey güncel.</b> Bekleyen cevap ya da okunmamış mesaj yok.'}</span></div>` : '';
+  const tot = MSGS.reduce((a, m) => a + m.to.length, 0); const rdc = MSGS.reduce((a, m) => a + m.reads.filter((id) => m.to.includes(id)).length, 0); const pct = tot ? Math.round(rdc / tot * 100) : 0;
+  const st = (ico, n, l, c) => `<div class="dz-st ${c || ''}"><span>${ic(ico, 20)}</span><div><b>${n}</b><small>${l}</small></div></div>`;
+  const kais = `<div class="dz-sts">${st('megaphone', MSGS.length, 'Gönderilen mesaj')}${st('clock', waiting, 'Cevap bekleyen', waiting ? 'w' : '')}${st('check', tot ? '%' + pct : '–', 'Okunma oranı', 'g')}${st('sparkle', unr, 'Okunmamış mesaj', unr ? 'i' : '')}</div>`;
   return `<div class="dz"><div class="dz-hd"><div><h2>Duyurular</h2><p>Ekibine mesaj ya da mesai teklifi gönder.</p></div></div>${kais}
-  <div class="dz-g"><section class="dz-cm"><div class="dz-sg">${seg('duyuru', 'Duyuru')}${seg('mesai', 'Mesai teklifi')}</div>
+  <div class="dz-g"><section class="dz-cm"><div class="dz-ct"><h3>Yeni mesaj</h3><span>Ekibine saniyeler içinde ulaş</span></div><div class="dz-sg">${seg('duyuru', 'Duyuru')}${seg('mesai', 'Mesai teklifi')}</div>
     <div class="dz-r"><span class="dz-l">Kime</span><button class="chip" data-a="aud" data-v="all" aria-pressed="${d.aud === 'all'}">Herkes (${EMP_IDS.length})</button><button class="chip" data-a="aud" data-v="sel" aria-pressed="${d.aud === 'sel'}">Seçtiklerim</button></div>
     ${d.aud === 'sel' ? `<div class="dy-pk">${EMP_IDS.map((id) => `<label class="${d.sel.includes(id) ? 'on' : ''}"><input type="checkbox" name="rcp" value="${id}" ${d.sel.includes(id) ? 'checked' : ''} data-a="dypick">${avatar(byId(id), 28)}<span>${esc(byId(id).name)}</span></label>`).join('')}</div>` : ''}
-    <div class="dy-tp">${tp.map((t, i) => `<button data-a="dytpl" data-i="${i}">${esc(t[0])}</button>`).join('')}</div>
+    <div class="dz-tp"><span class="dz-l">Hızlı şablon</span>${tp.map((t, i) => `<button data-a="dytpl" data-i="${i}">${esc(t[0])}</button>`).join('')}</div>
     <input id="d-title" type="text" aria-label="Başlık" value="${esc(d.title)}" placeholder="${mesai ? 'Başlık: Bugün 1 saat uzatıyoruz' : 'Başlık: Cuma günü stok sayımı var'}">
-    <textarea id="d-body" aria-label="Mesaj" rows="3" placeholder="Çalışanların okuyacağı metin">${esc(d.body)}</textarea>
+    <textarea id="d-body" aria-label="Mesaj" rows="5" placeholder="Çalışanların okuyacağı metin">${esc(d.body)}</textarea>
     ${mesai ? `<div class="dy-hr">${['1', '2', '3', '4'].map((h) => `<button data-a="dyh" data-v="${h}" aria-pressed="${String(d.hours) === h}">${h} saat</button>`).join('')}</div>
     <div class="row wrap"><div class="field grow"><label for="d-hours">Süre (saat)</label><input id="d-hours" type="number" min="0.5" step="0.5" value="${esc(d.hours)}"></div><div class="field grow"><label for="d-pay">Kişi başı ücret (₺)</label><input id="d-pay" type="number" min="0" step="50" inputmode="decimal" value="${esc(d.pay)}"></div></div>
     <div class="dz-sm">${ic('wallet', 16)}<span>${nTo} kişi × ${fmt(Number(d.pay) || 0)} = <b>${fmt((Number(d.pay) || 0) * nTo)}</b></span></div>
