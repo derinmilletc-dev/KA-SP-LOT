@@ -73,7 +73,20 @@ window.addEventListener('error',(e)=>{const d=document.createElement('div');d.st
 window.addEventListener('unhandledrejection',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+((e.reason&&e.reason.message)||e.reason);document.body.appendChild(d);});
 const SB_URL='https://bbcsbkgbwzciyfymvpxh.supabase.co';
 const SB_KEY='sb_publishable_Pc2JtwezlCiezDW4P4IKxw_gXFXUjnA';
-const sb=supabase.createClient(SB_URL,SB_KEY);
+const DEMO=/[?&]demo=1/.test(location.search);
+function demoSb(){
+  const d=(n)=>new Date(Date.now()-n*864e5).toISOString();
+  const T={
+    businesses:[{id:'b1',name:'Çınar Kafe (deneme)'}],
+    rfqs:[{id:'r1',business_id:'b1',status:'acik',created_at:d(1),lines:[{name:'Un (tip 550)',qty:50,unit:'kg'},{name:'Süt (tam yağlı)',qty:40,unit:'L'},{name:'Tereyağı',qty:10,unit:'kg'}]},{id:'r2',business_id:'b1',status:'acik',created_at:d(3),lines:[{name:'Toz şeker',qty:25,unit:'kg'}]}],
+    quotes:[{rfq_id:'r2',supplier_id:'s1',prices:{0:42.5}}],
+    orders:[{id:'o1',supplier_id:'s1',status:'bekliyor',total:3280,created_at:d(2),lines:[{name:'Un (tip 550)',qty:40,unit:'kg',price:28},{name:'Tereyağı',qty:8,unit:'kg',price:270}]},{id:'o2',supplier_id:'s1',status:'onaylandi',total:1240,created_at:d(9),lines:[{name:'Toz şeker',qty:20,unit:'kg',price:62}]}]
+  };
+  const from=(t)=>{let w=false; const q={select:()=>q,eq:()=>q,order:()=>q,limit:()=>q,upsert:()=>{w=true;return q;},update:()=>{w=true;return q;},insert:()=>{w=true;return q;},
+    then:(ok,no)=>Promise.resolve(w?{error:null}:{data:T[t]||[],error:null}).then(ok,no)}; return q;};
+  return {from,rpc:async()=>({}),auth:{getSession:async()=>({data:{session:null}}),signOut:async()=>{location.href='/';},onAuthStateChange:()=>{}}};
+}
+const sb=DEMO?demoSb():supabase.createClient(SB_URL,SB_KEY);
 const $=(s)=>document.querySelector(s); const app=$('#app');
 const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tl=(n)=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:2})+' ₺';
@@ -226,5 +239,5 @@ async function supView(){
   document.querySelectorAll('[data-ok]').forEach(b=>b.onclick=async()=>{const r=await sb.from('orders').update({status:'onaylandi'}).eq('id',b.dataset.ok); if(r.error) alert(r.error.message); else supView();});
 }
 sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT') loginView(); });
-boot();
+if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};MODE='sup';document.body.classList.remove('lg');supView().then(()=>{const b=document.createElement('p');b.className='m';b.style.cssText='background:#fff4d6;border-radius:10px;padding:8px 10px;margin:0 0 10px';b.textContent='Deneme görünümü. Örnek veriler, hiçbir şey kaydedilmez.';app.insertBefore(b,app.children[1]||null);});}else boot();
 </script></body></html>
