@@ -7277,6 +7277,70 @@ bugunMudur = function () {
   return h;
 };
 H.mgf = (el) => { S.mgf = S.mgf === el.dataset.v ? '' : el.dataset.v; render(); };
+/* ===== v70: Günün özeti, ayrıntılı maddeler + doğrudan Kais'e sor ===== */
+{const st=document.createElement('style'); st.textContent=`
+.kz{background:linear-gradient(135deg,#EAF2FD 0,#F6FAFF 55%,#FFFFFF);border:1px solid #D3E3F8;border-radius:20px;padding:14px 14px 12px;box-shadow:0 4px 16px rgba(30,90,170,.08)}
+.kz-h{display:flex;align-items:center;gap:12px}.kz-i{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#4F8FE8,#2B67C4);color:#fff;display:grid;place-items:center;flex:none}
+.kz-t{flex:1;min-width:0}.kz-t h3{margin:0;font-size:18px;letter-spacing:-.2px}.kz-t p{margin:2px 0 0;font-size:13px;color:var(--ink-2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kz-c{font:700 11.5px system-ui;border-radius:99px;padding:3px 9px}.kz-c.warn{background:#FDF1DC;color:#B26B00}.kz-c.bad{background:#FDECEC;color:#C0392B}.kz-c.ok{background:#E3F5EA;color:#1E8E55}
+.kz-r{border:0;background:#fff;border:1px solid #D3E3F8;color:var(--cini);width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none}
+.kz-l{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.kz-it{display:flex;align-items:stretch;gap:6px}.kz-go{flex:1;min-width:0;display:flex;align-items:center;gap:11px;text-align:left;font:inherit;background:#fff;border:1px solid #E1E8F2;border-radius:14px;padding:10px 12px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+div.kz-go{cursor:default}.kz-go:is(button):hover{transform:translateY(-1px);box-shadow:0 8px 18px -12px rgba(13,40,80,.35)}
+.kz-d{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none}.t-warn .kz-d{background:#FDF1DC;color:#B26B00}.t-bad .kz-d{background:#FDECEC;color:#C0392B}.t-ok .kz-d{background:#E3F5EA;color:#1E8E55}.t-info .kz-d{background:#E6EEFA;color:#2B67C4}
+.kz-x{flex:1;min-width:0}.kz-x b{display:block;font-size:14.5px;line-height:1.25}.kz-x span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:1px;line-height:1.35}
+.kz-q{flex:none;width:40px;border:1px solid #D3E3F8;background:#F2F7FE;color:var(--cini);border-radius:14px;display:grid;place-items:center;cursor:pointer}.kz-q:hover{background:#E4EEFC}
+.kz-ai{margin-top:10px;background:#fff;border:1px dashed #BFD3F0;border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.45}.kz-ai>b{display:flex;gap:6px;align-items:center;color:var(--cini);font-size:12.5px;margin-bottom:4px}.kz-ai .cl{max-height:4.4em;overflow:hidden}.kz-ai button{border:0;background:none;color:var(--cini);font-weight:700;font-size:12.5px;padding:4px 0 0}
+.kz-a{display:flex;gap:8px;margin-top:12px;background:#fff;border:1.5px solid #CFE0F7;border-radius:16px;padding:5px 5px 5px 14px;align-items:center}.kz-a:focus-within{border-color:var(--cini);box-shadow:0 0 0 3px rgba(26,86,160,.12)}
+.kz-a input{flex:1;min-width:0;border:0!important;outline:0;background:transparent!important;font:inherit;font-size:14.5px;box-shadow:none!important;padding:8px 0;min-height:0!important}.kz-a button{border:0;background:var(--cini);color:#fff;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.kz-s{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;scrollbar-width:none}.kz-s::-webkit-scrollbar{display:none}.kz-s button{flex:none;border:1px solid #D3E3F8;background:#fff;color:var(--ink);border-radius:99px;padding:6px 12px;font:600 12.5px inherit;font-family:inherit;white-space:nowrap}.kz-s button:hover{background:#EAF2FD}
+`; document.head.appendChild(st);}
+function kzItems(scope) {
+  const it = []; const R = S.user.role; const add = (tone, ico, t, d, go, q) => it.push({ tone, ico, t, d, go, q }); const nm = (id) => (byId(id).name || '').split(' ')[0];
+  const pa = pendingAtt(), nr = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status));
+  if (scope === 'muh') {
+    const mu = RECEIPTS.filter((f) => f.status === 'musavirde'), dz = RECEIPTS.filter((f) => f.status === 'duzeltme'), wn = (typeof waitingNotes === 'function' ? waitingNotes() : []);
+    add(mu.length ? 'warn' : 'ok', 'receipt', mu.length ? `${mu.length} belge işlenmeyi bekliyor` : 'İşlenecek belge yok', mu.length ? 'Onaylı fişleri defterine işle, belgesi eksik olanı patrona geri gönder.' : 'Patron onaylayıp gönderdikçe burada görünür.', 'belgeler', 'Hangi belgeleri önce işlemeliyim?');
+    if (dz.length) add('info', 'receipt', `${dz.length} belge düzeltme bekliyor`, 'Patrona düzeltme için geri gönderildi, cevap gelince tekrar düşer.', 'belgeler', 'Düzeltme bekleyen belgelerde ne eksik?');
+    if (wn.length) add('info', 'chat', `${wn.length} notuna cevap bekleniyor`, 'Patrona yazdığın notlar henüz cevaplanmadı.', 'belgeler', 'Cevap bekleyen notlarım neler?');
+    const ds = debtSoon(); if (ds.length) add('warn', 'wallet', `${ds.length} ödeme yaklaşıyor`, ds.slice(0, 2).map((d) => `${d.who} ${fmt0(d.amt)}`).join(' · '), 'borc', 'Yaklaşan ödemeleri nasıl planlamalı?');
+    add('info', 'file', 'KDV ve dönem özeti hazır', 'Dönem sekmesinde gelir, gider ve KDV tahminini görebilirsin.', 'donem', 'Bu dönemin KDV tahmini nedir ve neden böyle?');
+  } else if (scope === 'ekip') {
+    if (nr.length) add('warn', 'clock', `${nr.length} izin talebi karar bekliyor`, nr.slice(0, 2).map((r) => `${nm(r.uid)}: ${r.txt}`).join(' · '), 'ekip', 'Bekleyen izin taleplerini onaylarsam vardiya nasıl etkilenir?');
+    if (pa.length) add('warn', 'clock', `${pa.length} mola dönüşü onay bekliyor`, pa.slice(0, 2).map((id) => `${nm(id)}: ${ATT[id].note || 'döndüm demedi'}`).join(' · '), 'ekip', 'Mola dönüşü onay bekleyenlere nasıl yaklaşmalıyım?');
+    const inn = EMP_IDS.filter((id) => ATT[id] && ['working', 'break', 'pending'].includes(ATT[id].state)).length, br = EMP_IDS.filter((id) => ATT[id] && ATT[id].state === 'break').length;
+    add(inn ? 'ok' : 'info', 'users', inn ? `Bugün ${inn}/${EMP_IDS.length} çalışan giriş yaptı` : 'Bugün giriş yapan çalışan yok', br ? `${br} kişi molada.` : (EMP_IDS.length - inn > 0 ? `${EMP_IDS.length - inn} kişi henüz girmedi.` : 'Herkes burada.'), 'ekip', 'Bugünkü ekip durumunu yorumla.');
+    const late = EMP_IDS.filter((id) => EMPDATA[id] && EMPDATA[id].late >= 2).sort((x, y) => EMPDATA[y].late - EMPDATA[x].late); if (late.length) add('warn', 'clock', `${nm(late[0])} bu ay ${EMPDATA[late[0]].late} kez geç kaldı`, late.length > 1 ? `${late.length - 1} kişi daha tekrar geç kalıyor.` : 'Geç kalma tekrar ediyor, kısa bir konuşma işe yarayabilir.', 'ekip', `${nm(late[0])} için geç kalma konusunda ne yapmalıyım?`);
+    const nc = EMP_IDS.filter((id) => PROFILES[id] && !PROFILES[id].contract); if (nc.length) add('warn', 'file', `${nc.length} çalışanın iş sözleşmesi eksik`, nc.slice(0, 2).map(nm).join(', '), 'ekip', 'Eksik iş sözleşmeleri için ne yapmalıyım?');
+  } else {
+    const low = lowStock(); const isP = R === 'patron';
+    if (low.length) add('warn', 'box', `${low.length} ürün kritik seviyede`, low.slice(0, 3).map((x) => `${x.name.split(' (')[0]} ${x.qty}/${x.min}`).join(' · ') + (low.length > 3 ? ` ve ${low.length - 3} ürün daha` : ''), 'stok', 'Kritik stoktaki ürünlerden ne kadar sipariş vermeliyim?'); else add('ok', 'box', 'Stok durumu sağlıklı', 'Alt sınırın altında ürün yok.', 'stok', 'Stoğum nasıl, dikkat etmem gereken bir şey var mı?');
+    if (nr.length) add('warn', 'clock', `${nr.length} izin talebi karar bekliyor`, nr.slice(0, 2).map((r) => `${nm(r.uid)}: ${r.txt}`).join(' · '), 'ekip', 'Bekleyen izin talepleri için ne önerirsin?');
+    if (pa.length) add('warn', 'clock', `${pa.length} mola dönüşü onay bekliyor`, pa.slice(0, 2).map((id) => `${nm(id)}: ${ATT[id].note || 'döndüm demedi'}`).join(' · '), 'ekip', 'Mola dönüşü onayı için ne yapmalıyım?');
+    if (isP) { const pr = pendingReceipts(); if (pr.length) add('warn', 'receipt', `${pr.length} masraf fişi onayını bekliyor`, 'Onaylarsan muhasebeciye gider.', 'muhasebe', 'Onay bekleyen fişlerde dikkat etmem gereken bir şey var mı?'); const ds = debtSoon(); add(ds.length ? 'warn' : 'ok', 'wallet', ds.length ? `${ds.length} ödeme yaklaşıyor` : 'Yaklaşan ödeme yok', ds.length ? ds.slice(0, 2).map((d) => `${d.who} ${fmt0(d.amt)} · ${daysTo(d.due) <= 0 ? 'bugün ya da geçti' : daysTo(d.due) + ' gün'}`).join(' · ') : 'Vadesi yaklaşan borç görünmüyor.', 'muhasebe', 'Yaklaşan ödemeler için nakit akışım yeter mi?'); }
+    const rz = RESV.filter((r) => r.date === REF_ISO && rzActive(r)).sort((x, y) => String(x.time).localeCompare(String(y.time))); if (rz.length) add('info', 'cal', `Bugün ${rz.length} rezervasyon var`, `Sıradaki: ${rz[0].name} ${rz[0].time} · ${rz[0].n} kişi`, 'rezerv', 'Bugünkü rezervasyonlara göre hazırlık önerir misin?');
+    const inn = EMP_IDS.filter((id) => ATT[id] && ['working', 'break', 'pending'].includes(ATT[id].state)).length; add(inn ? 'ok' : 'info', 'users', inn ? `${inn}/${EMP_IDS.length} çalışan işbaşında` : 'Henüz kimse giriş yapmadı', EMP_IDS.length - inn > 0 ? `${EMP_IDS.length - inn} kişi henüz girmedi.` : 'Herkes burada.', 'ekip', 'Bugünkü ekip durumunu yorumla.');
+    add(SALES.length < 3 ? 'info' : 'ok', 'bars', SALES.length < 3 ? 'Satış yorumu için veri az' : 'Satış verisi güncel', SALES.length < 3 ? 'Kasa verisi ekledikçe Kais satış ve stok yorumu yapar.' : `${SALES.length} satış kaydı değerlendirildi.`, null, 'Satışlarım nasıl gidiyor?');
+  }
+  const w = { bad: 0, warn: 1, info: 2, ok: 3 }; return it.map((x, i) => [x, i]).sort((a, b) => (w[a[0].tone] - w[b[0].tone]) || (a[1] - b[1])).map((x) => x[0]);
+}
+function kzCard(scope) {
+  const it = kzItems(scope); const nW = it.filter((x) => x.tone === 'warn' || x.tone === 'bad').length;
+  const chip = nW ? `<span class="kz-c ${it.some((x) => x.tone === 'bad') ? 'bad' : 'warn'}">${nW} konu dikkat istiyor</span>` : '<span class="kz-c ok">Her şey yolunda</span>';
+  const ai = aiReady(); const ico = (k) => ({ box: mgi('box', 18), users: mgi('users', 18), cal: mgi('cal', 18), check: mgi('check', 18) }[k] || ic(k, 18));
+  const rows = it.map((x) => { const inner = `<span class="kz-d">${ico(x.ico)}</span><span class="kz-x"><b>${esc(x.t)}</b><span>${esc(x.d)}</span></span>${x.go ? ic('chevron', 16) : ''}`; return `<div class="kz-it t-${x.tone}">${x.go ? `<button type="button" class="kz-go" data-a="nav" data-v="${x.go}">${inner}</button>` : `<div class="kz-go">${inner}</div>`}<button type="button" class="kz-q" data-a="kzq" data-q="${esc(x.q)}" aria-label="Kais'e sor">${ic('chat', 18)}</button></div>`; }).join('');
+  const txt = (typeof BR !== 'undefined' && BR.text) ? BR.text : ''; const long = txt.length > 220;
+  const brief = txt ? `<div class="kz-ai"><b>${ic('sparkle', 14)} Kais'in yorumu</b><div class="${long && !S.gunOpen ? 'cl' : ''}" style="white-space:pre-wrap">${esc(txt).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')}</div>${long ? `<button type="button" data-a="gundet">${S.gunOpen ? 'Daha az göster' : 'Devamını oku'}</button>` : ''}</div>` : '';
+  const sug = [...new Set(it.filter((x) => x.tone !== 'ok').slice(0, 2).map((x) => x.q).concat(['Bugün önce neye bakmalıyım?']))].slice(0, 3);
+  const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+  return `<div class="kz"><div class="kz-h"><span class="kz-i">${ic('sparkle', 22)}</span><div class="kz-t"><h3>Günün özeti</h3><p>${esc(date)} ${chip}</p></div><button type="button" class="kz-r" data-a="gunyen" aria-label="Yenile">${ic('refresh', 18)}</button></div><div class="kz-l">${rows}</div>${brief}<div class="kz-a"><input id="kz-in" type="text" placeholder="Anlamadığın bir şey mi var? Kais'e sor" autocomplete="off" enterkeyhint="send"><button type="button" data-a="kzsend" aria-label="Gönder">${ic('arrow', 18)}</button></div><div class="kz-s">${sug.map((q) => `<button type="button" data-a="kzq" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+}
+function kzAsk(t) { t = String(t || '').trim(); if (!t) { const e = document.getElementById('kz-in'); if (e) e.focus(); return; } if (!aiReady() || !AI_ROLES.includes(S.user.role)) { toast('Kais AI deneme modunda kapalı. Bulut hesabıyla giriş yapınca sorun yanıtlanır.', 'warn'); return; } S.view = 'kaisai'; AIC.draft = ''; window.scrollTo && window.scrollTo(0, 0); aiAsk(t); }
+H.kzq = (el) => kzAsk(el.dataset.q); H.kzsend = () => kzAsk((document.getElementById('kz-in') || {}).value);
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target && e.target.id === 'kz-in') { e.preventDefault(); H.kzsend(); } });
+{const _br70 = brCard; brCard = function () { if (!S.user || !['patron', 'mudur'].includes(S.user.role)) return ''; if (aiReady()) { try { _br70(); } catch (e) {} } return kzCard('bugun'); };}
+ekipGun = function () { return kzCard('ekip'); };
+{const _vh70 = viewHTML; viewHTML = function () { const h = _vh70(); if (!S.user || S.user.role !== 'muhasebeci' || S.view !== 'donem' || h.includes('class="kz"')) return h; if (h.includes('<section class="mc-hero">')) return h.replace('<section class="mc-hero">', kzCard('muh') + '<section class="mc-hero">'); return h.includes('<div class="stack-lg">') ? h.replace('<div class="stack-lg">', '<div class="stack-lg">' + kzCard('muh')) : h; }; }
 /* Ayarlar: tüm verileri sıfırla */
 const viewAyarlarV66 = viewAyarlar;
 viewAyarlar = function () {
