@@ -1012,6 +1012,7 @@ div.now{font-size:11px}
 }
 @media(max-width:560px){.kz .kz-s{flex-wrap:wrap;overflow:visible;padding-bottom:0}.kz .kz-s button{flex:0 1 auto;max-width:100%;white-space:normal;text-align:left;line-height:1.3;padding-top:8px;padding-bottom:8px}}
 .oc-dir{display:inline-flex;background:#EEF2F8;border-radius:12px;padding:3px;gap:2px}.oc-dir button{border:0;background:transparent;font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);padding:8px 16px;border-radius:9px;min-height:36px;cursor:pointer}.oc-dir button[aria-pressed=true]{background:#fff;color:var(--cini);box-shadow:0 1px 4px rgba(20,40,80,.12)}
+.oc-p2{display:flex;gap:8px}.oc-p2 input{flex:1;min-width:0}.oc-p2 select{flex:none;width:92px}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -11060,6 +11061,71 @@ H.ocdir = (el) => { const m = S.modal; if (!m || !m.sample) return; const d = el
     const h = _c(a, i, j); if (a.st !== 'open' || h.indexOf('Gider kaydı önerisi') < 0) return h;
     const id = `aa-${i}-${j}-k`;
     return h.replace('Gider kaydı önerisi', 'Gider ya da gelir kaydı').replace('<div class="row wrap"><div class="field grow"><label for="aa-' + i + '-' + j + '-r">', `<div class="field"><label for="${id}">Tür</label><select id="${id}"><option value="gider" selected>Gider (aldığım fatura)</option><option value="gelir">Gelir (kestiğim fatura)</option></select></div><div class="row wrap"><div class="field grow"><label for="aa-${i}-${j}-r">`);
+  };
+}
+
+/* ===== v99: tek faturada iki KDV oranı (karışık KDV) ===== */
+const _p2 = (f) => (f && f.p2 && Number(f.p2.total) > 0 && Number(f.p2.total) < Number(f.total) ? { total: r2(Number(f.p2.total)), rate: Number(f.p2.rate) } : null);
+ledSync = function () {
+  let ch = false;
+  RECEIPTS.forEach((f) => {
+    if (!f.iso) return; const rows = LEDGER.filter((r) => r.rc === f.id); const live = f.status === 'musavirde' || f.status === 'onayli';
+    if (!live) { if (rows.length) { rows.filter((x) => x.pend || x.lg).forEach((x) => { LEDGER.splice(LEDGER.indexOf(x), 1); ch = true; }); f.lg = false; } return; }
+    const p2 = _p2(f); const parts = [{ k: 1, total: p2 ? r2(Number(f.total) - p2.total) : Number(f.total), rate: Number(f.rate) }]; if (p2) parts.push({ k: 2, total: p2.total, rate: p2.rate });
+    const had = rows.some((x) => x.lg); if (!had && f.lg && rows.length) return;
+    rows.filter((x) => !x.lg || !parts.some((p) => p.k === (x.k || 1))).forEach((x) => { const i = LEDGER.indexOf(x); if (i >= 0) { LEDGER.splice(i, 1); ch = true; } });
+    const pend = f.status === 'musavirde';
+    parts.forEach((pt) => {
+      let r = LEDGER.find((x) => x.rc === f.id && x.lg && (x.k || 1) === pt.k); if (!r) { r = { id: 'g' + ++seq, lg: true }; LEDGER.push(r); f.lg = true; ch = true; }
+      const want = { dir: f.dir || 'gider', date: f.date, iso: f.iso, desc: f.seller + (p2 ? ' (%' + pt.rate + ' KDV kısmı)' : ''), acc: f.cat, doc: docType(f), rate: pt.rate, total: pt.total, src: 'Kais', rc: f.id, k: pt.k, pend };
+      if (!r.edited) Object.keys(want).forEach((k) => { if (r[k] !== want[k]) { r[k] = want[k]; ch = true; } }); else if (r.pend !== pend) { r.pend = pend; ch = true; }
+    });
+  });
+  if (ch) { try { pSched(); } catch (e) {} }
+  return ch;
+};
+{
+  const _rm = renderModal;
+  renderModal = function () {
+    _rm.apply(this, arguments); const m = S.modal; const root = $('#modal-root'); if (!m || !root || typeof root.innerHTML !== 'string' || m.type !== 'upload' || m.step !== 'result' || !m.sample) return;
+    let h = root.innerHTML; if (h.includes('id="oc-p2t"')) return; const k = h.indexOf('<dt>Tür</dt>'); if (k < 0) return; const s = m.sample;
+    const add = `<dt><label for="oc-p2t">Farklı KDV'li kısım (varsa)</label></dt><dd><div class="oc-p2"><input type="text" inputmode="decimal" id="oc-p2t" placeholder="Tutar" value="${esc(s.p2t || '')}" data-ch="ocp2" data-k="p2t"><select id="oc-p2r" data-ch="ocp2" data-k="p2r" aria-label="Kısmın KDV oranı">${[0, 1, 10, 20].map((x) => `<option value="${x}" ${Number(s.p2r == null ? 20 : s.p2r) === x ? 'selected' : ''}>%${x}</option>`).join('')}</select></div></dd>`;
+    root.innerHTML = h.slice(0, k) + add + h.slice(k);
+  };
+}
+document.addEventListener('input', (e) => { const el = e.target; if (el && el.dataset && el.dataset.ch === 'ocp2' && S.modal && S.modal.sample) S.modal.sample[el.dataset.k] = el.value; });
+document.addEventListener('change', (e) => { const el = e.target; if (el && el.dataset && el.dataset.ch === 'ocp2' && S.modal && S.modal.sample) S.modal.sample[el.dataset.k] = el.value; });
+{
+  const _sv = H.savereceipt;
+  H.savereceipt = function () {
+    const m = S.modal; const s = m && m.sample; let p2 = null;
+    if (s) {
+      const t = trNum((document.getElementById('oc-p2t') || {}).value); const rr = Number((document.getElementById('oc-p2r') || {}).value);
+      const raw = String((document.getElementById('oc-p2t') || {}).value || '').trim();
+      if (raw) { const gt = trNum((document.getElementById('oc-total') || {}).value) || Number(s.total); if (!(t > 0) || !(t < gt)) { toast('Farklı KDV\'li kısım, toplamdan küçük olmalı.', 'warn'); return; } p2 = { total: t, rate: [0, 1, 10, 20].includes(rr) ? rr : 20 }; }
+    }
+    const n0 = RECEIPTS.length; const r = _sv.apply(this, arguments);
+    if (p2 && RECEIPTS.length > n0) { const f = RECEIPTS[RECEIPTS.length - 1]; if (p2.total < Number(f.total)) { f.p2 = p2; try { ledSync(); render(); } catch (e) {} } }
+    return r;
+  };
+}
+{
+  const _c = aiActCard;
+  aiActCard = function (a, i, j) {
+    const h = _c(a, i, j); if (a.st !== 'open' || h.indexOf('Gider ya da gelir kaydı') < 0 || h.includes(`aa-${i}-${j}-p`)) return h;
+    const add = `<div class="row wrap"><div class="field grow"><label for="aa-${i}-${j}-p">Farklı KDV'li kısım (isteğe bağlı)</label><input id="aa-${i}-${j}-p" type="text" inputmode="decimal" placeholder="Tutar"></div><div class="field grow"><label for="aa-${i}-${j}-q">Kısmın KDV %</label><select id="aa-${i}-${j}-q">${[0, 1, 10, 20].map((x) => `<option value="${x}" ${x === 20 ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>`;
+    const k = h.indexOf('<div class="row wrap"><button class="btn sm" data-a="aiact"'); return k < 0 ? h : h.slice(0, k) + add + h.slice(k);
+  };
+}
+{
+  const _ai = H.aiact;
+  H.aiact = async function (el) {
+    const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; const g = (k) => (document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-${k}`) || {}).value;
+    let p2 = null; const open = a && a.st === 'open' && document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-p`);
+    if (open) { const raw = String(g('p') || '').trim(); if (raw) { const t = trNum(raw); const gt = trNum(g('t')); if (!(t > 0) || !(t < gt)) { toast('Farklı KDV\'li kısım, toplamdan küçük olmalı.', 'warn'); return; } p2 = { total: t, rate: Number(g('q')) }; } }
+    const n0 = RECEIPTS.length; const r = await _ai.call(this, el);
+    if (p2 && RECEIPTS.length > n0) { const f = RECEIPTS[RECEIPTS.length - 1]; f.p2 = p2; try { ledSync(); render(); } catch (e) {} }
+    return r;
   };
 }
 </script>
