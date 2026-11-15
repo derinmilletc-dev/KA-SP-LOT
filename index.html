@@ -901,6 +901,10 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .stx .stepper{background:#F1F5FA;border-radius:14px;padding:4px;gap:2px;align-items:center}.stx .stepper button{width:34px;height:34px;border-radius:10px;border:0;background:#fff;box-shadow:0 1px 3px rgba(13,40,80,.12);font-size:18px;color:var(--cini-d)}.stx .stepper b{min-width:38px;text-align:center;font-size:15px}
 .stx details.rt>summary{padding:10px 16px;font-size:13px;color:var(--cini);background:#F8FAFD}
 .stx .empty{padding:34px 16px;color:var(--ink-2)}
+.dy-pk{max-height:300px;overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain}.dy-pk label{position:relative}
+.cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
+.cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
+@media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
 .main:has(.stx){max-width:1360px}
 .sx2{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start}
 .sx2-l{display:flex;flex-direction:column;gap:12px;min-width:0}.sx2-r{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -9682,6 +9686,23 @@ function dzView() {
     return root.outerHTML;
   };
 }
+/* ===== v83: uzun listelere otomatik scroll (200 personele göre) ===== */
+function capLists(root) {
+  try {
+    const lim = Math.max(420, Math.min(680, Math.round(window.innerHeight * 0.7)));
+    (root || document).querySelectorAll('.main *, #modal-root .sheet *').forEach((el) => {
+      if (el.children.length < 12 || el.dataset.capd) return;
+      const t = el.tagName; if (/^(TABLE|TBODY|THEAD|TR|SELECT|OPTGROUP)$/.test(t)) return;
+      if (el.closest('svg,select')) return;
+      if (el.offsetHeight <= lim + 40) return;
+      const cs = getComputedStyle(el); if (/(auto|scroll)/.test(cs.overflowY) || cs.display === 'contents') return;
+      for (let p = el.parentElement; p && !p.classList.contains('main'); p = p.parentElement) { if (/(auto|scroll)/.test(getComputedStyle(p).overflowY)) return; }
+      el.dataset.capd = '1'; el.style.maxHeight = lim + 'px'; el.style.overflowY = 'auto'; el.classList.add('cap-sc');
+    });
+  } catch (e) {}
+}
+{ const _r83 = render; render = function () { const r = _r83.apply(this, arguments); capLists(); return r; }; }
+{ const _m83 = renderModal; renderModal = function () { const r = _m83.apply(this, arguments); capLists(); return r; }; }
 </script>
 </body>
 </html>
