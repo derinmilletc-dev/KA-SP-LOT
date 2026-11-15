@@ -993,6 +993,7 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .tq-m{font-size:13.5px;line-height:1.45;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.tq-m b{color:var(--ink)}
 .tq-tg{align-self:flex-start;border:0;background:none;color:var(--cini);font-weight:600;font-size:13px;padding:0;font-family:inherit}
 .tq-ct{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--cini);background:var(--cini-wash);border-radius:12px;padding:8px 10px}.tq-ct span{color:var(--ink)}
+.tq-n{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--ink-2);background:#F6F9FD;border-radius:12px;padding:8px 10px}.tq-n .ic{flex:none;margin-top:1px;color:var(--cini)}.tq-n b{color:var(--ink)}
 .tq-fin{font-size:12.5px;color:var(--ink-2)}
 .tq-a{display:flex;gap:8px}.tq-a .btn{flex:1 1 0;min-width:0;min-height:42px;padding:0 6px;font-size:13.5px;white-space:nowrap}.tq-a .btn:first-child{flex:1.25}.tq-no{color:var(--nar)!important}
 
@@ -8073,12 +8074,24 @@ function tqHints(r) {
   const o = izOrd(e.txt);
   if (o) {
     const same = LVREQ.filter((x) => x.id !== r.id && x.uid !== r.uid && x.status !== 'reddedildi').filter((x) => { const q = izOrd(lrEff(x).txt); return q && q[0] <= o[1] && o[0] <= q[1]; });
-    if (same.length) h.push(['w', `Çakışma: ${same.map((x) => byId(x.uid).name.split(' ')[0]).join(', ')}`]);
-    else h.push(['o', 'Başka talep çakışmıyor']);
+    if (same.length) h.push(['w', `${same.map((x) => byId(x.uid).name).join(', ')} de aynı günlerde izin istiyor`]);
+    else h.push(['o', 'Aynı günlerde başka talep yok']);
   }
   try { const hw = vdHolWarn ? vdHolWarn(e.txt) : ''; if (hw) h.push(['w', 'Resmi tatile denk geliyor']); } catch (x) {}
   try { const cw = vdCoverWarn(r.uid, e.txt); if (cw) h.push(['w', 'Kadro minimumun altına düşer']); else if (o) h.push(['o', 'Vardiya kadrosu yeterli']); } catch (x) {}
   return h;
+}
+function tqNote(r) {
+  const e = lrEff(r); const o = izOrd(e.txt); if (!o) return '';
+  const out = []; const y = new Date().getFullYear();
+  const ov = (txt) => { const q = izOrd(txt); return q && q[0] <= o[1] && o[0] <= q[1]; };
+  LVREQ.filter((x) => x.id !== r.id && x.uid !== r.uid && x.status !== 'reddedildi' && ov(lrEff(x).txt)).forEach((x) => out.push(`${byId(x.uid).name} ${x.status === 'onayli' ? 'izinli' : 'izin istiyor'} (${lrEff(x).txt})`));
+  LEAVES.filter((x) => x.uid !== r.uid && ov(x.txt)).forEach((x) => out.push(`${byId(x.uid).name} izinli (${x.txt})`));
+  const hs = []; for (let k = o[0]; k <= o[1] && k - o[0] < 60; k++) { const m = Math.floor(k / 40), d = k % 40; if (d < 1 || d > 31 || m > 11) continue; const h = vdHol(y, m, d); if (h) hs.push(`${d} ${VD_MON[m]} ${h.n}${h.half ? ' (yarım gün)' : ''}`); }
+  const a = [];
+  a.push(out.length ? 'Aynı günlerde: ' + out.join(', ') + '.' : 'Bu günlerde başka izinli ya da izin isteyen yok.');
+  if (hs.length) a.push('Resmi tatil: ' + hs.join(', ') + '.');
+  return `<div class="tq-n">${ic('sparkle', 16)}<span><b>Kais:</b> ${esc(a.join(' '))}</span></div>`;
 }
 function tqCard(r) {
   const u = byId(r.uid); const e = lrEff(r); const th = r.thread || []; const last = th[th.length - 1];
@@ -8093,7 +8106,7 @@ function tqCard(r) {
   const fin = r.fin ? `<div class="tq-fin">${esc(LV_KIND[r.fin.type])}${r.fin.type === 'ucretsiz' && r.fin.ded ? ' · maaştan ' + fmt(r.fin.ded) + ' kesildi' : ' · maaştan kesinti yok'}</div>` : '';
   const act = ['bekliyor', 'yanit'].includes(r.status) ? `<div class="tq-a"><button class="btn sm" data-a="lrok" data-id="${r.id}">${ic('check', 16)} Onayla</button><button class="btn sm sec" data-a="lrctr" data-id="${r.id}">Karşı teklif</button><button class="btn sm sec tq-no" data-a="lrrej" data-id="${r.id}">Reddet</button></div>` : '';
   return `<article class="tq-c tq-${st[1]}"><div class="tq-t">${avatar(u, 36)}<div class="tq-w"><b>${esc(u.name)}</b><span>${kind}</span></div><span class="tq-s">${st[0]}</span></div>
-  <div class="tq-d">${ic('calendar', 18)}<b>${esc(e.txt)}</b><em>${e.days} gün</em></div>${ct}${hints}${msg}${tg}${fin}${act}</article>`;
+  <div class="tq-d">${ic('calendar', 18)}<b>${esc(e.txt)}</b><em>${e.days} gün</em></div>${ct}${hints}${decided ? '' : tqNote(r)}${msg}${tg}${fin}${act}</article>`;
 }
 function tqHTML() {
   const A = (a) => LVREQ.filter((r) => a.includes(r.status)).slice().reverse();
