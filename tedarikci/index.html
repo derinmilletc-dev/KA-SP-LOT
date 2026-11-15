@@ -592,8 +592,8 @@ function spRender(keep){
   if(SPS.tab==='teklif'||SPS.tab==='siparis'){SPS.sop=SPS.tab;SPS.tab='is';}
   const y=window.scrollY; const t=SPS.tab; const di=document.getElementById('sp-ai-in'); if(di) SPS.draft=di.value;
   const open=SPS.rfqs.filter(r=>!SPS.quotes.some(q=>q.rfq_id===r.id)).length, pend=SPS.orders.filter(o=>o.status==='gonderildi').length;
-  const nav=[['ozet','home','Özet',0],['urun','box','Ürünler',0],['is','truck','Siparişler',open+pend],['muh','doc','Muhasebe',SPS.books.ledger.filter(e=>e.doc==='eksik').length],['kais','spark','Kais AI',0]];
-  const body={ozet:spOzet,urun:spUrun,is:spIs,muh:spMuh,kais:spKais,profil:spProfil}[t]();
+  const nav=[['ozet','home','Özet',0],['urun','box','Ürünler',0],['is','truck','Siparişler',open+pend],['muh','doc','Muhasebe',SPS.books.ledger.filter(e=>e.doc==='eksik').length],['ilan','tag','İlanlar',SPS.il&&SPS.il.ok?(SPS.il.feed||[]).filter(n=>!n.my_status).length:0],['kais','spark','Kais AI',0]];
+  const body={ozet:spOzet,urun:spUrun,is:spIs,muh:spMuh,kais:spKais,profil:spProfil,ilan:spIlan}[t]();
   app.innerHTML=`<div class="sp-top"><div><b>${esc(SUP.name)}</b><span>Toptancı paneli · ${(SPS.sups||[]).length>1?(SPS.sups.length+' işletme'):esc(SPS.biz.name)}</span></div><div class="sp-tr2"><button class="sp-ib ${t==='profil'?'on':''}" data-sp="tab" data-v="profil" aria-label="Firma profili">${SPI('pin',20)}</button><button class="sp-out" id="out">Çıkış</button></div></div>
   ${DEMO?'<div class="sp-demo">Deneme görünümü. Örnek veriler, kayıtlar bu sayfa açıkken durur.</div>':''}
   ${SPS.setup?'<div class="sp-warn">Kurulum eksik. İşletme sahibinin kaispilot_tedarikci2.sql ve kaispilot_toptanci.sql dosyalarını çalıştırması gerekiyor.</div>':''}
@@ -2858,5 +2858,64 @@ function ozRows(){const iso=isoToday(),R=[]; const add=(ic,cls,t,s,tab,acc,q)=>R
   return R;}
 const _spOzet20=spOzet; spOzet=function(){const h=_spOzet20(); try{const doc=new DOMParser().parseFromString('<div id="r">'+h+'</div>','text/html').getElementById('r'); const h3=[...doc.querySelectorAll('.oz-c>h3')].find(e=>/Bugünün özeti/.test(e.textContent)); if(!h3) return h; const rows=ozRows(); const html=`<div class="oz-c"><h3>Bugünün özeti</h3><div class="oz-rs">${rows.map(r=>`<div class="oz-rw"><button class="oz-r ${r.cls}" data-sp="ozgo" data-t="${r.tab}"${r.acc?` data-a="${r.acc}"`:''}><i>${SPI(r.ic,17)}</i><div><b>${r.t}</b><small>${esc(r.s)}</small></div><span class="cr">›</span></button><button class="oz-ask" data-sp="sdask" data-q="${esc(r.q)}" aria-label="Kais'e sor" title="Kais'e sor">${SPI('spark',16)}</button></div>`).join('')}</div></div>`; h3.parentElement.outerHTML=html; return doc.innerHTML;}catch(e){return h;}};
 (function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'İşlem yapılamadı.',1); return;} if(r&&typeof r.then==='function'){run.add(key); r.catch(x=>spToast((x&&x.message)||'İşlem yapılamadı.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; SPA[k]=g;});})();
+
+/* ===== v120: İlanlar (yakındaki işletmelerin ihtiyaç ilanları) ===== */
+SPS.il = null;
+const ilKm = (k) => (k == null ? '' : ' · ' + String(k).replace('.', ',') + ' km');
+const ilDt = (d) => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return isNaN(x) ? '' : x.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }); };
+async function spIlanLoad(force) {
+  if (SPS.il && SPS.il.busy) return; if (SPS.il && SPS.il.ok && !force) return;
+  SPS.il = Object.assign(SPS.il || {}, { busy: true }); await new Promise((r) => setTimeout(r, 0));
+  try {
+    if (DEMO) { SPS.il = { ok: true, feed: [{ id: 'n1', product: 'Soğan', qty: 500, unit: 'kg', deliver_by: null, note: 'Kuru soğan, yarın teslim olursa iyi olur.', city: 'Ankara', district: 'Çankaya', biz_name: 'Örnek Kafe', km: 12.4, my_price: null, my_status: null }], mine: [] }; }
+    else {
+      const [f, m] = await Promise.all([sb.rpc('market_feed'), sb.rpc('market_mine')]);
+      if (f.error && /market_feed|function/i.test(f.error.message)) { SPS.il = { ok: true, setup: true, feed: [], mine: [] }; }
+      else SPS.il = { ok: true, feed: f.data || [], mine: m.data || [], err: f.error ? f.error.message : '' };
+    }
+  } catch (e) { SPS.il = { ok: true, feed: [], mine: [], err: String((e && e.message) || e) }; }
+  if (SPS.tab === 'ilan') spRender(true);
+}
+function spIlan() {
+  if (!SPS.il || !SPS.il.ok) { spIlanLoad(); return `<div class="sp-empty">${SPI('spark', 28)}<b>İlanlar yükleniyor</b></div>`; }
+  const il = SPS.il; const st = { bekliyor: ['Bekliyor', 'warn'], kabul: ['Kabul edildi', 'ok'], red: ['Seçilmedi', ''], geri: ['Geri çekildi', ''] };
+  if (il.setup) return `<div class="sp-empty">${SPI('alert', 28)}<b>İlan sistemi henüz kurulmamış</b><span>İşletme sahibinin tenant_market.sql dosyasını çalıştırması gerekiyor.</span></div>`;
+  const noLoc = !(SPS.prof && SPS.prof.lat != null);
+  const feed = il.feed.map((n) => `<div class="sp-card il-c"><div class="sp-ch"><b>${esc(n.product)} · ${esc(String(n.qty).replace('.', ','))} ${esc(n.unit)}</b>${n.my_status ? `<span class="sp-b ${(st[n.my_status] || ['', ''])[1]}">${(st[n.my_status] || [n.my_status])[0]}</span>` : '<span class="sp-b warn">Teklif bekliyor</span>'}</div>
+    <p class="il-m">${esc(n.biz_name)}${n.district || n.city ? ' · ' + esc([n.district, n.city].filter(Boolean).join(' / ')) : ''}${esc(ilKm(n.km))}</p>
+    ${n.deliver_by ? `<p class="il-m">En geç teslim: <b>${esc(ilDt(n.deliver_by))}</b></p>` : ''}${n.note ? `<p class="il-n">${esc(n.note)}</p>` : ''}
+    <div class="sp-two">${n.my_status === 'bekliyor' ? `<button class="sp-sec" data-sp="iwd" data-id="${n.id}">Teklifi geri çek</button>` : '<span></span>'}<button class="sp-pri" data-sp="ioffer" data-id="${n.id}">${n.my_status ? 'Teklifi düzenle' : 'Teklif ver'}${n.my_price ? ' · ' + tl(n.my_price) : ''}</button></div></div>`).join('');
+  const mine = il.mine.filter((o) => o.status !== 'geri').map((o) => `<div class="sp-card il-c"><div class="sp-ch"><b>${esc(o.product)} · ${esc(String(o.offer_qty).replace('.', ','))} ${esc(o.unit)}</b><span class="sp-b ${(st[o.status] || ['', ''])[1]}">${(st[o.status] || [o.status])[0]}</span></div>
+    <p class="il-m">${esc(o.biz_name)} · birim ${tl(o.price)} · toplam <b>${tl(Math.round(o.price * o.offer_qty * 100) / 100)}</b></p>${o.status === 'kabul' ? `<p class="il-ok">${SPI('check', 16)} İşletme teklifini kabul etti.${o.contact ? ' İletişim: <b>' + esc(o.contact) + '</b>' : ' İşletme seni arayacak.'}</p>` : ''}</div>`).join('');
+  return `${noLoc ? `<div class="sp-tip info"><span class="sp-ti">${SPI('pin', 18)}</span><p>Konumunu Profil'e eklersen ilanları sana yakınlığa göre sıralarım.</p><button data-sp="tab" data-v="profil">Konum ekle</button></div>` : ''}
+  ${il.err ? `<p class="err">${esc(il.err)}</p>` : ''}
+  <h2 class="sp-h">Yakınındaki ilanlar</h2>${feed || `<div class="sp-empty">${SPI('spark', 28)}<b>Şu an açık ilan yok</b><span>Yakındaki işletmeler ihtiyaç yayınlayınca burada görünür.</span></div>`}
+  ${mine ? `<h2 class="sp-h">Tekliflerim</h2>${mine}` : ''}`;
+}
+{
+  const _ss = spSheet;
+  spSheet = function () {
+    const s = SPS.sheet; if (!s || s.t !== 'offer') return _ss.apply(this, arguments);
+    const n = (SPS.il.feed || []).find((x) => x.id === s.id) || {}; const o = (SPS.il.mine || []).find((x) => x.need_id === s.id) || {};
+    const b = `<p class="sp-d"><b>${esc(n.product || '')}</b> · ${esc(String(n.qty || '').replace('.', ','))} ${esc(n.unit || '')} · ${esc(n.biz_name || '')}</p>
+    <div class="sp-two2"><div><label>Birim fiyat (₺ / ${esc(n.unit || 'kg')})</label><input id="of-p" inputmode="decimal" value="${n.my_price || ''}" placeholder="Örn: 8,5"></div><div><label>Verebileceğin miktar</label><input id="of-q" inputmode="decimal" value="${o.offer_qty || n.qty || ''}"></div></div>
+    <label>Teslim tarihi</label><input type="date" id="of-d" value="${esc(o.deliver_date || '')}"><label>Not</label><input id="of-n" maxlength="300" placeholder="Kalite, ambalaj, nakliye durumu…"><p class="sp-d" style="margin-top:8px">Teklifin kabul edilirse işletme seni arar, ödeme teslimattan sonra yapılır.</p><p class="err" id="msg"></p>
+    <div class="sp-two"><button class="sp-sec" data-sp="sclose">Vazgeç</button><button class="sp-pri" data-sp="isend" data-id="${esc(s.id)}">Teklifi gönder</button></div>`;
+    return `<div class="sp-ov" data-sp="sclose"><div class="sp-sh"><div class="sp-shh"><h3>Teklif ver</h3><button data-sp="sclose" aria-label="Kapat">${SPI('x', 20)}</button></div>${b}</div></div>`;
+  };
+}
+Object.assign(SPA, {
+  ioffer: (el) => { SPS.sheet = { t: 'offer', id: el.dataset.id }; spRender(true); },
+  isend: async (el) => {
+    const v = (id) => ((document.getElementById(id) || {}).value || '').trim(); const m = document.getElementById('msg'); const pr = nz(v('of-p')), q = nz(v('of-q'));
+    if (!(pr > 0) || !(q > 0)) { m.textContent = 'Birim fiyat ve miktarı yaz.'; return; }
+    if (DEMO) { const n = SPS.il.feed.find((x) => x.id === el.dataset.id); if (n) { n.my_price = pr; n.my_status = 'bekliyor'; } SPS.sheet = null; spToast('Teklif gönderildi.'); spRender(true); return; }
+    const r = await sb.rpc('market_offer_send', { p_need: el.dataset.id, p_price: pr, p_qty: q, p_date: v('of-d') || null, p_note: v('of-n') || null });
+    if (r.error) { m.textContent = r.error.message; return; } SPS.sheet = null; spToast('Teklif gönderildi.'); await spIlanLoad(true); spRender(true);
+  },
+  iwd: async (el) => { if (DEMO) { const n = SPS.il.feed.find((x) => x.id === el.dataset.id); if (n) { n.my_price = null; n.my_status = null; } spRender(true); return; } const r = await sb.rpc('market_offer_withdraw', { p_need: el.dataset.id }); if (r.error) return spToast(r.error.message, 1); spToast('Teklif geri çekildi.'); await spIlanLoad(true); spRender(true); }
+});
+(function () { const st = document.createElement('style'); st.textContent = '.il-c .il-m{margin:4px 0;font-size:13.5px;color:var(--mut)}.il-c .il-n{margin:8px 0;font-size:14px;background:#f5f8f6;border-radius:10px;padding:8px 10px}.il-c .sp-two{margin-top:10px}.il-ok{display:flex;gap:6px;align-items:center;margin:8px 0 0;font-size:13.5px;color:#1d6b40;background:#E8F6EE;border-radius:10px;padding:8px 10px}'; document.head.appendChild(st); })();
+
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
 </script></body></html>

@@ -12002,6 +12002,86 @@ const SG_KIND = { uretici: 'Doğrudan üretici', toptanci: 'Yerel toptancı', da
     return { v: Math.max(0, Math.min(100, Math.round(v))), tags, why };
   };
 }
+
+/* ===== v120: İlan yayını (üreticiden doğrudan alım) ===== */
+const MK = { ok: false, busy: false, needs: [], offers: {}, err: '', setup: false };
+const mkOn = () => { const r = S.user && S.user.role; return !!(sbClient() && SBS.biz && ['patron', 'mudur'].includes(r)); };
+async function mkLoad(force) {
+  if (MK.busy) return; if (MK.ok && !force) return; MK.busy = true; await new Promise((r) => setTimeout(r, 0));
+  try {
+    const c = sbClient(); const q = await c.from('market_needs').select('*').eq('business_id', SBS.biz.id).order('created_at', { ascending: false }).limit(30);
+    if (q.error) { MK.setup = /market_needs|relation|schema cache/i.test(q.error.message); throw q.error; }
+    MK.needs = q.data || []; MK.offers = {}; MK.setup = false; MK.err = '';
+    await Promise.all(MK.needs.filter((n) => n.status !== 'kapali').map(async (n) => { const r = await c.rpc('market_offers_for', { p_need: n.id }); MK.offers[n.id] = r.error ? [] : (r.data || []); }));
+  } catch (e) { MK.err = MK.setup ? '' : sbMsg(e); }
+  MK.ok = true; MK.busy = false; if (S.saTab === 'ilan') render();
+}
+function mkScore(o, n, all) {
+  const min = Math.min(...all.map((x) => Number(x.price))); let v = 30 + Math.max(0, 35 - ((Number(o.price) / min - 1) * 140));
+  const why = []; if (Number(o.price) <= min) why.push('en düşük fiyat'); else why.push('en düşük fiyattan %' + Math.round((Number(o.price) / min - 1) * 100) + ' yüksek');
+  if (o.km != null) { v += Math.max(0, 12 - Number(o.km) * 0.15); why.push(Number(o.km).toFixed(0) + ' km'); }
+  if (o.n >= 3 && o.stars) { v += (Number(o.stars) - 3.5) * 6; why.push(Number(o.stars).toFixed(1) + ' ★ (' + o.n + ' değerlendirme)'); }
+  if (o.verify === 'uretici') { v += 8; why.push('doğrulanmış üretici'); } else if (o.verify === 'kimlik') { v += 4; why.push('kimliği doğrulanmış'); }
+  if (n.deliver_by && o.deliver_date) { if (o.deliver_date <= n.deliver_by) { v += 5; why.push('süresinde teslim'); } else { v -= 8; why.push('istenen tarihten geç'); } }
+  if (Number(o.qty) < Number(n.qty)) { v -= 10; why.push('miktarın sadece ' + Number(o.qty) + ' ' + n.unit + '’ini verebilir'); }
+  return { v: Math.max(0, Math.min(100, Math.round(v))), why };
+}
+function mkOffer(o, n, sc, top) {
+  const tags = []; if (o.kind === 'uretici') tags.push('Doğrudan üretici'); else if (o.kind && SG_KIND[o.kind]) tags.push(SG_KIND[o.kind]);
+  if (o.verify === 'uretici') tags.push('✓ Doğrulanmış'); else if (o.verify === 'kimlik') tags.push('✓ Kimlik doğrulandı');
+  if (o.n >= 3 && o.stars) tags.push(Number(o.stars).toFixed(1) + ' ★ (' + o.n + ')'); else tags.push('Yeni satıcı');
+  const total = Math.round(Number(o.price) * Math.min(Number(o.qty), Number(n.qty)) * 100) / 100;
+  return `<div class="mk-o${top ? ' top' : ''}${o.status === 'kabul' ? ' ok' : ''}">${top && o.status === 'bekliyor' ? `<div class="mk-tp">${ic('sparkle', 14)} Kais önerisi</div>` : ''}
+  <div class="mk-oh"><div><b>${esc(o.supplier_name)}</b><small>${esc(o.origin || '')}${o.km != null ? (o.origin ? ' · ' : '') + Number(o.km).toFixed(0) + ' km' : ''}</small></div><span class="sg-sc ${sc.v >= 70 ? 'hi' : sc.v >= 50 ? 'mid' : 'lo'}">${sc.v}</span></div>
+  <div class="mk-pr"><b>${fmt(Number(o.price))}</b><span>/ ${esc(n.unit)} · toplam ${fmt(total)}</span></div>
+  <div class="sg-tags">${tags.map((x) => `<span class="sg-t">${esc(x)}</span>`).join('')}${o.deliver_date ? `<span class="sg-t">${esc(isoShort(o.deliver_date))} teslim</span>` : ''}</div>
+  ${o.note ? `<p class="mk-nt">${esc(o.note)}</p>` : ''}<p class="mk-w">${esc(sc.why.join(' · '))}</p>
+  ${o.status === 'kabul' ? `<div class="mk-ac">${ic('check', 16)}<span>Kabul edildi.${o.phone ? ' Üreticiyi ara: <b>' + esc(o.phone) + '</b>.' : ''} Malı teslim al, ödemeyi teslimden sonra havaleyle yap.</span></div>` : o.status === 'bekliyor' && n.status === 'acik' ? `<button class="btn sm" data-a="mkacc" data-id="${o.offer_id}">${ic('check', 15)} Kabul et</button>` : ''}</div>`;
+}
+function mkNeed(n) {
+  const all = (MK.offers[n.id] || []).filter((o) => o.status !== 'red'); const sc = all.map((o) => ({ o, s: mkScore(o, n, all) })).sort((a, b) => (b.o.status === 'kabul') - (a.o.status === 'kabul') || b.s.v - a.s.v);
+  const stt = { acik: ['Açık', 'p-info'], verildi: ['Teklif seçildi', 'p-ok'], kapali: ['Kapatıldı', 'p-mute'] }[n.status] || ['', ''];
+  return `<section class="op-c mk-n"><div class="op-ch"><div><h3>${esc(n.product)} · ${esc(String(n.qty).replace('.', ','))} ${esc(n.unit)}</h3><span>${n.deliver_by ? 'En geç ' + esc(isoShort(n.deliver_by)) + ' · ' : ''}${all.length} teklif</span></div><span class="pill ${stt[1]}">${stt[0]}</span></div>
+  ${sc.length ? sc.map((x, i) => mkOffer(x.o, n, x.s, i === 0 && all.length > 1)).join('') : '<p class="op-em">Henüz teklif gelmedi. Yakındaki üreticiler ilanı görünce teklif verir.</p>'}
+  ${n.status === 'acik' ? `<button class="btn sm sec" data-a="mkclose" data-id="${n.id}">İlanı kapat</button>` : ''}</section>`;
+}
+function mkView() {
+  const r = S.user && S.user.role; if (!['patron', 'mudur'].includes(r)) return `<div class="callout">${ic('info')}<div>İlan açmayı patron ya da müdür yapabilir.</div></div>`;
+  if (!mkOn()) return `<div class="callout">${ic('info')}<div><b>Önce hesabına bağlan</b><p style="margin-top:2px">İlan yayını için Tedarikçi ekranından hesabına bağlanman gerekir.</p></div></div>`;
+  if (!MK.ok) { mkLoad(); return `<div class="iz-e">${ic('sparkle', 30)}<b>İlanlar yükleniyor</b></div>`; }
+  if (MK.setup) return `<div class="callout warn">${ic('alert')}<div><b>İlan sistemi kurulmamış</b><p style="margin-top:2px">tenant_market.sql dosyasını Supabase SQL Editor'da çalıştır.</p></div></div>`;
+  return `<section class="op-c mk-h"><div class="op-kt">${ic('sparkle', 18)}<h3>Üreticiden doğrudan al</h3></div><p class="muted" style="margin:6px 0 12px">İhtiyacını yaz. Yakındaki üreticiler teklif versin, Kais fiyat, mesafe, puan ve doğrulamaya göre sıralasın.</p><div class="row wrap" style="gap:8px"><button class="btn" data-a="mknew">${ic('plus', 16)} Yeni ilan</button><button class="btn sec" data-a="mkreload">Yenile</button></div></section>
+  ${MK.err ? `<p class="err">${esc(MK.err)}</p>` : ''}${MK.needs.length ? MK.needs.map(mkNeed).join('') : `<div class="iz-e">${ic('box', 30)}<b>Henüz ilan açmadın</b><p>Örneğin "500 kg soğan" yaz, teklifler gelsin.</p></div>`}`;
+}
+{
+  const _v = viewSatinAlma;
+  viewSatinAlma = function () {
+    let h = _v.apply(this, arguments); const k = '<div class="tq-sg sa2-tb" role="group" aria-label="Satın alma bölümleri">'; const i = h.indexOf(k); if (i < 0) return h;
+    const j = h.indexOf('</div>', i); const nO = Object.values(MK.offers).reduce((a, l) => a + l.filter((o) => o.status === 'bekliyor').length, 0);
+    const btn = `<button data-a="satab" data-v="ilan" aria-pressed="${S.saTab === 'ilan'}">İlan${nO ? ' (' + nO + ')' : ''}</button>`;
+    if (S.saTab !== 'ilan') return h.slice(0, j) + btn + h.slice(j);
+    return h.slice(0, j) + btn + h.slice(j, j + 6) + mkView() + '</div>';
+  };
+}
+H.mkreload = () => { MK.ok = false; render(); };
+H.mknew = () => { S.modal = { type: 'mknew' }; renderModal(); };
+NEWM.mknew = () => { const sh = gShopOK(); return sheet('Yeni ilan', `<div class="field"><label for="mk-p">Ne lazım?</label><input id="mk-p" maxlength="80" placeholder="Örn: Kuru soğan" list="mk-dl"><datalist id="mk-dl">${STOCK.map((s) => `<option value="${esc(s.name.split(' (')[0])}">`).join('')}</datalist></div>
+  <div class="row" style="gap:10px"><div class="field grow"><label for="mk-q">Miktar</label><input id="mk-q" inputmode="decimal" placeholder="500"></div><div class="field" style="width:110px"><label for="mk-u">Birim</label><select id="mk-u">${['kg', 'adet', 'L', 'koli', 'çuval'].map((u) => `<option>${u}</option>`).join('')}</select></div></div>
+  <div class="field"><label for="mk-d">En geç teslim tarihi</label><input type="date" id="mk-d"></div>
+  <div class="field"><label for="mk-c">Üreticinin arayacağı telefon</label><input id="mk-c" inputmode="tel" maxlength="40" placeholder="05xx xxx xx xx"></div>
+  <div class="field"><label for="mk-n">Not</label><input id="mk-n" maxlength="300" placeholder="Kalite, ambalaj, teslim saati…"></div>
+  ${sh ? '' : `<div class="callout warn" style="margin-bottom:10px">${ic('alert')}<div>Dükkân konumun kayıtlı değil. İlan mesafe olmadan gider. Ayarlar'dan konumu kaydedersen yakındaki üreticilere gösterilir.</div></div>`}
+  <div class="err" id="mk-e" role="alert"></div><button class="btn block" data-a="mkok">İlanı yayınla</button><p class="small muted" style="margin-top:8px">Telefon sadece teklifini kabul ettiğin üreticiye görünür.</p>`); };
+H.mkok = async () => {
+  const v = (id) => ((document.getElementById(id) || {}).value || '').trim(); const e = document.getElementById('mk-e'); const q = Number(v('mk-q').replace(',', '.'));
+  if (v('mk-p').length < 2) { e.textContent = 'Ne lazım olduğunu yaz.'; return; } if (!(q > 0)) { e.textContent = 'Miktarı yaz.'; return; }
+  if (MK.busy) return; MK.busy = true; const sh = gShopOK() ? S.settings.shop : {};
+  const r = await sbClient().from('market_needs').insert({ business_id: SBS.biz.id, product: v('mk-p'), qty: q, unit: v('mk-u') || 'kg', deliver_by: v('mk-d') || null, contact: v('mk-c') || null, note: v('mk-n') || null, lat: sh.lat != null ? sh.lat : null, lng: sh.lng != null ? sh.lng : null });
+  MK.busy = false; if (r.error) { e.textContent = sbMsg(r.error); return; } S.modal = null; MK.ok = false; toast('İlan yayınlandı.', 'ok'); render();
+};
+H.mkacc = async (el) => { if (MK.busy) return; MK.busy = true; const r = await sbClient().rpc('market_accept', { p_offer: el.dataset.id }); MK.busy = false; if (r.error) { toast(r.error.message, 'warn'); return; } toast('Teklif kabul edildi.', 'ok'); MK.ok = false; render(); };
+H.mkclose = async (el) => { const r = await sbClient().from('market_needs').update({ status: 'kapali' }).eq('id', el.dataset.id); if (r.error) { toast(sbMsg(r.error), 'warn'); return; } MK.ok = false; render(); };
+(function () { try { const st = document.createElement('style'); st.textContent = '.mk-h p{font-size:14px}.mk-n{gap:12px}.mk-o{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#fff}.mk-o.top{border-color:#bcd3f3;background:#f6faff}.mk-o.ok{border-color:#bfe3cc;background:#f1faf4}.mk-tp{display:flex;gap:6px;align-items:center;font-size:12.5px;font-weight:700;color:var(--cini)}.mk-oh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.mk-oh b{display:block}.mk-oh small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.mk-pr b{font-size:20px}.mk-pr span{color:var(--muted);font-size:13px;margin-left:6px}.mk-nt{margin:0;font-size:14px}.mk-w{margin:0;font-size:12.5px;color:var(--muted)}.mk-ac{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;background:#E8F6EE;color:#1d6b40;border-radius:12px;padding:10px 12px}.mk-n>.btn,.mk-o .btn{align-self:flex-start}.mk-n,.mk-o,.mk-h{text-align:left;align-items:stretch}.sa2-tb{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))!important}'; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
