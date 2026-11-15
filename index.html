@@ -3793,20 +3793,20 @@ const xe = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 function colL(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
 // hücre: string | number | {n:sayı} para | {f:'formül', v:değer} | {b:'kalın metin'} | {bn: kalın para}
 function sheetXml(rows, widths) {
-  const out = rows.map((r, ri) => '<row r="' + (ri + 1) + '">' + r.map((c, ci) => {
+  const out = rows.map((r, ri) => '<row r="' + (ri + 1) + '"' + (ri === 0 ? ' ht="26" customHeight="1"' : '') + '>' + r.map((c, ci) => {
     const ref = colL(ci) + (ri + 1);
     if (c === null || c === undefined || c === '') return '';
-    if (typeof c === 'string') return '<c r="' + ref + '" t="inlineStr"' + (ri === 0 ? ' s="1"' : '') + '><is><t xml:space="preserve">' + xe(c) + '</t></is></c>';
+    if (typeof c === 'string') return '<c r="' + ref + '" t="inlineStr"' + (ri === 0 ? ' s="1"' : ' s="6"') + '><is><t xml:space="preserve">' + xe(c) + '</t></is></c>';
     if (typeof c === 'number') return '<c r="' + ref + '" s="3"><v>' + c + '</v></c>';
     if (c.f) return '<c r="' + ref + '" s="2"><f>' + xe(c.f) + '</f><v>' + c.v + '</v></c>';
     if (c.n !== undefined) return '<c r="' + ref + '" s="2"><v>' + c.n + '</v></c>';
     if (c.bn !== undefined) return '<c r="' + ref + '" s="4"><v>' + c.bn + '</v></c>';
     if (c.bf) return '<c r="' + ref + '" s="4"><f>' + xe(c.bf) + '</f><v>' + c.v + '</v></c>';
-    if (c.b) return '<c r="' + ref + '" t="inlineStr" s="1"><is><t>' + xe(c.b) + '</t></is></c>';
+    if (c.b) return '<c r="' + ref + '" t="inlineStr" s="5"><is><t>' + xe(c.b) + '</t></is></c>';
     return '';
   }).join('') + '</row>').join('');
   const cols = '<cols>' + widths.map((w, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>').join('') + '</cols>';
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' + cols + '<sheetData>' + out + '</sheetData></worksheet>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' + cols + '<sheetData>' + out + '</sheetData>' + (rows.length > 1 ? '<autoFilter ref="A1:' + colL(widths.length - 1) + (rows.length - (rows[rows.length - 1].some((c) => c && typeof c === 'object' && c.bf) ? 1 : 0)) + '"/>' : '') + '</worksheet>';
 }
 const r2 = (x) => Math.round(x * 100) / 100;
 function ledgerSheet(kind) {
@@ -3834,7 +3834,7 @@ function buildXlsx() {
     { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
     { name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + sheets.map((s, i) => '<sheet name="' + xe(s[0]) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>' },
     { name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + sheets.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') + '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
-    { name: 'xl/styles.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCE8F5"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs></styleSheet>' },
+    { name: 'xl/styles.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCE8F5"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F3F7A"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF1FB"/></patternFill></fill></fills><borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="thin"><color rgb="FFE3E9F2"/></bottom><diagonal/></border><border><left/><right/><top style="medium"><color rgb="FF0F3F7A"/></top><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="164" fontId="1" fillId="4" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="1" fillId="4" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf></cellXfs></styleSheet>' },
   ].concat(sheets.map((s, i) => ({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: sheetXml(s[1], s[2]) })));
   return zipStore(files);
 }
@@ -12658,6 +12658,32 @@ function trErr(m) {
   if (/[a-z]{4,} [a-z]{3,} [a-z]{3,}/i.test(m) && !/[çğıöşüÇĞİÖŞÜ]/.test(m)) return 'Bir sorun oluştu. Tekrar dene, sürerse bize yaz.';
   return m;
 }
+
+/* ===== v132: Tablo (Excel görünümü) modern ve düzenli; iç içe kaydırma hatası düzeltildi ===== */
+{ const _cap = capLists; capLists = function (root) { _cap(root); try { document.querySelectorAll('.cap-sc[data-capd]').forEach((el) => { if (el.classList.contains('fk-l')) return; const k = new Set(Array.from(el.children).map((c) => c.tagName + '.' + String(c.className).split(' ')[0])); if (k.size > 3) { el.style.maxHeight = ''; el.style.overflowY = ''; el.classList.remove('cap-sc'); } }); } catch (e) {} }; }
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.tb .xl{max-height:min(70vh,620px);overflow:auto;border:1px solid #E1E8F3;border-radius:18px;background:#fff;box-shadow:0 10px 26px -18px rgba(14,43,77,.35);-webkit-overflow-scrolling:touch}
+.tb .xt{min-width:880px;border-collapse:separate;border-spacing:0;font-size:13.5px;font-variant-numeric:tabular-nums}
+.tb .xt th{position:sticky;top:0;z-index:3;background:#F3F7FC;color:#5B6B82;font:700 11px system-ui;letter-spacing:.06em;text-transform:uppercase;padding:12px 10px;border-bottom:1px solid #E1E8F3}
+.tb .xt td{border-top:0;border-bottom:1px solid #EEF2F8;padding:3px 4px;background:#fff;height:46px}
+.tb .xt tbody tr:nth-child(even) td{background:#FAFCFF}
+.tb .xt tbody tr:hover td{background:#F1F6FE}
+.tb .xt tr.fresh td{background:#F0FAF4!important}
+.tb .xt th:nth-child(1),.tb .xt td:nth-child(1){position:sticky;left:0;z-index:2;min-width:86px;max-width:86px}
+.tb .xt th:nth-child(2),.tb .xt td:nth-child(2){position:sticky;left:86px;z-index:2;box-shadow:6px 0 8px -6px rgba(14,43,77,.18)}
+.tb .xt th:nth-child(1),.tb .xt th:nth-child(2){z-index:4}
+.tb .xt input.cell,.tb .xt select.cell{border-radius:9px;min-height:36px;padding:4px 8px;color:#0E2B4D;font:600 13.5px system-ui}
+.tb .xt input.cell[data-k=date]{font-weight:500;color:#5B6B82}
+.tb .xt .cell:hover{border-color:#D2DDEC;background:#fff}
+.tb .xt .cell:focus{border-color:#1B5FB8;background:#fff;outline:0;box-shadow:0 0 0 3px rgba(27,95,184,.15)}
+.tb .xt td.num{font-weight:600;color:#3B4A63}
+.tb .xt input.cell.r[data-k=total]{font-weight:800}
+.tb .xt tfoot td{position:sticky;bottom:0;z-index:3;background:#F3F7FC;border-top:1px solid #DCE5F2;border-bottom:0;font:800 13.5px system-ui;color:#0E2B4D;height:46px}
+.tb .xt tfoot td:nth-child(1){left:0;z-index:4}
+.tb .xt tr.mis td{box-shadow:inset 3px 0 0 #E8A317}
+.tb .xt .xbtn{opacity:.55;transition:opacity .15s}.tb .xt tr:hover .xbtn{opacity:1}
+@media(max-width:600px){.tb .xt th:nth-child(1),.tb .xt td:nth-child(1){position:static;min-width:72px;max-width:72px}.tb .xt th:nth-child(2),.tb .xt td:nth-child(2){left:0}.tb .xt input.cell[data-k=desc]{width:150px!important}.tb .xt tfoot td:nth-child(1){left:auto;position:static}}
+`; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
