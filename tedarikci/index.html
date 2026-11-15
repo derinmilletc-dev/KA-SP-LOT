@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>KaisPilot Tedarik</title>
+<title>KaisPilot Toptancı</title>
 <meta name="theme-color" content="#164169">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -124,7 +124,30 @@ input[type=range]{padding:0;accent-color:var(--acc)}textarea{width:100%;padding:
 .sp-sh{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
 .sp-shh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.sp-shh h3{margin:0;font:700 19px 'Bricolage Grotesque',system-ui,sans-serif}.sp-shh button{background:#eef2ee;color:var(--ink);width:36px;height:36px;padding:0;display:grid;place-items:center}
 #sp-toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:#1d2a24;color:#fff;border-radius:12px;padding:10px 16px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:30;max-width:90vw}#sp-toast.on{opacity:1;transform:translate(-50%,0)}#sp-toast.bad{background:#a82f26}
-</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="tfoot">KaisPilot Tedarik · v5</p>
+</style><style>.pos{color:#17613f}.neg{color:#b3392f}
+.sp-tr2{display:flex;gap:8px;align-items:center}.sp-top .sp-tr2{flex-direction:row;align-items:center}.sp-ib{width:38px;height:38px;padding:0;display:grid;place-items:center;background:#eef2ee;color:var(--ink)}.sp-ib.on{background:var(--acc);color:#fff}
+.sp-seg{display:flex;background:#e8eee9;border-radius:12px;padding:4px;gap:4px;margin-bottom:12px}.sp-seg button{flex:1;background:transparent;color:var(--mut);padding:9px 6px;font-size:14px;border-radius:9px}.sp-seg .on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}.sp-seg i{font-style:normal;background:#c0392b;color:#fff;border-radius:9px;padding:0 6px;font-size:11.5px;margin-left:3px}
+.sp-mon{display:flex;justify-content:space-between;align-items:center;margin:2px 0 10px}.sp-mon b{font:700 17px 'Bricolage Grotesque',system-ui,sans-serif;text-transform:capitalize}.sp-mon button{width:38px;height:38px;padding:0;background:#fff;color:var(--ink);border:1px solid var(--line);font-size:20px}
+.sp-kpi2{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.sp-kpi2>div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px}.sp-kpi2 span{font-size:12.5px;color:var(--mut)}.sp-kpi2 b{display:block;font:700 17px 'Bricolage Grotesque',system-ui,sans-serif;margin-top:2px}.sp-kpi2 .g b{color:#17613f}.sp-kpi2 .x b,.sp-kpi2 .neg b{color:#b3392f}
+.sp-kpi4{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sp-kpi4>div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px}.sp-kpi4 b{display:block;font:700 19px 'Bricolage Grotesque',system-ui,sans-serif}.sp-kpi4 span{font-size:12.5px;color:var(--mut)}.sp-kpi4 .bad b{color:#b3392f}.sp-kpi4 .warn b{color:#9a6a00}
+.sp-mini{background:#f4f6f3;border-radius:12px;padding:10px}.sp-mini span{font-size:12.5px;color:var(--mut)}.sp-mini b{display:block;font:700 17px 'Bricolage Grotesque',system-ui,sans-serif}
+.sp-br{margin:8px 0}.sp-br>div{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.sp-br i{display:block;height:8px;background:#eef2ee;border-radius:99px;overflow:hidden}.sp-br u{display:block;height:100%;background:#164169;border-radius:99px}.sp-br u.x{background:#c9772e}.sp-br u.g{background:var(--acc)}
+.sp-le{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}.sp-le b{display:block;font-size:15px}.sp-le span{font-size:13px;color:var(--mut);display:block}.sp-le strong{flex:none;white-space:nowrap}
+.sp-scan{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #b8c6bd;border-radius:12px;padding:12px;color:var(--acc);font-weight:600;margin-bottom:12px;cursor:pointer}
+.sp-ck{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink);margin-top:10px}.sp-ck input{width:auto}
+.sp-ai-c{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}.sp-ai-h{display:flex;gap:10px;align-items:center;margin-bottom:6px}.sp-ai-t p,.sp-ai-t .sp-li{margin:4px 0;font-size:14.5px;line-height:1.45}.sp-li{padding-left:14px;position:relative}.sp-li::before{content:"";position:absolute;left:2px;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--acc)}.sp-ai-c .sp-sec{margin-top:8px}
+body.sp .sp-chatb{padding-bottom:150px}.sp-chat{display:flex;flex-direction:column;gap:12px;min-height:50vh}
+.sp-m{display:flex;gap:8px;max-width:100%}.sp-m.u{justify-content:flex-end;flex-direction:column;align-items:flex-end}.sp-m.u p{margin:0;background:var(--acc);color:#fff;padding:10px 13px;border-radius:16px 16px 4px 16px;max-width:85%;font-size:15px}.sp-m.u em{font-style:normal;font-size:12.5px;color:var(--mut);display:flex;gap:4px;align-items:center;margin-top:3px}
+.sp-m.a>div{background:#fff;border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:10px 13px;min-width:0;flex:1}.sp-av{flex:none;width:30px;height:30px;border-radius:10px;background:linear-gradient(150deg,#164169,#1f6f55);color:#fff;display:grid;place-items:center}.sp-av.big{width:52px;height:52px;border-radius:16px;margin:0 auto 10px}
+.sp-hello{text-align:center;padding:22px 6px}.sp-hello h2{margin:0 0 6px;font:700 22px 'Bricolage Grotesque',system-ui,sans-serif}.sp-hello p{margin:0 auto 14px;color:var(--mut);max-width:30ch;font-size:14.5px}.sp-qs{display:flex;flex-direction:column;gap:8px}.sp-qs button{background:#fff;color:var(--ink);border:1px solid var(--line);text-align:left;font-weight:500;border-radius:12px}
+.sp-typ{display:flex;gap:5px;padding:6px 2px}.sp-typ i{width:8px;height:8px;border-radius:50%;background:#9bb3a6;animation:spb 1s infinite}.sp-typ i:nth-child(2){animation-delay:.15s}.sp-typ i:nth-child(3){animation-delay:.3s}@keyframes spb{50%{transform:translateY(-4px);opacity:.5}}
+.sp-inb{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));z-index:5;display:flex;gap:8px;align-items:flex-end;background:#f4f6f3;padding:8px 12px;max-width:640px;margin:0 auto}.sp-inb textarea{flex:1;min-height:44px;max-height:120px;resize:none;border-radius:22px;padding:11px 14px}.sp-att{flex:none;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--acc);cursor:pointer;margin:0}.sp-send{flex:none;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center}
+.sp-pfile{position:fixed;left:12px;right:12px;bottom:calc(122px + env(safe-area-inset-bottom));z-index:5;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 10px;font-size:13px;display:flex;gap:6px;align-items:center;max-width:616px;margin:0 auto}.sp-pfile button{margin-left:auto;background:transparent;color:var(--mut);padding:2px}
+.sp-act{border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;background:#f8faf8}.sp-act.done{opacity:.8}.sp-act b{font-size:13px;color:var(--acc)}.sp-act p{margin:2px 0 8px;font-size:14px}
+.sp-sb{margin:10px 0 6px}.sp-sb>i{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#eef2ee}.sp-sb u{display:block;height:100%}.sp-sb u.r{background:#d9a21b}.sp-sb u.a{background:var(--acc)}.sp-sb>div{display:flex;gap:14px;margin-top:5px;font-size:12.5px;color:var(--mut)}.sp-sb em{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}.sp-sb em.r{background:#d9a21b}.sp-sb em.a{background:var(--acc)}
+.sp-who{background:#f4f6f3;border-radius:12px;padding:8px 10px;margin-top:8px;font-size:13.5px}.sp-who>div{display:flex;justify-content:space-between;gap:8px;padding:4px 0}.sp-who em{font-style:normal}
+.sp-d b{color:var(--ink)}
+</style></head><body><main id="app"><p class="m">Yükleniyor…</p></main><p class="tfoot">KaisPilot Toptancı · v6</p>
 <script>
 window.addEventListener('error',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+e.message+' ('+(e.lineno||'')+')';document.body.appendChild(d);});
 window.addEventListener('unhandledrejection',(e)=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#b3392f;color:#fff;padding:10px;font:14px system-ui;z-index:9';d.textContent='Hata: '+((e.reason&&e.reason.message)||e.reason);document.body.appendChild(d);});
@@ -136,13 +159,20 @@ function demoSb(){
   const P=(name,cat,unit,price,extra)=>Object.assign({id:'p'+(++seq),supplier_id:'s1',name,category:cat,unit,price,vat:10,min_qty:1,stock:'var',tiers:[],promo_pct:0,active:true,created_at:d(seq%9),updated_at:d(2)},extra||{});
   const T={
     businesses:[{id:'b1',name:'Çınar Kafe (deneme)'}],
+    supplier_books:[{supplier_id:'s1',data:{seq:20,notes:[],ledger:[
+      {id:'l1',type:'gelir',date:dt(-1).slice(0,8)+'03',desc:'Peşin satış',party:'Çınar Kafe',cat:'Satış',amt:8400,vat:10,doc:'var'},
+      {id:'l2',type:'gelir',date:dt(-1).slice(0,8)+'09',desc:'Toptan satış',party:'Lale Catering',cat:'Satış',amt:5200,vat:10,doc:'var'},
+      {id:'l3',type:'gider',date:dt(-1).slice(0,8)+'05',desc:'Elektrik faturası',party:'Enerjisa',cat:'Elektrik',amt:1850,vat:20,doc:'var'},
+      {id:'l4',type:'gider',date:dt(-1).slice(0,8)+'08',desc:'Akaryakıt',party:'Opet',cat:'Akaryakıt',amt:2300,vat:20,doc:'eksik'}],
+      cari:[{id:'c1',kind:'alacak',who:'Lale Catering',amt:5200,due:dt(-3),note:'Aylık teslim',paid:false},{id:'c2',kind:'borc',who:'Söke Değirmen',amt:9800,due:dt(6),note:'',paid:false}],
+      slog:[{id:'s1',pid:'p101',date:d(3),type:'cikis',qty:45,who:'Çınar Kafe'},{id:'s2',pid:'p101',date:d(10),type:'cikis',qty:60,who:'Lale Catering'},{id:'s3',pid:'p101',date:d(20),type:'cikis',qty:50,who:'Çınar Kafe'},{id:'s4',pid:'p102',date:d(2),type:'cikis',qty:90,who:'Çınar Kafe'},{id:'s5',pid:'p102',date:d(12),type:'cikis',qty:100,who:'Lale Catering'},{id:'s6',pid:'p103',date:d(4),type:'cikis',qty:20,who:'Çınar Kafe'},{id:'s7',pid:'p104',date:d(6),type:'cikis',qty:25,who:'Lale Catering'},{id:'s8',pid:'p101',date:d(25),type:'giris',qty:200,who:'Söke Değirmen'}]}}],
     supplier_profiles:[{supplier_id:'s1',phone:'0532 000 00 00',hours:{'1':{o:'08:00',c:'18:00'},'2':{o:'08:00',c:'18:00'}},delivery_days:[],radius_km:25}],
     supplier_products:[
-      P('Un (tip 550)','Un ve tahıl','kg',28,{brand:'Söke',tiers:[{q:50,p:5},{q:200,p:8}],shelf_days:365,lot_exp:dt(140),updated_at:d(45)}),
-      P('Süt (tam yağlı)','Süt ve süt ürünleri','L',32,{brand:'Pınar',shelf_days:7,lot_exp:dt(5),promo_pct:10,promo_until:dt(4)}),
-      P('Tereyağı','Süt ve süt ürünleri','kg',270,{min_qty:2,shelf_days:90,lot_exp:dt(60),stock:'az'}),
-      P('Toz şeker','Kuru gıda','kg',62,{tiers:[{q:25,p:4}],updated_at:d(40)}),
-      P('Çiğ badem','Kuruyemiş','kg',520,{stock:'yok'})],
+      P('Un (tip 550)','Un ve tahıl','kg',28,{qty:120,min_stock:50,cost:22,brand:'Söke',tiers:[{q:50,p:5},{q:200,p:8}],shelf_days:365,lot_exp:dt(140),updated_at:d(45)}),
+      P('Süt (tam yağlı)','Süt ve süt ürünleri','L',32,{qty:60,min_stock:20,cost:26,brand:'Pınar',shelf_days:7,lot_exp:dt(5),promo_pct:10,promo_until:dt(4)}),
+      P('Tereyağı','Süt ve süt ürünleri','kg',270,{qty:6,min_stock:10,cost:225,min_qty:2,shelf_days:90,lot_exp:dt(60),stock:'az'}),
+      P('Toz şeker','Kuru gıda','kg',62,{qty:80,min_stock:30,cost:51,tiers:[{q:25,p:4}],updated_at:d(40)}),
+      P('Çiğ badem','Kuruyemiş','kg',520,{qty:0,min_stock:5,cost:430,stock:'yok'})],
     rfqs:[{id:'r1',business_id:'b1',status:'acik',created_at:d(1),lines:[{name:'Un (tip 550)',qty:50,unit:'kg'},{name:'Süt (tam yağlı)',qty:40,unit:'L'},{name:'Tereyağı',qty:10,unit:'kg'}]},{id:'r2',business_id:'b1',status:'acik',created_at:d(3),lines:[{name:'Toz şeker',qty:25,unit:'kg'},{name:'Kakao',qty:5,unit:'kg'}]}],
     quotes:[{id:'q1',rfq_id:'r2',supplier_id:'s1',prices:{0:59.5}}],
     orders:[{id:'o1',supplier_id:'s1',business_id:'b1',status:'gonderildi',total:3280,created_at:d(2),lines:[{name:'Un (tip 550)',qty:40,unit:'kg',price:28},{name:'Tereyağı',qty:8,unit:'kg',price:270}]},{id:'o2',supplier_id:'s1',business_id:'b1',status:'onaylandi',total:1240,created_at:d(9),lines:[{name:'Toz şeker',qty:20,unit:'kg',price:62}]}]
@@ -187,9 +217,9 @@ function loginView(mode){
   const prev=(document.getElementById('em')||{}).value||'';
   const sv=(b,n)=>`<svg width="${n||20}" height="${n||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
   const mark=`<svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.6" aria-hidden="true"><circle cx="20" cy="20" r="11"/><circle cx="20" cy="20" r="4.4" fill="#fff" stroke="none"/>${[0,45,90,135,180,225,270,315].map(a=>`<circle cx="${(20+16.5*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(20+16.5*Math.sin(a*Math.PI/180)).toFixed(1)}" r="2.3" fill="#fff" stroke="none"/>`).join('')}</svg>`;
-  app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>KaisPilot Tedarik</h1><p>${mode==='up'?'Yeni tedarikçi hesabı oluşturun.':'Tedarikçi hesabınıza giriş yapın.'}</p></div>
+  app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>KaisPilot Toptancı</h1><p>${mode==='up'?'Yeni toptancı hesabı oluşturun.':'Toptancı hesabınıza giriş yapın.'}</p></div>
    <div class="th-ic">${sv('<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.2" r="1.7"/><circle cx="16.5" cy="17.2" r="1.7"/><path d="M5 7V4.5h6V7M8 4.5V7"/>',40)}</div></div></header>
-  <section class="tc"><h2>${mode==='up'?'Hesap oluştur':'Giriş yap'}</h2><p class="sub">${mode==='up'?'Tedarikçi hesabını birkaç saniyede aç.':'Tedarikçi hesabınıza devam edin.'}</p>
+  <section class="tc"><h2>${mode==='up'?'Hesap oluştur':'Giriş yap'}</h2><p class="sub">${mode==='up'?'Toptancı hesabını birkaç saniyede aç.':'Toptancı hesabınıza devam edin.'}</p>
   <form class="tf" id="tfm" novalidate>
    <div class="f"><label for="em">E-posta</label><div class="ti">${sv('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 7.5l8 6 8-6"/>')}<input id="em" type="email" autocomplete="email" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com"></div></div>
    <div class="f"><label for="pw">Şifre</label><div class="ti">${sv('<rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>')}<input id="pw" type="password" autocomplete="${mode==='up'?'new-password':'current-password'}" placeholder="En az 8 karakter"><button type="button" class="eye" id="eye" aria-label="Şifreyi göster veya gizle">${sv('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}</button></div></div>
@@ -224,7 +254,7 @@ function loginView(mode){
 }
 function setupView(){
   document.body.classList.add('lg');
-  const hero='<header class="th"><div class="th-in"><h1>KaisPilot Tedarik</h1></div></header>';
+  const hero='<header class="th"><div class="th-in"><h1>KaisPilot Toptancı</h1></div></header>';
   app.innerHTML=hero+`<section class="tc"><h2>Davet kodunu gir</h2><p class="sub">İşletmenin sana verdiği 6 haneli kodu yaz.</p>
   <form class="tf" id="cf" autocomplete="off" novalidate>
    <div class="f"><label for="cd">Davet kodu</label><div class="ti"><input id="cd" type="text" autocapitalize="characters" autocomplete="one-time-code" maxlength="12" placeholder="Örn. A1B2C3" style="text-transform:uppercase;letter-spacing:2px"></div></div>
@@ -418,7 +448,7 @@ function spSheet(){const s=SPS.sheet; let t='',b='';
     b=`<label>Ürün adı</label><input id="pf-n" value="${esc(p.name||'')}" placeholder="Örn: Un (tip 550)"><div class="sp-two2"><div><label>Marka</label><input id="pf-b" value="${esc(p.brand||'')}"></div><div><label>Kategori</label><select id="pf-c"><option value="">Seç</option>${SP_CATS.map(c=>`<option ${p.category===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div></div>
     <div class="sp-two2"><div><label>Birim</label><select id="pf-u">${SP_UNITS.map(u=>`<option ${(p.unit||'kg')===u?'selected':''}>${u}</option>`).join('')}</select></div><div><label>Birim fiyat (₺)</label><input id="pf-p" inputmode="decimal" value="${p.price||''}" placeholder="0"></div></div>
     <div class="sp-two2"><div><label>KDV %</label><select id="pf-v">${[0,1,10,20].map(v=>`<option ${(p.vat!=null?p.vat:10)===v?'selected':''}>${v}</option>`).join('')}</select></div><div><label>En az sipariş</label><input id="pf-m" inputmode="decimal" value="${p.min_qty||''}" placeholder="1"></div></div>
-    <label>Stok durumu</label><div class="sp-chips2" id="pf-st">${[['var','Stokta'],['az','Azaldı'],['yok','Tükendi']].map(o=>`<button type="button" data-sp="pst" data-v="${o[0]}" class="${(p.stock||'var')===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
+    <div class="sp-two2"><div><label>Elde (${esc(p.unit||'kg')})</label><input id="pf-q" inputmode="decimal" value="${p.qty!=null&&p.qty!==0?p.qty:''}" placeholder="0"></div><div><label>Kritik seviye</label><input id="pf-ms" inputmode="decimal" value="${p.min_stock||''}" placeholder="Örn: 50"></div></div><label>Alış maliyeti (₺ / birim)</label><input id="pf-co" inputmode="decimal" value="${p.cost||''}" placeholder="Kâr hesabı için"><label>Stok durumu</label><div class="sp-chips2" id="pf-st">${[['var','Stokta'],['az','Azaldı'],['yok','Tükendi']].map(o=>`<button type="button" data-sp="pst" data-v="${o[0]}" class="${(p.stock||'var')===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
     <div class="sp-two2"><div><label>Raf ömrü (gün)</label><input id="pf-sh" inputmode="numeric" value="${p.shelf_days||''}" placeholder="Örn: 180"></div><div><label>Parti SKT</label><input type="date" id="pf-lx" value="${esc(p.lot_exp||'')}"></div></div>
     <label>Miktara göre indirim</label><div id="pf-tiers">${tiers.map(spTierRow).join('')}</div><button type="button" class="sp-link" data-sp="addtier">+ Kademe ekle</button>
     <div class="sp-two2"><div><label>Kampanya indirimi %</label><input id="pf-pp" inputmode="decimal" value="${p.promo_pct||''}" placeholder="0"></div><div><label>Kampanya bitişi</label><input type="date" id="pf-pu" value="${esc(p.promo_until||'')}"></div></div>
@@ -446,7 +476,7 @@ const SPA={
   psave:async(el)=>{ if(SPS.busy) return; const name=$v('pf-n'), price=nz($v('pf-p')); if(!name) return spErr('Ürün adını yaz.'); if(!(price>0)) return spErr('Birim fiyatı yaz.');
     const tiers=[...document.querySelectorAll('#pf-tiers .sp-tr')].map(r=>({q:nz(r.querySelector('.tq').value),p:nz(r.querySelector('.tp').value)})).filter(t=>t.q>0&&t.p>0&&t.p<100);
     const pp=nz($v('pf-pp')); if(pp<0||pp>=100) return spErr('Kampanya yüzdesi 0 ile 99 arasında olmalı.');
-    const st=document.querySelector('#pf-st .on'); const row={supplier_id:SUP.id,name,brand:$v('pf-b')||null,category:$v('pf-c')||null,unit:$v('pf-u')||'kg',price,vat:Number($v('pf-v')),min_qty:nz($v('pf-m'))||1,stock:st?st.dataset.v:'var',shelf_days:nz($v('pf-sh'))||null,lot_exp:$v('pf-lx')||null,tiers,promo_pct:pp,promo_until:$v('pf-pu')||null,note:$v('pf-nt')||null,updated_at:new Date().toISOString()};
+    const st=document.querySelector('#pf-st .on'); const row={supplier_id:SUP.id,name,brand:$v('pf-b')||null,category:$v('pf-c')||null,unit:$v('pf-u')||'kg',price,vat:Number($v('pf-v')),min_qty:nz($v('pf-m'))||1,stock:st?st.dataset.v:'var',shelf_days:nz($v('pf-sh'))||null,lot_exp:$v('pf-lx')||null,tiers,promo_pct:pp,promo_until:$v('pf-pu')||null,note:$v('pf-nt')||null,qty:nz($v('pf-q')),min_stock:nz($v('pf-ms')),cost:nz($v('pf-co')),updated_at:new Date().toISOString()};
     SPS.busy=true; const id=el.dataset.id; const r=id?await sb.from('supplier_products').update(row).eq('id',id):await sb.from('supplier_products').insert(row); SPS.busy=false;
     if(spDb(r)) return spErr(/relation|schema cache/i.test(spDb(r))?'Katalog kurulumu eksik. İşletme sahibi SQL dosyasını çalıştırmalı.':spDb(r));
     SPS.sheet=null; await spReloadProds(); spToast(id?'Ürün güncellendi.':'Ürün eklendi.');},
@@ -480,6 +510,285 @@ if(!window.__spOn){window.__spOn=1;
   document.addEventListener('change',(e)=>{if(MODE!=='sup') return; const t=e.target; if(t.classList&&t.classList.contains('hon')){const r=t.closest('.sp-hr'); r.querySelectorAll('input[type=time]').forEach(i=>i.disabled=!t.checked);} if(t.id==='pf-rad'){const v=document.getElementById('pf-rv'); if(v) v.textContent=t.value;}});
   document.addEventListener('input',(e)=>{const t=e.target; if(t.id==='pf-rad'){const v=document.getElementById('pf-rv'); if(v) v.textContent=t.value;} if(t.id==='im-t'){const n=t.value.split(/\n/).map(l=>l.split(/;|\t/).map(x=>x.trim())).filter(c=>c[0]&&c.length>=3&&nz(c[2])>0).length; const c=document.getElementById('im-c'); if(c) c.textContent=n?n+' ürün okundu.':'';}});
 }
+/* ===== v7: toptancı paneli: muhasebe + Kais AI asistan ===== */
+SPS.books={ledger:[],cari:[],notes:[],seq:0}; SPS.chat=[]; SPS.acc='ozet'; SPS.mon=isoToday().slice(0,7); SPS.led='Tümü'; SPS.sop='teklif'; SPS.draft=''; SPS.ai=false; SPS.sum=null; SPS.sumBusy=false;
+const SP_NOTSET=/relation|schema cache|does not exist/i;
+const _spLoad0=spLoad;
+spLoad=async function(){
+  await _spLoad0();
+  const r=await sb.from('supplier_books').select('*').eq('supplier_id',SUP.id).limit(1);
+  if(r.error&&SP_NOTSET.test(r.error.message||'')) SPS.setup=true;
+  const d=(r.data&&r.data[0]&&r.data[0].data)||{}; SPS.books=Object.assign({ledger:[],cari:[],notes:[],seq:0},d);
+};
+let _spSaveT=null;
+function spSaveBooks(){clearTimeout(_spSaveT);_spSaveT=setTimeout(()=>{sb.from('supplier_books').upsert({supplier_id:SUP.id,data:SPS.books,updated_at:new Date().toISOString()},{onConflict:'supplier_id'}).then(r=>{if(r&&r.error) spToast('Muhasebe kaydedilemedi: '+r.error.message,1);});},500);}
+const bid=()=>'k'+Date.now().toString(36)+(++SPS.books.seq);
+const vatOf=(amt,r)=>amt-amt/(1+(Number(r)||0)/100);
+const tl0=(n)=>Number(Math.round(n*100)/100).toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})+' ₺';
+const monL=(m)=>{const [y,mm]=m.split('-').map(Number);return new Date(y,mm-1,1).toLocaleDateString('tr-TR',{month:'long',year:'numeric'});};
+const monShift=(m,d)=>{const [y,mm]=m.split('-').map(Number);const x=new Date(y,mm-1+d,1);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');};
+function spStats(m){const L=SPS.books.ledger.filter(e=>(e.date||'').slice(0,7)===m); let g=0,x=0,gv=0,xv=0,miss=0; const cats={}; const who={};
+  L.forEach(e=>{const a=Number(e.amt)||0,v=vatOf(a,e.vat); if(e.type==='gelir'){g+=a;gv+=v;who[e.party||'Diğer']=(who[e.party||'Diğer']||0)+a;} else {x+=a; if(e.doc!=='eksik') xv+=v; else miss++; cats[e.cat||'Diğer']=(cats[e.cat||'Diğer']||0)+a;}});
+  return {L,g,x,net:g-x,gv,xv,kdv:gv-xv,miss,cats:Object.entries(cats).sort((a,b)=>b[1]-a[1]),who:Object.entries(who).sort((a,b)=>b[1]-a[1])};}
+/* ---- yeni ana çizim ---- */
+function spRender(keep){
+  if(SPS.tab==='teklif'||SPS.tab==='siparis'){SPS.sop=SPS.tab;SPS.tab='is';}
+  const y=window.scrollY; const t=SPS.tab; const di=document.getElementById('sp-ai-in'); if(di) SPS.draft=di.value;
+  const open=SPS.rfqs.filter(r=>!SPS.quotes.some(q=>q.rfq_id===r.id)).length, pend=SPS.orders.filter(o=>o.status==='gonderildi').length;
+  const nav=[['ozet','home','Özet',0],['urun','box','Ürünler',0],['is','truck','Siparişler',open+pend],['muh','doc','Muhasebe',SPS.books.ledger.filter(e=>e.doc==='eksik').length],['kais','spark','Kais AI',0]];
+  const body={ozet:spOzet,urun:spUrun,is:spIs,muh:spMuh,kais:spKais,profil:spProfil}[t]();
+  app.innerHTML=`<div class="sp-top"><div><b>${esc(SUP.name)}</b><span>Toptancı paneli · ${esc(SPS.biz.name)}</span></div><div class="sp-tr2"><button class="sp-ib ${t==='profil'?'on':''}" data-sp="tab" data-v="profil" aria-label="Firma profili">${SPI('pin',20)}</button><button class="sp-out" id="out">Çıkış</button></div></div>
+  ${DEMO?'<div class="sp-demo">Deneme görünümü. Örnek veriler, kayıtlar bu sayfa açıkken durur.</div>':''}
+  ${SPS.setup?'<div class="sp-warn">Kurulum eksik. İşletme sahibinin kaispilot_tedarikci2.sql ve kaispilot_toptanci.sql dosyalarını çalıştırması gerekiyor.</div>':''}
+  <div class="sp-body${t==='kais'?' sp-chatb':''}">${body}</div>
+  <nav class="sp-nav">${nav.map(n=>`<button data-sp="tab" data-v="${n[0]}" class="${t===n[0]?'on':''}">${SPI(n[1],22)}<span>${n[2]}</span>${n[3]?`<i>${n[3]}</i>`:''}</button>`).join('')}</nav>${SPS.sheet?spSheet():''}`;
+  bindOut();
+  if(t==='kais'){const l=document.getElementById('sp-chat'); if(l) l.scrollTop=l.scrollHeight; window.scrollTo(0,document.body.scrollHeight);} else if(keep) window.scrollTo(0,y);
+  const q=document.getElementById('sp-q'); if(q){q.oninput=()=>{SPS.q=q.value;spList();};}
+  document.querySelectorAll('[data-qi]').forEach(i=>i.addEventListener('input',()=>spQTot(i.closest('[data-r]'))));
+  document.querySelectorAll('[data-r]').forEach(spQTot);
+  const ai=document.getElementById('sp-ai-in'); if(ai){ai.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();SPA.send();}});}
+}
+/* ---- ÖZET (bugün) ---- */
+const _spOzet0=spOzet;
+spOzet=function(){
+  const base=_spOzet0();
+  const a=SPS.sum;
+  const card=`<div class="sp-ai-c"><div class="sp-ai-h"><span class="sp-ti">${SPI('spark',18)}</span><b>Kais'in bugün için özeti</b></div>${SPS.sumBusy?'<p class="sp-d">Hazırlanıyor…</p>':a?`<div class="sp-ai-t">${spMd(a)}</div>`:'<p class="sp-d">Siparişlerine, SKT\'lere ve muhasebene bakıp kısa bir yapılacaklar listesi çıkarır.</p>'}<button class="sp-sec" data-sp="sum" ${SPS.sumBusy?'disabled':''}>${a?'Yenile':'Özet hazırla'}</button></div>`;
+  return base.replace('<h2 class="sp-h">Önerilenler</h2>',card+'<h2 class="sp-h">Bugün yapılacaklar</h2>');
+};
+function spMd(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split(/\n/).map(l=>/^\s*[-•*]\s+/.test(l)?'<div class="sp-li">'+l.replace(/^\s*[-•*]\s+/,'')+'</div>':(l.trim()?'<p>'+l+'</p>':'')).join('');}
+/* ---- SİPARİŞ + TEKLİF ---- */
+function spIs(){
+  const open=SPS.rfqs.filter(r=>!SPS.quotes.some(q=>q.rfq_id===r.id)).length, pend=SPS.orders.filter(o=>o.status==='gonderildi').length;
+  return `<div class="sp-seg"><button data-sp="sop" data-v="teklif" class="${SPS.sop==='teklif'?'on':''}">Teklif istekleri${open?` <i>${open}</i>`:''}</button><button data-sp="sop" data-v="siparis" class="${SPS.sop==='siparis'?'on':''}">Siparişler${pend?` <i>${pend}</i>`:''}</button></div>${SPS.sop==='teklif'?spTeklif():spSiparis()}`;
+}
+/* ---- MUHASEBE ---- */
+function spMuh(){
+  const sg=[['ozet','Özet'],['defter','Defter'],['cari','Cari'],['rapor','Rapor']];
+  const h=`<div class="sp-seg">${sg.map(s=>`<button data-sp="acc" data-v="${s[0]}" class="${SPS.acc===s[0]?'on':''}">${s[1]}</button>`).join('')}</div>`;
+  return h+({ozet:spMOzet,defter:spMDefter,cari:spMCari,rapor:spMRapor}[SPS.acc])();
+}
+const spMonBar=()=>`<div class="sp-mon"><button data-sp="mon" data-v="-1" aria-label="Önceki ay">‹</button><b>${esc(monL(SPS.mon))}</b><button data-sp="mon" data-v="1" aria-label="Sonraki ay">›</button></div>`;
+function spBars(arr,tot,cls){return arr.slice(0,6).map(([k,v])=>`<div class="sp-br"><div><span>${esc(k)}</span><b>${tl0(v)}</b></div><i><u class="${cls||''}" style="width:${tot?Math.max(3,Math.round(v/tot*100)):0}%"></u></i></div>`).join('')||'<p class="sp-d">Kayıt yok.</p>';}
+function spMOzet(){
+  const s=spStats(SPS.mon); const cr=SPS.books.cari.filter(c=>!c.paid); const al=cr.filter(c=>c.kind==='alacak'), bo=cr.filter(c=>c.kind==='borc');
+  const due=cr.filter(c=>c.due&&dLeft(c.due)<=7).sort((a,b)=>a.due>b.due?1:-1);
+  return `${spMonBar()}<div class="sp-kpi2"><div class="g"><span>Gelir</span><b>${tl0(s.g)}</b></div><div class="x"><span>Gider</span><b>${tl0(s.x)}</b></div><div class="n ${s.net<0?'neg':''}"><span>Net</span><b>${tl0(s.net)}</b></div></div>
+  <div class="sp-card"><div class="sp-ch"><b>KDV tahmini</b><span class="sp-b ${s.kdv>0?'warn':'ok'}">${s.kdv>0?'Ödenecek':'Devreden'}</span></div><div class="sp-ol"><span>Hesaplanan KDV (satış)</span><span>${tl0(s.gv)}</span></div><div class="sp-ol"><span>İndirilecek KDV (belgeli gider)</span><span>${tl0(s.xv)}</span></div><div class="sp-ol"><b>${s.kdv>0?'Tahmini ödeme':'Tahmini devreden'}</b><b>${tl0(Math.abs(s.kdv))}</b></div>${s.miss?`<p class="sp-d" style="margin-top:8px">${s.miss} giderin belgesi eksik. Eksik belgenin KDV'si indirilmez.</p>`:''}<p class="sp-d">Tahmindir, muhasebecin teyit eder.</p></div>
+  <div class="sp-card"><b>Alacak ve borç</b><div class="sp-two2" style="margin-top:8px"><div class="sp-mini"><span>Alacağın</span><b>${tl0(al.reduce((a,c)=>a+c.amt,0))}</b></div><div class="sp-mini"><span>Borcun</span><b>${tl0(bo.reduce((a,c)=>a+c.amt,0))}</b></div></div>${due.length?due.slice(0,4).map(c=>`<div class="sp-ol"><span>${esc(c.who)} <em class="sp-b ${c.kind==='alacak'?'ok':'warn'}">${c.kind==='alacak'?'alacak':'borç'}</em></span><span class="${dLeft(c.due)<0?'neg':''}">${dLeft(c.due)<0?Math.abs(dLeft(c.due))+' gün gecikti':dLeft(c.due)===0?'bugün':dLeft(c.due)+' gün'}</span></div>`).join(''):'<p class="sp-d" style="margin-top:8px">Yakın vadeli kayıt yok.</p>'}</div>
+  <div class="sp-card"><b>Gider dağılımı</b><div style="margin-top:8px">${spBars(s.cats,s.x,'x')}</div></div>
+  <div class="sp-two"><button class="sp-pri" data-sp="led" data-v="gelir">+ Gelir</button><button class="sp-sec" data-sp="led" data-v="gider">+ Gider</button></div>`;
+}
+function spMDefter(){
+  const s=spStats(SPS.mon); const f=SPS.led; const L=s.L.filter(e=>f==='Tümü'||(f==='Gelir'&&e.type==='gelir')||(f==='Gider'&&e.type==='gider')||(f==='Eksik belge'&&e.doc==='eksik')).sort((a,b)=>a.date<b.date?1:-1);
+  return `${spMonBar()}<div class="sp-chips">${['Tümü','Gelir','Gider','Eksik belge'].map(c=>`<button data-sp="lf" data-v="${c}" class="${f===c?'on':''}">${c}${c==='Eksik belge'&&s.miss?' · '+s.miss:''}</button>`).join('')}</div>
+  <div class="sp-two" style="margin:6px 0 10px"><button class="sp-pri" data-sp="led" data-v="gider">+ Gider</button><button class="sp-sec" data-sp="led" data-v="gelir">+ Gelir</button></div><label class="sp-scan">${SPI('up',16)} Fiş ya da fatura oku<input type="file" accept="image/*,application/pdf" id="sp-scan" hidden></label>
+  ${L.length?L.map(e=>`<button class="sp-le" data-sp="ledit" data-id="${e.id}"><div><b>${esc(e.desc||e.cat||'Kayıt')}</b><span>${new Date(e.date).toLocaleDateString('tr-TR')}${e.party?' · '+esc(e.party):''}${e.cat&&e.type==='gider'?' · '+esc(e.cat):''}</span><div class="sp-bg">${e.vat!=null?`<span class="sp-b mut">KDV %${e.vat}</span>`:''}${e.doc==='eksik'?'<span class="sp-b warn">Belge eksik</span>':''}</div></div><strong class="${e.type==='gelir'?'pos':'neg'}">${e.type==='gelir'?'+':'−'}${tl0(e.amt)}</strong></button>`).join(''):`<div class="sp-empty">${SPI('doc',30)}<b>Bu ay kayıt yok</b><span>Gelir ya da gider ekle. Kais'e de söyleyebilirsin.</span></div>`}`;
+}
+function spMCari(){
+  const C=SPS.books.cari; const open=C.filter(c=>!c.paid).sort((a,b)=>(a.due||'9')>(b.due||'9')?1:-1); const done=C.filter(c=>c.paid).slice(-5).reverse();
+  const row=(c)=>`<div class="sp-card" style="margin-bottom:8px"><div class="sp-ch"><b>${esc(c.who)}</b><strong class="${c.kind==='alacak'?'pos':'neg'}">${tl0(c.amt)}</strong></div><div class="sp-bg"><span class="sp-b ${c.kind==='alacak'?'ok':'warn'}">${c.kind==='alacak'?'Alacak':'Borç'}</span>${c.due?`<span class="sp-b ${!c.paid&&dLeft(c.due)<0?'bad':'mut'}">${!c.paid&&dLeft(c.due)<0?Math.abs(dLeft(c.due))+' gün gecikti':'Vade '+new Date(c.due).toLocaleDateString('tr-TR')}</span>`:''}${c.paid?'<span class="sp-b ok">Kapandı</span>':''}</div>${c.note?`<p class="sp-d">${esc(c.note)}</p>`:''}${c.paid?'':`<div class="sp-pa"><button data-sp="cclose" data-id="${c.id}">${c.kind==='alacak'?'Tahsil edildi':'Ödendi'}</button><button data-sp="cedit" data-id="${c.id}">Düzenle</button></div>`}</div>`;
+  return `<div class="sp-two" style="margin-bottom:10px"><button class="sp-pri" data-sp="cari" data-v="alacak">+ Alacak</button><button class="sp-sec" data-sp="cari" data-v="borc">+ Borç</button></div>${open.length?open.map(row).join(''):`<div class="sp-empty">${SPI('check',30)}<b>Açık kayıt yok</b><span>Vadeli satışlar ve borçlar burada izlenir. Onayladığın siparişler alacağa kendiliğinden düşer.</span></div>`}${done.length?'<h2 class="sp-h">Kapananlar</h2>'+done.map(row).join(''):''}`;
+}
+function spMRapor(){
+  const s=spStats(SPS.mon);
+  return `${spMonBar()}<div class="sp-card"><div class="sp-ol"><span>Gelir</span><b>${tl0(s.g)}</b></div><div class="sp-ol"><span>Gider</span><b>${tl0(s.x)}</b></div><div class="sp-ol"><b>Net</b><b class="${s.net<0?'neg':'pos'}">${tl0(s.net)}</b></div><div class="sp-ol"><span>Tahmini KDV</span><b>${tl0(s.kdv)}</b></div><div class="sp-ol"><span>Kayıt sayısı</span><span>${s.L.length}</span></div></div>
+  <div class="sp-card"><b>En çok satış yaptığın müşteriler</b><div style="margin-top:8px">${spBars(s.who,s.g,'g')}</div></div><div class="sp-card"><b>Gider kategorileri</b><div style="margin-top:8px">${spBars(s.cats,s.x,'x')}</div></div>
+  <button class="sp-pri sp-wide" data-sp="csv">Excel olarak indir (${esc(monL(SPS.mon))})</button><button class="sp-sec sp-wide" style="margin-top:8px" data-sp="csvall">Tüm kayıtları indir</button>`;
+}
+function spCSV(all){const rows=[['Tarih','Tür','Açıklama','Taraf','Kategori','Tutar (KDV dahil)','KDV %','KDV tutarı','Belge']]; SPS.books.ledger.filter(e=>all||(e.date||'').slice(0,7)===SPS.mon).sort((a,b)=>a.date>b.date?1:-1).forEach(e=>rows.push([e.date,e.type==='gelir'?'Gelir':'Gider',e.desc||'',e.party||'',e.cat||'',String(e.amt).replace('.',','),e.vat,String(Math.round(vatOf(e.amt,e.vat)*100)/100).replace('.',','),e.doc==='eksik'?'Eksik':'Var']));
+  const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(';')).join('\r\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='muhasebe-'+(all?'tumu':SPS.mon)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); spToast('Dosya indiriliyor.');}
+/* ---- KAIS AI ---- */
+const SP_Q=['Bugün ne yapmalıyım?','SKT\'si yaklaşanlara ne yapayım?','Bekleyen siparişleri onayla','Tüm fiyatlara %8 zam yap','Bu ayın muhasebe özeti'];
+function spKais(){
+  const C=SPS.chat;
+  const msgs=C.length?C.map((m,i)=>m.r==='user'?`<div class="sp-m u"><p>${esc(m.t)}</p>${m.f?`<em>${SPI('up',13)} ${esc(m.f)}</em>`:''}</div>`:`<div class="sp-m a"><span class="sp-av">${SPI('spark',16)}</span><div>${m.e?`<p class="neg">${esc(m.t)}</p>`:`<div class="sp-ai-t">${spMd(m.t)}</div>`}${(m.acts||[]).map((a,j)=>spActCard(a,i,j)).join('')}</div></div>`).join(''):`<div class="sp-hello"><span class="sp-av big">${SPI('spark',24)}</span><h2>Merhaba, ben Kais</h2><p>Ürün ekleme, SKT takibi, fiyat ve indirim, teklif ve siparişler, muhasebe. Yaz ya da fiş fotoğrafı gönder.</p><div class="sp-qs">${SP_Q.map(q=>`<button data-sp="q" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+  return `<div id="sp-chat" class="sp-chat">${msgs}${SPS.ai?'<div class="sp-m a"><span class="sp-av">'+SPI('spark',16)+'</span><div class="sp-typ"><i></i><i></i><i></i></div></div>':''}</div>
+  <div class="sp-inb"><label class="sp-att" aria-label="Belge ekle">${SPI('plus',22)}<input type="file" id="sp-ai-f" accept="image/*,application/pdf" hidden></label><textarea id="sp-ai-in" rows="1" placeholder="Kais'e yaz">${esc(SPS.draft)}</textarea><button class="sp-send" data-sp="send" aria-label="Gönder" ${SPS.ai?'disabled':''}>${SPI('up',20)}</button></div>${SPS.pf?`<div class="sp-pfile">${SPI('doc',14)} ${esc(SPS.pf.name)} <button data-sp="pfx" aria-label="Kaldır">${SPI('x',14)}</button></div>`:''}`;
+}
+const pName=(id)=>(SPS.prods.find(p=>p.id===id)||{}).name||'ürün';
+function spActTxt(a){const g=a.args||{}; switch(a.type){
+  case 'urun_ekle':return (g.urunler||[]).length+' ürün eklenecek: '+(g.urunler||[]).slice(0,4).map(u=>u.ad+' '+tl0(u.fiyat)+'/'+u.birim).join(', ')+((g.urunler||[]).length>4?' ve diğerleri':'');
+  case 'urun_guncelle':return pName(g.urun_id)+': '+[g.fiyat!=null&&'fiyat '+tl0(g.fiyat),g.stok&&'stok '+({var:'var',az:'azaldı',yok:'tükendi'}[g.stok]),g.skt&&'SKT '+g.skt,g.raf_omru&&'raf ömrü '+g.raf_omru+' gün',g.aktif!=null&&(g.aktif?'satışa açılacak':'satışa kapanacak'),g.min_miktar&&'en az '+g.min_miktar].filter(Boolean).join(', ');
+  case 'indirim_ayarla':return pName(g.urun_id)+': '+[g.kampanya_yuzde!=null&&'kampanya %'+g.kampanya_yuzde+(g.kampanya_bitis?' ('+g.kampanya_bitis+' kadar)':''),(g.kademeler||[]).length&&(g.kademeler.map(k=>k.miktar+'+ → %'+k.yuzde).join(', '))].filter(Boolean).join(', ');
+  case 'toplu_fiyat':return (g.kategori||'Tüm ürünler')+' için fiyat %'+g.yuzde+(g.yuzde>0?' artacak':' düşecek');
+  case 'siparis_onayla':{const o=SPS.orders.find(x=>x.id===g.siparis_id);return 'Sipariş onaylanacak'+(o?': '+tl0(o.total):'');}
+  case 'teklif_hazirla':{const r=SPS.rfqs.find(x=>x.id===g.istek_id);return 'Teklif gönderilecek: '+(g.fiyatlar||[]).map(f=>(r&&r.lines[f.sira]?r.lines[f.sira].name:'kalem')+' '+tl0(f.fiyat)).join(', ');}
+  case 'gider_kaydet':return 'Gider: '+(g.aciklama||g.taraf||'')+' · '+tl0(g.tutar)+' · KDV %'+g.kdv_orani+' · '+(g.tarih||'');
+  case 'gelir_kaydet':return 'Gelir: '+(g.aciklama||'')+' · '+tl0(g.tutar)+' · KDV %'+g.kdv_orani+(g.taraf?' · '+g.taraf:'');
+  case 'cari_ekle':return (g.tur==='alacak'?'Alacak: ':'Borç: ')+g.kisi+' · '+tl0(g.tutar)+(g.vade?' · vade '+g.vade:'');
+  case 'cari_kapat':{const c=SPS.books.cari.find(x=>x.id===g.cari_id);return c?(c.kind==='alacak'?'Tahsil edildi: ':'Ödendi: ')+c.who+' '+tl0(c.amt):'Kayıt kapatılacak';}
+  case 'excel_indir':return 'Muhasebe defteri Excel olarak inecek';
+  case 'profil_guncelle':return Object.entries(g).map(([k,v])=>({telefon:'telefon',asgari_siparis:'asgari sipariş',kesim_saati:'kesim saati',teslim_gun:'teslim süresi',vade_gun:'vade',ucretsiz_teslimat:'ücretsiz teslimat üstü',teslimat_ucreti:'teslimat ücreti'}[k]||k)+': '+v).join(', ');
+  case 'hafiza_kaydet':return 'Not: '+g.not;
+  default:return a.type;}}
+const SP_AT={urun_ekle:'Ürün ekle',urun_guncelle:'Ürünü güncelle',indirim_ayarla:'İndirim',toplu_fiyat:'Toplu fiyat',siparis_onayla:'Sipariş onayı',teklif_hazirla:'Teklif',gider_kaydet:'Gider kaydı',gelir_kaydet:'Gelir kaydı',cari_ekle:'Cari kayıt',cari_kapat:'Cari kapat',excel_indir:'Excel',profil_guncelle:'Profil',hafiza_kaydet:'Hafıza'};
+function spActCard(a,i,j){return `<div class="sp-act${a.done?' done':''}"><b>${SP_AT[a.type]||a.type}</b><p>${esc(spActTxt(a))}</p>${a.done?`<span class="sp-b ok">${esc(a.done===true?'Uygulandı':a.done)}</span>`:a.no?'<span class="sp-b mut">Vazgeçildi</span>':`<div class="sp-two"><button class="sp-sec" data-sp="ano" data-i="${i}" data-j="${j}">Vazgeç</button><button class="sp-pri" data-sp="aok" data-i="${i}" data-j="${j}">Uygula</button></div>`}</div>`;}
+function spCtx(){
+  const t=isoToday(); const wd=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][new Date().getDay()]; const s=spStats(SPS.mon); const f=SPS.prof||{};
+  return {bugun:t+' '+wd,toptanci:SUP.name,isletme:SPS.biz.name,
+    urunler:SPS.prods.slice(0,150).map(p=>({id:p.id,ad:p.name,birim:p.unit,fiyat:p.price,kategori:p.category,marka:p.brand,kdv:p.vat,stok:p.stock,min_miktar:p.min_qty,aktif:p.active!==false,skt:p.lot_exp||null,skt_kalan_gun:p.lot_exp?dLeft(p.lot_exp):null,raf_omru:p.shelf_days||null,kampanya:unitLeft(p)?{yuzde:p.promo_pct,bitis:p.promo_until}:null,kademeler:p.tiers||[],fiyat_guncelleme_gun:p.updated_at?Math.round((Date.now()-Date.parse(p.updated_at))/864e5):null})),
+    siparisler:SPS.orders.slice(0,30).map(o=>({id:o.id,durum:o.status,toplam:o.total,tarih:(o.created_at||'').slice(0,10),kalemler:o.lines})),
+    teklif_istekleri:SPS.rfqs.map(r=>({id:r.id,tarih:(r.created_at||'').slice(0,10),kalemler:r.lines,teklif_verildi:SPS.quotes.some(q=>q.rfq_id===r.id)})),
+    profil:{telefon:f.phone,adres:f.address,konum_var:f.lat!=null,saat_var:Object.values(f.hours||{}).some(x=>x&&x.o),teslimat_gunleri:f.delivery_days,kesim:f.cutoff,teslim_gun:f.lead_days,asgari:f.min_order,vade:f.pay_terms},
+    muhasebe:{ay:SPS.mon,gelir:s.g,gider:s.x,net:s.net,kdv_tahmini:s.kdv,eksik_belge:s.miss,gider_kategorileri:s.cats.slice(0,6),son_kayitlar:SPS.books.ledger.slice(-15).map(e=>({tarih:e.date,tur:e.type,aciklama:e.desc,tutar:e.amt,kdv:e.vat,belge:e.doc})),cari:SPS.books.cari.filter(c=>!c.paid).slice(0,30).map(c=>({id:c.id,tur:c.kind,kisi:c.who,tutar:c.amt,vade:c.due}))},
+    hafiza_notlari:(SPS.books.notes||[]).slice(-20)};
+}
+async function spAI(mode,msgs,atts){
+  if(DEMO) return spDemoAI(msgs[msgs.length-1].content,mode);
+  const r=await sb.functions.invoke('kais-ai',{body:{supplier_id:SUP.id,mode,messages:msgs,context:spCtx(),attachments:(atts||[]).map(a=>({type:a.type,media_type:a.media_type,data:a.data}))}});
+  if(r.error){let m=''; try{m=(await r.error.context.json()).error;}catch(e){} throw new Error(m||(/not found|404|FunctionsFetch/i.test(String(r.error.message))?'Kais AI henüz kurulmamış. İşletme sahibi kais-ai fonksiyonunu güncellemeli.':'Kais şu an yanıt veremedi. Biraz sonra tekrar dene.'));}
+  if(r.data&&r.data.error) throw new Error(r.data.error); return r.data||{};
+}
+function spFile(f){return new Promise((res,rej)=>{ if(!f) return rej(new Error('Dosya yok.')); if(f.type==='application/pdf'){ if(f.size>4.5e6) return rej(new Error('PDF en fazla 4 MB olabilir.')); const fr=new FileReader(); fr.onload=()=>res({type:'pdf',media_type:'application/pdf',data:String(fr.result).split(',')[1]||'',name:f.name}); fr.onerror=()=>rej(new Error('Dosya okunamadı.')); fr.readAsDataURL(f); return; }
+  if(!/^image\//.test(f.type)) return rej(new Error('Fotoğraf ya da PDF seç.')); const url=URL.createObjectURL(f); const im=new Image(); im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(url); res({type:'image',media_type:'image/jpeg',data:c.toDataURL('image/jpeg',.82).split(',')[1],name:f.name||'fotoğraf'});}; im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Görsel okunamadı.'));}; im.src=url;});}
+function spDemoAI(text){const t=nrm(text); const act=SPS.prods.filter(p=>p.lot_exp&&dLeft(p.lot_exp)<=14&&dLeft(p.lot_exp)>=0&&p.stock!=='yok');
+  return new Promise(ok=>setTimeout(()=>{
+    if(/skt/.test(t)) return ok({reply:act.length?act.map(p=>'- **'+p.name+'**: '+dLeft(p.lot_exp)+' gün kaldı').join('\n')+'\n\nİlk ürün için bir hafta süreli %15 kampanya öneriyorum:':'SKT\'si yakın ürün görünmüyor.',actions:act.length?[{type:'indirim_ayarla',args:{urun_id:act[0].id,kampanya_yuzde:15,kampanya_bitis:new Date(Date.now()+6*864e5).toISOString().slice(0,10)}}]:[]});
+    if(/bugun|yapil|ne yap/.test(t)) return ok({reply:'**Bugün için sıran:**\n- 1 siparişin onayını bekliyor, onayla.\n- 2 teklif isteği cevap bekliyor, katalogdan hazırlayabilirim.\n- Süt (tam yağlı) SKT\'si 5 gün sonra bitiyor, kampanya yapalım.\n- Adres ve konum bilgin eksik, profilinden ekle.',actions:[]});
+    if(/zam|fiyat/.test(t)) return ok({reply:'Tüm ürünlerde %8 zam hazırladım. Onaylarsan uygulanır.',actions:[{type:'toplu_fiyat',args:{yuzde:8}}]});
+    if(/siparis/.test(t)){const p=SPS.orders.filter(o=>o.status==='gonderildi'); return ok({reply:p.length?p.length+' sipariş onay bekliyor.':'Onay bekleyen sipariş yok.',actions:p.map(o=>({type:'siparis_onayla',args:{siparis_id:o.id}}))});}
+    if(/muhasebe|ozet|gelir|gider/.test(t)){const s=spStats(SPS.mon); return ok({reply:'**'+monL(SPS.mon)+'**\n- Gelir: '+tl0(s.g)+'\n- Gider: '+tl0(s.x)+'\n- Net: '+tl0(s.net)+'\n- Tahmini KDV: '+tl0(s.kdv),actions:[]});}
+    ok({reply:'Deneme görünümünde örnek yanıt veriyorum. Şunları dene: "bugün ne yapmalıyım", "SKT", "zam yap", "siparişler", "muhasebe özeti". Gerçek hesapta her şeyi yazarak yapabilirsin.',actions:[]});},600));}
+async function spAsk(text,att){
+  text=(text||'').trim(); if(!text&&!att) return; if(SPS.ai) return; text=text||'Bu belgeyi incele.';
+  SPS.chat.push({r:'user',t:text,f:att&&att.name}); SPS.draft=''; SPS.pf=null; SPS.ai=true; spRender();
+  const hist=SPS.chat.filter(m=>!m.e).slice(-12).map(m=>({role:m.r==='user'?'user':'assistant',content:m.t}));
+  try{ const r=await spAI('sohbet',hist,att?[att]:[]); SPS.chat.push({r:'ai',t:r.reply||'Yanıt üretemedim.',acts:(r.actions||[]).map(a=>({type:a.type,args:a.args||{}}))}); }
+  catch(e){ SPS.chat.push({r:'ai',t:e.message||'Bir sorun oldu.',e:1}); }
+  SPS.ai=false; if(SPS.tab==='kais') spRender();
+}
+/* ---- eylemleri uygula ---- */
+async function spExec(a){const g=a.args||{}; const now=new Date().toISOString(); const dbe=(r)=>{if(r&&r.error) throw new Error(r.error.message);};
+  switch(a.type){
+  case 'urun_ekle':{const rows=(g.urunler||[]).filter(u=>u.ad&&u.fiyat>0).map(u=>({supplier_id:SUP.id,name:u.ad,unit:u.birim||'kg',price:u.fiyat,category:u.kategori||null,brand:u.marka||null,vat:u.kdv!=null?u.kdv:10,lot_exp:u.skt||null,shelf_days:u.raf_omru||null,stock:u.stok||'var'})); if(!rows.length) throw new Error('Eklenecek geçerli ürün yok.'); dbe(await sb.from('supplier_products').insert(rows)); await spReloadProds(); return rows.length+' ürün eklendi';}
+  case 'urun_guncelle':{const p={updated_at:now}; if(g.fiyat!=null)p.price=g.fiyat; if(g.stok)p.stock=g.stok; if(g.skt)p.lot_exp=g.skt; if(g.raf_omru!=null)p.shelf_days=g.raf_omru; if(g.aktif!=null)p.active=g.aktif; if(g.min_miktar!=null)p.min_qty=g.min_miktar; dbe(await sb.from('supplier_products').update(p).eq('id',g.urun_id)); await spReloadProds(); return 'Güncellendi';}
+  case 'indirim_ayarla':{const p={updated_at:now}; if(g.kampanya_yuzde!=null)p.promo_pct=g.kampanya_yuzde; if(g.kampanya_bitis)p.promo_until=g.kampanya_bitis; if((g.kademeler||[]).length)p.tiers=g.kademeler.map(k=>({q:k.miktar,p:k.yuzde})); dbe(await sb.from('supplier_products').update(p).eq('id',g.urun_id)); await spReloadProds(); return 'İndirim ayarlandı';}
+  case 'toplu_fiyat':{const L=SPS.prods.filter(p=>!g.kategori||p.category===g.kategori); if(!L.length) throw new Error('Bu kapsamda ürün yok.'); const rs=await Promise.all(L.map(p=>sb.from('supplier_products').update({price:Math.round(p.price*(1+g.yuzde/100)*100)/100,updated_at:now}).eq('id',p.id))); rs.forEach(dbe); await spReloadProds(); return L.length+' ürün güncellendi';}
+  case 'siparis_onayla':{dbe(await sb.from('orders').update({status:'onaylandi'}).eq('id',g.siparis_id)); const o=SPS.orders.find(x=>x.id===g.siparis_id); if(o){o.status='onaylandi'; spOrderCari(o);} return 'Sipariş onaylandı';}
+  case 'teklif_hazirla':{const prices={}; (g.fiyatlar||[]).forEach(f=>{if(f.fiyat>0)prices[f.sira]=f.fiyat;}); if(!Object.keys(prices).length) throw new Error('Fiyat yok.'); dbe(await sb.from('quotes').upsert({rfq_id:g.istek_id,supplier_id:SUP.id,prices},{onConflict:'rfq_id,supplier_id'})); const q=SPS.quotes.find(x=>x.rfq_id===g.istek_id); if(q) q.prices=prices; else SPS.quotes.push({rfq_id:g.istek_id,supplier_id:SUP.id,prices}); return 'Teklif gönderildi';}
+  case 'gider_kaydet':SPS.books.ledger.push({id:bid(),type:'gider',date:g.tarih||isoToday(),desc:g.aciklama||g.taraf||'Gider',party:g.taraf||'',cat:g.kategori||'Diğer',amt:Number(g.tutar)||0,vat:g.kdv_orani!=null?g.kdv_orani:10,doc:g.belge||'var'}); spSaveBooks(); return 'Deftere işlendi';
+  case 'gelir_kaydet':SPS.books.ledger.push({id:bid(),type:'gelir',date:g.tarih||isoToday(),desc:g.aciklama||'Satış',party:g.taraf||'',cat:'Satış',amt:Number(g.tutar)||0,vat:g.kdv_orani!=null?g.kdv_orani:10,doc:'var'}); spSaveBooks(); return 'Deftere işlendi';
+  case 'cari_ekle':SPS.books.cari.push({id:bid(),kind:g.tur,who:g.kisi,amt:Number(g.tutar)||0,due:g.vade||'',note:g.not||'',paid:false}); spSaveBooks(); return 'Cariye eklendi';
+  case 'cari_kapat':{const c=SPS.books.cari.find(x=>x.id===g.cari_id); if(!c) throw new Error('Kayıt bulunamadı.'); c.paid=true; spSaveBooks(); return 'Kapandı';}
+  case 'excel_indir':spCSV(true); return 'İndirildi';
+  case 'profil_guncelle':{const f=Object.assign({},SPS.prof,{supplier_id:SUP.id,updated_at:now}); if(g.telefon!=null)f.phone=g.telefon; if(g.asgari_siparis!=null)f.min_order=g.asgari_siparis; if(g.kesim_saati)f.cutoff=g.kesim_saati; if(g.teslim_gun!=null)f.lead_days=g.teslim_gun; if(g.vade_gun!=null)f.pay_terms=g.vade_gun; if(g.ucretsiz_teslimat!=null)f.free_over=g.ucretsiz_teslimat; if(g.teslimat_ucreti!=null)f.delivery_fee=g.teslimat_ucreti; dbe(await sb.from('supplier_profiles').upsert(f,{onConflict:'supplier_id'})); SPS.prof=f; return 'Profil güncellendi';}
+  case 'hafiza_kaydet':(SPS.books.notes=SPS.books.notes||[]).push(String(g.not).slice(0,300)); spSaveBooks(); return 'Hatırlayacağım';
+  default:throw new Error('Bilinmeyen işlem.');}}
+function spOrderCari(o){ if(SPS.books.cari.some(c=>c.orderId===o.id)) return; const pt=Number((SPS.prof||{}).pay_terms||0); const d=new Date(Date.now()+pt*864e5).toISOString().slice(0,10); SPS.books.cari.push({id:bid(),kind:'alacak',who:SPS.biz.name,amt:Number(o.total)||0,due:d,note:'Sipariş '+new Date(o.created_at).toLocaleDateString('tr-TR'),paid:false,orderId:o.id}); spSaveBooks(); }
+/* ---- sheet'ler: gelir/gider, cari ---- */
+const _spSheet0=spSheet;
+spSheet=function(){const s=SPS.sheet; if(s.t!=='led'&&s.t!=='cari') return _spSheet0(); let t='',b='';
+  if(s.t==='led'){const e=s.e||{}; const gd=(e.type||s.k)==='gider'; t=(e.id?'Kaydı düzenle':gd?'Yeni gider':'Yeni gelir');
+    b=`<label>Açıklama</label><input id="lf-d" value="${esc(e.desc||'')}" placeholder="${gd?'Örn: Elektrik faturası':'Örn: Peşin satış'}"><div class="sp-two2"><div><label>Tutar (KDV dahil ₺)</label><input id="lf-a" inputmode="decimal" value="${e.amt||''}"></div><div><label>KDV %</label><select id="lf-v">${[0,1,10,20].map(v=>`<option ${(e.vat!=null?e.vat:(gd?20:10))===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
+    <div class="sp-two2"><div><label>Tarih</label><input type="date" id="lf-t" value="${esc(e.date||isoToday())}"></div><div><label>${gd?'Satıcı':'Müşteri'}</label><input id="lf-p" value="${esc(e.party||'')}"></div></div>
+    ${gd?`<label>Kategori</label><select id="lf-c">${['Hammadde','İş yemeği','Akaryakıt','Elektrik','Doğalgaz','Su','Telefon / internet','Kira','Temizlik','Ulaşım','Maaş','Diğer'].map(c=>`<option ${e.cat===c?'selected':''}>${c}</option>`).join('')}</select><label class="sp-ck"><input type="checkbox" id="lf-m" ${e.doc==='eksik'?'checked':''}> Belgesi (fiş ya da fatura) elimde yok</label>`:''}<p class="err" id="msg"></p>
+    <div class="sp-two">${e.id?`<button class="sp-sec bad" data-sp="ldel" data-id="${e.id}">Sil</button>`:'<button class="sp-sec" data-sp="sclose">Vazgeç</button>'}<button class="sp-pri" data-sp="lsave" data-id="${e.id||''}" data-k="${gd?'gider':'gelir'}">Kaydet</button></div>`;}
+  else {const c=s.c||{}; const k=c.kind||s.k; t=c.id?'Kaydı düzenle':(k==='alacak'?'Yeni alacak':'Yeni borç');
+    b=`<label>${k==='alacak'?'Müşteri':'Kime borçlusun'}</label><input id="cf-w" value="${esc(c.who||'')}"><div class="sp-two2"><div><label>Tutar (₺)</label><input id="cf-a" inputmode="decimal" value="${c.amt||''}"></div><div><label>Vade</label><input type="date" id="cf-d" value="${esc(c.due||'')}"></div></div><label>Not</label><input id="cf-n" value="${esc(c.note||'')}"><p class="err" id="msg"></p>
+    <div class="sp-two">${c.id?`<button class="sp-sec bad" data-sp="cdel" data-id="${c.id}">Sil</button>`:'<button class="sp-sec" data-sp="sclose">Vazgeç</button>'}<button class="sp-pri" data-sp="csave" data-id="${c.id||''}" data-k="${k}">Kaydet</button></div>`;}
+  return `<div class="sp-ov" data-sp="sclose"><div class="sp-sh"><div class="sp-shh"><h3>${t}</h3><button data-sp="sclose" aria-label="Kapat">${SPI('x',20)}</button></div>${b}</div></div>`;};
+Object.assign(SPA,{
+  sop:(el)=>{SPS.sop=el.dataset.v;spRender();}, acc:(el)=>{SPS.acc=el.dataset.v;spRender();window.scrollTo(0,0);}, lf:(el)=>{SPS.led=el.dataset.v;spRender(true);},
+  mon:(el)=>{SPS.mon=monShift(SPS.mon,Number(el.dataset.v));spRender(true);},
+  led:(el)=>{SPS.sheet={t:'led',k:el.dataset.v};spRender(true);}, ledit:(el)=>{SPS.sheet={t:'led',e:SPS.books.ledger.find(e=>e.id===el.dataset.id)||{}};spRender(true);},
+  lsave:(el)=>{const a=nz($v('lf-a')); if(!(a>0)) return spErr('Tutarı yaz.'); const k=el.dataset.k, id=el.dataset.id; const row={id:id||bid(),type:k,date:$v('lf-t')||isoToday(),desc:$v('lf-d')||(k==='gider'?'Gider':'Satış'),party:$v('lf-p'),cat:k==='gider'?$v('lf-c'):'Satış',amt:a,vat:Number($v('lf-v')),doc:k==='gider'&&document.getElementById('lf-m')&&document.getElementById('lf-m').checked?'eksik':'var'};
+    if(id){const i=SPS.books.ledger.findIndex(e=>e.id===id); if(i>=0) SPS.books.ledger[i]=row;} else SPS.books.ledger.push(row); SPS.mon=row.date.slice(0,7); spSaveBooks(); SPS.sheet=null; spRender(true); spToast('Deftere işlendi.');},
+  ldel:(el)=>{if(!confirm('Bu kayıt silinsin mi?')) return; SPS.books.ledger=SPS.books.ledger.filter(e=>e.id!==el.dataset.id); spSaveBooks(); SPS.sheet=null; spRender(true); spToast('Kayıt silindi.');},
+  cari:(el)=>{SPS.sheet={t:'cari',k:el.dataset.v};spRender(true);}, cedit:(el)=>{SPS.sheet={t:'cari',c:SPS.books.cari.find(c=>c.id===el.dataset.id)||{}};spRender(true);},
+  csave:(el)=>{const a=nz($v('cf-a')),w=$v('cf-w'); if(!w) return spErr('İsim yaz.'); if(!(a>0)) return spErr('Tutarı yaz.'); const id=el.dataset.id; const row={id:id||bid(),kind:el.dataset.k,who:w,amt:a,due:$v('cf-d'),note:$v('cf-n'),paid:false}; if(id){const i=SPS.books.cari.findIndex(c=>c.id===id); if(i>=0) SPS.books.cari[i]=Object.assign({},SPS.books.cari[i],row);} else SPS.books.cari.push(row); spSaveBooks(); SPS.sheet=null; spRender(true); spToast('Kaydedildi.');},
+  cdel:(el)=>{if(!confirm('Bu kayıt silinsin mi?')) return; SPS.books.cari=SPS.books.cari.filter(c=>c.id!==el.dataset.id); spSaveBooks(); SPS.sheet=null; spRender(true);},
+  cclose:(el)=>{const c=SPS.books.cari.find(x=>x.id===el.dataset.id); if(!c) return; c.paid=true; spSaveBooks(); spRender(true); spToast(c.kind==='alacak'?'Tahsil edildi.':'Ödendi.');},
+  csv:()=>spCSV(false), csvall:()=>spCSV(true),
+  q:(el)=>{spAsk(el.dataset.v);}, send:()=>{const i=document.getElementById('sp-ai-in'); spAsk(i?i.value:SPS.draft,SPS.pf||null);}, pfx:()=>{SPS.pf=null;spRender(true);},
+  sum:async()=>{SPS.sumBusy=true;spRender(true); try{const r=await spAI('ozet',[{role:'user',content:'Bugün için özet ver.'}]); SPS.sum=r.reply||'Özet üretemedim.';}catch(e){SPS.sum=e.message;} SPS.sumBusy=false; if(SPS.tab==='ozet') spRender(true);},
+  ano:(el)=>{const a=SPS.chat[el.dataset.i].acts[el.dataset.j]; a.no=1; spRender(true);},
+  aok:async(el)=>{const a=SPS.chat[el.dataset.i].acts[el.dataset.j]; el.disabled=true; try{a.done=await spExec(a); }catch(e){a.err=e.message; spToast(e.message,1);} spRender(true);}
+});
+SPA.ook=async(el)=>{const r=await sb.from('orders').update({status:'onaylandi'}).eq('id',el.dataset.id); if(spDb(r)) return spToast(spDb(r),1); const o=SPS.orders.find(x=>x.id===el.dataset.id); if(o){o.status='onaylandi'; spOrderCari(o);} spToast('Sipariş onaylandı, alacağa işlendi.'); spRender(true);};
+document.addEventListener('change',async(e)=>{ if(MODE!=='sup') return; const t=e.target;
+  if(t.id==='sp-ai-f'&&t.files&&t.files[0]){ try{SPS.pf=await spFile(t.files[0]); const i=document.getElementById('sp-ai-in'); if(i) SPS.draft=i.value; spRender(true);}catch(er){spToast(er.message,1);} t.value=''; }
+  if(t.id==='sp-scan'&&t.files&&t.files[0]){ const f=t.files[0]; t.value=''; spToast('Belge okunuyor…'); try{ const a=await spFile(f); const d=(await spAI('fis',[{role:'user',content:'Belgeyi oku.'}],[a])); const x=d.data||d; if(DEMO&&!x.toplam){x.satici='Örnek Market';x.toplam=1250;x.kdv_orani=20;x.kategori='Hammadde';} SPS.sheet={t:'led',e:{type:'gider',desc:x.satici||'Fiş',party:x.satici||'',amt:x.toplam||'',vat:x.kdv_orani!=null?x.kdv_orani:20,date:/^\d{4}-\d{2}-\d{2}$/.test(x.tarih||'')?x.tarih:isoToday(),cat:x.kategori||'Diğer',doc:'var'}}; SPS.sheet.e.id=''; spRender(true); spToast('Belge okundu. Kontrol edip kaydet.'); }catch(er){spToast(er.message||'Belge okunamadı.',1);} }
+});
+
+/* ===== v8: stok takibi (elde, rezerve, kimlere gidecek, kapsama, SKT riski) ===== */
+SPS.books.slog=SPS.books.slog||[]; SPS.sub='kat'; SPS.sq='';
+const _spLoad1=spLoad; spLoad=async function(){await _spLoad1(); SPS.books.slog=SPS.books.slog||[];};
+const lineMatch=(name)=>{const n=nrm(name); if(!n) return null; return SPS.prods.find(p=>nrm(p.name)===n)||SPS.prods.find(p=>{const a=nrm(p.name);return a&&(a.includes(n)||n.includes(a));})||null;};
+function spRes(){const m={}; SPS.orders.filter(o=>['gonderildi','onaylandi'].includes(o.status)).forEach(o=>(o.lines||[]).forEach(l=>{const p=lineMatch(l.name); if(!p) return; (m[p.id]=m[p.id]||[]).push({who:SPS.biz.name,qty:Number(l.qty)||0,date:o.created_at,oid:o.id,st:o.status});})); return m;}
+function spVel(pid){const since=Date.now()-30*864e5; return SPS.books.slog.filter(s=>s.pid===pid&&s.type==='cikis'&&Date.parse(s.date)>=since).reduce((a,s)=>a+(Number(s.qty)||0),0)/30;}
+function spStk(p,R){R=R||spRes(); const qty=Number(p.qty)||0; const res=(R[p.id]||[]).reduce((a,r)=>a+r.qty,0); const avail=qty-res; const vel=spVel(p.id); const cover=vel>0?Math.max(0,avail)/vel:null; const min=Number(p.min_stock)||0;
+  const tracked=qty>0||min>0||SPS.books.slog.some(s=>s.pid===p.id); const dl=p.lot_exp?dLeft(p.lot_exp):null;
+  const short=tracked&&res>0&&avail<0, crit=tracked&&!short&&(qty<=0||(min>0&&qty<=min)), over=cover!=null&&cover>90&&qty>0;
+  const unsold=(dl!=null&&dl>=0&&qty>0)?(vel>0?Math.max(0,qty-vel*dl):qty):0; const sktRisk=unsold>0&&dl<=30;
+  return {qty,res,avail,vel,cover,min,tracked,short,crit,over,sktRisk,unsold,dl,list:R[p.id]||[],val:qty*(Number(p.cost)||Number(p.price)||0)};}
+async function spMove(pid,type,qty,who,note){const p=SPS.prods.find(x=>x.id===pid); if(!p) throw new Error('Ürün bulunamadı.'); qty=Number(qty); if(!(qty>=0)) throw new Error('Miktarı yaz.');
+  const cur=Number(p.qty)||0; let nq=cur, lg=qty; if(type==='giris') nq=cur+qty; else if(type==='cikis'||type==='fire'){ nq=Math.max(0,cur-qty); lg=cur-nq; } else if(type==='sayim'){ nq=qty; lg=nq-cur; }
+  const min=Number(p.min_stock)||0; const st=nq<=0?'yok':(min>0&&nq<=min?'az':'var');
+  const r=await sb.from('supplier_products').update({qty:nq,stock:st,updated_at:new Date().toISOString()}).eq('id',pid); if(r&&r.error) throw new Error(r.error.message);
+  p.qty=nq; p.stock=st; SPS.books.slog.push({id:bid(),pid,date:new Date().toISOString(),type,qty:Math.abs(lg),who:who||'',note:note||''}); SPS.books.slog=SPS.books.slog.slice(-400); spSaveBooks(); return nq;}
+const SP_MV={giris:['Giriş','pos'],cikis:['Çıkış','neg'],sayim:['Sayım','mut'],fire:['Fire','neg']};
+/* ---- ÜRÜNLER: katalog | stok ---- */
+const _spUrun0=spUrun;
+spUrun=function(){const seg=`<div class="sp-seg"><button data-sp="sub" data-v="kat" class="${SPS.sub==='kat'?'on':''}">Katalog</button><button data-sp="sub" data-v="stok" class="${SPS.sub==='stok'?'on':''}">Stok</button><button data-sp="sub" data-v="hrk" class="${SPS.sub==='hrk'?'on':''}">Hareketler</button></div>`;
+  return seg+(SPS.sub==='stok'?spStok():SPS.sub==='hrk'?spHrk():_spUrun0());};
+function spStokTips(){const R=spRes(); const out=[]; SPS.prods.filter(p=>p.active!==false).forEach(p=>{const s=spStk(p,R); if(s.short) out.push(['bad',p.name+': siparişleri karşılamaya '+fmt2(-s.avail)+' '+p.unit+' eksik. Eldeki '+fmt2(s.qty)+', rezerve '+fmt2(s.res)+'.','giris',p.id]);
+    else if(s.crit) out.push(['warn',p.name+' kritik seviyede ('+fmt2(s.qty)+' '+p.unit+(s.min?', alt sınır '+fmt2(s.min):'')+'). Tedarik et.','giris',p.id]);
+    if(s.sktRisk) out.push(['warn',p.name+': '+fmt2(s.unsold)+' '+p.unit+' SKT\'ye ('+s.dl+' gün) kadar satılamayabilir'+(s.vel>0?' (günlük ~'+fmt2(s.vel)+')':'')+'. Kampanya yap.','promo',p.id]);
+    else if(s.over) out.push(['info',p.name+' bu hızla '+Math.round(s.cover)+' gün yeter, stok fazla. Kampanya düşün.','promo',p.id]);});
+  return out;}
+function spStok(){const R=spRes(); const L=SPS.prods.filter(p=>p.active!==false); const q=nrm(SPS.sq);
+  const S=L.map(p=>({p,s:spStk(p,R)})); const val=S.reduce((a,x)=>a+x.s.val,0), resv=S.reduce((a,x)=>a+x.s.res*(Number(x.p.price)||0),0), crit=S.filter(x=>x.s.crit||x.s.short).length, risk=S.filter(x=>x.s.sktRisk).length; const tips=spStokTips();
+  const shown=S.filter(x=>!q||nrm(x.p.name).includes(q)).sort((a,b)=>(b.s.short-a.s.short)||(b.s.crit-a.s.crit)||(b.s.sktRisk-a.s.sktRisk)||a.p.name.localeCompare(b.p.name,'tr'));
+  return `<div class="sp-kpi4"><div><b>${tl0(val)}</b><span>stok değeri</span></div><div><b>${tl0(resv)}</b><span>rezerve (sipariş)</span></div><div class="${crit?'bad':''}"><b>${crit}</b><span>kritik / eksik</span></div><div class="${risk?'warn':''}"><b>${risk}</b><span>SKT riski</span></div></div>
+  ${tips.length?`<h2 class="sp-h">Dikkat</h2>${tips.slice(0,6).map(t=>`<div class="sp-tip ${t[0]==='bad'?'warn':t[0]==='info'?'':'warn'}"><span class="sp-ti">${SPI(t[0]==='info'?'tag':'alert',18)}</span><p>${esc(t[1])}</p><button data-sp="${t[2]==='promo'?'pedit':'mv'}" data-id="${t[3]}" data-v="giris">${t[2]==='promo'?'Kampanya':'Giriş yap'}</button></div>`).join('')}`:''}
+  <label class="sp-s" style="margin:14px 0 10px">${SPI('search',18)}<input id="sp-sq" placeholder="Stokta ara" value="${esc(SPS.sq)}" autocomplete="off"></label>
+  ${shown.length?shown.map(({p,s})=>{const tot=Math.max(s.qty,s.res,1); return `<div class="sp-pc"><div class="sp-pt"><div><b>${esc(p.name)}</b><span>${s.tracked?'Alt sınır '+(s.min?fmt2(s.min)+' '+esc(p.unit):'yok')+(p.cost?' · maliyet '+tl0(p.cost):''):'Stok takibi başlamadı'}</span></div><div class="sp-pr"><b>${fmt2(s.qty)}</b><span>${esc(p.unit)} elde</span></div></div>
+    ${s.tracked?`<div class="sp-sb"><i><u class="r" style="width:${Math.min(100,s.res/tot*100)}%"></u><u class="a" style="width:${Math.max(0,Math.min(100-s.res/tot*100,Math.max(0,s.avail)/tot*100))}%"></u></i><div><span><em class="r"></em>Rezerve ${fmt2(s.res)}</span><span><em class="a"></em>Satılabilir ${fmt2(Math.max(0,s.avail))}</span></div></div>
+    <div class="sp-bg">${s.short?'<span class="sp-b bad">Yetersiz</span>':s.crit?'<span class="sp-b warn">Kritik</span>':'<span class="sp-b ok">Yeterli</span>'}${s.cover!=null?`<span class="sp-b ${s.cover<7?'warn':'mut'}">~${Math.round(s.cover)} gün yeter</span>`:'<span class="sp-b mut">Satış hızı yok</span>'}${s.sktRisk?`<span class="sp-b bad">SKT riski · ${fmt2(s.unsold)} ${esc(p.unit)}</span>`:''}${s.over?'<span class="sp-b promo">Fazla stok</span>':''}${s.vel>0?`<span class="sp-b mut">günlük ~${fmt2(s.vel)}</span>`:''}</div>
+    ${s.list.length?`<div class="sp-who"><b>Kimlere gidecek</b>${s.list.map(r=>`<div><span>${esc(r.who)} <em class="sp-b ${r.st==='onaylandi'?'ok':'warn'}">${r.st==='onaylandi'?'onaylı':'onay bekliyor'}</em></span><strong>${fmt2(r.qty)} ${esc(p.unit)}</strong></div>`).join('')}</div>`:''}`:''}
+    <div class="sp-pa"><button data-sp="mv" data-id="${p.id}" data-v="giris">+ Giriş</button><button data-sp="mv" data-id="${p.id}" data-v="cikis">− Çıkış</button><button data-sp="mv" data-id="${p.id}" data-v="sayim">Sayım</button><button data-sp="mv" data-id="${p.id}" data-v="fire">Fire</button></div></div>`;}).join(''):'<div class="sp-empty"><b>Ürün yok</b><span>Önce katalogdan ürün ekle.</span></div>'}`;}
+function spHrk(){const L=SPS.books.slog.slice().reverse().slice(0,60);
+  return L.length?L.map(m=>{const p=SPS.prods.find(x=>x.id===m.pid); const t=SP_MV[m.type]||[m.type,'mut']; return `<div class="sp-le" style="cursor:default"><div><b>${esc(p?p.name:'Silinmiş ürün')}</b><span>${new Date(m.date).toLocaleDateString('tr-TR')} ${new Date(m.date).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}${m.who?' · '+esc(m.who):''}${m.note?' · '+esc(m.note):''}</span></div><strong class="${t[1]==='pos'?'pos':t[1]==='neg'?'neg':''}">${esc(t[0])} ${m.type==='cikis'||m.type==='fire'?'−':m.type==='giris'?'+':''}${fmt2(m.qty)}${p?' '+esc(p.unit):''}</strong></div>`;}).join(''):`<div class="sp-empty">${SPI('box',30)}<b>Henüz hareket yok</b><span>Giriş, çıkış, sayım ve fire kayıtları burada listelenir.</span></div>`;}
+/* ---- sheet: stok hareketi ---- */
+const _spSheet1=spSheet;
+spSheet=function(){const s=SPS.sheet; if(s.t!=='mv') return _spSheet1(); const p=SPS.prods.find(x=>x.id===s.id)||{}; const tt={giris:'Stok girişi',cikis:'Stok çıkışı',sayim:'Sayım',fire:'Fire / zayiat'}[s.k]; const st=spStk(p);
+  const b=`<p class="sp-d">${esc(p.name||'')} · şu an <b>${fmt2(st.qty)} ${esc(p.unit||'')}</b> elde${st.res?', '+fmt2(st.res)+' '+esc(p.unit||'')+' rezerve':''}.</p><label>${s.k==='sayim'?'Sayım sonucu (elde kaç '+esc(p.unit||'')+' var)':'Miktar ('+esc(p.unit||'')+')'}</label><input id="mv-q" inputmode="decimal" placeholder="0" autofocus>
+  ${s.k==='cikis'?`<label>Kime gitti</label><input id="mv-w" placeholder="Müşteri adı" list="mv-l"><datalist id="mv-l">${[...new Set([SPS.biz.name,...SPS.books.slog.map(x=>x.who).filter(Boolean)])].map(w=>`<option value="${esc(w)}">`).join('')}</datalist>`:s.k==='giris'?'<label>Kimden geldi</label><input id="mv-w" placeholder="Üretici ya da tedarikçi">':''}<label>Not</label><input id="mv-n" placeholder="İsteğe bağlı"><p class="err" id="msg"></p><button class="sp-pri sp-wide" data-sp="mvgo" data-id="${p.id}" data-k="${s.k}">Kaydet</button>`;
+  return `<div class="sp-ov" data-sp="sclose"><div class="sp-sh"><div class="sp-shh"><h3>${tt}</h3><button data-sp="sclose" aria-label="Kapat">${SPI('x',20)}</button></div>${b}</div></div>`;};
+/* ---- siparişler: stok kontrolü + teslim ---- */
+spSiparis=function(){
+  if(!SPS.orders.length) return `<div class="sp-empty">${SPI('truck',30)}<b>Henüz sipariş yok</b><span>Teklifin kabul edilince siparişler burada görünür.</span></div>`;
+  return SPS.orders.map(o=>{const s=SP_OST[o.status]||[o.status,'mut']; const live=o.status==='gonderildi'||o.status==='onaylandi'; const R=spRes();
+    return `<div class="sp-card"><div class="sp-ch"><b>${tl(o.total)}</b><span class="sp-b ${s[1]}">${s[0]}</span></div><p class="sp-d">${esc(SPS.biz.name)} · ${new Date(o.created_at).toLocaleDateString('tr-TR')}</p>
+    ${o.lines.map(l=>{const p=lineMatch(l.name); let chip=''; if(live&&p){const st=spStk(p,R); chip=st.avail>=0?'<span class="sp-b ok">Stok yeterli</span>':'<span class="sp-b bad">'+fmt2(-st.avail)+' '+esc(l.unit)+' eksik</span>';} else if(live&&!p) chip='<span class="sp-b mut">Katalogda yok</span>'; return `<div class="sp-ol"><span>${esc(l.name)} ${chip}</span><span>${esc(l.qty)} ${esc(l.unit)} × ${tl(l.price)}</span></div>`;}).join('')}
+    ${o.status==='gonderildi'?`<button class="sp-pri" style="margin-top:10px" data-sp="ook" data-id="${o.id}">Siparişi onayla</button>`:''}${o.status==='onaylandi'?`<button class="sp-pri" style="margin-top:10px" data-sp="otes" data-id="${o.id}">Teslim edildi, stoktan düş</button>`:''}</div>`;}).join('');
+};
+/* ---- özet: stok uyarıları ---- */
+const _spOzet1=spOzet;
+spOzet=function(){const h=_spOzet1(); const tips=spStokTips().slice(0,3); if(!tips.length) return h;
+  return h.replace('<h2 class="sp-h">Bugün yapılacaklar</h2>','<h2 class="sp-h">Bugün yapılacaklar</h2>'+tips.map(t=>`<div class="sp-tip warn"><span class="sp-ti">${SPI('box',18)}</span><p>${esc(t[1])}</p><button data-sp="go" data-v="stokgit">Stoka git</button></div>`).join(''));};
+/* ---- AI bağlamı + yeni araç ---- */
+const _spCtx0=spCtx;
+spCtx=function(){const c=_spCtx0(); const R=spRes(); c.urunler=c.urunler.map(u=>{const p=SPS.prods.find(x=>x.id===u.id); const s=spStk(p,R); return Object.assign(u,{elde:s.qty,rezerve:s.res,satilabilir:s.avail,kritik_seviye:s.min||null,gunluk_satis:Math.round(s.vel*100)/100,kac_gun_yeter:s.cover!=null?Math.round(s.cover):null,skt_riski_miktar:s.sktRisk?Math.round(s.unsold):0,maliyet:p.cost||null,rezerv_kimlere:s.list.map(r=>({kime:r.who,miktar:r.qty,durum:r.st}))});});
+  c.stok_hareketleri=SPS.books.slog.slice(-25).map(m=>({urun:pName(m.pid),tur:m.type,miktar:m.qty,kisi:m.who,tarih:m.date.slice(0,10)})); return c;};
+const _spExec0=spExec;
+spExec=async function(a){const g=a.args||{}; if(a.type==='stok_hareketi'){const n=await spMove(g.urun_id,{giris:'giris',cikis:'cikis',sayim:'sayim',fire:'fire'}[g.tur]||'giris',g.miktar,g.kisi,g.not); return 'Stok '+fmt2(n)+' oldu';}
+  if(a.type==='urun_guncelle'&&(g.elde!=null||g.kritik_seviye!=null||g.maliyet!=null)){const p={updated_at:new Date().toISOString()}; if(g.elde!=null)p.qty=g.elde; if(g.kritik_seviye!=null)p.min_stock=g.kritik_seviye; if(g.maliyet!=null)p.cost=g.maliyet; const r=await sb.from('supplier_products').update(p).eq('id',g.urun_id); if(r&&r.error) throw new Error(r.error.message); await spReloadProds();} return _spExec0(a);};
+SP_AT.stok_hareketi='Stok hareketi';
+const _spActTxt0=spActTxt; spActTxt=function(a){const g=a.args||{}; if(a.type==='stok_hareketi') return pName(g.urun_id)+': '+({giris:'giriş',cikis:'çıkış',sayim:'sayım sonucu',fire:'fire'}[g.tur]||g.tur)+' '+fmt2(g.miktar)+(g.kisi?' · '+g.kisi:''); return _spActTxt0(a);};
+Object.assign(SPA,{
+  sub:(el)=>{SPS.sub=el.dataset.v;spRender();window.scrollTo(0,0);},
+  mv:(el)=>{SPS.sheet={t:'mv',id:el.dataset.id,k:el.dataset.v};spRender(true);},
+  mvgo:async(el)=>{const q=nz($v('mv-q')); const k=el.dataset.k; if(k!=='sayim'&&!(q>0)) return spErr('Miktarı yaz.'); if(k==='sayim'&&$v('mv-q')==='') return spErr('Sayım sonucunu yaz.'); try{await spMove(el.dataset.id,k,q,$v('mv-w'),$v('mv-n'));}catch(e){return spErr(e.message);} SPS.sheet=null; spRender(true); spToast('Stok güncellendi.');},
+  otes:async(el)=>{const o=SPS.orders.find(x=>x.id===el.dataset.id); if(!o) return; if(!confirm('Teslim edildi olarak işaretlensin ve stoktan düşülsün mü?')) return; const r=await sb.from('orders').update({status:'teslim'}).eq('id',o.id); if(spDb(r)) return spToast(/check|policy|violates/i.test(spDb(r))?'Teslim durumu için kaispilot_toptanci.sql çalıştırılmalı.':spDb(r),1);
+    let n=0; for(const l of o.lines){const p=lineMatch(l.name); if(p){try{await spMove(p.id,'cikis',l.qty,SPS.biz.name,'Sipariş teslimi');n++;}catch(e){}}} o.status='teslim'; spToast('Teslim edildi. '+n+' üründe stok düşüldü.'); spRender(true);},
+  stokgit:()=>{SPS.tab='urun';SPS.sub='stok';spRender();window.scrollTo(0,0);}
+});
+const _spGo0=SPA.go; SPA.go=(el)=>{ if(el.dataset.v==='stokgit') return SPA.stokgit(); return _spGo0(el); };
+document.addEventListener('input',(e)=>{ if(e.target.id==='sp-sq'){SPS.sq=e.target.value; const pos=e.target.selectionStart; spRender(true); const n=document.getElementById('sp-sq'); if(n){n.focus(); try{n.setSelectionRange(pos,pos);}catch(x){}}} });
+
 sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT') loginView(); });
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};MODE='sup';supView();}else boot();
 </script></body></html>

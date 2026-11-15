@@ -5057,7 +5057,7 @@ const loginHTMLV17 = loginHTML;
 loginHTML = function () {
   const h = loginHTMLV17(); if (!sbOK()) return h; const tab = S.lgTab || 'own';
   const demo = USERS.filter((u) => ['u1', 'u2', 'u3', 'u4'].includes(u.id));
-  const tabs = `<div class="seg" role="group" aria-label="Giriş türü">${[['own', 'İşveren'], ['emp', 'Çalışan'], ['sup', 'Tedarikçi']].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[1]}</button>`).join('')}</div>`;
+  const tabs = `<div class="seg" role="group" aria-label="Giriş türü">${[['own', 'İşveren'], ['emp', 'Çalışan'], ['sup', 'Toptancı']].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[1]}</button>`).join('')}</div>`;
   const cred = `<div class="field"><label for="id-em">E-posta</label><input id="id-em" type="email" autocomplete="username" placeholder="ad@sirket.com"></div><div class="field"><label for="id-pw">Şifre (en az 8 karakter)</label><input id="id-pw" type="password" autocomplete="current-password"></div>`;
   const err = `<div class="err" id="id-err" role="alert">${esc(S.loginErr)}</div>`;
   let inner;
@@ -7185,11 +7185,11 @@ const _lgHTML64 = loginHTML;
 loginHTML = function () {
   let h = _lgHTML64(); if (!sbOK()) return h; const tab = S.lgTab || 'own';
   if (tab === 'emp' && !(SBS.user && ID.mems && ID.mems.length > 1 && !ID.active)) {
-    const roles = [['mudur', 'Müdür'], ['muhasebeci', 'Muhasebeci'], ['calisan', 'Çalışan'], ['sup', 'Tedarikçi']];
+    const roles = [['mudur', 'Müdür'], ['muhasebeci', 'Muhasebeci'], ['calisan', 'Çalışan'], ['sup', 'Toptancı']];
     const chips = `<div class="lx-rq"><p>Panele hızlı geç (deneme)</p><div>${roles.map((r) => `<button type="button" data-a="lgrole" data-v="${r[0]}">${r[1]}</button>`).join('')}</div></div>`;
     h = h.replace(/(<div class="lx-tabs"[\s\S]*?<\/div>)/, '$1' + chips);
   }
-  const sup = `<a class="lx-supq" href="/tedarikci/"><span class="grow"><b>Tedarikçi misin?</b><em>Tedarikçi paneline git</em></span>${LXI.arrow}</a>`;
+  const sup = `<a class="lx-supq" href="/tedarikci/"><span class="grow"><b>Toptancı mısın?</b><em>Toptancı paneline git</em></span>${LXI.arrow}</a>`;
   return h.replace(/<\/div><\/section><\/div>$/, sup + '</div></section></div>');
 };
 H.lgrole = (el) => { if (el.dataset.v === 'sup') { location.href = '/tedarikci/?demo=1'; return; } const u = USERS.find((x) => x.role === el.dataset.v); if (!u) return; loginAs(u); toast('Deneme paneli açıldı. Bu ekranda kayıtlı veri yok.'); };
