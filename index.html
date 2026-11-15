@@ -10306,6 +10306,115 @@ H.mtimg = (el) => { S.modal = { type: 'mtimg', id: el.dataset.id }; renderModal(
 NEWM.mtimg = (m) => { const x = MAINT.find((q) => q.id === m.id); return sheet(x ? x.cat : 'Fotoğraf', x && x.photo ? `<img class="op-big" src="${x.photo}" alt="Arıza fotoğrafı">` : '<p>Fotoğraf yok.</p>'); };
 { const _mc = mtCard; mtCard = function (m, mgr) { const h = _mc(m, mgr); return m.photo ? h.replace('<div class="op-mm">', `<button type="button" class="op-th" data-a="mtimg" data-id="${m.id}" aria-label="Fotoğrafı büyüt"><img src="${m.photo}" alt=""></button><div class="op-mm">`) : h; }; }
 { const _os = opSeed; opSeed = function () { _os(); let c = 0; MAINT.forEach((m) => { if (!m.photo) return; if (m.st === 'bitti' && m.doneAt && dleft(m.doneAt) < -30) delete m.photo; else if (++c > 40) delete m.photo; }); }; }
+/* ===== v88: Raporlar (PDF + CSV), yoklama arşivi ===== */
+const CLKSUM = {}; P_OBJ.push(['CLKSUM', () => CLKSUM]); P_SCOPE.CLKSUM = 'ekip';
+const rpLateOf = (c) => { try { const [y, m, d] = c.date.split('-').map(Number); const s = vdState(y, m - 1, d, c.uid); if (s.k !== 'shift' || !c.in) return 0; const L = toMin(c.in) - toMin(s.t.s); return L >= 10 ? 1 : 0; } catch (e) { return 0; } };
+function clkArchive() {
+  const old = CLOCK.filter((c) => c.date && c.out && dleft(c.date) < -62); if (!old.length) return;
+  old.forEach((c) => { const ym = c.date.slice(0, 7); const o = ((CLKSUM[ym] = CLKSUM[ym] || {})[c.uid] = CLKSUM[ym][c.uid] || { d: 0, h: 0, b: 0, l: 0 }); o.d++; o.h = Math.round((o.h + (Number(c.hrs) || 0)) * 100) / 100; o.b += Number(c.brk) || 0; o.l += rpLateOf(c); });
+  const keep = CLOCK.filter((c) => !old.includes(c)); CLOCK.length = 0; keep.forEach((c) => CLOCK.push(c));
+}
+/* clkIn orijinali 300 kayıtta keser; sınırı kaldırmak için yeniden yaz */
+clkIn = function (uid) { CLOCK.unshift({ id: 'ck' + (++seq), uid, date: REF_ISO, in: ATT[uid].inAt, out: '', brk: 0, hrs: 0, via: 'kod' }); clkArchive(); if (CLOCK.length > 6000) CLOCK.length = 6000; };
+{ const _w = wipeData; wipeData = function () { _w.apply(this, arguments); Object.keys(CLKSUM).forEach((k) => { delete CLKSUM[k]; }); }; }
+const rpYM = () => { const n = new Date(); const b = new Date(n.getFullYear(), n.getMonth() + (S.rpO || 0), 1); return [b.getFullYear(), b.getMonth(), b.getFullYear() + '-' + vdP(b.getMonth() + 1)]; };
+const rpDiff = (a, b) => { const x = a.split('-').map(Number), y = b.split('-').map(Number); return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 864e5); };
+const rpPct = (a, b) => (b ? Math.round(a / b * 100) : 0);
+function rpData(y, m, ym) {
+  const dim = new Date(y, m + 1, 0).getDate(); const D = { y, m, ym, dim, label: VD_MON[m] + ' ' + y, biz: BIZ, by: S.user ? S.user.name : '', at: today() };
+  // kasa
+  const K = KASA.filter((k) => k.date.startsWith(ym)).sort((a, b) => (a.date < b.date ? -1 : 1)); const kd = K.filter((k) => k.diff != null);
+  const pym = (() => { const b = new Date(y, m - 1, 1); return b.getFullYear() + '-' + vdP(b.getMonth() + 1); })(); const PK = KASA.filter((k) => k.date.startsWith(pym));
+  D.kasa = { n: K.length, ciro: K.reduce((a, k) => a + ksSales(k), 0), pciro: PK.reduce((a, k) => a + ksSales(k), 0), pn: PK.length, nak: K.reduce((a, k) => a + Math.max(0, k.cash - k.open), 0), kart: K.reduce((a, k) => a + k.card, 0), ref: K.reduce((a, k) => a + (k.ref || 0), 0), diff: kd.reduce((a, k) => a + k.diff, 0), ac: kd.filter((k) => k.diff < -(OPC.tol || 50)).length, fz: kd.filter((k) => k.diff > (OPC.tol || 50)).length, worst: kd.slice().sort((a, b) => a.diff - b.diff)[0] || null, rows: K, missing: 0 };
+  { const lim = ym === REF_ISO.slice(0, 7) ? Number(REF_ISO.slice(8)) : dim; if (K.length) { for (let d = 1; d <= lim; d++) { const ds = ym + '-' + vdP(d); if (!K.some((k) => k.date === ds)) D.kasa.missing++; } } }
+  // arıza
+  const M = MAINT.filter((x) => x.date.startsWith(ym)); const Mc = MAINT.filter((x) => x.doneAt && x.doneAt.startsWith(ym)); const cat = {}; M.forEach((x) => { cat[x.cat] = (cat[x.cat] || 0) + 1; });
+  const dur = Mc.filter((x) => x.date).map((x) => Math.max(0, rpDiff(x.date, x.doneAt)));
+  D.ariza = { n: M.length, acil: M.filter((x) => x.pri === 'acil').length, cozulen: Mc.length, acik: MAINT.filter((x) => x.st !== 'bitti').length, cost: Mc.reduce((a, x) => a + (Number(x.cost) || 0), 0), avg: dur.length ? Math.round(dur.reduce((a, b) => a + b, 0) / dur.length * 10) / 10 : null, cat: Object.keys(cat).map((k) => [k, cat[k]]).sort((a, b) => b[1] - a[1]), late: MPLAN.filter((p) => mpLeft(p) < 0).length };
+  // görev
+  const T = TASKS.filter((t) => t.due && t.due.startsWith(ym)); const per = {}; T.forEach((t) => { if (t.uid === 'all') return; const o = (per[t.uid] = per[t.uid] || { n: 0, d: 0 }); o.n++; if (t.st === 'bitti') o.d++; });
+  D.gorev = { n: T.length, d: T.filter((t) => t.st === 'bitti').length, late: T.filter((t) => t.st !== 'bitti' && t.due < REF_ISO).length, per: Object.keys(per).map((u) => [u, per[u].n, per[u].d]).sort((a, b) => b[1] - a[1]) };
+  // talepler
+  const R = REQS.filter((r) => String(r.date0 || '').startsWith(ym)); const av = R.filter((r) => r.kind === 'avans' && r.st === 'onay');
+  const o1 = m * 40 + 1, o2 = m * 40 + dim; let izinGun = 0, izinKisi = new Set(); ekLeaves().filter((x) => x.st === 'onayli').forEach((x) => { const q = ekRange(x); if (!q) return; const a = Math.max(q[0], o1), b = Math.min(q[1], o2); if (b >= a) { izinGun += b - a + 1; izinKisi.add(x.uid); } });
+  D.talep = { n: R.length, onay: R.filter((r) => r.st === 'onay').length, red: R.filter((r) => r.st === 'red').length, bek: R.filter((r) => r.st === 'bekliyor').length, avN: av.length, avT: av.reduce((a, r) => a + r.amt, 0), takas: R.filter((r) => r.kind === 'takas' && r.st === 'onay').length, izinGun, izinKisi: izinKisi.size };
+  // rezervasyon
+  const Z = RESV.filter((r) => r.date.startsWith(ym)); const bt = ['geldi', 'bitti']; const gz = Z.filter((r) => bt.includes(r.st)).length, gm = Z.filter((r) => r.st === 'gelmedi').length, ic1 = Z.filter((r) => r.st === 'iptal').length; const src = {}; Z.forEach((r) => { src[r.src || 'Diğer'] = (src[r.src || 'Diğer'] || 0) + 1; }); const wd = [0, 0, 0, 0, 0, 0, 0]; Z.filter((r) => r.st !== 'iptal').forEach((r) => { wd[dowOf(r.date)]++; });
+  D.rez = { n: Z.length, gel: gz, gelmedi: gm, iptal: ic1, ppl: Z.filter((r) => r.st !== 'iptal').reduce((a, r) => a + (Number(r.n) || 0), 0), src: Object.keys(src).map((k) => [k, src[k]]).sort((a, b) => b[1] - a[1]), busy: wd.indexOf(Math.max(...wd)), busyN: Math.max(...wd) };
+  // yoklama
+  const per2 = {}; const sm = CLKSUM[ym] || {}; Object.keys(sm).forEach((u) => { per2[u] = { d: sm[u].d, h: sm[u].h, b: sm[u].b, l: sm[u].l }; });
+  CLOCK.filter((c) => c.date.startsWith(ym) && c.out).forEach((c) => { const o = (per2[c.uid] = per2[c.uid] || { d: 0, h: 0, b: 0, l: 0 }); o.d++; o.h = Math.round((o.h + (Number(c.hrs) || 0)) * 100) / 100; o.b += Number(c.brk) || 0; o.l += rpLateOf(c); });
+  D.yok = Object.keys(per2).map((u) => ({ u, name: opN(u), d: per2[u].d, h: per2[u].h, b: per2[u].d ? Math.round(per2[u].b / per2[u].d) : 0, l: per2[u].l })).sort((a, b) => b.h - a.h);
+  // liste uyumu
+  const days = {}; CHKL.filter((c) => c.date.startsWith(ym)).forEach((c) => { (days[c.date] = days[c.date] || new Set()).add(c.id); }); const nAc = CHKI.filter((i) => i.when === 'ac').length, nKa = CHKI.filter((i) => i.when === 'ka').length;
+  const dl = Object.keys(days); D.liste = { gun: dl.length, tamAc: nAc ? dl.filter((d) => CHKI.filter((i) => i.when === 'ac').every((i) => days[d].has(i.id))).length : 0, tamKa: nKa ? dl.filter((d) => CHKI.filter((i) => i.when === 'ka').every((i) => days[d].has(i.id))).length : 0, nAc, nKa };
+  D.kais = rpKais(D); return D;
+}
+function rpKais(D) {
+  const T = []; const k = D.kasa, a = D.ariza, g = D.gorev, z = D.rez, y = D.yok;
+  if (k.n) { if (k.pn >= 5 && k.n >= 5 && k.pciro > 0) { const ch = Math.round((k.ciro / k.n - k.pciro / k.pn) / (k.pciro / k.pn) * 100); T.push([Math.abs(ch) >= 15 ? (ch < 0 ? 'a' : 'g') : 'i', 'Günlük ciro ortalaması geçen aya göre ' + (ch >= 0 ? '+' : '−') + '%' + Math.abs(ch), D.label + ' cirosu ' + opTl(k.ciro) + ' (' + k.n + ' gün).']); }
+    if (k.diff < -(OPC.tol || 50) * 2) T.push(['r', 'Kasa açığı ' + opTl(Math.abs(k.diff)), k.ac + ' günde açık var' + (k.worst ? '; en büyüğü ' + isoShort(k.worst.date) + ' (' + opTl(Math.abs(k.worst.diff)) + ').' : '.')]); else if (k.n >= 5) T.push(['g', 'Kasa dengeli', 'Ay toplamı fark ' + (k.diff ? (k.diff > 0 ? '+' : '−') + opTl(Math.abs(k.diff)) : 'yok') + '.']);
+    if (k.missing >= 3) T.push(['a', k.missing + ' gün kasa kapanışı girilmedi', 'Düzenli giriş, fark takibini güçlendirir.']); }
+  if (a.n) { const top = a.cat[0]; T.push([a.acil ? 'a' : 'i', a.n + ' arıza bildirildi', (top ? top[0] + ' en çok bozulan (' + top[1] + '). ' : '') + (a.cost ? 'Çözülenlerin maliyeti ' + opTl(a.cost) + '.' : '')]); if (a.avg != null && a.avg > 3) T.push(['a', 'Arızalar geç çözülüyor', 'Ortalama çözüm süresi ' + a.avg + ' gün.']); }
+  if (g.n >= 3) { const p = rpPct(g.d, g.n); T.push([p < 70 ? 'a' : 'g', 'Görevlerin %' + p + "'i tamamlandı", g.late ? g.late + ' görev gecikti.' : 'Geciken görev yok.']); }
+  if (z.n >= 5) { const ns = rpPct(z.gelmedi, z.gel + z.gelmedi); if (z.gel + z.gelmedi >= 5) T.push([ns > 10 ? 'a' : 'g', 'Gelmeme oranı %' + ns, z.gelmedi + ' misafir gelmedi.' + (ns > 10 ? ' Hatırlatma e-postasını açık tut.' : '')]); }
+  const lt = y.slice().sort((p, q) => q.l - p.l)[0]; if (lt && lt.l >= 3) T.push(['a', opN(lt.u) + ' ' + lt.l + ' kez geç girdi', 'Bu ay en çok geç kalan kişi.']);
+  return T;
+}
+const rpTl = (n) => fmt0(n);
+function rpBars(rows) { const mx = Math.max(1, ...rows.map((r) => r[1])); return `<div class="rp-bars">${rows.map((r) => `<div class="rp-b"><span>${esc(r[0])}</span><i><u style="width:${Math.round(r[1] / mx * 100)}%"></u></i><b>${r[2] != null ? r[2] : r[1]}</b></div>`).join('')}</div>`; }
+function rpChart(D) {
+  const K = D.kasa.rows; if (!K.length) return ''; const W = 1000, H = 130, P = 22; const by = {}; K.forEach((k) => { by[Number(k.date.slice(8))] = k; }); const mx = Math.max(1, ...K.map((k) => ksSales(k))); const bw = (W - P * 2) / D.dim;
+  let s = `<svg viewBox="0 0 ${W} ${H + 18}" class="rp-svg" role="img" aria-label="Günlük ciro"><line x1="${P}" y1="${H}" x2="${W - P}" y2="${H}" stroke="#D5DEEA"/>`;
+  for (let d = 1; d <= D.dim; d++) { const k = by[d]; if (!k) continue; const h = Math.max(2, Math.round(ksSales(k) / mx * (H - 14))); const bad = k.diff != null && k.diff < -(OPC.tol || 50); s += `<rect x="${(P + (d - 1) * bw + 1.5).toFixed(1)}" y="${H - h}" width="${Math.max(2, bw - 3).toFixed(1)}" height="${h}" rx="2" fill="${bad ? '#C4384B' : '#2F73C9'}"/>`; }
+  [1, 8, 15, 22, D.dim].forEach((d) => { s += `<text x="${(P + (d - 1) * bw + bw / 2).toFixed(1)}" y="${H + 14}" text-anchor="middle" font-size="10" fill="#6B7A90">${d}</text>`; });
+  return s + '</svg><p class="rp-cap"><i class="b"></i>Günlük ciro <i class="r"></i>Kasa açığı olan gün</p>';
+}
+function rpBody(D) {
+  const k = D.kasa, a = D.ariza, g = D.gorev, t = D.talep, z = D.rez, l = D.liste;
+  const tile = (v, lab) => `<div class="rp-t"><b>${v}</b><small>${lab}</small></div>`;
+  const sec = (h, inner) => `<section class="rp-s"><h3>${h}</h3>${inner}</section>`;
+  const kais = D.kais.length ? sec('Kais yorumu', `<div class="rp-k">${D.kais.map((x) => `<div class="rp-ki ${x[0]}"><i></i><div><b>${esc(x[1])}</b><p>${esc(x[2])}</p></div></div>`).join('')}</div>`) : '';
+  const kasa = sec('Kasa ve ciro', k.n ? `<div class="rp-ts">${tile(rpTl(k.ciro), 'Toplam ciro')}${tile(k.n + ' gün', 'Kapanış girilen')}${tile((k.diff > 0 ? '+' : k.diff < 0 ? '−' : '') + rpTl(Math.abs(k.diff)), 'Toplam kasa farkı')}${tile(rpTl(k.ref), 'İade ve iptal')}</div>${rpChart(D)}<p class="rp-n">Nakit ${rpTl(k.nak)} · Kart ${rpTl(k.kart)} · ${k.ac} gün kasa açığı, ${k.fz} gün fazlalık${k.missing ? ' · ' + k.missing + ' gün kapanış girilmedi' : ''}</p>` : '<p class="rp-n">Bu ay kasa kapanışı girilmemiş.</p>');
+  const ariza = sec('Arıza ve bakım', a.n || a.cozulen ? `<div class="rp-ts">${tile(a.n, 'Bildirilen')}${tile(a.cozulen, 'Çözülen')}${tile(a.acik, 'Şu an açık')}${tile(a.cost ? rpTl(a.cost) : '—', 'Arıza maliyeti')}</div>${a.cat.length ? rpBars(a.cat) : ''}<p class="rp-n">${a.avg != null ? 'Ortalama çözüm süresi ' + a.avg + ' gün' : 'Çözülen arıza yok'} · ${a.acil} acil arıza · ${a.late} bakım gecikmiş</p>` : '<p class="rp-n">Bu ay arıza bildirilmemiş.</p>');
+  const gorev = sec('Görevler', g.n ? `<div class="rp-ts">${tile(g.n, 'Verilen')}${tile(g.d, 'Tamamlanan')}${tile('%' + rpPct(g.d, g.n), 'Tamamlama')}${tile(g.late, 'Geciken')}</div>${g.per.length ? rpBars(g.per.slice(0, 12).map((p) => [opN(p[0]), p[2], p[2] + '/' + p[1]])) : ''}` : '<p class="rp-n">Bu ay vadesi gelen görev yok.</p>');
+  const talep = sec('Çalışan talepleri', `<div class="rp-ts">${tile(t.n, 'Talep')}${tile(t.avN ? rpTl(t.avT) : '—', 'Onaylı avans (' + t.avN + ')')}${tile(t.takas, 'Vardiya değişimi')}${tile(t.izinGun + ' gün', 'Onaylı izin (' + t.izinKisi + ' kişi)')}</div><p class="rp-n">${t.onay} onaylandı · ${t.red} reddedildi · ${t.bek} bekliyor</p>`);
+  const rez = sec('Rezervasyon', z.n ? `<div class="rp-ts">${tile(z.n, 'Rezervasyon')}${tile(z.ppl, 'Toplam kişi')}${tile(z.gel, 'Gelen')}${tile('%' + rpPct(z.gelmedi, z.gel + z.gelmedi), 'Gelmeme oranı')}</div>${z.src.length ? rpBars(z.src) : ''}<p class="rp-n">${z.busyN ? 'En yoğun gün: ' + DOWN[z.busy] + ' (' + z.busyN + ' rezervasyon)' : ''} · ${z.iptal} iptal</p>` : '<p class="rp-n">Bu ay rezervasyon yok.</p>');
+  const lst = sec('Açılış ve kapanış listesi', l.gun ? `<div class="rp-ts">${tile(l.gun, 'Liste kullanılan gün')}${tile(l.nAc ? l.tamAc + '/' + l.gun : '—', 'Açılış tam')}${tile(l.nKa ? l.tamKa + '/' + l.gun : '—', 'Kapanış tam')}</div>` : '<p class="rp-n">Bu ay liste işaretlenmemiş.</p>');
+  const yok = sec('Yoklama', D.yok.length ? `<div class="rp-tb"><table><thead><tr><th>Çalışan</th><th>Gün</th><th>Saat</th><th>Ort. mola</th><th>Geç</th></tr></thead><tbody>${D.yok.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.d}</td><td>${r.h}</td><td>${r.b} dk</td><td>${r.l}</td></tr>`).join('')}</tbody></table></div>` : '<p class="rp-n">Bu ay tamamlanmış yoklama kaydı yok.</p>');
+  return kais + kasa + ariza + gorev + talep + rez + lst + yok;
+}
+const RP_CSS = `.rp-s{background:#fff;border:1px solid #E1E8F2;border-radius:18px;padding:16px 18px;margin-bottom:12px;break-inside:avoid}.rp-s h3{margin:0 0 12px;font-size:16px}.rp-ts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.rp-t{background:#F4F8FE;border-radius:12px;padding:10px 12px}.rp-t b{display:block;font-size:20px}.rp-t small{font-size:12px;color:#5B6B82}.rp-n{margin:10px 0 0;font-size:13px;color:#5B6B82}.rp-svg{width:100%;height:auto;margin-top:12px}.rp-cap{margin:4px 0 0;font-size:12px;color:#5B6B82;display:flex;gap:6px;align-items:center}.rp-cap i{width:10px;height:10px;border-radius:3px;display:inline-block}.rp-cap .b{background:#2F73C9}.rp-cap .r{background:#C4384B;margin-left:10px}
+.rp-bars{display:flex;flex-direction:column;gap:6px;margin-top:12px}.rp-b{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;font-size:13px}.rp-b i{height:8px;background:#E8EDF4;border-radius:99px;overflow:hidden;display:block}.rp-b u{display:block;height:100%;background:#2F73C9;border-radius:99px}.rp-b b{text-align:right}.rp-b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-k{display:flex;flex-direction:column;gap:10px}.rp-ki{display:flex;gap:10px}.rp-ki i{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;background:#2F73C9}.rp-ki.r i{background:#C4384B}.rp-ki.a i{background:#E3A21A}.rp-ki.g i{background:#14A05A}.rp-ki b{font-size:14px}.rp-ki p{margin:2px 0 0;font-size:13px;color:#5B6B82}
+.rp-tb{max-height:420px;overflow:auto}.rp-tb table{width:100%;border-collapse:collapse;font-size:13px}.rp-tb th{position:sticky;top:0;background:#F4F8FE;text-align:left;padding:8px 10px;font-size:12px;color:#5B6B82}.rp-tb td{padding:8px 10px;border-top:1px solid #EEF2F7}
+@media(max-width:700px){.rp-ts{grid-template-columns:repeat(2,1fr)}.rp-b{grid-template-columns:100px 1fr 40px}}`;
+{ const st = document.createElement('style'); st.textContent = RP_CSS; document.head.appendChild(st); }
+function rpView() {
+  const [y, m, ym] = rpYM(); const D = rpData(y, m, ym);
+  return `<div class="rp"><section class="op-c"><div class="iz-nv"><button type="button" data-a="rpo" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h3 style="margin:0">${D.label}</h3><span class="small muted">Aylık işletme raporu</span></div><button type="button" data-a="rpo" data-v="1" aria-label="Sonraki ay"${(S.rpO || 0) >= 0 ? ' disabled' : ''}>${ic('chevron', 18)}</button></div>
+  <div class="op-ba" style="justify-content:center;margin-top:12px"><button class="btn" data-a="rppdf">${ic('file', 16)} PDF raporu</button><button class="btn sec" data-a="rpcsv" data-v="kasa">Kasa (Excel)</button><button class="btn sec" data-a="rpcsv" data-v="yok">Yoklama (Excel)</button></div></section>${rpBody(D)}</div>`;
+}
+H.rpo = (el) => { S.rpO = Math.min(0, (S.rpO || 0) + Number(el.dataset.v)); render(); };
+function rpDoc(D) {
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(D.biz)} · ${esc(D.label)} raporu</title><style>*{box-sizing:border-box}body{margin:0;background:#F1F5FA;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#10213A;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:820px;margin:0 auto;padding:16px}.bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #E1E8F2;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:2}.bar button{background:#0E4B97;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600}.hd{padding:8px 4px 16px}.hd h1{margin:0;font-size:24px}.hd p{margin:4px 0 0;color:#5B6B82;font-size:13px}${RP_CSS}@media print{body{background:#fff}.bar{display:none}.wrap{padding:0;max-width:none}.rp-s{border-color:#D5DEEA}@page{size:A4;margin:14mm}}</style></head><body><div class="bar"><span>${esc(D.label)} raporu</span><button onclick="window.print()">PDF olarak kaydet / yazdır</button></div><div class="wrap"><div class="hd"><h1>${esc(D.biz)}</h1><p>${esc(D.label)} aylık işletme raporu · Hazırlayan: ${esc(D.by)} · ${esc(D.at)}</p></div>${rpBody(D)}<p style="text-align:center;font-size:11px;color:#7A889C;margin:18px 0">KaisPilot ile hazırlandı.</p></div></body></html>`;
+}
+H.rppdf = () => { const [y, m, ym] = rpYM(); const w = window.open('', '_blank'); if (!w) { toast('Açılır pencere engellendi. Tarayıcıda izin ver.', 'warn'); return; } w.document.open(); w.document.write(rpDoc(rpData(y, m, ym))); w.document.close(); };
+const rpCsvSafe = (v) => { let s = String(v == null ? '' : v); if (/^[=+\-@]/.test(s)) s = "'" + s; return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+H.rpcsv = (el) => {
+  const [y, m, ym] = rpYM(); const D = rpData(y, m, ym); let rows = [];
+  if (el.dataset.v === 'kasa') { rows.push(['Tarih', 'Açılış kasası', 'Sayılan nakit', 'Kart', 'Sistem toplamı', 'İade/iptal', 'Fark', 'Not']); D.kasa.rows.forEach((k) => rows.push([k.date, k.open, k.cash, k.card, k.sys, k.ref || 0, k.diff == null ? '' : k.diff, k.note || ''])); }
+  else { rows.push(['Çalışan', 'Çalışılan gün', 'Toplam saat', 'Ort. mola (dk)', 'Geç giriş']); D.yok.forEach((r) => rows.push([r.name, r.d, String(r.h).replace('.', ','), r.b, r.l])); }
+  const csv = '﻿' + rows.map((r) => r.map(rpCsvSafe).join(';')).join('\r\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = (el.dataset.v === 'kasa' ? 'kasa-' : 'yoklama-') + ym + '.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('Dosya indirildi.', 'ok');
+};
+/* Operasyon: tüm sekmeleri tek yerde birleştir */
+opTab = () => { const t = S.sub.ops; return ['ozet', 'liste', 'gorev', 'ariza', 'kasa', 'talep', 'rapor'].includes(t) ? t : 'ozet'; };
+viewOps = function () {
+  opSeed(); const cur = opTab(); const nA = mtOpen().length, nT = REQS.filter((r) => r.st === 'bekliyor').length, nG = tkOpen().length;
+  const items = [['ozet', 'Özet'], ['liste', 'Günlük liste'], ['gorev', 'Görevler' + (nG ? ' (' + nG + ')' : '')], ['ariza', 'Arıza ve bakım' + (nA ? ' (' + nA + ')' : '')], ['kasa', 'Kasa'], ['talep', 'Talepler' + (nT ? ' (' + nT + ')' : '')], ['rapor', 'Raporlar']];
+  const body = { ozet: opOzet, liste: () => `<div class="op-g2">${chkCard('ac', true)}${chkCard('ka', true)}</div>`, gorev: tkView, ariza: mtView, kasa: ksView, talep: rqView, rapor: rpView }[cur]();
+  return `<div class="stack-lg op"><div><h2>Operasyon</h2><p class="muted" style="margin-top:4px">${esc(today())} · günlük işleyişi tek yerden takip et</p></div>${seg('ops', items, cur).replace('<div class="seg"', '<div class="seg seg-b"')}${body}</div>`;
+};
 </script>
 </body>
 </html>
