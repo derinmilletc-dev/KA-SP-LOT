@@ -2395,7 +2395,7 @@ spListHTML=function(){const L=spFiltered();
   if(!L.length) return '<div class="sp-empty"><b>Sonuç yok</b><span>Aramayı ya da filtreyi değiştir.</span></div>';
   const R=spRes();
   const cnt=(L.length!==SPS.prods.length)?`<div class="up-cnt">${L.length} ürün gösteriliyor</div>`:'';
-  return cnt+L.map(p=>{const s=SP_ST[p.stock||'var']; const k=sktInfo(p); const tiers=(p.tiers||[]).slice().sort((a,b)=>a.q-b.q); const sk=spStk(p,R); const promo=unitLeft(p); const h=HUE(p.category||p.name);
+  const LS=L.slice(0,spLim('kat')); return cnt+LS.map(p=>{const s=SP_ST[p.stock||'var']; const k=sktInfo(p); const tiers=(p.tiers||[]).slice().sort((a,b)=>a.q-b.q); const sk=spStk(p,R); const promo=unitLeft(p); const h=HUE(p.category||p.name);
     const img=(p.photos&&p.photos[0])?`<img src="${esc(p.photos[0])}" alt="" loading="lazy">`:esc(String(p.name||'?').trim().charAt(0).toLocaleUpperCase('tr'));
     const imS=(p.photos&&p.photos[0])?'':` style="background:hsl(${h} 38% 92%);color:hsl(${h} 42% 30%)"`;
     const tone=sk.short?'bad':sk.crit?'warn':''; const mx=Math.max(sk.qty,Number(p.min_stock||0)*3,sk.res,1); const pct=Math.max(0,Math.min(100,Math.round(Math.max(sk.avail,0)/mx*100)));
@@ -2403,7 +2403,7 @@ spListHTML=function(){const L=spFiltered();
     const mg=(p.cost>0&&p.price>0)?Math.round((p.price-p.cost)/p.price*100):null;
     return `<div class="sp-pc up-c${p.active===false?' off':''}" data-pid="${p.id}"><div class="up-h"><div class="up-im"${imS}>${img}</div><div class="up-nm"><b>${esc(p.name)}</b><span>${esc([p.brand,p.category].filter(Boolean).join(' · ')||'Kategorisiz')}</span></div><div class="up-pr">${promo?`<s>${tl(p.price)}</s>`:''}<b>${tl(promo?p.price*(1-p.promo_pct/100):p.price)}</b><span>/ ${esc(p.unit)}${p.vat!=null?' · KDV %'+p.vat:''}</span></div></div>
     ${stock}<div class="up-bg"><button class="sp-b ${s[1]}" data-sp="stock" data-id="${p.id}">${s[0]}</button>${k?`<span class="sp-b ${k[1]}">${esc(k[0])}</span>`:''}${promo?`<span class="sp-b promo">Kampanya %${p.promo_pct}${p.promo_until?' · '+dLeft(p.promo_until)+' gün':''}</span>`:''}${tiers.map(t=>`<span class="sp-b tier">${fmt2(t.q)}+ ${esc(p.unit)} %${t.p}</span>`).join('')}${p.min_qty>1?`<span class="sp-b mut">En az ${fmt2(p.min_qty)} ${esc(p.unit)}</span>`:''}${mg!=null?`<span class="sp-b ${mg<10?'warn':'mut'}">Marj %${mg}</span>`:''}</div>
-    <div class="up-ac"><button data-sp="pedit" data-id="${p.id}">${SPI('edit',15)} Düzenle</button><button data-sp="ptoggle" data-id="${p.id}">${p.active===false?'Satışa aç':'Satışa kapat'}</button></div></div>`;}).join('');};
+    <div class="up-ac"><button data-sp="pedit" data-id="${p.id}">${SPI('edit',15)} Düzenle</button><button data-sp="ptoggle" data-id="${p.id}">${p.active===false?'Satışa aç':'Satışa kapat'}</button></div></div>`;}).join('')+spMore('kat',L.length);};
 const _urun13=spUrun;
 spUrun=function(){ if(SPS.sub&&SPS.sub!=='kat') return _urun13();
   const seg=`<div class="sp-seg"><button data-sp="sub" data-v="kat" class="on">Katalog</button><button data-sp="sub" data-v="stok">Stok</button><button data-sp="sub" data-v="hrk">Hareketler</button></div>`;
@@ -2476,8 +2476,8 @@ spStok=function(){const R=spRes(); const L=SPS.prods.filter(p=>p.active!==false)
   <div class="up-top"><label class="sp-s">${SPI('search',18)}<input id="sp-sq" placeholder="Stokta ara" value="${esc(SPS.sq)}" autocomplete="off"></label><button class="sp-add" data-sp="bsopen">${SPI('box',18)}<span>Toplu sayım</span></button></div>
   <div class="up-row">${chips.map(c=>`<button class="up-k ${c[3]}${SPS.sf===c[0]?' on':''}" data-sp="usf" data-v="${c[0]}"><i></i>${c[1]} <b>${c[2]}</b></button>`).join('')}</div>
   ${tipH}
-  <div class="us-grid">${shown.length?shown.map(card).join(''):(L.length?'<div class="sp-empty"><b>Sonuç yok</b><span>Aramayı ya da filtreyi değiştir.</span></div>':'<div class="sp-empty"><b>Ürün yok</b><span>Önce katalogdan ürün ekle.</span></div>')}</div>`;};
-spHrk=function(){const all=SPS.books.slog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,100);
+  <div class="us-grid">${shown.length?shown.slice(0,spLim('stok')).map(card).join('')+spMore('stok',shown.length):(L.length?'<div class="sp-empty"><b>Sonuç yok</b><span>Aramayı ya da filtreyi değiştir.</span></div>':'<div class="sp-empty"><b>Ürün yok</b><span>Önce katalogdan ürün ekle.</span></div>')}</div>`;};
+spHrk=function(){const all=SPS.books.slog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,500);
   if(!all.length) return `<div class="sp-empty">${SPI('box',30)}<b>Henüz hareket yok</b><span>Giriş, çıkış, sayım ve fire kayıtları burada listelenir.</span></div>`;
   const T=[['','Hepsi'],['giris','Giriş'],['cikis','Çıkış'],['sayim','Sayım'],['fire','Fire']].map(x=>[x[0],x[1],x[0]?all.filter(m=>m.type===x[0]).length:all.length]).filter(x=>x[0]===''||x[2]>0||SPS.hf===x[0]);
   const L=SPS.hf?all.filter(m=>m.type===SPS.hf):all; const today=new Date().toDateString(), yest=new Date(Date.now()-864e5).toDateString();
@@ -2485,7 +2485,7 @@ spHrk=function(){const all=SPS.books.slog.slice().sort((a,b)=>new Date(b.date)-n
   const groups=[]; L.forEach(m=>{const d=new Date(m.date); const k=d.toDateString(); let g=groups[groups.length-1]; if(!g||g.k!==k){g={k,d,items:[]};groups.push(g);} g.items.push(m);});
   const row=m=>{const p=SPS.prods.find(x=>x.id===m.pid); const t=SP_MV[m.type]||[m.type,'mut']; const sign=(m.type==='cikis'||m.type==='fire')?'−':m.type==='giris'?'+':''; const ic=m.type==='giris'?'↓':m.type==='cikis'?'↑':m.type==='fire'?'✕':'✓';
     return `<div class="uh-r"><div class="uh-i ${t[1]}">${ic}</div><div class="uh-t"><b>${esc(p?p.name:'Silinmiş ürün')}</b><span>${dayName(new Date(m.date))} ${new Date(m.date).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}${m.who?' · '+esc(m.who):''}${m.note?' · '+esc(m.note):''}</span></div><div class="uh-q"><b class="${t[1]}">${sign}${fmt2(m.qty)}${p?' '+esc(p.unit):''}</b><span>${esc(t[0])}</span></div></div>`;};
-  return `<div class="up-row">${T.map(x=>`<button class="up-k${SPS.hf===x[0]?' on':''}" data-sp="uhf" data-v="${x[0]}">${x[1]} <b>${x[2]}</b></button>`).join('')}</div>`+`<div class="uh-g">${L.map(row).join('')}</div>`;};
+  return `<div class="up-row">${T.map(x=>`<button class="up-k${SPS.hf===x[0]?' on':''}" data-sp="uhf" data-v="${x[0]}">${x[1]} <b>${x[2]}</b></button>`).join('')}</div>`+`<div class="uh-g">${L.slice(0,spLim('hrk')).map(row).join('')}${spMore('hrk',L.length)}</div>`;};
 SPA.usf=(el)=>{const v=el.dataset.v; SPS.sf=(SPS.sf===v)?'':v; spRender(true);};
 SPA.uhf=(el)=>{const v=el.dataset.v; SPS.hf=(SPS.hf===v)?'':v; spRender(true);};
 SPA.utall=()=>{SPS.tall=!SPS.tall; spRender(true);};
@@ -2583,7 +2583,7 @@ function mOzet(){const s=spStats(SPS.mon), pv=spStats(monShift(SPS.mon,-1)); con
 
 function mDefList(){const s=spStats(SPS.mon); const f=SPS.led; const q=nrm(SPS.lq);
   const L=s.L.filter(e=>(f==='Tümü'||(f==='Gelir'&&e.type==='gelir')||(f==='Gider'&&e.type==='gider')||(f==='Eksik belge'&&e.doc==='eksik'))&&(!q||nrm((e.desc||'')+' '+(e.party||'')+' '+(e.cat||'')).includes(q))).sort((a,b)=>a.date<b.date?1:-1);
-  return L.length?L.map(ledRow).join(''):`<div class="sp-empty">${SPI('doc',30)}<b>${s.L.length?'Sonuç yok':'Bu ay kayıt yok'}</b><span>${s.L.length?'Aramayı ya da filtreyi değiştir.':'Gelir ya da gider ekle. Kais\'e de söyleyebilirsin.'}</span></div>`;}
+  return L.length?L.slice(0,spLim('def')).map(ledRow).join('')+spMore('def',L.length):`<div class="sp-empty">${SPI('doc',30)}<b>${s.L.length?'Sonuç yok':'Bu ay kayıt yok'}</b><span>${s.L.length?'Aramayı ya da filtreyi değiştir.':'Gelir ya da gider ekle. Kais\'e de söyleyebilirsin.'}</span></div>`;}
 function mDefter(){const s=spStats(SPS.mon); const f=SPS.led; const cnt={Tümü:s.L.length,Gelir:s.L.filter(e=>e.type==='gelir').length,Gider:s.L.filter(e=>e.type==='gider').length,'Eksik belge':s.miss};
   return seg()+monBar(`<div class="mh-ac"><button class="pri" data-sp="led" data-v="gider">${SPI('plus',16)} Gider</button><button class="sec" data-sp="led" data-v="gelir">${SPI('plus',16)} Gelir</button><label class="mh-scan">${SPI('up',16)} Fiş ya da fatura oku<input type="file" accept="image/*,application/pdf" id="sp-scan" hidden></label></div>`)+
   `<div class="mh-k" style="grid-template-columns:repeat(3,1fr)"><div class="g"><span>Gelir</span><b>${tl0(s.g)}</b></div><div class="x"><span>Gider</span><b>${tl0(s.x)}</b></div><div class="n ${s.net<0?'neg':''}"><span>Net</span><b>${tl0(s.net)}</b></div></div>
@@ -2615,7 +2615,7 @@ function mRapor(){const s=spStats(SPS.mon); const M=[]; for(let i=-5;i<=0;i++){c
 const cfav=()=>(SPS.books.cfav=SPS.books.cfav||{});
 const sameN=(a,b)=>{a=nrm(a);b=nrm(b);return !!a&&!!b&&(a.includes(b)||b.includes(a));};
 function mCustData(){const by={}; SPS.orders.filter(o=>o.status!=='iptal').forEach(o=>{(by[o.business_id]=by[o.business_id]||[]).push(o);}); const now=Date.now(); const cari=SPS.books.cari.filter(c=>!c.paid&&c.kind==='alacak');
-  const R=Object.keys(by).map(id=>{const L=by[id].slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)); const tot=L.reduce((a,o)=>a+nz(o.total),0); const last=new Date(L[L.length-1].created_at), first=new Date(L[0].created_at); const since=Math.floor((now-last)/864e5); const gap=L.length>1?Math.round((last-first)/864e5/(L.length-1)):null; const lost=since>30||!!(gap&&since>gap*1.6&&since>7); const name=bizName(id); const ac=cari.filter(c=>sameN(c.who,name)); const od=ac.filter(c=>c.due&&dLeft(c.due)<0); const cn=(SPS.books.cnotes||{})[id]||{};
+  const R=Object.keys(by).map(id=>{const L=by[id].slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)); const tot=L.reduce((a,o)=>a+nz(o.total),0); const last=new Date(L[L.length-1].created_at), first=new Date(L[0].created_at); const since=Math.floor((now-last)/864e5); const gap=L.length>1?Math.round((last-first)/864e5/(L.length-1)):null; const lost=since>30||!!(gap&&since>gap*1.6&&since>7); const name=bizName(id); const ac=cari.filter(c=>cariBid(c)===id); const od=ac.filter(c=>c.due&&dLeft(c.due)<0); const cn=(SPS.books.cnotes||{})[id]||{};
     return {id,name,n:L.length,tot,since,gap,lost,avg:tot/L.length,isNew:Math.floor((now-first)/864e5)<=14,ac,acT:ac.reduce((a,c)=>a+nz(c.amt),0),od,odT:od.reduce((a,c)=>a+nz(c.amt),0),disc:discFor(id),tags:cn.tags||[],fav:!!cfav()[id]};});
   return R;}
 function mCustFiltered(R){const q=nrm(SPS.mq), f=SPS.mf; let L=R.filter(r=>(!q||nrm(r.name).includes(q))&&(!f||(f==='fav'&&r.fav)||(f==='lost'&&r.lost)||(f==='od'&&r.od.length)||(f==='new'&&r.isNew)||(f==='disc'&&r.disc>0)));
@@ -2628,7 +2628,7 @@ function mCustCard(r,sum){const h=HUE(r.name); const share=Math.round(r.tot/(sum
   <div class="up-bg">${r.lost?'<span class="sp-b bad">Sessiz</span>':''}${r.isNew?'<span class="sp-b ok">Yeni</span>':''}${r.disc?`<span class="sp-b promo">%${r.disc} iskonto</span>`:''}${r.od.length?`<span class="sp-b bad">${tl0(r.odT)} vadesi geçmiş</span>`:r.acT?`<span class="sp-b warn">${tl0(r.acT)} açık alacak</span>`:''}${r.tags.map(t=>`<span class="sp-b mut">${esc(t)}</span>`).join('')}</div>
   <div class="mc-a"><button data-sp="mdet" data-id="${esc(r.id)}">Detay ve notlar</button><button data-sp="cdisc" data-id="${esc(r.id)}">İskonto</button><button data-sp="mmsg" data-id="${esc(r.id)}" data-v="${r.lost?'lost':r.isNew?'new':'msg'}">Mesaj</button></div></div>`;}
 function mCustList(){const R=mCustData(), sum=R.reduce((a,r)=>a+r.tot,0); const L=mCustFiltered(R);
-  return L.length?L.map(r=>mCustCard(r,sum)).join(''):`<div class="sp-empty">${SPI('truck',30)}<b>${R.length?'Sonuç yok':'Henüz müşteri yok'}</b><span>${R.length?'Aramayı ya da filtreyi değiştir.':'İlk sipariş geldiğinde işletmeler burada listelenir.'}</span></div>`;}
+  return L.length?L.slice(0,spLim('mus')).map(r=>mCustCard(r,sum)).join('')+spMore('mus',L.length):`<div class="sp-empty">${SPI('truck',30)}<b>${R.length?'Sonuç yok':'Henüz müşteri yok'}</b><span>${R.length?'Aramayı ya da filtreyi değiştir.':'İlk sipariş geldiğinde işletmeler burada listelenir.'}</span></div>`;}
 function mMus(){const R=mCustData(); if(!R.length) return seg()+`<div class="sp-empty">${SPI('truck',30)}<b>Henüz müşteri yok</b><span>İlk sipariş geldiğinde işletmeler burada listelenir.</span></div>`;
   const sum=R.reduce((a,r)=>a+r.tot,0), orders=R.reduce((a,r)=>a+r.n,0), lost=R.filter(r=>r.lost); const top=R.slice().sort((a,b)=>b.tot-a.tot)[0];
   const I=[]; lost.slice(0,2).forEach(r=>I.push(['bad','clock',r.name+' '+r.since+' gündür sipariş vermedi'+(r.gap?' (normalde ~'+r.gap+' günde bir)':'')+'. Küçük bir indirim ya da arama geri kazandırabilir.','Mesaj hazırla','mmsg','lost',r.id]));
@@ -2717,6 +2717,56 @@ const _rnd16=spRender; spRender=function(k){const r=_rnd16.apply(this,arguments)
 SPA.knew=()=>{SPS.chat=[]; SPS.ai=false; SPS.pf=null; SPS.draft=''; spRender(); window.scrollTo(0,0);};
 SPA.kcopy=(el)=>{const m=SPS.chat[Number(el.dataset.i)]; if(!m) return; try{navigator.clipboard.writeText(m.t).then(()=>spToast('Kopyalandı.'),()=>spToast('Kopyalanamadı.',1));}catch(e){spToast('Kopyalanamadı.',1);}};
 document.addEventListener('input',e=>{const t=e.target; if(t&&t.id==='sp-ai-in'){t.style.height='auto'; t.style.height=Math.min(140,t.scrollHeight)+'px';}});
+(function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v||el.dataset.t))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
+})();
+
+/* ===== v17: Siparişler, Teklifler, Profil cilası; sayfalama; cari-işletme eşleşmesi ===== */
+SPS.lim=SPS.lim||{};
+function spLim(k){return SPS.lim[k]||60;}
+function spMore(k,n){const l=spLim(k); return n>l?`<button class="up-more" data-sp="more" data-v="${k}">Daha fazla göster (${n-l})</button>`:'';}
+function cariBid(c){if(c.bid) return c.bid; let b=null; if(c.orderId){const o=SPS.orders.find(x=>x.id===c.orderId); if(o) b=o.business_id;}
+  if(!b){const ids=Object.keys(SPS.bizs||{}); const n=nrm(c.who); if(n) b=ids.find(id=>nrm(bizName(id))===n)||ids.find(id=>{const m=nrm(bizName(id)); return m&&(m.includes(n)||n.includes(m));})||null;}
+  if(b) c.bid=b; return b||null;}
+(function(){const st=document.createElement('style'); st.textContent=`
+.up-more{grid-column:1/-1;justify-self:center;background:#fff;color:var(--acc);border:1px solid var(--line);border-radius:12px;padding:10px 20px;font:600 13.5px system-ui;margin:4px 0}
+input.sp-ib{width:100%!important;height:auto!important;padding:11px 12px!important;display:block!important;background:#fff!important;color:var(--ink)!important}
+body[data-tab=is] .sp-body{display:block!important;max-width:1440px}
+body[data-tab=is] .sp-body>.sp-seg{max-width:460px;margin:0 auto 16px}.sp-seg button{white-space:nowrap}
+.so-bar{display:flex;gap:10px;align-items:center;margin:0 0 10px;flex-wrap:wrap}
+.so-bar .sp-sr{flex:1 1 240px;margin:0!important;max-width:none!important;width:auto!important}
+.so-bar .sp-pri,.so-bar .sp-xl{width:auto!important;margin:0!important;flex:none;max-width:none!important;padding:11px 16px;border-radius:12px;font:600 14px system-ui}
+.so-bar .sp-xl{background:#fff;color:var(--ink);border:1px solid var(--line)}
+body[data-tab=is] .sp-body>.sp-fl{max-width:none!important;margin:0 0 14px}
+.so-cards{columns:370px;column-gap:16px}
+.so-cards>.sp-card{break-inside:avoid;margin:0 0 16px!important}
+.so-cards>.sp-gh{break-after:avoid;margin:6px 2px 8px}
+.so-cards>.sp-empty{column-span:all}
+.so-more{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #eef1ee;padding-top:10px;margin-top:10px}
+.so-more button,.so-more .sp-sec{width:auto!important;flex:none;margin:0!important;padding:7px 12px!important;font:600 12.5px system-ui!important;border-radius:10px!important;background:#f3f6f4!important;color:var(--ink)!important;border:0!important;box-shadow:none!important;display:inline-flex;gap:5px;align-items:center}
+.so-more button:hover{background:#e6efe9!important}
+.so-cards .sp-card .sp-ec{font-size:13px}
+.pr-top{column-span:all;display:flex;align-items:center;gap:16px;background:#fff;border:1px solid rgba(29,42,36,.07);border-radius:18px;padding:16px 18px;margin:0 0 18px;box-shadow:0 1px 2px rgba(20,40,30,.04);flex-wrap:wrap}
+.pr-ring{flex:none;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--acc) calc(var(--p)*1%),#e6ece8 0);display:grid;place-items:center}.pr-ring b{background:#fff;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font:700 13px system-ui}
+.pr-top h2{margin:0;font:700 17px 'Bricolage Grotesque',system-ui,sans-serif}.pr-top p{margin:3px 0 0;font:500 13px system-ui;color:var(--mut)}
+.pr-chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}.pr-chips button{display:inline-flex;gap:6px;align-items:center;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:600 12.5px system-ui}.pr-chips button.ok{color:var(--mut);background:#f3f6f4}.pr-chips button.ok svg{color:var(--acc)}
+body[data-tab=profil] [data-sp=psave2]{position:sticky;bottom:18px;z-index:4;box-shadow:0 14px 30px -12px rgba(31,111,85,.6)}
+@media(max-width:900px){.so-cards{columns:auto}.pr-chips{margin-left:0}body[data-tab=profil] [data-sp=psave2]{bottom:86px}.so-bar .sp-sr{flex:1 1 100%}.so-bar .sp-pri,.so-bar .sp-xl{flex:1 1 100%;justify-content:center}}
+`; document.head.appendChild(st);
+function soPost(){const body=document.querySelector('.sp-body'); if(!body) return;
+  if(SPS.tab==='is'){ if(body.querySelector('.so-cards')) return;
+    body.querySelectorAll('.sp-card[data-oid]').forEach(card=>{ if(card.querySelector(':scope>.so-more')) return; const mv=[]; const wr=[];
+      [...card.children].forEach(ch=>{ if(ch.tagName==='BUTTON'&&ch.classList.contains('sp-sec')) mv.push(ch); else if(ch.classList.contains('sp-wa')||ch.classList.contains('sp-wa2')){ ch.querySelectorAll('button').forEach(b=>mv.push(b)); wr.push(ch);} });
+      if(!mv.length) return; const box=document.createElement('div'); box.className='so-more'; mv.forEach(b=>box.appendChild(b)); wr.forEach(w=>{ if(!w.querySelector('button')&&!w.textContent.trim()) w.remove(); }); card.appendChild(box); });
+    const sr=body.querySelector(':scope>.sp-sr'), nw=body.querySelector(':scope>.sp-pri[data-sp=sipnew]'), sv=body.querySelector(':scope>.sp-xl[data-sp=sevopen]'), fl=body.querySelector(':scope>.sp-fl');
+    if(sr||nw||sv){ const bar=document.createElement('div'); bar.className='so-bar'; (fl||sr||nw||sv).before(bar); if(sr) bar.appendChild(sr); if(nw) bar.appendChild(nw); if(sv) bar.appendChild(sv);
+      if(fl) bar.after(fl); if(SPS.sop==='siparis'&&SPS.orders.length){ const O=SPS.orders; const sum=L=>L.reduce((a,o)=>a+nz(o.total),0); const bek=O.filter(o=>o.status==='gonderildi'), onay=O.filter(o=>o.status==='onaylandi'), ym=isoToday().slice(0,7), ted=O.filter(o=>o.status==='teslim'&&(o.created_at||'').slice(0,7)===ym);
+        bar.insertAdjacentHTML('beforebegin',`<div class="mh-k"><div class="${bek.length?'warn':''}"><span>Onay bekleyen</span><b>${bek.length}</b><em class="mh-d">${tl0(sum(bek))}</em></div><div><span>Hazırlanacak / yolda</span><b>${onay.length}</b><em class="mh-d">${tl0(sum(onay))}</em></div><div class="g"><span>Bu ay teslim edilen</span><b>${ted.length}</b><em class="mh-d">${tl0(sum(ted))}</em></div><div><span>Açık sipariş tutarı</span><b>${tl0(sum(bek)+sum(onay))}</b></div></div>`); } }
+    const items=[...body.children].filter(n=>n.classList&&(n.classList.contains('sp-gh')||n.classList.contains('sp-card')||n.classList.contains('sp-empty')));
+    if(items.length){ const w=document.createElement('div'); w.className='so-cards'; items[0].before(w); items.forEach(n=>w.appendChild(n)); } }
+  else if(SPS.tab==='profil'){ if(body.querySelector('.pr-top')) return; const dn=spDone(), ok=dn.filter(x=>x[1]).length, pct=Math.round(ok/dn.length*100);
+    body.insertAdjacentHTML('afterbegin',`<div class="pr-top"><div class="pr-ring" style="--p:${pct}"><b>%${pct}</b></div><div><h2>${pct>=100?'Profilin hazır':'Profilini tamamla'}</h2><p>${pct>=100?'İşletmeler seni konumuna, saatlerine ve ürünlerine göre bulabilir.':'Eksikleri tamamladıkça işletmeler seni daha kolay bulur.'}</p></div><div class="pr-chips">${dn.map(d=>`<button class="${d[1]?'ok':''}" data-sp="go" data-v="${d[2]}">${d[1]?SPI('check',13):''}${esc(d[0])}</button>`).join('')}</div></div>`); } }
+const _rnd17=spRender; spRender=function(k){const r=_rnd17.apply(this,arguments); try{soPost();}catch(e){} return r;};
+SPA.more=(el)=>{const k=el.dataset.v; SPS.lim[k]=spLim(k)+60; spRender(true);};
 (function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v||el.dataset.t))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
 })();
 
