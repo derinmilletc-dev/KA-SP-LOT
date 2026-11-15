@@ -2606,10 +2606,10 @@ function tick() {
   }
 }
 function init() {
-  document.addEventListener('click', onClick);
-  document.addEventListener('change', onChange);
-  document.addEventListener('input', onInput);
-  document.addEventListener('submit', onSubmit);
+  document.addEventListener('click', (e) => onClick(e));
+  document.addEventListener('change', (e) => onChange(e));
+  document.addEventListener('input', (e) => onInput(e));
+  document.addEventListener('submit', (e) => onSubmit(e));
   document.addEventListener('toggle', onToggle, true);
   setInterval(tick, 1000);
   render();
@@ -12803,6 +12803,50 @@ H.bgqall = () => { if (locked()) return; const ids = RECEIPTS.filter((f) => f.st
 { const _vm = viewMasraf; viewMasraf = function () { const mine = RECEIPTS.filter((f) => f.by === S.user.id); if (mine.length) return _vm.apply(this, arguments); return `<div class="stack-lg"><div><h2>Masraf fişlerim</h2><p class="muted small" style="margin-top:4px">Fişi çek, patronun onaylasın.</p></div>${epCard('receipt', 'Masrafını fotoğrafla', 'Fişin fotoğrafını çek. Kais okur, patronun onaylar, ödemen takip edilir.', [['upload', 'Fiş ekle', '', 'camera']], ['Çek', 'Onay', 'Ödeme'])}</div>`; }; }
 { const _vp = viewPaket; viewPaket = function () { if (LEDGER.length || ROWS.length) return _vp.apply(this, arguments); return `<div class="stack-lg"><div><h2>Aylık paket</h2><p class="muted small" style="margin-top:4px">Ayın belgeleri ve tabloları tek dosyada.</p></div>${epCard('file', 'Paket için veri bekleniyor', 'Belgeler onaylanıp ekstre gelince paket kendiliğinden hazırlanır. Eksik belge ve onay durumu burada görünür.', [['nav', 'Belgelere git', 'belgeler', 'receipt']], ['Belge', 'Ekstre', 'Paket'])}</div>`; }; }
 ['patron', 'muhasebeci'].forEach((k) => { if (AI_Q[k]) AI_Q[k] = ['Bu ay kâr mı zarar mı?', 'En çok harcadığım 3 kalem hangisi?', 'KDV tahminim ne kadar?'].concat(AI_Q[k].filter((q) => !/kâr mı zarar|en çok harcad|KDV tahmin/i.test(q))); });
+
+/* ===== v135: Hesap, KDV ve Belge alanları: listeden seç ya da kendin yaz; yazdığın listeye eklenir ===== */
+const CUSTOM = { acc: [], inc: [], doc: [], rate: [] }; P_OBJ.push(['CUSTOM', () => CUSTOM]);
+const CB_DOCS = ['Fatura', 'E-arşiv', 'Fiş', 'Z raporu', 'Gider pusulası', 'Serbest meslek makbuzu', 'Ekstre', 'Belgesiz'];
+function cbSync() { try { ['acc', 'inc', 'doc', 'rate'].forEach((k) => { if (!Array.isArray(CUSTOM[k])) CUSTOM[k] = []; }); CUSTOM.acc.forEach((c) => { if (!CATS.includes(c)) CATS.push(c); }); CUSTOM.inc.forEach((c) => { if (!INCATS.includes(c)) INCATS.push(c); }); } catch (e) {} }
+const cbList = (k) => k === 'inc' ? INCATS : k === 'doc' ? CB_DOCS.concat(CUSTOM.doc, LEDGER.map((r) => r.doc).filter(Boolean)).filter((x, i, a) => a.indexOf(x) === i && x !== '—') : k === 'rate' ? [0, 1, 10, 20].concat(CUSTOM.rate.map(Number)).filter((x, i, a) => a.indexOf(x) === i).sort((a, b) => a - b) : CATS;
+function cbLearn(k, v) {
+  v = String(v == null ? '' : v).trim(); if (!v) return false;
+  if (k === 'rate') { const n = Number(String(v).replace(',', '.').replace('%', '')); if (!(n >= 0 && n <= 100)) return false; if (cbList('rate').includes(n)) return false; CUSTOM.rate.push(n); try { pSched(); } catch (e) {} toast('%' + n + ' KDV oranı listene eklendi.', 'ok'); return true; }
+  if (cbList(k).some((x) => String(x).toLocaleLowerCase('tr-TR') === v.toLocaleLowerCase('tr-TR'))) return false;
+  if (v.length > 40) return false; CUSTOM[k].push(v); cbSync(); try { pSched(); } catch (e) {} toast('"' + v + '" listene eklendi.', 'ok'); return true;
+}
+const cbKindOf = (el) => { const d = el.dataset || {}; if (d.k === 'doc') return 'doc'; if (d.k === 'rate') return 'rate'; if (d.k === 'acc') { const r = LEDGER.find((x) => x.id === d.id); return r && dirOf(r) === 'gelir' ? 'inc' : 'acc'; } if (d.ch === 'rcat' || d.ch === 'mcat' || d.ch === 'cat') return 'acc'; return null; };
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.cb-in{width:100%;box-sizing:border-box}.cb-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-top:6px;padding-bottom:2px}.cb-chips::-webkit-scrollbar{display:none}
+.cb-chips button{flex:0 0 auto;border:1px solid #DCE5F2;background:#fff;color:#0E2B4D;border-radius:99px;padding:6px 11px;font:600 12px system-ui;cursor:pointer}.cb-chips button.on{background:#0F3F7A;border-color:#0F3F7A;color:#fff}
+.cb-hint{font:500 11.5px system-ui;color:#7A8AA0;margin-top:4px}
+.cb-my{display:flex;align-items:center;gap:6px}.cb-my span{flex:1;font:600 14px system-ui;color:#0E2B4D}.cb-my button{border:0;background:#FDE7E5;color:#C0392B;border-radius:9px;width:32px;height:32px;font:700 16px system-ui;cursor:pointer}
+`; document.head.appendChild(st); } catch (e) {} })();
+function comboFix() {
+  try {
+    cbSync(); let host = document.getElementById('cb-lists'); if (!host) { host = document.createElement('div'); host.id = 'cb-lists'; host.hidden = true; document.body.appendChild(host); }
+    host.innerHTML = [['acc', CATS], ['inc', INCATS], ['doc', cbList('doc')], ['rate', cbList('rate').map((x) => x)]].map(([k, l]) => `<datalist id="cb-${k}">${l.map((x) => `<option value="${esc(String(x))}"></option>`).join('')}</datalist>`).join('');
+    const sels = document.querySelectorAll('main select[data-k="acc"], main select[data-k="rate"], #modal-root select[data-ch="rcat"], #modal-root select[data-ch="mcat"], main select[data-ch="cat"], #modal-root select[data-ch="cat"]');
+    sels.forEach((sel) => {
+      const k = cbKindOf(sel); if (!k) return; const inp = document.createElement('input'); inp.type = 'text'; inp.setAttribute('list', 'cb-' + k); inp.className = (sel.className ? sel.className + ' ' : '') + 'cb-in';
+      Array.from(sel.attributes).forEach((a) => { if (!['class', 'type'].includes(a.name)) inp.setAttribute(a.name, a.value); });
+      const op = sel.options[sel.selectedIndex]; let v = op ? (k === 'rate' ? op.value : op.text) : ''; inp.value = k === 'rate' ? String(v) : v; inp.placeholder = k === 'rate' ? 'Oran yaz' : 'Seç ya da yaz'; inp.autocomplete = 'off'; if (k === 'rate') inp.inputMode = 'decimal';
+      sel.replaceWith(inp);
+      if (inp.closest('.tb-f, .sheet') && !inp.closest('td')) { const row = document.createElement('div'); row.className = 'cb-chips'; (k === 'rate' ? cbList('rate') : cbList(k)).slice(0, 14).forEach((c) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = k === 'rate' ? '%' + c : c; if (String(c) === String(inp.value)) b.className = 'on'; b.addEventListener('click', () => { inp.value = String(c); inp.dispatchEvent(new Event('change', { bubbles: true })); }); row.appendChild(b); }); inp.after(row); const h = document.createElement('div'); h.className = 'cb-hint'; h.textContent = 'Listede yoksa yaz, listene eklenir.'; row.after(h); }
+    });
+    document.querySelectorAll('main input[data-k="doc"]').forEach((i) => { i.setAttribute('list', 'cb-doc'); i.autocomplete = 'off'; });
+  } catch (e) {}
+}
+{ const _r135 = render; render = function () { const r = _r135.apply(this, arguments); comboFix(); return r; }; }
+{ const _rm135 = renderModal; renderModal = function () { const r = _rm135.apply(this, arguments); comboFix(); return r; }; }
+{ let cbBusy = false; const _oc135 = onChange; onChange = function (e) { if (cbBusy) return; const el = e.target; let k = null; try { k = cbKindOf(el); } catch (x) {} if (k && el.tagName === 'INPUT') { const raw = String(el.value || '').trim(); if (k === 'rate') { const n = Number(raw.replace(',', '.').replace('%', '')); if (!(n >= 0 && n <= 100)) { toast('KDV oranı 0 ile 100 arasında olmalı.', 'warn'); return; } el.value = String(n); } if (!raw && k !== 'doc') return; cbLearn(k, raw); } cbBusy = true; try { return _oc135.apply(this, arguments); } finally { cbBusy = false; } }; }
+/* Listelerim */
+H.mylists = () => { S.modal = { type: 'mylists' }; renderModal(); };
+H.mlrm = (el) => { const k = el.dataset.k, v = el.dataset.v; CUSTOM[k] = CUSTOM[k].filter((x) => String(x) !== v); if (k === 'acc') { const i = CATS.indexOf(v); if (i >= 0 && !LEDGER.some((r) => r.acc === v) && !RECEIPTS.some((r) => r.cat === v)) CATS.splice(i, 1); } if (k === 'inc') { const i = INCATS.indexOf(v); if (i >= 0 && !LEDGER.some((r) => r.acc === v)) INCATS.splice(i, 1); } try { pSched(); } catch (e) {} renderModal(); };
+H.mladd = (el) => { const k = el.dataset.k; const inp = document.getElementById('ml-' + k); if (!inp) return; if (!cbLearn(k, inp.value)) { if (inp.value.trim()) toast('Bu zaten listede ya da geçersiz.', 'warn'); } renderModal(); };
+NEWM.mylists = () => { const sec = (k, t, ph) => { const arr = CUSTOM[k] || []; return `<div class="field"><label>${t}</label>${arr.length ? arr.map((x) => `<div class="cb-my"><span>${k === 'rate' ? '%' : ''}${esc(String(x))}</span><button type="button" data-a="mlrm" data-k="${k}" data-v="${esc(String(x))}" aria-label="Sil">×</button></div>`).join('') : '<p class="small muted">Henüz eklediğin yok.</p>'}<div class="row" style="gap:8px;margin-top:8px"><input id="ml-${k}" placeholder="${ph}" maxlength="40" style="flex:1"><button class="btn sm" data-a="mladd" data-k="${k}">Ekle</button></div></div>`; }; return sheet('Listelerim', `<p class="muted small">Tabloda listeden seçmek yerine yazdığın her değer buraya eklenir. Buradan da ekleyip silebilirsin.</p>${sec('acc', 'Gider hesapları', 'Örn. Reklam')}${sec('inc', 'Gelir hesapları', 'Örn. Catering')}${sec('doc', 'Belge türleri', 'Örn. Dekont')}${sec('rate', 'KDV oranları', 'Örn. 8')}`); };
+{ const _ta = tabloHTML; tabloHTML = function () { const h = _ta.apply(this, arguments); return h.replace('<div class="tb-act">', '<div class="tb-act">').replace(/(<button class="btn sm" data-a="ladd"[^>]*>[\s\S]*?<\/button>)/, `<button class="btn sec sm" data-a="mylists">${ic('list', 16)} Listelerim</button>$1`); }; }
+cbSync();
 </script>
 </body>
 </html>
