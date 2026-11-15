@@ -1191,7 +1191,7 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 input[type=file]{width:100%;font-size:14px;color:var(--muted)}
 input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding:8px 14px;border:1px solid #C7D0DD;border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-weight:600}
 </style>
-</head>
+<style>.ek-f,.dr-tabs,.iz-sc{scrollbar-width:thin}</style></head>
 <body>
 <div id="app"></div>
 <div id="toasts" aria-live="polite"></div>
@@ -7471,7 +7471,7 @@ viewEkip = function () {
   const cur = items.some((x) => x[0] === cur0) ? cur0 : 'bugun'; const segH = seg('ekip', items, cur).replace('<div class="seg"', '<div class="seg seg-b"');
   if (cur === 'izin') return `<div class="stack-lg">${segH}${izinTakvim()}</div>`;
   if (cur === 'mola') return `<div class="stack-lg">${segH}${molaAyar()}</div>`;
-  if (cur === 'bugun') { const tk = ekipTasks(); return `<div class="stack-lg">${segH}<div class="ek"><div class="ek-main">${kzCard('ekip')}${ekTeam()}</div><div class="ek-side">${ekipKais()}${ekUpcoming()}<section class="dsec"><div class="dsec-h"><h2>Bugün ne yapmalısın?</h2><p class="muted">${tk.length ? 'Ekibinle ilgili ' + tk.length + ' konu seni bekliyor.' : 'Ekipte bekleyen konu yok.'}</p></div>${tk.length ? `<div class="dtodo">${tk.join('')}</div>` : ''}</section>${codeCardEkip()}</div></div></div>`; }
+  if (cur === 'bugun') { const tk = ekipTasks(); return `<div class="stack-lg">${segH}<div class="ek"><div class="ek-main">${kzCard('ekip')}${ekTeam()}</div><div class="ek-side">${ekipKais()}${ekUpcoming()}${tk.length ? `<section class="dsec"><div class="dsec-h"><h2>Bugün ne yapmalısın?</h2><p class="muted">Ekibinle ilgili ${tk.length} konu seni bekliyor.</p></div><div class="dtodo">${tk.join('')}</div></section>` : ''}${codeCardEkip()}</div></div></div>`; }
   const h = _viewEkip71(); const m = h.match(/<div class="seg[^"]*" role="group">[\s\S]*?<\/div>/); return m ? h.replace(m[0], segH) : h;
 };
 /* Ayarlar: tüm verileri sıfırla */
