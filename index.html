@@ -1151,6 +1151,17 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .geo{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:6px 0 10px}.geo-i{width:60px;height:60px;border-radius:50%;background:var(--cini-wash);color:var(--cini);display:inline-flex;align-items:center;justify-content:center}.geo-i.bad{background:#FDE8EB;color:#C13049}.geo-i.spin{animation:geoP 1.4s ease-in-out infinite}@keyframes geoP{50%{transform:scale(1.08)}}@media (prefers-reduced-motion:reduce){.geo-i.spin{animation:none}}.geo b{font-size:18px}.geo p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.5}
 .geo-os{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.geo-o{display:flex;flex-direction:column;gap:2px;text-align:left;font-family:inherit;color:var(--ink);background:#fff;border:1px solid #D3DCE9;border-radius:14px;padding:10px}.geo-o b{font-size:15px}.geo-o small{font-size:12px;color:var(--ink-2);line-height:1.3}.geo-o[aria-pressed=true]{border-color:var(--cini);background:var(--cini-wash);box-shadow:0 0 0 1px var(--cini)}
 .geo-s{display:flex;flex-direction:column;gap:8px;border-radius:14px;padding:10px 12px}.geo-s.ok{background:#E3F6EA;color:#14804A}.geo-s.no{background:#FFF3DB;color:#8A5200}.geo-s>div{display:flex;gap:8px;align-items:flex-start;font-size:13.5px}.geo-s .btn{align-self:flex-start}
+.nb-sum{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-soft,#5a6a85);margin:-2px 0 8px}.nb-sum b{color:var(--ink)}.nb-sum em{font-style:normal;color:var(--nar)}.nb-read{background:none;border:0;color:var(--cini,#1f4aa8);font-weight:600;font-size:13px;padding:6px 0;cursor:pointer}
+.nb-gh{font-size:12.5px;font-weight:600;color:var(--ink-soft,#5a6a85);margin:12px 2px 6px;display:flex;gap:6px;align-items:center}.nb-gh span{background:var(--cini-wash);color:var(--cini,#1f4aa8);border-radius:999px;padding:0 7px;font-size:11.5px}
+.nb-grp{display:flex;flex-direction:column;gap:8px}
+.nb-it{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);border-left:4px solid var(--cini,#1f4aa8);background:#fff;border-radius:14px;padding:12px;font:inherit;color:var(--ink);cursor:pointer;min-height:56px}
+.nb-it.bad{border-left-color:var(--nar,#c0392b);background:var(--nar-wash,#fdeeee)}.nb-it.warn{border-left-color:#d9a21b}.nb-it.info{border-left-color:var(--cini,#1f4aa8)}
+.nb-it.seen{opacity:.62;background:#fff}.nb-ic{flex:none;width:34px;height:34px;border-radius:10px;background:rgba(18,33,59,.07);display:grid;place-items:center}
+.nb-tx{flex:1;min-width:0;font-size:14.5px;line-height:1.35}.nb-go{flex:none;display:flex;align-items:center;gap:6px;color:var(--ink-soft,#5a6a85)}.nb-dot{width:8px;height:8px;border-radius:50%;background:var(--nar,#c0392b);display:block}
+.nb-empty{display:flex;flex-direction:column;align-items:center;gap:4px;padding:26px 10px;text-align:center;color:var(--ink-soft,#5a6a85)}.nb-empty b{color:var(--ink);margin-top:6px}
+.nb-push{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px;border-radius:14px;background:var(--cini-wash,#eaf0fb)}.nb-push.on{background:#e8f5ec}
+.nb-pi{flex:none;width:34px;height:34px;border-radius:10px;background:#fff;display:grid;place-items:center}.nb-pt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--ink-soft,#5a6a85);line-height:1.35}.nb-pt b{color:var(--ink);font-size:14px}
+.nb-on{font-style:normal;font-size:11.5px;background:#2e8b57;color:#fff;border-radius:999px;padding:1px 8px;margin-left:4px}.nb-err{color:var(--nar)}.nb-push .btn{flex:none}
 .mg{display:flex;flex-direction:column;gap:14px}
 .mg-hi h2{margin:0;font-size:26px;letter-spacing:-.3px}.mg-hi p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 .mg-q{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mg-q button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 10px;border:1px solid #E1E8F2;border-radius:16px;background:#fff;color:var(--cini-d);font-family:inherit;box-shadow:0 3px 10px rgba(13,40,80,.05)}.mg-q svg{color:var(--cini)}.mg-q span{font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap}
@@ -8005,20 +8016,25 @@ H.pushoff = async () => {
   try { const r = await navigator.serviceWorker.getRegistration('/sw.js'); const s = r && await r.pushManager.getSubscription(); if (s) { const ep = s.endpoint; await s.unsubscribe(); const x = pushCtx(); if (x) await x.c.from('push_subs').delete().eq('endpoint', ep); } PUSH.st = 'bos'; toast('Telefon bildirimi kapatıldı.'); } catch (e) { PUSH.msg = 'Kapatılamadı. Tekrar dene.'; }
   PUSH.busy = false; renderModal();
 };
-function pushCard() {
-  const ios = pushIOS() && !pushStandalone();
-  let t = '', b = '';
-  if (PUSH.st === 'yok' || !pushOK()) { t = ios ? 'iPhone\'da önce uygulamayı ana ekrana ekle: Paylaş düğmesi, sonra "Ana Ekrana Ekle". Sonra buradan aç.' : 'Bu tarayıcı telefon bildirimini desteklemiyor.'; }
-  else if (ios) { t = 'iPhone\'da bildirim için önce uygulamayı ana ekrana ekle: Paylaş düğmesi, sonra "Ana Ekrana Ekle". Ana ekrandaki simgeden açıp bu düğmeye dokun.'; b = '<button class="btn sm" data-a="pushon">Dene</button>'; }
-  else if (PUSH.st === 'acik') { t = 'Açık. Telefon kapalıyken de önemli işler için bildirim gelir.'; b = '<button class="btn sm sec" data-a="pushoff">Kapat</button>'; }
-  else if (PUSH.st === 'red') t = 'Bildirim engellenmiş. Tarayıcı ayarlarından bu site için bildirime izin ver, sonra tekrar dene.';
-  else { t = 'Uygulama kapalıyken bile giriş hatırlatması, izin ve mesai cevapları, duyurular ve ödeme günleri telefonuna düşsün.'; b = '<button class="btn sm"' + (PUSH.busy ? ' disabled' : '') + ' data-a="pushon">' + (PUSH.busy ? 'Açılıyor' : 'Telefona bildirim gönder') + '</button>'; }
-  return `<div class="card stack" style="margin-top:12px"><b>Telefon kapalıyken bildirim</b><p class="small muted">${t}</p>${PUSH.msg ? `<p class="small" style="color:var(--bad)">${esc(PUSH.msg)}</p>` : ''}${b}</div>`;
+function pushRow() {
+  const ios = pushIOS() && !pushStandalone(); let t = '', b = '', k = 'off';
+  if (!pushOK()) { t = ios ? 'Ana ekrana ekle: Paylaş, sonra "Ana Ekrana Ekle". Simgeden açınca buradan aç.' : 'Bu tarayıcı telefon bildirimini desteklemiyor.'; k = 'na'; }
+  else if (ios) { t = 'Önce ana ekrana ekle: Paylaş, sonra "Ana Ekrana Ekle". Simgeden açınca buradan aç.'; b = '<button class="btn sm" data-a="pushon">Dene</button>'; k = 'na'; }
+  else if (PUSH.st === 'acik') { t = 'Telefon kapalıyken de bildirim gelir.'; b = '<button class="btn sm sec" data-a="pushoff"' + (PUSH.busy ? ' disabled' : '') + '>Kapat</button>'; k = 'on'; }
+  else if (PUSH.st === 'red') { t = 'Engellenmiş. Tarayıcı ayarlarından bu site için bildirime izin ver.'; k = 'na'; }
+  else { t = 'Uygulama kapalıyken bile hatırlatma, izin ve mesai cevapları telefonuna düşsün.'; b = '<button class="btn sm"' + (PUSH.busy ? ' disabled' : '') + ' data-a="pushon">' + (PUSH.busy ? 'Açılıyor' : 'Aç') + '</button>'; }
+  return `<div class="nb-push ${k}"><span class="nb-pi">${ic('bell', 18)}</span><div class="nb-pt"><b>Telefon bildirimi ${k === 'on' ? '<i class="nb-on">Açık</i>' : ''}</b><span>${t}</span>${PUSH.msg ? `<span class="nb-err">${esc(PUSH.msg)}</span>` : ''}</div>${b}</div>`;
 }
-const _bellP = NEWM.bell;
+const NB_IC = { stok: 'box', satinalma: 'box', rezerv: 'clock', bugun: 'clock', ekip: 'users', maasim: 'users', puanim: 'users', duyuru: 'megaphone', muhasebe: 'trend', borc: 'trend', belgeler: 'file' };
 NEWM.bell = () => {
   if (PUSH.st === 'bos') pushCheck().then(() => { if (S.modal && S.modal.type === 'bell' && PUSH.st !== 'bos') renderModal(); });
-  const h = _bellP(); const i = h.lastIndexOf('</div></div>'); return pushCard() && i > 0 ? h.slice(0, i) + '</div>' + pushCard() + '</div>' + h.slice(i + 12) : h;
+  const L = notifList(); const seen = nfLoad(); const unread = L.filter((x) => !seen.has(x.key)).length;
+  const grp = [['bad', 'Acil'], ['warn', 'Dikkat'], ['info', 'Bilgi']];
+  const item = (x) => { const i = L.indexOf(x); const sn = seen.has(x.key); return `<button class="nb-it ${x.sev}${sn ? ' seen' : ''}" data-a="nfgo" data-i="${i}"><span class="nb-ic">${ic(NB_IC[x.view] || (x.sev === 'bad' ? 'alert' : 'info'), 18)}</span><span class="nb-tx">${esc(x.text)}</span><span class="nb-go">${sn ? '' : '<i class="nb-dot"></i>'}${ic('chevron', 16)}</span></button>`; };
+  const list = L.length ? grp.map(([k, n]) => { const g = L.filter((x) => x.sev === k); return g.length ? `<div class="nb-gh">${n} <span>${g.length}</span></div><div class="nb-grp">${g.map(item).join('')}</div>` : ''; }).join('')
+    : `<div class="nb-empty">${ic('check', 30)}<b>Her şey yolunda</b><span>Bekleyen bildirim yok.</span></div>`;
+  const top = L.length ? `<div class="nb-sum"><span>${unread ? `<b>${unread}</b> yeni` : 'Hepsi okundu'}${L.filter((x) => x.sev === 'bad').length ? ` · <em>${L.filter((x) => x.sev === 'bad').length} acil</em>` : ''}</span>${unread ? '<button class="nb-read" data-a="nfread">Hepsini okundu yap</button>' : ''}</div>` : '';
+  return sheet('Bildirimler', `${top}${list}${pushRow()}`);
 };
 async function pushSend(to, title, body) {
   try { const x = pushCtx(); if (!x || !to || !to.length) return; const ids = to.slice();
