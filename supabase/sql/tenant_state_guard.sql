@@ -34,6 +34,14 @@ begin
       if (v_old -> 'SETTINGS') ? 'perm' then v_new := jsonb_set(v_new, '{SETTINGS,perm}', v_old -> 'SETTINGS' -> 'perm', true);
       else v_new := jsonb_set(v_new, '{SETTINGS}', (v_new -> 'SETTINGS') - 'perm', true); end if;
     end if;
+    if jsonb_typeof(v_new -> 'SETTINGS') = 'object' then
+      if (v_old -> 'SETTINGS') ? 'mperm' then v_new := jsonb_set(v_new, '{SETTINGS,mperm}', v_old -> 'SETTINGS' -> 'mperm', true);
+      else v_new := jsonb_set(v_new, '{SETTINGS}', (v_new -> 'SETTINGS') - 'mperm', true); end if;
+    end if;
+    if jsonb_typeof(v_new -> 'SETTINGS') = 'object' then
+      if (v_old -> 'SETTINGS') ? 'mudurMaas' then v_new := jsonb_set(v_new, '{SETTINGS,mudurMaas}', v_old -> 'SETTINGS' -> 'mudurMaas', true);
+      else v_new := jsonb_set(v_new, '{SETTINGS}', (v_new -> 'SETTINGS') - 'mudurMaas', true); end if;
+    end if;
   end if;
   new.state := v_new::text;
   return new;

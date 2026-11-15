@@ -11511,6 +11511,32 @@ window.addEventListener('click', (e) => {
     return r;
   };
 }
+
+/* ===== v109: muhasebeci yetkileri (patron belirler) ===== */
+const MP_G = [['mStok', 'Stok sayımı', 'Liste, sayım ve fire (salt okunur)', 'stok'], ['mOps', 'Arıza ve bakım', 'Arıza bildirimleri ve bakım takvimi (salt okunur)', 'ops'], ['mKamp', 'Kampanyalar', 'Gönderilen toplu e-postalar (salt okunur)', 'musteri'], ['mCal', 'Çalışanlar, maaş ve sözleşmeler', 'Bordro, avans ve evraklar', 'calisanlar'], ['mBorc', 'Borç ve alacak', 'Tedarikçi borçları ve ödemeler', 'borc'], ['mSatis', 'Satışlar', 'Satış kayıtları ve içe aktarma', 'satis'], ['mAi', 'Kais AI', 'Kais ile sohbet', 'kaisai']];
+const mpOn = (k) => { const p = S.settings.mperm; return !p || p[k] !== false; };
+const MP_VIEW = {}; MP_G.forEach((g) => { MP_VIEW[g[3]] = g[0]; });
+const mpView = (v) => !MP_VIEW[v] || mpOn(MP_VIEW[v]);
+{
+  const base = NAV.muhasebeci.slice();
+  Object.defineProperty(NAV, 'muhasebeci', { configurable: true, enumerable: true, get() { return base.filter((n) => mpView(n[0])); } });
+  const _vh = viewHTML;
+  viewHTML = function () {
+    const u = S.user; if (u && u.role === 'muhasebeci' && !mpView(S.view)) return `<div class="kp-lock">${ic('lock', 28)}<b>Bu bölüm kapalı</b><p>Patron bu sayfayı senin için açmadı. İstersen ona söyle, Ayarlar'dan açabilir.</p><button class="btn sec" data-a="nav" data-v="donem">Dönem'e dön</button></div>`;
+    let h = _vh.apply(this, arguments);
+    if (u && u.role === 'patron' && S.view === 'ayarlar' && !h.includes('mp-card')) { const i = h.indexOf('<div class="card"><h3>Diğer ayarlar</h3>'); if (i >= 0) h = h.slice(0, i) + mpCard() + h.slice(i); }
+    return h;
+  };
+}
+function mpCard() {
+  const on = MP_G.filter((g) => mpOn(g[0])).length;
+  return `<div class="card kp-card mp-card"><div class="row between wrap"><div><h3>Muhasebeci yetkileri</h3><p class="muted small" style="margin-top:2px">Muhasebecinin hangi sayfaları göreceğini sen belirlersin. Dönem, belgeler ve tablo her zaman açık.</p></div><span class="pill p-info">${on}/${MP_G.length} açık</span></div>
+  <div class="kp-g">${MP_G.map((g) => `<div class="toggle"><div><b style="font-weight:600">${esc(g[1])}</b><div class="small muted">${esc(g[2])}</div></div><button class="sw" role="switch" aria-checked="${mpOn(g[0])}" aria-label="${esc(g[1])}" data-a="mperm" data-k="${g[0]}"></button></div>`).join('')}</div></div>`;
+}
+H.mperm = (el) => {
+  if (!S.user || S.user.role !== 'patron') return; const k = el.dataset.k; if (!MP_G.some((g) => g[0] === k)) return;
+  const p = S.settings.mperm || (S.settings.mperm = {}); p[k] = p[k] === false; try { auditAdd({ type: 'kais', text: 'Muhasebeci yetkisi ' + (p[k] === false ? 'kapatıldı' : 'açıldı') + ': ' + MP_G.find((g) => g[0] === k)[1] }); } catch (e) {} pSched(); render();
+};
 </script>
 </body>
 </html>
