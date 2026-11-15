@@ -113,3 +113,28 @@ export function planDaily(ekip: any, now: { date: string; min: number }): { key:
   if (!parts.length) return null;
   return { key: 'daily:' + now.date, title: 'Günaydın, bugünün özeti', body: parts.join(', ') + '.' };
 }
+
+// Biten/azalan ürün ve satış düşüşü: yöneticilere günde bir kez (09:00-20:00 arası).
+export function planAlerts(stok: any, now: { date: string; min: number }): { key: string; title: string; body: string }[] {
+  const out: { key: string; title: string; body: string }[] = [];
+  if (now.min < 9 * 60 || now.min >= 20 * 60 || !stok || typeof stok !== 'object') return out;
+  const items: any[] = Array.isArray(stok.STOCK) ? stok.STOCK : [];
+  const low = items.filter((x) => Number(x.min) > 0 && Number(x.qty) <= Number(x.min));
+  if (low.length) {
+    const zero = low.filter((x) => Number(x.qty) <= 0).length; const names = low.slice(0, 3).map((x) => String(x.name).replace(/\s*\(.*\)\s*$/, '')).join(', ');
+    out.push({ key: 'stock:' + now.date, title: zero ? 'Biten ürün var' : 'Stok azalıyor', body: low.length + ' ürün alt sınırda: ' + names + (low.length > 3 ? ' ve ' + (low.length - 3) + ' ürün daha' : '') + '. Kais sipariş hazırlayabilir.' });
+  }
+  const sales: any[] = Array.isArray(stok.SALES) ? stok.SALES : [];
+  if (sales.length) {
+    const by: Record<string, number> = {}; sales.forEach((s) => { const d = String(s.date || '').slice(0, 10); if (d) by[d] = (by[d] || 0) + (Number(s.total) || 0); });
+    const dow = (iso: string) => { const a = iso.split('-').map(Number); return new Date(Date.UTC(a[0], a[1] - 1, a[2])).getUTCDay(); };
+    const diff = (a: string, b: string) => { const x = a.split('-').map(Number); const y = b.split('-').map(Number); return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 864e5); };
+    const yd = (() => { const a = now.date.split('-').map(Number); const d = new Date(Date.UTC(a[0], a[1] - 1, a[2] - 1)); return d.toISOString().slice(0, 10); })();
+    const same = Object.keys(by).filter((d) => d < yd && diff(d, yd) <= 56 && dow(d) === dow(yd));
+    if (by[yd] != null && same.length >= 3) {
+      const avg = same.reduce((a, d) => a + by[d], 0) / same.length;
+      if (avg > 0 && by[yd] < avg * 0.75) { const pct = Math.round((1 - by[yd] / avg) * 100); out.push({ key: 'salesdrop:' + yd, title: 'Dün satışlar düşük', body: 'Dün ciro, aynı günlerin ortalamasının yaklaşık %' + pct + ' altında kaldı.' }); }
+    }
+  }
+  return out;
+}
