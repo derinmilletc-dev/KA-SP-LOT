@@ -10415,6 +10415,11 @@ viewOps = function () {
   const body = { ozet: opOzet, liste: () => `<div class="op-g2">${chkCard('ac', true)}${chkCard('ka', true)}</div>`, gorev: tkView, ariza: mtView, kasa: ksView, talep: rqView, rapor: rpView }[cur]();
   return `<div class="stack-lg op"><div><h2>Operasyon</h2><p class="muted" style="margin-top:4px">${esc(today())} · günlük işleyişi tek yerden takip et</p></div>${seg('ops', items, cur).replace('<div class="seg"', '<div class="seg seg-b"')}${body}</div>`;
 };
+/* ===== v89: 200 personel performansı ===== */
+let __ekC = null;
+{ const _el = ekLeaves; ekLeaves = function (id) { if (!__ekC) { const all = _el(); const by = {}; all.forEach((x) => { (by[x.uid] = by[x.uid] || []).push(x); }); __ekC = { all, by }; } return id ? (__ekC.by[id] || []).slice() : __ekC.all.slice(); }; }
+{ const _r = render; render = function () { __ekC = null; return _r.apply(this, arguments); }; }
+{ const _p = pSched; pSched = function () { __ekC = null; return _p.apply(this, arguments); }; }
 </script>
 </body>
 </html>
