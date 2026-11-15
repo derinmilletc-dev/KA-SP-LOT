@@ -5170,7 +5170,7 @@ const NAMES = {}; P_OBJ.push(['NAMES', () => NAMES]);
 const ID = { mems: [], active: null, team: null, teamBusy: false, pref: null, busy: false };
 function applyNames() { Object.keys(NAMES).forEach((uid) => { const u = byId(uid); if (u && NAMES[uid]) { if (NAMES[uid].name) u.name = NAMES[uid].name; if (NAMES[uid].title) u.title = NAMES[uid].title; } }); }
 const pApplyV17 = pApply; pApply = function (s) { const ok = pApplyV17(s); if (ok) applyNames(); return ok; };
-const idMsg = (e) => { const m = String((e && e.message) || e || ''); return /relation .*(members|invites)|claim_invite.*(exist|find)|schema cache/i.test(m) ? 'Giriş tabloları kurulmamış. kaispilot_giris.sql dosyasını Supabase\'de çalıştır.' : /invalid_code/.test(m) ? 'Davet kodu geçersiz ya da süresi dolmuş.' : /already_member/.test(m) ? 'Bu hesap zaten bu işletmede.' : /seat_taken/.test(m) ? 'Bu davetin yeri daha önce doldurulmuş. İşverenden yeni kod iste.' : /duplicate key/.test(m) ? 'Bu kayıt zaten var.' : sbMsg(e); };
+const idMsg = (e) => { const m = String((e && e.message) || e || ''); return /relation .*(members|invites)|claim_invite.*(exist|find)|schema cache/i.test(m) ? 'Giriş tabloları kurulmamış. kaispilot_giris.sql dosyasını Supabase\'de çalıştır.' : /too_many_attempts/.test(m) ? 'Çok fazla yanlış deneme. 15 dakika sonra tekrar dene.' : /invalid_code/.test(m) ? 'Davet kodu geçersiz ya da süresi dolmuş.' : /already_member/.test(m) ? 'Bu hesap zaten bu işletmede.' : /seat_taken/.test(m) ? 'Bu davetin yeri daha önce doldurulmuş. İşverenden yeni kod iste.' : /duplicate key/.test(m) ? 'Bu kayıt zaten var.' : sbMsg(e); };
 const canSup = () => !ID.active || ['patron', 'mudur'].includes(ID.active.role);
 sbLoadBiz = async function () {
   const c = sbClient(); if (!c || !SBS.user) return;
@@ -5204,7 +5204,7 @@ async function idAuth(kind, mode) {
     if (r.error) throw r.error;
     if (!r.data.session) return fail('Hesap açıldı. E-postana gelen onay bağlantısına tıkla, sonra aynı bilgilerle tekrar dene.');
     SBS.user = r.data.session.user; await sbLoadBiz();
-    if (code) { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; await sbLoadBiz(); }
+    if (code) { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; if (x.data && x.data.error) throw new Error(x.data.error); await sbLoadBiz(); }
     if (!ID.mems.length) {
       if (kind === 'emp') return fail('Bu hesap henüz bir işletmeye katılmamış. "Davet koduyla katıl"a basıp kodunu gir.');
       if (!bn) return fail('Bu hesapta işletme yok. İşletme adını yazıp İşletmemi oluştur\'a bas.');
@@ -5356,7 +5356,7 @@ function mergeP(list) {
 }
 const roleOf = () => ID.active && ID.active.role; const uidOf = () => ID.active && ID.active.app_uid;
 function canR(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return r === 'muhasebeci' || (r === 'calisan' && sc === 'maas_' + uidOf()); if (r === 'mudur') return sc === 'stok' || sc === 'ekip'; if (r === 'muhasebeci') return sc === 'muh' || sc === 'ekip'; if (r === 'calisan') return sc === 'stok' || sc === 'ekip'; return false; }
-function canW(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return false; return canR(sc); }
+function canW(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return false; if (r === 'calisan' && sc === 'stok') return false; return canR(sc); }
 function hideUnreadable() {
   const keys = P_ARR.map((x) => x[0]);
   ['stok', 'muh'].forEach((sc) => { if (canR(sc)) return; keys.forEach((k) => { if ((P_SCOPE[k] || 'muh') === sc) { const a = P_ARR.find((x) => x[0] === k)[1](); a.length = 0; } }); if (sc === 'stok') Object.keys(RECIPES).forEach((k) => { delete RECIPES[k]; }); else { Object.keys(NOTES).forEach((k) => { delete NOTES[k]; }); Object.keys(EDOC).forEach((k) => { EDOC[k] = ''; }); EDOC.unvan = BIZ; } });
@@ -5447,7 +5447,7 @@ H.bizgo = async (el) => {
 H.mclaim = async () => {
   const code = ((document.getElementById('mc-code') || {}).value || '').trim().toUpperCase(); const err = (t) => { const e = document.getElementById('mc-err'); if (e) e.textContent = t; };
   if (!code) return err('Kodu yaz.');
-  try { const x = await sbClient().rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; const keep = ID.active && ID.active.business_id; ID.pref = keep; await sbLoadBiz(); ID.cinfo = null; render(); toast('Müşteri eklendi.', 'ok'); }
+  try { const x = await sbClient().rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; if (x.data && x.data.error) throw new Error(x.data.error); const keep = ID.active && ID.active.business_id; ID.pref = keep; await sbLoadBiz(); ID.cinfo = null; render(); toast('Müşteri eklendi.', 'ok'); }
   catch (e) { err(idMsg(e)); }
 };
 
