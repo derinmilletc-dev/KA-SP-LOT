@@ -972,6 +972,7 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .op-mini{margin-bottom:2px}.op-qr{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.op-ce{display:flex;flex-direction:column;gap:2px}
 @media(max-width:1100px){.op-two{display:flex;flex-direction:column}.op-tg{grid-template-columns:repeat(2,minmax(0,1fr))}.op-g2{grid-template-columns:1fr}.op-fg{grid-template-columns:1fr}.op .dz-sts{grid-template-columns:repeat(2,1fr)}}
 .op-c .field{margin-bottom:12px}.op-c .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}.op-c .field input{width:100%;min-height:46px;border:1px solid #D5DEEA;border-radius:12px;padding:0 12px;font:inherit;background:#fff;box-sizing:border-box}.op-c .field input:focus{outline:2px solid var(--cini);outline-offset:1px}
+.rzk-in{width:100%;min-height:42px;border:1px solid #D5DEEA;border-radius:12px;padding:0 12px;font:inherit;background:#fff;box-sizing:border-box}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -7656,7 +7657,7 @@ const vdYmd = (y, m, d) => y + '-' + vdP(m + 1) + '-' + vdP(d);
 const vdYm = (y, m) => y + '-' + vdP(m + 1);
 const VD_T = [{ id: 't1', n: 'Sabah', s: '08:00', e: '16:00', c: '#E99A2B' }, { id: 't2', n: 'Gün', s: '10:00', e: '18:00', c: '#3F86DD' }, { id: 't3', n: 'Akşam', s: '16:00', e: '00:00', c: '#7C5CCF' }];
 const VD_F = {}, VD_M = {}, VD_SENT = {}, VD_LOC = {};
-P_ARR.push(['VD_T', () => VD_T]); P_OBJ.push(['VD_F', () => VD_F], ['VD_M', () => VD_M], ['VD_SENT', () => VD_SENT]);
+P_ARR.push(['VD_T', () => VD_T]); P_OBJ.push(['VD_F', () => VD_F], ['VD_M', () => VD_M], ['VD_SENT', () => VD_SENT]); ['VD_T', 'VD_F', 'VD_M', 'VD_SENT'].forEach((k) => { P_SCOPE[k] = 'ekip'; });
 const vdSave = () => { try { pSched(); } catch (e) {} };
 /* resmi tatiller */
 const VD_HC = {};
@@ -9860,7 +9861,7 @@ H.saof = (el) => { S.saOf = el.dataset.v; render(); };
 Object.assign(PROF, { kap: PROF.kap || '', masa: PROF.masa || '' });
 PF_FIELDS.splice(5, 0, ['kap', 'Kişi kapasitesi'], ['masa', 'Masa sayısı']);
 RCFG.k = RCFG.k || { on: true, conf: true, rem: true, hrs: 3, warn: true, ns: true };
-const rzK = () => { const k = RCFG.k = RCFG.k || {}; ['on', 'conf', 'rem', 'warn', 'ns'].forEach((x) => { if (k[x] == null) k[x] = true; }); if (!k.hrs) k.hrs = 3; return k; };
+const rzK = () => { const k = RCFG.k = RCFG.k || {}; ['on', 'conf', 'rem', 'warn', 'ns', 'auto'].forEach((x) => { if (k[x] == null) k[x] = true; }); if (!k.hrs) k.hrs = 3; return k; };
 const rzCap = () => Number(PROF.kap) || TABLES.reduce((a, t) => a + (Number(t.cap) || 0), 0);
 function rzLoad(date, extra) {
   const out = []; for (let x = RCFG.open * 60; x < RCFG.close * 60; x += 30) { let p = 0; RESV.filter((r) => r.date === date && rzActive(r) && (!extra || r.id !== extra.id)).forEach((r) => { const rs = toMin(r.time); if (rs <= x && x < rs + r.dur) p += Number(r.n) || 0; }); if (extra) { const rs = toMin(extra.time); if (rs <= x && x < rs + extra.dur) p += Number(extra.n) || 0; } out.push({ t: fromMin(x), p }); } return out;
@@ -9883,7 +9884,7 @@ function rzRemMsg(r) {
 const rzMail = (r, kind) => { const msg = kind === 'rem' ? rzRemMsg(r) : rzConfMsg(r); return 'mailto:' + encodeURIComponent(r.email || '') + '?subject=' + encodeURIComponent(BIZ + (kind === 'rem' ? ' · Rezervasyon hatırlatma' : ' · Rezervasyonunuz alındı')) + '&body=' + encodeURIComponent(msg); };
 function rzQueue() {
   const k = rzK(); const q = []; const now = new Date().getHours() * 60 + new Date().getMinutes();
-  RESV.filter((r) => rzActive(r) && r.date >= REF_ISO && (r.phone || r.email)).forEach((r) => {
+  RESV.filter((r) => rzActive(r) && r.date >= REF_ISO && r.email).forEach((r) => {
     if (k.conf && !r.cs) q.push({ r, kind: 'conf' });
     if (k.rem && !r.rs && r.date === REF_ISO && r.st === 'onay') { const dt = toMin(r.time) - now; if (dt > 0 && dt <= k.hrs * 60) q.push({ r, kind: 'rem' }); }
   });
@@ -9893,6 +9894,7 @@ function rzTips() {
   const T = []; const cap = rzCap(); const k = rzK();
   if (!PROF.kap) T.push(['a', 'Kişi kapasiteni gir', 'Doluluğu ve dolu gün uyarılarını doğru hesaplayabilmem için aynı anda kaç kişi ağırlayabildiğini yaz.', 'pfopen', 'kap', 'Kapasiteyi gir']);
   if (!TABLES.length) T.push(['a', 'Masalarını ekle', 'Masa planı olmadan otomatik masa atayamam.', 'rztables', '', 'Masalar']);
+  const ne = RESV.filter((r) => rzActive(r) && r.date >= REF_ISO && !r.email).length; if (ne && k.conf) T.push(['a', ne + ' rezervasyonun e-postası yok', 'Onay ve hatırlatma e-postası gidemez. Rezervasyonu düzenleyip e-posta ekle.']);
   if (k.warn && cap) for (let i = 0; i < 7; i++) { const d = addDays(REF_ISO, i); const pk = rzPeak(d); if (pk.p >= cap * 0.9) T.push([pk.p >= cap ? 'r' : 'a', (i === 0 ? 'Bugün' : i === 1 ? 'Yarın' : rzDayName(d)) + (pk.p >= cap ? ' kapasite dolu' : ' neredeyse dolu'), `${pk.t} civarı ${pk.p}/${cap} kişi. Yeni rezervasyon almadan önce emin ol.`, 'rzday', d, 'Güne git']); }
   if (k.ns) { RESV.filter((r) => r.date >= REF_ISO && r.st === 'onay' && rzHist(r.phone, r.id).miss > 0).slice(0, 2).forEach((r) => T.push(['a', r.name + ' daha önce gelmedi', rzDayName(r.date) + ' ' + r.time + ' rezervasyonu için hatırlatmayı erken gönder, gerekirse teyit iste.', 'rzday', r.date, 'Güne git'])); }
   RESV.filter((r) => r.date >= REF_ISO && r.st === 'onay' && r.n >= 6).slice(0, 1).forEach((r) => T.push(['i', r.n + ' kişilik grup: ' + r.name, rzDayName(r.date) + ' ' + r.time + '. Masaların birleştiğini ve mutfağı önceden bilgilendirmeyi unutma.']));
@@ -9906,11 +9908,11 @@ function rzKaisCard() {
   const k = rzK(); const q = k.on ? rzQueue() : []; const tips = k.on ? rzTips() : []; const cap = rzCap(); const pk = rzPeak(S.rzDate); const pct = cap ? Math.min(100, Math.round(pk.p / cap * 100)) : 0;
   const nt = typeof Notification !== 'undefined'; const on = !!RCFG.notif && nt && Notification.permission === 'granted';
   const sw = (key, label, sub) => `<label class="rzk-sw"><span><b>${label}</b><em>${sub}</em></span><span class="sz-sw"><input type="checkbox" data-ch="rzk" data-k="${key}"${k[key] ? ' checked' : ''}><span class="sz-tr"></span></span></label>`;
-  const qh = q.length ? `<div class="rzk-q"><div class="rzk-t">Gönderilecek mesajlar <em>${q.length}</em></div>${q.slice(0, 8).map((x) => `<div class="rzk-m"><div><b>${esc(x.r.name)}</b><span>${x.kind === 'conf' ? 'Rezervasyon onayı' : 'Hatırlatma'} · ${x.kind === 'conf' && x.r.date !== REF_ISO ? esc(rzDayName(x.r.date)) + ' ' : ''}${esc(x.r.time)}</span></div><div class="rzk-b">${x.r.phone ? `<button class="btn sm" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="wa">WhatsApp</button>` : ''}${x.r.email ? `<button class="btn sm sec" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="mail">E-posta</button>` : ''}<button class="btn sm sec" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="skip" aria-label="Gönderildi say">✓</button></div></div>`).join('')}</div>` : (k.on ? '<p class="rzk-ok">Bekleyen mesaj yok. Yeni rezervasyonlar için onay, gelmeden önce hatırlatma hazırlarım.</p>' : '');
+  const qh = q.length ? `<div class="rzk-q"><div class="rzk-t">${k.auto ? 'Gidecek e-postalar' : 'Gönderilecek e-postalar'} <em>${q.length}</em></div>${q.slice(0, 8).map((x) => `<div class="rzk-m"><div><b>${esc(x.r.name)}</b><span>${x.kind === 'conf' ? 'Rezervasyon onayı' : 'Hatırlatma'} · ${x.kind === 'conf' && x.r.date !== REF_ISO ? esc(rzDayName(x.r.date)) + ' ' : ''}${esc(x.r.time)}</span></div><div class="rzk-b"><button class="btn sm" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="mail">${k.auto ? 'Şimdi gönder' : 'E-posta gönder'}</button><button class="btn sm sec" data-a="rzsend" data-id="${x.r.id}" data-kind="${x.kind}" data-ch="skip" aria-label="Gönderildi say">✓</button></div></div>`).join('')}</div>` : (k.on ? `<p class="rzk-ok">${k.auto ? 'Bekleyen e-posta yok. E-postası olan misafirlere onay ve hatırlatma kendiliğinden gider.' : 'Bekleyen mesaj yok. Yeni rezervasyonlar için onay, gelmeden önce hatırlatma hazırlarım.'}</p>` : '');
   return `<section class="rzk"><div class="rzk-h">${ic('sparkle', 18)}<b>Kais asistan</b><label class="sz-sw rzk-m1"><input type="checkbox" data-ch="rzk" data-k="on"${k.on ? ' checked' : ''}><span class="sz-tr"></span></label></div>
   ${k.on ? `<div class="rzk-cap"><div><span>${esc(rzDayName(S.rzDate))} en yoğun</span><b>${pk.p}${cap ? ' / ' + cap : ''} kişi</b></div><div class="rzk-bar"><i style="width:${pct}%;background:${pct >= 100 ? 'var(--nar)' : pct >= 80 ? '#E3A21A' : 'var(--cini)'}"></i></div><em>${cap ? (PROF.kap ? 'Kapasite: ' + cap + ' kişi' : 'Masa kapasitesine göre (' + cap + ')') : 'Kapasite girilmedi'}${pk.t ? ' · ' + pk.t : ''}</em></div>${qh}
   ${tips.length ? `<div class="rzk-t">Kais önerileri <em>${tips.length}</em></div><div class="rzk-tl">${tips.slice(0, 6).map((t) => `<div class="sa2-ti ${t[0]}"><i></i><div><b>${esc(t[1])}</b><p>${esc(t[2])}</p>${t[3] ? `<button class="btn sm sec" data-a="${t[3]}" data-${t[3] === 'rzday' ? 'd' : 'f'}="${t[4]}">${esc(t[5])}</button>` : ''}</div></div>`).join('')}</div>` : ''}
-  <details class="rzk-set"><summary>Kais ayarları</summary>${sw('conf', 'Onay mesajı', 'Rezervasyon alınınca müşteriye hazırlanır')}${sw('rem', 'Hatırlatma', 'Gelmeden önce müşteriye hazırlanır')}<div class="rzk-hr"><span>Hatırlatma zamanı</span>${[1, 2, 3, 4].map((h) => `<button data-a="rzkh" data-h="${h}" aria-pressed="${k.hrs === h}">${h} saat</button>`).join('')}</div>${sw('warn', 'Dolu gün uyarısı', 'Kapasite dolunca sormadan almam')}${sw('ns', 'Gelmeyenleri takip et', 'Önceden gelmeyenleri işaretlerim')}${nt ? `<label class="rzk-sw"><span><b>Bildirim</b><em>Misafir gelmeden 30 dk önce haber ver</em></span><span class="sz-sw"><input type="checkbox" data-ch="rznotif"${on ? ' checked' : ''}><span class="sz-tr"></span></span></label>` : ''}</details>` : '<p class="rzk-ok">Kais kapalı. Açarsan rezervasyonları takip eder, müşteri mesajlarını hazırlar, dolu günleri uyarır.</p>'}</section>`;
+  <details class="rzk-set"><summary>Kais ayarları</summary>${sw('auto', 'Otomatik e-posta', 'Sunucu e-postayı kendiliğinden gönderir, uygulama kapalıyken de')}${sw('conf', 'Onay e-postası', 'Rezervasyon alınınca müşteriye gider')}${sw('rem', 'Hatırlatma e-postası', 'Gelmeden önce müşteriye gider')}<div class="rzk-hr"><span>Hatırlatma zamanı</span>${[1, 2, 3, 4].map((h) => `<button data-a="rzkh" data-h="${h}" aria-pressed="${k.hrs === h}">${h} saat</button>`).join('')}</div><div class="rzk-hr" style="flex-direction:column;align-items:stretch;gap:6px"><span>Yanıt e-postası <em style="font-style:normal;color:var(--ink-2)">(misafir yanıtlarsa buraya gider)</em></span><input class="rzk-in" type="email" inputmode="email" autocapitalize="none" placeholder="rezervasyon@isletmen.com" value="${esc(k.reply || '')}" data-ch="rzkr"></div>${sw('warn', 'Dolu gün uyarısı', 'Kapasite dolunca sormadan almam')}${sw('ns', 'Gelmeyenleri takip et', 'Önceden gelmeyenleri işaretlerim')}${nt ? `<label class="rzk-sw"><span><b>Bildirim</b><em>Misafir gelmeden 30 dk önce haber ver</em></span><span class="sz-sw"><input type="checkbox" data-ch="rznotif"${on ? ' checked' : ''}><span class="sz-tr"></span></span></label>` : ''}</details>` : '<p class="rzk-ok">Kais kapalı. Açarsan rezervasyonları takip eder, müşteri mesajlarını hazırlar, dolu günleri uyarır.</p>'}</section>`;
 }
 {
   const _v85 = viewRezerv;
@@ -9926,15 +9928,15 @@ function rzKaisCard() {
 }
 H.rzkh = (el) => { rzK().hrs = Number(el.dataset.h); pSched(); render(); };
 H.rzday = ((p) => (el) => { if (el.dataset.d) { S.rzDate = el.dataset.d; S.rzMonth = rzMon(S.rzDate); S.rzCal = false; render(); } else p(el); })(H.rzday);
-{ const _oc = onChange; onChange = function (e) { const el = e.target; if (el && el.dataset && el.dataset.ch === 'rzk') { rzK()[el.dataset.k] = !!el.checked; pSched(); render(); return; } return _oc(e); }; }
+{ const _oc = onChange; onChange = function (e) { const el = e.target; if (el && el.dataset && el.dataset.ch === 'rzkr') { const v = String(el.value || '').trim(); if (v && !/^\S+@\S+\.\S{2,}$/.test(v)) { toast('E-posta adresi geçersiz görünüyor.', 'warn'); return; } rzK().reply = v; pSched(); toast('Kaydedildi.', 'ok'); return; } if (el && el.dataset && el.dataset.ch === 'rzk') { rzK()[el.dataset.k] = !!el.checked; pSched(); render(); return; } return _oc(e); }; }
 H.rzsend = (el) => {
   const r = RESV.find((x) => x.id === el.dataset.id); if (!r) return; const kind = el.dataset.kind; const ch = el.dataset.ch; const msg = kind === 'rem' ? rzRemMsg(r) : rzConfMsg(r);
-  if (ch === 'wa') { const u = rzWa(r, msg); if (u) window.open(u, '_blank', 'noopener'); } else if (ch === 'mail') { window.open(rzMail(r, kind), '_blank'); }
+  if (ch === 'mail') { window.open(rzMail(r, kind), '_blank'); }
   const f = kind === 'rem' ? 'rs' : 'cs'; r[f] = { t: Date.now(), ch }; pSched(); if (S.modal && S.modal.type === 'rzmsg') S.modal = null; render(); if (ch === 'skip') toast('Gönderildi olarak işaretlendi.'); 
 };
 /* modal: e-posta alanı, kapasite uyarısı */
 { const _n = NEWM.rznew; NEWM.rznew = function (m) {
-  let h = _n(m); h = h.replace(/(<div class="field"><label for="rz-phone">[\s\S]*?<\/div>)/, `$1<div class="field"><label for="rz-email">E-posta <span class="small muted">(isteğe bağlı)</span></label><input type="email" id="rz-email" inputmode="email" autocapitalize="none" value="${esc(m.email || '')}" placeholder="misafir@eposta.com" data-ch="rzf" data-k="email"></div>`);
+  let h = _n(m); h = h.replace(/(<div class="field"><label for="rz-phone">[\s\S]*?<\/div>)/, `$1<div class="field"><label for="rz-email">E-posta <span class="small muted">(onay ve hatırlatma buraya gider)</span></label><input type="email" id="rz-email" inputmode="email" autocapitalize="none" value="${esc(m.email || '')}" placeholder="misafir@eposta.com" data-ch="rzf" data-k="email"></div>`);
   if (m.warn) h = h.replace('<div class="field"><label for="rz-name">', `<div class="callout warn" style="margin-bottom:10px">${ic('alert')}<div><b>Emin misin?</b><p style="margin-top:2px">${esc(m.warn)}</p><div class="row wrap" style="gap:8px;margin-top:8px"><button class="btn sm" data-a="rzforce">Yine de ekle</button><button class="btn sm sec" data-a="rzunwarn">Vazgeç</button></div></div></div>$&`);
   return h; }; }
 H.rzforce = () => { if (S.modal) { S.modal.force = true; S.modal.warn = ''; } H.rzsave(); };
@@ -9943,6 +9945,7 @@ H.rzunwarn = () => { if (S.modal) { S.modal.warn = ''; S.modal.force = false; re
 { const _s = H.rzsave; H.rzsave = function () {
   const m = S.modal; if (!m || m.type !== 'rznew') return _s.apply(this, arguments); const g = (id) => (document.getElementById(id) || {}).value;
   m.name = (g('rz-name') || m.name || '').trim(); m.phone = (g('rz-phone') || m.phone || '').trim(); m.email = (g('rz-email') != null ? g('rz-email') : m.email || '').trim();
+  if (m.email && !/^\S+@\S+\.\S{2,}$/.test(m.email)) { const e = document.getElementById('rz-err'); if (e) e.textContent = 'E-posta adresi geçersiz görünüyor.'; return; }
   const isNew = !m.id; const k = rzK(); const c = rzCheck(m); const cap = rzCap(); let warn = '';
   if (m.name && m.n >= 1 && m.date >= REF_ISO && k.on && k.warn) { const ld = rzLoad(m.date, m.id ? { id: m.id, time: m.time, dur: m.dur, n: m.n } : { id: '_', time: m.time, dur: m.dur, n: m.n }); const pk = ld.reduce((a, b) => (b.p > a.p ? b : a), { p: 0 });
     if (!c.res) warn = (c.msg || 'Bu saatte uygun masa yok') + (cap ? `. Bu saatte ${pk.p}/${cap} kişi olur.` : '.') + ' Bugün o masa dolu ya da kişi kapasitemiz dolu, emin misin?';
@@ -9955,11 +9958,11 @@ H.rzunwarn = () => { if (S.modal) { S.modal.warn = ''; S.modal.force = false; re
   else _s.apply(this, arguments);
   const nr = isNew ? RESV[RESV.length - 1] : RESV.find((x) => x.id === m.id);
   if (nr && (RESV.length > before || !isNew)) { nr.email = m.email; if (isNew) { const dt = toMin(nr.time) - (new Date().getHours() * 60 + new Date().getMinutes()); if (nr.date === REF_ISO && dt < k.hrs * 60) nr.rs = { t: Date.now(), ch: 'skip' }; pSched();
-    if (k.on && k.conf && (nr.phone || nr.email) && !S.modal) { S.modal = { type: 'rzmsg', id: nr.id }; renderModal(); } } }
+    if (k.on && k.conf && nr.email && !S.modal) { if (k.auto) toast('Onay e-postası misafire birkaç dakika içinde gider.', 'ok'); else { S.modal = { type: 'rzmsg', id: nr.id }; renderModal(); } } } }
 }; }
 NEWM.rzmsg = (m) => { const r = RESV.find((x) => x.id === m.id); if (!r) return sheet('Mesaj', '<p>Rezervasyon bulunamadı.</p>');
   return sheet('Müşteriye onay mesajı', `<div class="callout">${ic('sparkle')}<div>Kais ${esc(rzTitle(r))} için onay mesajını hazırladı. Gönder ya da sonra kuyruktan gönder.</div></div><pre class="rzk-pre">${esc(rzConfMsg(r))}</pre>
-  <div class="row wrap" style="gap:8px">${r.phone ? `<button class="btn grow" data-a="rzsend" data-id="${r.id}" data-kind="conf" data-ch="wa">WhatsApp ile gönder</button>` : ''}${r.email ? `<button class="btn sec grow" data-a="rzsend" data-id="${r.id}" data-kind="conf" data-ch="mail">E-posta ile gönder</button>` : ''}<button class="btn sec" data-a="closemodal">Sonra</button></div><p class="small muted" style="margin-top:8px">Hatırlatma mesajı, rezervasyondan ${rzK().hrs} saat önce Kais'in kuyruğuna düşer.</p>`); };
+  <div class="row wrap" style="gap:8px"><button class="btn grow" data-a="rzsend" data-id="${r.id}" data-kind="conf" data-ch="mail">E-posta ile gönder</button><button class="btn sec" data-a="closemodal">Sonra</button></div><p class="small muted" style="margin-top:8px">Hatırlatma mesajı, rezervasyondan ${rzK().hrs} saat önce Kais'in kuyruğuna düşer.</p>`); };
 /* profil: kapasite alanları */
 { const _p = NEWM.prof; NEWM.prof = function (m) { let h = _p(m); const f = `<div class="pf-row pf-2"><div class="pf-s" data-pfk="kap"><label class="pf-l">Kişi kapasitesi <span class="pf-h">aynı anda en fazla</span></label><input id="pf-kap" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Örn. 60" value="${esc(PROF.kap)}"></div><div class="pf-s" data-pfk="masa"><label class="pf-l">Masa sayısı</label><input id="pf-masa" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="Örn. 15" value="${esc(PROF.masa)}"></div></div>`;
   return h.replace(/(<div class="pf-s" data-pfk="cal">)/, f + '$1'); }; }
