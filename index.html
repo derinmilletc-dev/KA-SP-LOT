@@ -12778,6 +12778,31 @@ async function xlSync() {
 setInterval(() => { try { xlSync(); } catch (e) {} }, 12000); setTimeout(() => { try { xlSync(); } catch (e) {} }, 5000);
 const tabloHTMLV133 = tabloHTML;
 tabloHTML = function () { const h = tabloHTMLV133.apply(this, arguments); const cloud = !!(SBS && SBS.user && SBS.biz) && !XL.off; const line = cloud ? `<p class="small muted" id="xl-st" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${XL.at ? '#1E9E5A' : '#E8A317'};display:inline-block"></span>${XL.at ? 'Excel dosyan arka planda güncel · ' + XL.at : 'Excel dosyan arka planda hazırlanıyor…'}</p>` : ''; return line ? h.replace('<div class="tb-act">', line + '<div class="tb-act">') : h; };
+
+/* ===== v134: Belgeler: süzgeç, hızlı onay, toplu onay; çalışan ekranı çift selam düzeltmesi ===== */
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.bgx{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;padding:2px 0 4px}.bgx::-webkit-scrollbar{display:none}
+.bgx button{flex:0 0 auto;border:1px solid #DCE5F2;background:#fff;border-radius:99px;padding:8px 13px;font:600 13px system-ui;color:#0E2B4D;cursor:pointer;display:flex;align-items:center;gap:6px}
+.bgx button[aria-pressed=true]{background:#0F3F7A;border-color:#0F3F7A;color:#fff}.bgx button em{font-style:normal;font:700 11px system-ui;background:rgba(15,63,122,.1);border-radius:99px;padding:1px 7px}.bgx button[aria-pressed=true] em{background:rgba(255,255,255,.22)}
+.bgb{display:flex;gap:8px}.bgb button{flex:1;border:0;border-radius:14px;padding:12px;font:700 14px system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}.bgb .pri{background:#1B5FB8;color:#fff}.bgb .pri:disabled{opacity:.45}
+.bg[data-f=warn] .bg-c[data-w="0"],.bg[data-f=clean] .bg-c[data-w="1"]{display:none}
+.bg-a .qk{background:#E8F1FD;color:#1B5FB8}
+`; document.head.appendChild(st); } catch (e) {} })();
+const bgWarn = (f) => { try { return bgFlags(f).some((x) => x[0] === 'warn'); } catch (e) { return false; } };
+{ const _rr = receiptRow; receiptRow = function (f, role) { let h = _rr.apply(this, arguments); h = h.replace('<div class="bg-c ', '<div data-w="' + (bgWarn(f) ? 1 : 0) + '" class="bg-c '); if (role === 'muh' && f.status === 'musavirde' && !bgWarn(f)) h = h.replace(/(<button class="btn sm" data-a="review" data-id="[^"]+">[\s\S]*?<\/button>)/, `$1<button class="btn sm sec qk" data-a="bgqok" data-id="${f.id}">Hızlı onayla</button>`); return h; }; }
+{ const _ib = inboxHTML; inboxHTML = function () { let h = _ib.apply(this, arguments); const inb = RECEIPTS.filter((f) => f.status === 'musavirde'); const w = inb.filter(bgWarn).length; const c = inb.length - w; const cur = S.bgf || 'all'; h = h.replace('<div class="stack-lg bg">', `<div class="stack-lg bg" data-f="${cur}">`);
+  if (inb.length > 1) { const bar = `<div class="bgx" role="group" aria-label="Süz"><button type="button" data-a="bgf" data-v="all" aria-pressed="${cur === 'all'}">Hepsi <em>${inb.length}</em></button><button type="button" data-a="bgf" data-v="clean" aria-pressed="${cur === 'clean'}">Temiz <em>${c}</em></button><button type="button" data-a="bgf" data-v="warn" aria-pressed="${cur === 'warn'}">Kontrol gerekli <em>${w}</em></button></div>${c ? `<div class="bgb"><button type="button" class="pri" data-a="bgqall">${ic('check', 16)} Temiz ${c} belgeyi onayla</button></div>` : ''}`; h = h.replace('<section class="bg-s">', bar + '<section class="bg-s">'); }
+  return h; }; }
+H.bgf = (el) => { S.bgf = el.dataset.v; render(); };
+function bgApprove(id) { const f = RECEIPTS.find((x) => x.id === id); if (!f || f.status !== 'musavirde') return false; S.modal = { type: 'rev', id: f.id, cat: f.cat, rate: f.rate, total: f.total, items: (f.items || []).map((i) => Object.assign({}, i)) }; H.revok(); return RECEIPTS.find((x) => x.id === id).status !== 'musavirde'; }
+H.bgqok = (el) => { if (locked()) return; if (bgApprove(el.dataset.id)) toast('Onaylandı, gider tabloya yazıldı.', 'ok'); };
+H.bgqall = () => { if (locked()) return; const ids = RECEIPTS.filter((f) => f.status === 'musavirde' && !bgWarn(f)).map((f) => f.id); let n = 0; ids.forEach((id) => { try { if (bgApprove(id)) n++; } catch (e) {} }); S.modal = null; render(); toast(n + ' belge onaylandı, giderler tabloya yazıldı.', 'ok'); };
+{ const _bc2 = bugunCalisan; bugunCalisan = function () { const h = _bc2.apply(this, arguments); return h.replace(/<h2>Merhaba [^<]*<\/h2><p[^>]*>([^<]*?) · (Vardiya[^<]*)<\/p>/, '<h2>$2</h2><p>$1</p>'); }; }
+
+/* ===== v134b: boş durumlar (masraf, paket) ve Kais AI para soruları ===== */
+{ const _vm = viewMasraf; viewMasraf = function () { const mine = RECEIPTS.filter((f) => f.by === S.user.id); if (mine.length) return _vm.apply(this, arguments); return `<div class="stack-lg"><div><h2>Masraf fişlerim</h2><p class="muted small" style="margin-top:4px">Fişi çek, patronun onaylasın.</p></div>${epCard('receipt', 'Masrafını fotoğrafla', 'Fişin fotoğrafını çek. Kais okur, patronun onaylar, ödemen takip edilir.', [['upload', 'Fiş ekle', '', 'camera']], ['Çek', 'Onay', 'Ödeme'])}</div>`; }; }
+{ const _vp = viewPaket; viewPaket = function () { if (LEDGER.length || ROWS.length) return _vp.apply(this, arguments); return `<div class="stack-lg"><div><h2>Aylık paket</h2><p class="muted small" style="margin-top:4px">Ayın belgeleri ve tabloları tek dosyada.</p></div>${epCard('file', 'Paket için veri bekleniyor', 'Belgeler onaylanıp ekstre gelince paket kendiliğinden hazırlanır. Eksik belge ve onay durumu burada görünür.', [['nav', 'Belgelere git', 'belgeler', 'receipt']], ['Belge', 'Ekstre', 'Paket'])}</div>`; }; }
+['patron', 'muhasebeci'].forEach((k) => { if (AI_Q[k]) AI_Q[k] = ['Bu ay kâr mı zarar mı?', 'En çok harcadığım 3 kalem hangisi?', 'KDV tahminim ne kadar?'].concat(AI_Q[k].filter((q) => !/kâr mı zarar|en çok harcad|KDV tahmin/i.test(q))); });
 </script>
 </body>
 </html>
