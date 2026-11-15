@@ -2387,7 +2387,7 @@ H.breakend = () => {
   render();
   toast(`Dönüşün kaydedildi. Bu mola ${min} dk.`, 'ok');
 };
-H.clockout = () => { const a = ATT[S.user.id]; a.state = 'out'; a.log.push(['Çıkış', hhmm(new Date())]); render(); toast('Çıkış kaydedildi.', 'ok'); };
+H.clockout = () => { const a = ATT[S.user.id]; a.state = 'out'; a.log.push(['Çıkış', hhmm(new Date())]); render(); toast('Mesaiden çıkışın kaydedildi.', 'ok'); };
 H.attok = (el) => { ATT[el.dataset.id].state = 'working'; ATT[el.dataset.id].note = ''; delete ATT[el.dataset.id].fix; render(); toast('Mola dönüşü onaylandı.', 'ok'); };
 H.attfix = (el) => { const a = ATT[el.dataset.id]; if (!a) return; a.fix = { at: Date.now() }; render(); toast(`${byId(el.dataset.id).name.split(' ')[0]}'e düzeltme talebi gönderildi. Cevap gelince tekrar görünür.`, 'ok'); };
 H.attre = () => { const a = ATT[S.user.id]; if (!a) return; delete a.fix; render(); toast('Düzeltmen tekrar onaya gönderildi.', 'ok'); };
@@ -8862,14 +8862,14 @@ bugunCalisan = function () {
   let worked = 0; const m = /^(\d{1,2}):(\d{2})/.exec(a.inAt || '');
   if (m && (a.state === 'working' || a.state === 'break' || a.state === 'pending')) worked = Math.max(0, nm - (Number(m[1]) * 60 + Number(m[2])) - (a.breakMin || 0));
   const hm = (x) => `${Math.floor(x / 60)} sa ${String(x % 60).padStart(2, '0')} dk`;
-  const T = { none: ['Henüz giriş yok', `Günaydın ${esc(first)}`, 'Çalışma gününe başlamak için giriş yap.'], working: ['Çalışıyorsun', `Giriş ${esc(a.inAt)}`, `Mola toplamı ${a.breakMin || 0} dk`], break: ['Moladasın', '', `Planlanan mola ${Number(S.settings.brkPlan) || 15} dk. En fazla iki bildirim alırsın.`], pending: a.fix ? ['Düzeltme istendi', 'Mola kaydını kontrol et', 'İşveren düzeltme istedi. Kontrol edip tekrar gönder, kesinti yapılmaz.'] : ['Onay bekliyor', 'Mola dönüşün onayda', 'İşveren onaylayınca kayıt kesinleşir. Kesinti yapılmaz.'], out: ['Çıkış yaptın', 'İyi akşamlar', 'Bugünün kaydı işverenle aynı şekilde görünür.'] }[a.state];
+  const T = { none: ['Mesaide değilsin', `Günaydın ${esc(first)}`, 'Çalışma gününe başlamak için mesaiye gir.'], working: ['Çalışıyorsun', `Mesaiye girişin ${esc(a.inAt)}`, `Mola toplamı ${a.breakMin || 0} dk`], break: ['Moladasın', '', `Planlanan mola ${Number(S.settings.brkPlan) || 15} dk. En fazla iki bildirim alırsın.`], pending: a.fix ? ['Düzeltme istendi', 'Mola kaydını kontrol et', 'İşveren düzeltme istedi. Kontrol edip tekrar gönder, kesinti yapılmaz.'] : ['Onay bekliyor', 'Mola dönüşün onayda', 'İşveren onaylayınca kayıt kesinleşir. Kesinti yapılmaz.'], out: ['Mesaiden çıktın', 'İyi akşamlar', 'Bugünün kaydı işverenle aynı şekilde görünür.'] }[a.state];
   let big = `<b class="cb-big">${T[1]}</b>`;
   if (a.state === 'break') { if (!a.bstart) a.bstart = Date.now() - (a.breakMin || 0) * 60000; const s = Math.floor((Date.now() - a.bstart) / 1000); big = `<b class="cb-big timer ${s > (Number(S.settings.brkPlan) || 15) * 60 ? 'over' : ''}" id="brk-timer">${mmss(s)}</b>`; }
-  const btn = { none: `<button class="cb-b pri" data-a="clockin">${ic('clock', 20)} Giriş yap</button>`, working: `<button class="cb-b" data-a="breakstart">${ic('coffee', 18)} Molaya çık</button><button class="cb-b ghost" data-a="clockout">Çıkış yap</button>`, break: `<button class="cb-b pri" data-a="breakend">Döndüm</button>`, pending: a.fix ? `<button class="cb-b pri" data-a="attre">Düzelttim, tekrar gönder</button>` : '', out: '' }[a.state];
+  const btn = { none: `<button class="cb-b pri" data-a="clockin">${ic('clock', 20)} Mesaiye gir</button>`, working: `<button class="cb-b" data-a="breakstart">${ic('coffee', 18)} Molaya çık</button><button class="cb-b ghost" data-a="clockout">Mesaiden çık</button>`, break: `<button class="cb-b pri" data-a="breakend">Döndüm</button>`, pending: a.fix ? `<button class="cb-b pri" data-a="attre">Düzelttim, tekrar gönder</button>` : '', out: '' }[a.state];
   const hint = [];
   if (a.state === 'working' && worked >= 300 && !(a.breakMin > 0)) hint.push(['5 saati geçti ve bugün mola kaydın yok. Mola hakkını kullanmayı unutma.', 'breakstart', 'Molaya çık']);
-  if (a.state === 'none' && nm > 9 * 60 + 15) hint.push(['Vardiyan 09:00\'da başladı. Giriş yapmayı unutma.', 'clockin', 'Giriş yap']);
-  if (a.state === 'working' && nm > 18 * 60 + 15) hint.push(['Vardiya saatin geçti. İşin bittiyse çıkış yapmayı unutma.', 'clockout', 'Çıkış yap']);
+  if (a.state === 'none' && nm > 9 * 60 + 15) hint.push(['Vardiyan 09:00\'da başladı. Mesaiye girmeyi unutma.', 'clockin', 'Mesaiye gir']);
+  if (a.state === 'working' && nm > 18 * 60 + 15) hint.push(['Vardiya saatin geçti. İşin bittiyse mesaiden çıkmayı unutma.', 'clockout', 'Mesaiden çık']);
   if (a.late) hint.push([`Bugün ${a.late} dk geç girdin.`]);
   { const pp = PROFILES[u.id]; if (pp && pp.salary > 0) { const pd = msPayday(pp); const dd = dueOf(u.id); if (pd.n >= 0 && pd.n <= 3 && dd.left > 0) hint.push([`Maaş günü ${pd.n === 0 ? 'bugün' : pd.n + ' gün sonra'}. Kalan ${fmt0(dd.left)} ödenecek.`, 'nav:maasim', 'Maaşıma bak']); } }
   { const sc = scores().find((x) => x.id === u.id); if (sc && sc.score < 75) hint.push([`Bu ayki puanın ${sc.score.toFixed(1).replace('.', ',')}. Hangi kriterde puan kaybettiğini görebilirsin.`, 'nav:puanim', 'Puanıma bak']); }
