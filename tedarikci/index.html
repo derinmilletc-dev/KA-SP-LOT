@@ -2023,5 +2023,47 @@ const _spAsk19=spAsk; spAsk=async function(t,att){await _spAsk19(t,att); const m
 const _spDemoAI19=spDemoAI; spDemoAI=function(text,mode){const t=nrm(text); if(/iade/.test(t)){const o=SPS.orders.find(x=>x.status==='teslim'); if(o) return Promise.resolve({reply:'İade formunu hazırladım. Kalemleri kontrol edip kaydet.',actions:[{type:'iade_al',args:{siparis_id:o.id,kalemler:[{sira:0,miktar:1}],neden:'hasar'}}]});} if(/kampanya/.test(t)){return Promise.resolve({reply:'Tüm ürünlerde bir haftalık %10 kampanya hazırladım. Onayına sunuyorum.',actions:[{type:'kampanya_toplu',args:{urun_idler:SPS.prods.slice(0,3).map(p=>p.id),yuzde:10,bitis:new Date(Date.now()+7*864e5).toISOString().slice(0,10)}},{type:'hafiza_kaydet',args:{not:'Hafta sonu kampanya yaptık.'}}]});} return _spDemoAI19(text,mode);};
 (function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v||el.dataset.t))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
 
+/* ===== v20: bilgisayar görünümü: yan menü, çok sütunlu sayfalar, ortada pencere ===== */
+(function(){const st=document.createElement('style'); st.id='sp-desk'; st.textContent=`
+@media(min-width:700px) and (max-width:899px){body.sp main{max-width:760px}.sp-nav{left:50%;right:auto;transform:translateX(-50%);width:min(720px,calc(100% - 24px))}}
+@media(min-width:900px){
+body.sp main{max-width:none;margin:0;padding:0 0 48px 236px}
+body.sp .sp-nav{left:0;right:auto;top:0;bottom:0;width:236px;transform:none;flex-direction:column;justify-content:flex-start;gap:4px;padding:76px 14px 16px;border:0;border-right:1px solid var(--line);border-radius:0;box-shadow:none;background:#fff}
+body.sp .sp-nav::before{content:"KaisPilot Toptancı";position:absolute;top:24px;left:22px;right:14px;font:700 17px 'Bricolage Grotesque',system-ui,sans-serif;color:#1f6f55;white-space:nowrap}
+body.sp .sp-nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 14px;font-size:14.5px;font-weight:600;border-radius:12px;text-align:left;cursor:pointer;transition:background .12s}
+body.sp .sp-nav button:hover{background:#f1f6f3}body.sp .sp-nav button.on{background:#e6f3ec;color:#1f6f55}
+body.sp .sp-nav i{position:static;margin-left:auto;top:auto;left:auto}
+body.sp .sp-top{padding-left:32px;padding-right:32px;padding-top:16px}
+body.sp .sp-demo{margin:12px 32px 0}
+body.sp .sp-body{max-width:760px;margin:0 auto;padding:12px 32px}
+body[data-tab=ozet] .sp-body,body[data-tab=is] .sp-body,body[data-tab=muh] .sp-body,body[data-tab=profil] .sp-body,body[data-tab=urun][data-sub=kat] .sp-body{max-width:1240px}
+body[data-tab=ozet] .sp-body,body[data-tab=muh] .sp-body,body[data-tab=profil] .sp-body{display:block;columns:2;column-gap:28px}
+body[data-tab=ozet] .sp-body>*,body[data-tab=muh] .sp-body>*,body[data-tab=profil] .sp-body>*{break-inside:avoid}
+body[data-tab=ozet] .sd-day,body[data-tab=ozet] .sd-ask,body[data-tab=ozet] .sd-chips,body[data-tab=ozet] .sd-rb,body[data-tab=muh] .sp-seg,body[data-tab=muh] .sp-mon,body[data-tab=muh] .sp-kpi2{column-span:all}
+body[data-tab=ozet] .sd-plan{break-inside:auto}body[data-tab=ozet] .sd-plan>*{break-inside:avoid}
+body[data-tab=profil] .sp-sec-h,body[data-tab=ozet] .sd-h{break-after:avoid}
+body[data-tab=profil] .sp-sec-h{margin-top:0;padding-top:16px}
+body[data-tab=is] .sp-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:0 24px;align-items:start}
+body[data-tab=is] .sp-body>*{grid-column:1/-1}body[data-tab=is] .sp-body>.sp-card{grid-column:auto}
+body[data-tab=urun][data-sub=kat] .sp-body>div:not([class]){display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:0 20px;align-items:start}
+body[data-tab=urun][data-sub=kat] .sp-body>.sp-two{max-width:520px}
+body[data-tab=is] .sp-body>.sp-pri,body[data-tab=is] .sp-body>.sp-xl,body[data-tab=is] .sp-body>.sp-fl,body[data-tab=is] .sp-body>.sp-sr{max-width:620px}
+body[data-tab=kais] .sp-body{max-width:860px}
+body.sp .sp-inb{left:236px;right:0;bottom:0;max-width:none;padding:12px max(32px,calc((100vw - 236px - 780px)/2))}
+body.sp .sp-pfile{left:calc(236px + 32px);right:32px;bottom:84px}
+body.sp #sp-undo{bottom:24px}
+body.sp #sp-toast{bottom:28px;left:calc(50% + 118px)}
+body.sp .sp-card,body.sp .sp-pc{transition:box-shadow .15s,transform .15s}
+body.sp .sp-pc:hover,body.sp .sp-card:hover{box-shadow:0 10px 26px -14px rgba(20,40,30,.35)}
+body.sp .sp-ov{align-items:center;padding:28px}
+body.sp .sp-sh{border-radius:22px;max-width:640px;max-height:88vh;padding-bottom:20px;box-shadow:0 30px 70px -20px rgba(10,20,15,.5)}
+body.sp .sp-pri,body.sp .sp-sec,body.sp .sp-xl,body.sp .sp-cb,body.sp .sp-tg2 button,body.sp .sp-chips button{cursor:pointer}
+body.sp .sp-pri:hover{filter:brightness(1.07)}body.sp .sp-xl:hover,body.sp .sp-cb:hover{border-color:#1f6f55}
+}
+@media(min-width:1500px){body.sp .sp-body{padding:12px 48px}body.sp .sp-top{padding-left:48px;padding-right:48px}}
+`; document.head.appendChild(st);})();
+const _spRender20=spRender; spRender=function(k){const r=_spRender20.apply(this,arguments); try{document.body.dataset.tab=SPS.tab||''; document.body.dataset.sub=SPS.sub||'kat';}catch(e){} return r;};
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape'&&SPS.sheet){const t=e.target; if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName)&&t.value&&false) return; SPA.sclose&&SPA.sclose(); }});
+
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
 </script></body></html>
