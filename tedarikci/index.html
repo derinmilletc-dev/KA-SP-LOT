@@ -2260,7 +2260,7 @@ const _spOzet23=spOzet; spOzet=function(){const h=_spOzet23(); let doc; try{doc=
   const qb=(x)=>`<button data-sp="${x[0]}"><i>${SPI(x[1],18)}</i>${x[2]}</button>`;
   const quick=`<div class="oz-q"><div class="oz-qr">${Q.map(qb).join('')}<button class="oz-qm" data-sp="ozmore"><i>${CHV}</i>Tüm işlemler</button></div><div class="oz-qx">${Q2.map(qb).join('')}</div></div>`;
   const IC={bad:'alert',warn:'clock',ok:'check',info:'doc'};
-  const tk=I.map((x,i)=>`<div class="oz-tk ${x.rail}${i>4?' more':''}"><i class="ti">${SPI(IC[x.rail]||'doc',18)}</i><div class="tx"><b>${x.t}</b><small>${x.m}</small></div>${x.a}</div>`).join('');
+  const tk=I.map((x,i)=>`<div class="oz-tk ${x.rail}${i>4?' more':''}"><i class="tki">${SPI(IC[x.rail]||'doc',18)}</i><div class="tx"><b>${x.t}</b><small>${x.m}</small></div>${x.a}</div>`).join('');
   const plan=`<div class="oz-c oz-pl"><div class="oz-h"><h2>Şimdi yapılacaklar</h2>${nI?`<em class="${bad.length?'bad':''}">${nI} iş${bad.length?' · '+bad.length+' acil':''}</em>`:''}</div>${nI?`<div class="oz-tks">${tk}</div>${nI>5?`<button class="oz-tg" data-sp="ozall">Tümünü göster (${nI})</button>`:''}`:`<div class="oz-emp">${SPI('check',22)}<div><b>Bugün sakin</b><small>Bekleyen sipariş, teklif ya da uyarı yok.</small></div></div>`}</div>`;
   const R=(ic,cls,t,s,tab,acc)=>`<button class="oz-r ${cls}" data-sp="ozgo" data-t="${tab}"${acc?` data-a="${acc}"`:''}><i>${SPI(ic,17)}</i><div><b>${t}</b><small>${s}</small></div><span class="cr">›</span></button>`;
   const km=sev.km>0?fmt2(sev.km)+' km':'';
@@ -2268,8 +2268,8 @@ const _spOzet23=spOzet; spOzet=function(){const h=_spOzet23(); let doc; try{doc=
   const top=I[0]; const rec=top?`<p>Bugün önce <b>${top.t}</b> işini tamamlamanı öneriyorum. ${top.m}.</p><div class="oz-ra">${top.a}<button class="oz-ln" data-sp="sdask" data-q="Bugün ne yapmalıyım?">Kais'e sor</button></div>`:`<p>Bugün acil bir şey görünmüyor. Kataloğunu ve fiyatlarını gözden geçirmek için iyi bir an.</p><div class="oz-ra"><button data-sp="sdask" data-q="Bugün ne yapmalıyım?">Kais'e sor</button></div>`;
   const kais=`<div class="oz-c oz-rc"><h3>${SPI('spark',17)} Kais'in önerisi</h3>${rec}</div>`;
   const W=spWeekly(),cu=W[7],pv=W.slice(3,7).reduce((a,x)=>a+x.ciro,0)/4,pc=pv>0?Math.round((cu.ciro-pv)/pv*100):null,wm=Math.max(1,...W.map(x=>x.ciro)); const bw=26,gp=12,H=52;
-  const bars=W.map((x,i)=>{const h=Math.max(x.ciro>0?3:0,Math.round(x.ciro/wm*H)),X=i*(bw+gp)+4; return `<rect x="${X}" y="${H-h+4}" width="${bw}" height="${h}" rx="6" fill="${i===7?'#2b8767':'#d5e6dc'}"><title>${tl0(x.ciro)}</title></rect>`;}).join('');
-  const trend=W.every(x=>x.ciro===0)?'':`<div class="oz-c oz-tr"><div class="oz-trh"><div><h3>Haftalık ciro</h3><p>Geçen 4 hafta ortalaması: ${tl0(pv)}</p></div><div class="oz-trv"><b>${tl0(cu.ciro)}</b>${pc!=null?`<span class="dl ${pc<0?'bad':''}">${pc>=0?'+':''}${pc}%</span>`:''}</div></div><svg viewBox="0 0 ${8*(bw+gp)} ${H+8}" role="img" aria-label="Son 8 haftanın cirosu">${bars}</svg></div>`;
+  const bars=W.map((x,i)=>`<i class="${i===7?'cur':''}" style="height:${x.ciro>0?Math.max(6,Math.round(x.ciro/wm*100)):3}%" title="${new Date(x.s).toLocaleDateString('tr-TR',{day:'numeric',month:'short'})}: ${tl0(x.ciro)}"></i>`).join('');
+  const trend=W.every(x=>x.ciro===0)?'':`<div class="oz-c oz-tr"><div class="oz-trh"><div><h3>Haftalık ciro</h3><p>Geçen 4 hafta ortalaması: ${tl0(pv)}</p></div><div class="oz-trv"><b>${tl0(cu.ciro)}</b>${pc!=null?`<span class="dl ${pc<0?'bad':''}">${pc>=0?'+':''}${pc}%</span>`:''}</div></div><div class="oz-bars" role="img" aria-label="Son 8 haftanın cirosu">${bars}</div></div>`;
   const ckRaw=q('sd-ck'); const ck=ckRaw?ckRaw.replace('class="sd-ck"','class="sd-ck oz-c oz-ck"').replace(/<\/div>$/,'')+'<button class="oz-tg" data-sp="ozck">Tamamlananları göster</button></div>':'';
   const daily=SPS.sum?q('sp-ai-c'):'';
   return `<div class="oz-pg">`+hero+kpis+`<div class="oz-grid"><div class="oz-col oz-l">${plan}${extras}${trend}</div>`+quick+`<div class="oz-col oz-r2">${kais}${ozs}${ck}${daily}</div></div>${q('sd-pf')}</div>`;};
@@ -2300,8 +2300,8 @@ body.sp[data-tab=ozet] .oz-pg{display:flex;flex-direction:column}
 .oz-pg .oz-c h3{font-size:14.5px;display:flex;align-items:center;gap:7px}.oz-pg .oz-c h3 svg{color:#1f6f55}
 .oz-pl{padding-bottom:8px!important}.oz-pl .oz-h{margin:0 0 6px}.oz-pl .oz-h h2{font:700 16px 'Bricolage Grotesque',system-ui,sans-serif}
 .oz-tks{display:flex;flex-direction:column}.oz-tk{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid #eef2ef}.oz-tk:first-child{border-top:0}
-.oz-tk .ti{flex:none;width:38px;min-width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal}
-.oz-tk.bad .ti{background:#fbeceb;color:#b3392f}.oz-tk.warn .ti{background:#fdf1de;color:#b06b00}.oz-tk.ok .ti{background:#e6f3ec;color:#1f6f55}.oz-tk.info .ti{background:#eff2f0;color:#5b6b63}
+.oz-tk .tki{flex:none;width:38px;min-width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal}
+.oz-tk.bad .tki{background:#fbeceb;color:#b3392f}.oz-tk.warn .tki{background:#fdf1de;color:#b06b00}.oz-tk.ok .tki{background:#e6f3ec;color:#1f6f55}.oz-tk.info .tki{background:#eff2f0;color:#5b6b63}
 .oz-tk .tx{flex:1;min-width:0}.oz-tk .tx b{display:block;font:600 14.5px/1.25 system-ui;color:#16231c}.oz-tk .tx small{display:block;margin-top:2px;font-size:12.5px;color:#5b6b63;line-height:1.35}
 .oz-tk>button,.oz-tk>.sd-a{flex:none;padding:8px 12px;border-radius:11px;font:600 13px system-ui;background:#eaf4ee;color:#1f6f55;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .15s}
 .oz-tk>button::after,.oz-tk>.sd-a::after{content:"→";font-weight:500}.oz-tk>button:hover,.oz-tk>.sd-a:hover{background:#d9ecdf}
@@ -2334,6 +2334,21 @@ body.sp[data-tab=ozet] .oz-pg{display:flex;flex-direction:column}
 }
 @media(max-width:599px){.oz-pg .oz-dt{display:none}.oz-pg .oz-sg{flex-wrap:nowrap;overflow-x:auto;margin-right:-16px;padding-right:16px}.oz-pg .oz-sg button{flex:none;white-space:nowrap}.oz-pg .oz-hi{font-size:19px}}
 @media(max-width:899px){.oz-pg .oz-q button{font-size:11px}.oz-qx{grid-template-columns:repeat(2,1fr)}}
+`; document.head.appendChild(st);})();
+
+(function(){const st=document.createElement('style'); st.id='sp-ozet3'; st.textContent=`
+.oz-tk .tki,.oz-r i,.oz-q button i,.oz-ic{align-self:center;flex:0 0 auto;aspect-ratio:1/1}
+.oz-tk .tki{height:36px!important;width:36px!important;min-width:36px}
+.oz-tk{align-items:center}.oz-tk>button,.oz-tk>.sd-a{align-self:center}
+.oz-bars{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;height:56px;margin-top:10px}.oz-bars i{flex:1;max-width:44px;border-radius:6px 6px 3px 3px;background:#dce9e1;min-height:3px}.oz-bars i.cur{background:#2b8767}
+.oz-pg .oz-c{margin-bottom:12px}.oz-pg .oz-hero{margin:0 0 12px}.oz-pg .oz-kpis{margin-bottom:12px}
+@media(min-width:900px){
+ body.sp[data-tab=ozet] .sp-body{max-width:1600px!important;margin:0!important;padding:16px 28px 12px!important}
+ body.sp[data-tab=ozet] .sp-demo{max-width:1544px!important;margin:12px 28px 0!important}
+ .oz-pg .oz-grid{gap:0 16px;grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr)}
+ .oz-pg .oz-kpis{gap:12px}.oz-pg .oz-qr{gap:12px}
+ .oz-pg .oz-q button{justify-content:flex-start;padding:10px 14px}
+}
 `; document.head.appendChild(st);})();
 
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
