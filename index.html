@@ -12684,6 +12684,100 @@ function trErr(m) {
 .tb .xt .xbtn{opacity:.55;transition:opacity .15s}.tb .xt tr:hover .xbtn{opacity:1}
 @media(max-width:600px){.tb .xt th:nth-child(1),.tb .xt td:nth-child(1){position:static;min-width:72px;max-width:72px}.tb .xt th:nth-child(2),.tb .xt td:nth-child(2){left:0}.tb .xt input.cell[data-k=desc]{width:150px!important}.tb .xt tfoot td:nth-child(1){left:auto;position:static}}
 `; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v133: Akıllı Excel: Özet sayfası, tablolar, formüller, açılır listeler; arka planda buluta kaydedilir ===== */
+const XL = { lib: null, hash: '', busy: false, off: false, at: '', err: '', url: 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js' };
+function xlLoad() {
+  if (typeof ExcelJS !== 'undefined') return Promise.resolve(ExcelJS);
+  if (XL.lib) return XL.lib;
+  XL.lib = new Promise((res, rej) => { const s = document.createElement('script'); s.src = XL.url; s.onload = () => (typeof ExcelJS !== 'undefined' ? res(ExcelJS) : rej(new Error('ExcelJS yok'))); s.onerror = () => { XL.lib = null; rej(new Error('Excel kitaplığı yüklenemedi')); }; document.head.appendChild(s); });
+  return XL.lib;
+}
+const XL_AY = { oca: 0, şub: 1, sub: 1, mar: 2, nis: 3, may: 4, haz: 5, tem: 6, ağu: 7, agu: 7, eyl: 8, eki: 9, kas: 10, ara: 11 };
+function xlDate(str) { const m = /^(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(\d{4})$/.exec(String(str || '').trim()); if (!m) return String(str || ''); const k = XL_AY[m[2].toLocaleLowerCase('tr-TR').slice(0, 3)]; return k === undefined ? String(str) : new Date(Date.UTC(+m[3], k, +m[1])); }
+async function xlBuild() {
+  const E = await xlLoad(); const wb = new E.Workbook(); wb.creator = 'KaisPilot'; wb.created = new Date(); wb.calcProperties = { fullCalcOnLoad: true };
+  const NAVY = 'FF0F3F7A', SOFT = 'FFEAF1FB', INK = 'FF0E2B4D', MUT = 'FF5B6B82'; const TRY = '#,##0.00 "₺"';
+  const now = new Date(); const stamp = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const led = (k) => LEDGER.filter((r) => dirOf(r) === k); const rate = (r) => Number(r.rate) || 0; const kd = (r) => (Number(r.total) || 0) - (Number(r.total) || 0) / (1 + rate(r) / 100);
+  const periods = []; LEDGER.forEach((r) => { const p = lper(r); if (!periods.includes(p)) periods.push(p); });
+  const cats = CATS.slice(); LEDGER.forEach((r) => { if (r.acc && !cats.includes(r.acc)) cats.push(r.acc); });
+  const sumOf = (list, f) => list.reduce((a, r) => a + f(r), 0);
+  // Özet
+  const sm = wb.addWorksheet('Özet', { properties: { tabColor: { argb: NAVY } }, views: [{ showGridLines: false }] });
+  sm.columns = [{ width: 24 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }];
+  sm.mergeCells('A1:F1'); sm.getCell('A1').value = BIZ + ' · Muhasebe özeti'; sm.getCell('A1').font = { size: 18, bold: true, color: { argb: 'FFFFFFFF' } }; sm.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; sm.getCell('A1').alignment = { vertical: 'middle', indent: 1 }; sm.getRow(1).height = 38;
+  sm.mergeCells('A2:F2'); sm.getCell('A2').value = 'Güncellendi: ' + stamp + ' · KaisPilot tarafından otomatik hazırlanır. Gelirler ve Giderler sayfalarındaki tablolar buraya kendiliğinden yansır.'; sm.getCell('A2').font = { size: 10, color: { argb: MUT } }; sm.getCell('A2').alignment = { indent: 1, wrapText: true }; sm.getRow(2).height = 28;
+  const inn = sumOf(led('gelir'), (r) => Number(r.total) || 0), out = sumOf(led('gider'), (r) => Number(r.total) || 0), kin = sumOf(led('gelir'), kd), kout = sumOf(led('gider'), kd);
+  const kp = [['Toplam gelir', 'SUM(Gelirler!H:H)', inn], ['Toplam gider', 'SUM(Giderler!H:H)', out], ['Net durum', 'B5-C5', inn - out], ['Hesaplanan KDV', 'SUM(Gelirler!G:G)', kin], ['İndirilecek KDV', 'SUM(Giderler!G:G)', kout]];
+  sm.getRow(4).height = 22; sm.getRow(5).height = 30;
+  kp.forEach((x, i) => { const c = sm.getCell(4, i + 2), v = sm.getCell(5, i + 2); c.value = x[0]; c.font = { size: 10, bold: true, color: { argb: MUT } }; c.alignment = { horizontal: 'center', vertical: 'bottom' }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SOFT } }; v.value = { formula: x[1], result: x[2] }; v.numFmt = TRY; v.font = { size: 14, bold: true, color: { argb: i === 2 ? (x[2] >= 0 ? 'FF1E9E5A' : 'FFC0392B') : INK } }; v.alignment = { horizontal: 'center', vertical: 'middle' }; v.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SOFT } }; });
+  sm.getCell('A4').value = 'Dönem toplamı'; sm.getCell('A4').font = { bold: true, color: { argb: MUT }, size: 10 }; sm.getCell('A5').value = 'Tüm veriler'; sm.getCell('A5').font = { bold: true, color: { argb: INK } };
+  let r0 = 8; sm.getCell('A' + (r0 - 1)).value = 'Aylık özet'; sm.getCell('A' + (r0 - 1)).font = { size: 13, bold: true, color: { argb: INK } };
+  const hdr = (ws, row, vals) => { vals.forEach((v, i) => { const c = ws.getCell(row, i + 1); c.value = v; c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; c.alignment = { vertical: 'middle', horizontal: i ? 'right' : 'left', indent: i ? 0 : 1 }; }); ws.getRow(row).height = 24; };
+  hdr(sm, r0, ['Dönem', 'Gelir', 'Gider', 'Net', 'Gelir KDV', 'Gider KDV']);
+  periods.forEach((p, i) => { const rw = r0 + 1 + i; const g = led('gelir').filter((r) => lper(r) === p), d = led('gider').filter((r) => lper(r) === p); const gi = sumOf(g, (r) => Number(r.total) || 0), gd = sumOf(d, (r) => Number(r.total) || 0);
+    sm.getCell('A' + rw).value = p; sm.getCell('A' + rw).alignment = { indent: 1 }; sm.getCell('A' + rw).font = { bold: true, color: { argb: INK } };
+    const f = [[`SUMIFS(Gelirler!H:H,Gelirler!A:A,$A${rw})`, gi], [`SUMIFS(Giderler!H:H,Giderler!A:A,$A${rw})`, gd], [`B${rw}-C${rw}`, gi - gd], [`SUMIFS(Gelirler!G:G,Gelirler!A:A,$A${rw})`, sumOf(g, kd)], [`SUMIFS(Giderler!G:G,Giderler!A:A,$A${rw})`, sumOf(d, kd)]];
+    f.forEach((x, j) => { const c = sm.getCell(rw, j + 2); c.value = { formula: x[0], result: x[1] }; c.numFmt = TRY; c.border = { bottom: { style: 'thin', color: { argb: 'FFE3E9F2' } } }; }); sm.getCell('A' + rw).border = { bottom: { style: 'thin', color: { argb: 'FFE3E9F2' } } }; });
+  const pe = r0 + periods.length; if (periods.length) { try { sm.addConditionalFormatting({ ref: `D${r0 + 1}:D${pe}`, rules: [{ type: 'cellIs', operator: 'lessThan', formulae: [0], style: { font: { color: { argb: 'FFC0392B' }, bold: true } } }, { type: 'cellIs', operator: 'greaterThanOrEqual', formulae: [0], style: { font: { color: { argb: 'FF1E9E5A' }, bold: true } } }] }); } catch (e) {} }
+  let r1 = pe + 3; sm.getCell('A' + (r1 - 1)).value = 'Gider dağılımı (hesaba göre)'; sm.getCell('A' + (r1 - 1)).font = { size: 13, bold: true, color: { argb: INK } };
+  hdr(sm, r1, ['Hesap', 'Tutar', 'Pay']); const gd = led('gider'); const used = cats.filter((c) => gd.some((r) => r.acc === c));
+  used.forEach((c, i) => { const rw = r1 + 1 + i; const v = sumOf(gd.filter((r) => r.acc === c), (r) => Number(r.total) || 0); sm.getCell('A' + rw).value = c; sm.getCell('A' + rw).alignment = { indent: 1 }; sm.getCell('B' + rw).value = { formula: `SUMIFS(Giderler!H:H,Giderler!D:D,$A${rw})`, result: v }; sm.getCell('B' + rw).numFmt = TRY; sm.getCell('C' + rw).value = { formula: `IFERROR(B${rw}/$C$5,0)`, result: out ? v / out : 0 }; sm.getCell('C' + rw).numFmt = '0%'; ['A', 'B', 'C'].forEach((l) => { sm.getCell(l + rw).border = { bottom: { style: 'thin', color: { argb: 'FFE3E9F2' } } }; }); });
+  sm.getCell('C5').value = { formula: 'SUM(Giderler!H:H)', result: out }; sm.getCell('C5').numFmt = TRY;
+  if (used.length) { try { sm.addConditionalFormatting({ ref: `B${r1 + 1}:B${r1 + used.length}`, rules: [{ type: 'dataBar', gradient: false, cfvo: [{ type: 'num', value: 0 }, { type: 'max' }], color: { argb: 'FF9FC5F8' } }] }); } catch (e) {} }
+  // Liste sayfası (açılır liste kaynakları)
+  const ls = wb.addWorksheet('Listeler', { state: 'hidden' }); ls.getCell('A1').value = 'Hesap'; cats.forEach((c, i) => { ls.getCell('A' + (i + 2)).value = c; }); ls.getCell('B1').value = 'Belge'; const docs = ['Fatura', 'E-arşiv', 'Fiş', 'Z raporu', 'Gider pusulası', 'Serbest meslek makbuzu']; LEDGER.forEach((r) => { if (r.doc && !docs.includes(r.doc)) docs.push(r.doc); }); docs.forEach((c, i) => { ls.getCell('B' + (i + 2)).value = c; }); ls.getCell('C1').value = 'KDV'; [0, 1, 10, 20].forEach((c, i) => { ls.getCell('C' + (i + 2)).value = c; });
+  // Gelirler / Giderler
+  const mk = (name, kind, tab) => {
+    const list = led(kind); const ws = wb.addWorksheet(name, { properties: { tabColor: { argb: tab } }, views: [{ state: 'frozen', ySplit: 1, xSplit: 3, showGridLines: false }] });
+    const heads = ['Dönem', 'Tarih', 'Açıklama', 'Hesap', 'Belge', 'KDV %', 'KDV', 'Toplam', 'Kaynak', 'Not'];
+    ws.columns = [{ width: 11 }, { width: 13 }, { width: 36 }, { width: 22 }, { width: 18 }, { width: 8 }, { width: 14 }, { width: 16 }, { width: 13 }, { width: 24 }];
+    const row = (r) => [lper(r), xlDate(rDateY(r)), String(r.desc || ''), String(r.acc || ''), String(r.doc || ''), rate(r), kd(r), Number(r.total) || 0, r.edited ? 'Düzenlendi' : String(r.src || ''), (() => { try { return mismatch(r) ? 'Ekstre tutarı farklı' : ''; } catch (e) { return ''; } })()];
+    if (list.length) {
+      ws.addTable({ name: name + '_T', ref: 'A1', headerRow: true, totalsRow: true, style: { theme: 'TableStyleMedium2', showRowStripes: true }, columns: heads.map((h, i) => ({ name: h, filterButton: true, totalsRowLabel: i === 0 ? 'Toplam' : undefined, totalsRowFunction: i === 6 || i === 7 ? 'sum' : undefined })), rows: list.map(row) });
+      list.forEach((r, i) => { const rw = i + 2; ws.getCell('G' + rw).value = { formula: `H${rw}-H${rw}/(1+F${rw}/100)`, result: kd(r) }; });
+      for (let c = 1; c <= 10; c++) { const hc = ws.getCell(1, c); hc.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }; hc.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; hc.alignment = { vertical: 'middle', horizontal: c >= 7 && c <= 8 ? 'right' : 'left' }; for (let rr = 2; rr <= list.length + 1; rr++) ws.getCell(rr, c).border = { bottom: { style: 'thin', color: { argb: 'FFE3E9F2' } } }; }
+      const tr = list.length + 2; ws.getCell('G' + tr).value = { formula: `SUBTOTAL(109,G2:G${list.length + 1})`, result: sumOf(list, kd) }; ws.getCell('H' + tr).value = { formula: `SUBTOTAL(109,H2:H${list.length + 1})`, result: sumOf(list, (r) => Number(r.total) || 0) };
+      ['G', 'H'].forEach((l) => { ws.getCell(l + tr).numFmt = TRY; ws.getCell(l + tr).font = { bold: true }; });
+    } else { hdr(ws, 1, heads); }
+    ws.getColumn('B').numFmt = 'dd.mm.yyyy'; ws.getColumn('G').numFmt = TRY; ws.getColumn('H').numFmt = TRY; ws.getColumn('F').numFmt = '"%"0'; ws.getRow(1).height = 26;
+    try { ws.dataValidations.add('D2:D3000', { type: 'list', allowBlank: true, formulae: [`Listeler!$A$2:$A$${cats.length + 1}`], showErrorMessage: false }); ws.dataValidations.add('E2:E3000', { type: 'list', allowBlank: true, formulae: [`Listeler!$B$2:$B$${docs.length + 1}`], showErrorMessage: false }); ws.dataValidations.add('F2:F3000', { type: 'list', allowBlank: true, formulae: ['Listeler!$C$2:$C$5'], showErrorMessage: false }); } catch (e) {}
+    try { ws.addConditionalFormatting({ ref: 'H2:H3000', rules: [{ type: 'dataBar', gradient: false, cfvo: [{ type: 'num', value: 0 }, { type: 'max' }], color: { argb: kind === 'gelir' ? 'FFB7E1C8' : 'FFF4C2BD' } }] }); } catch (e) {}
+    return ws;
+  };
+  mk('Gelirler', 'gelir', 'FF1E9E5A'); mk('Giderler', 'gider', 'FFC0392B');
+  // Diğer sayfalar
+  const nm = (id) => (USERS.find((u) => u.id === id) || {}).name || id;
+  const simple = (name, heads, rows, widths, tab) => { const ws = wb.addWorksheet(name, { properties: { tabColor: { argb: tab || 'FF6B7A90' } }, views: [{ state: 'frozen', ySplit: 1, showGridLines: false }] }); ws.columns = widths.map((w) => ({ width: w })); hdr(ws, 1, heads); rows.forEach((r, i) => { r.forEach((v, j) => { const c = ws.getCell(i + 2, j + 1); c.value = v; c.border = { bottom: { style: 'thin', color: { argb: 'FFE3E9F2' } } }; if (typeof v === 'number' && /tutar|maaş|net|brüt/i.test(heads[j])) c.numFmt = TRY; }); }); if (rows.length) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: rows.length + 1, column: heads.length } }; };
+  try { simple('Çalışanlar', ['Ad', 'Görev', 'İşe giriş', 'Maaş (net)', 'Haftalık saat', 'Maaş günü', 'Sözleşme'], EMP_IDS.map((id) => { const p = PROFILES[id]; return [nm(id), (USERS.find((u) => u.id === id) || {}).title || '', String(p.hire || ''), Number(p.salary) || 0, p.hours, p.payday, p.contract ? 'Yüklü' : 'Eksik']; }), [22, 16, 14, 16, 14, 12, 12]); } catch (e) {}
+  try { simple('Maaş ödemeleri', ['Ad', 'Tür', 'Dönem', 'Tutar', 'Tarih'], PAYS.map((p) => [nm(p.uid), p.kind === 'maas' ? 'Maaş' : p.kind === 'avans' ? 'Avans' : String(p.kind), String(p.per), Number(p.amt) || 0, String(p.date)]), [22, 12, 14, 16, 12]); } catch (e) {}
+  try { simple('Borçlar', ['Kime', 'Not', 'Vade', 'Tutar', 'Durum'], allDebts().map((d) => [String(d.who), String(d.note || ''), String(d.due || ''), Number(d.amt) || 0, d.paid ? 'Ödendi' : 'Açık']), [26, 36, 12, 16, 12]); } catch (e) {}
+  try { simple('Alacaklar', ['Kimden', 'Not', 'Gün', 'Tutar', 'Durum'], RECV.map((a) => [String(a.name), String(a.note || ''), a.days, Number(a.amt) || 0, a.paid ? 'Tahsil edildi' : 'Açık']), [26, 30, 8, 16, 14]); } catch (e) {}
+  return wb;
+}
+async function xlBlob() { const wb = await xlBuild(); const buf = await wb.xlsx.writeBuffer(); return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); }
+xlsxBtn = function () { return '<button class="btn sec sm" data-a="xlsx">' + ic('file', 16) + ' Excel indir</button>'; };
+H.xlsx = async (el) => {
+  const b = el && el.closest && el.closest('button'); if (b) { b.disabled = true; b.dataset.t = b.innerHTML; b.textContent = 'Hazırlanıyor…'; }
+  try { const bl = await xlBlob(); await saveBlob('kaispilot-muhasebe-' + REF_ISO.slice(0, 7) + '.xlsx', bl); toast('Excel dosyası hazır.', 'ok'); }
+  catch (e) { try { await saveBlob('kaispilot-muhasebe-' + REF_ISO.slice(0, 7) + '.xlsx', new Blob(buildXlsx(), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); toast('Excel dosyası hazır.', 'ok'); } catch (x) { toast('Excel indirilemedi.', 'warn'); } }
+  if (b) { b.disabled = false; b.innerHTML = b.dataset.t || 'Excel indir'; }
+};
+/* arka planda buluta kaydet */
+const xlRole = () => !!(S.user && ['patron', 'muhasebeci'].includes(S.user.role));
+function xlSig() { try { return LEDGER.length + ':' + JSON.stringify(LEDGER).length + ':' + simpleHash(JSON.stringify([LEDGER, PAYS.length, RECV.length])); } catch (e) { return String(Date.now()); } }
+function simpleHash(t) { let h = 0; for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; } return h; }
+async function xlSync() {
+  if (XL.busy || XL.off || !xlRole()) return; const c = sbOK() && sbClient(); if (!c || !SBS.user || !SBS.biz) return; const sig = xlSig(); if (sig === XL.hash) return;
+  XL.busy = true;
+  try { const bl = await xlBlob(); const r = await c.storage.from('muhasebe-excel').upload(SBS.biz.id + '/muhasebe.xlsx', bl, { upsert: true, contentType: bl.type }); if (r.error) throw r.error; XL.hash = sig; XL.at = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }); XL.err = ''; const e = document.getElementById('xl-st'); if (e) e.textContent = 'Excel dosyan arka planda güncel · ' + XL.at; }
+  catch (e) { const m = String((e && e.message) || e || ''); if (/bucket not found|not found|row-level|policy|permission|Unauthorized|403|404/i.test(m)) XL.off = true; XL.err = m; }
+  XL.busy = false;
+}
+setInterval(() => { try { xlSync(); } catch (e) {} }, 12000); setTimeout(() => { try { xlSync(); } catch (e) {} }, 5000);
+const tabloHTMLV133 = tabloHTML;
+tabloHTML = function () { const h = tabloHTMLV133.apply(this, arguments); const cloud = !!(SBS && SBS.user && SBS.biz) && !XL.off; const line = cloud ? `<p class="small muted" id="xl-st" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${XL.at ? '#1E9E5A' : '#E8A317'};display:inline-block"></span>${XL.at ? 'Excel dosyan arka planda güncel · ' + XL.at : 'Excel dosyan arka planda hazırlanıyor…'}</p>` : ''; return line ? h.replace('<div class="tb-act">', line + '<div class="tb-act">') : h; };
 </script>
 </body>
 </html>
