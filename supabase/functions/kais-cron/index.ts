@@ -3,7 +3,7 @@
 // 2) Geç kalan çalışan ve sabah özeti için yöneticilere push
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
-import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, lateTxt, validEmail } from './logic.ts';
+import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, lateTxt, validEmail } from './logic.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sb = createClient(URL_, SRV, { auth: { persistSession: false } });
@@ -70,14 +70,15 @@ Deno.serve(async (req) => {
         if (marks.length) await flag(bid, marks);
       }
       // 2) geç kalanlar ve sabah özeti (yöneticilere push)
-      const vdRows = await sb.from('app_state').select('state').eq('business_id', bid).in('scope', ['ekip', 'muh', 'stok']); const vd: any = {}; const stok: any = {};
-      (vdRows.data || []).forEach((x: any) => { try { const s = JSON.parse(x.state); if (s.VD_F) vd.VD_F = s.VD_F; if (s.VD_T) vd.VD_T = s.VD_T; if (s.STOCK) stok.STOCK = s.STOCK; if (s.SALES) stok.SALES = s.SALES; } catch (_) { /* yoksay */ } });
+      const vdRows = await sb.from('app_state').select('state').eq('business_id', bid).in('scope', ['ekip', 'muh', 'stok']); const vd: any = {}; const stok: any = {}; const led: any = {};
+      (vdRows.data || []).forEach((x: any) => { try { const s = JSON.parse(x.state); if (s.VD_F) vd.VD_F = s.VD_F; if (s.VD_T) vd.VD_T = s.VD_T; if (s.STOCK) stok.STOCK = s.STOCK; if (s.SALES) stok.SALES = s.SALES; if (s.LOTS) stok.LOTS = s.LOTS; if (s.ORDERS) stok.ORDERS = s.ORDERS; if (s.LEDGER) led.LEDGER = s.LEDGER; } catch (_) { /* yoksay */ } });
       const names = ekip.NAMES || {};
       for (const l of planLate(ekip, vd, now)) {
         if (!(await claim(bid, l.key, 'late'))) continue;
         out.pushes += await pushManagers(bid, 'Geç kalan çalışan', ((names[l.uid] && names[l.uid].name) || 'Bir çalışan') + ' ' + lateTxt(l.min) + '.', l.key);
       }
-      for (const a of planAlerts(stok, now)) { if (await claim(bid, a.key, 'alert')) out.pushes += await pushManagers(bid, a.title, a.body, a.key); }
+      for (const a of planAlerts(stok, now).concat(planAlerts2(stok, now))) { if (await claim(bid, a.key, 'alert')) out.pushes += await pushManagers(bid, a.title, a.body, a.key); }
+      const wk = planWeekly(stok, led, now); if (wk && (await claim(bid, wk.key, 'weekly'))) out.pushes += await pushManagers(bid, wk.title, wk.body, wk.key);
       const d = planDaily(ekip, now);
       if (d && (await claim(bid, d.key, 'daily'))) out.pushes += await pushManagers(bid, d.title, d.body, d.key);
     } catch (e) { out.errors.push(bid + ': ' + String((e as Error).message)); }

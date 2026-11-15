@@ -138,3 +138,39 @@ export function planAlerts(stok: any, now: { date: string; min: number }): { key
   }
   return out;
 }
+
+const addDaysIso = (iso: string, n: number) => { const a = iso.split('-').map(Number); return new Date(Date.UTC(a[0], a[1] - 1, a[2] + n)).toISOString().slice(0, 10); };
+const tl = (n: number) => Math.round(n).toLocaleString('tr-TR') + ' ₺';
+
+// SKT yaklaşan ürünler ve belirgin fiyat artışı (stok verisinden).
+export function planAlerts2(stok: any, now: { date: string; min: number }): { key: string; title: string; body: string }[] {
+  const out: { key: string; title: string; body: string }[] = [];
+  if (now.min < 9 * 60 || now.min >= 20 * 60 || !stok || typeof stok !== 'object') return out;
+  const items: any[] = Array.isArray(stok.STOCK) ? stok.STOCK : []; const nm = (id: string) => { const s = items.find((x) => x.id === id); return s ? String(s.name).replace(/\s*\(.*\)\s*$/, '') : ''; };
+  const lots: any[] = Array.isArray(stok.LOTS) ? stok.LOTS : [];
+  const soon = lots.filter((l) => Number(l.qty) > 0 && l.exp && l.exp >= now.date && l.exp <= addDaysIso(now.date, 2));
+  const gone = lots.filter((l) => Number(l.qty) > 0 && l.exp && l.exp < now.date && l.exp >= addDaysIso(now.date, -3));
+  if (soon.length || gone.length) {
+    const names = Array.from(new Set(soon.concat(gone).map((l) => nm(l.sid)).filter(Boolean))).slice(0, 3).join(', ');
+    out.push({ key: 'skt:' + now.date, title: gone.length ? 'SKT geçen ürün var' : 'SKT yaklaşıyor', body: (soon.length + gone.length) + ' partinin SKT durumu dikkat istiyor: ' + names + '. Önce bunları kullan ya da fireye ayır.' });
+  }
+  const ords: any[] = Array.isArray(stok.ORDERS) ? stok.ORDERS : []; const last: Record<string, { p: number; d: string }[]> = {};
+  ords.filter((o) => o.status !== 'iptal' && o.iso).sort((a, b) => String(b.iso).localeCompare(String(a.iso))).forEach((o) => (o.lines || []).forEach((l: any) => { const k = String(l.name || '').toLowerCase(); if (!k || !(Number(l.price) > 0)) return; (last[k] = last[k] || []).push({ p: Number(l.price), d: o.iso }); }));
+  const ups: string[] = [];
+  Object.keys(last).forEach((k) => { const h = last[k]; if (h.length >= 2 && h[0].d >= addDaysIso(now.date, -3) && h[0].p >= h[1].p * 1.1) ups.push(String(k).replace(/\s*\(.*\)\s*$/, '') + ' %' + Math.round((h[0].p / h[1].p - 1) * 100)); });
+  if (ups.length) out.push({ key: 'price:' + now.date, title: 'Alış fiyatı arttı', body: ups.slice(0, 3).join(', ') + ' son siparişte öncekinden pahalı. Tedarikçileri kıyaslamak ister misin?' });
+  return out;
+}
+
+// Pazartesi sabahı haftalık özet.
+export function planWeekly(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string } | null {
+  const a = now.date.split('-').map(Number); if (new Date(Date.UTC(a[0], a[1] - 1, a[2])).getUTCDay() !== 1) return null;
+  if (now.min < 9 * 60 || now.min >= 11 * 60) return null;
+  const sales: any[] = stok && Array.isArray(stok.SALES) ? stok.SALES : []; const rows: any[] = led && Array.isArray(led.LEDGER) ? led.LEDGER : [];
+  const s = (x: string, y: string) => sales.filter((r) => r.date >= x && r.date <= y).reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const g = (x: string, y: string) => rows.filter((r) => r.iso && r.iso >= x && r.iso <= y && (r.dir || 'gider') === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const e1 = addDaysIso(now.date, -1), s1 = addDaysIso(now.date, -7), e0 = addDaysIso(now.date, -8), s0 = addDaysIso(now.date, -14);
+  const cur = s(s1, e1), prev = s(s0, e0), gid = g(s1, e1); if (!cur && !gid) return null;
+  const pc = prev > 0 ? ' (' + (cur >= prev ? '+' : '') + Math.round((cur / prev - 1) * 100) + '%)' : '';
+  return { key: 'weekly:' + now.date, title: 'Geçen haftanın özeti', body: 'Ciro ' + tl(cur) + pc + (gid ? ', gider ' + tl(gid) : '') + (cur && gid ? ', fark ' + tl(cur - gid) : '') + '.' };
+}

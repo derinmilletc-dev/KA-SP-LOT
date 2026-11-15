@@ -4379,7 +4379,7 @@ function viewSatinAlma() {
 const cpy = (t, ok) => { try { navigator.clipboard.writeText(t).then(() => toast(ok, 'ok'), () => toast('Kopyalanamadı. Siparişler listesinden tekrar dene.', 'warn')); } catch (e) { toast('Kopyalanamadı. Siparişler listesinden tekrar dene.', 'warn'); } };
 H.ordcreate = (el) => {
   const o = proposals().find((x) => x.sup.id === el.dataset.id); if (!o) return;
-  const lines = o.lines.map(lineOf); const ord = { id: 'o' + (++seq), supId: o.sup.id, date: isoShort(REF_ISO), lines, total: Math.round(o.total * 100) / 100, status: 'gonderildi', msg: orderMsg(o.sup, lines) };
+  const lines = o.lines.map(lineOf); const ord = { id: 'o' + (++seq), supId: o.sup.id, date: isoShort(REF_ISO), iso: REF_ISO, lines, total: Math.round(o.total * 100) / 100, status: 'gonderildi', msg: orderMsg(o.sup, lines) };
   ORDERS.unshift(ord); auditAdd({ type: 'ord', text: 'Sipariş kaydedildi: ' + o.sup.name + ', ' + fmt(ord.total) });
   render(); cpy(ord.msg, 'Sipariş kaydedildi, mesaj kopyalandı. Tedarikçiye gönder.');
 };
@@ -4538,7 +4538,7 @@ H.rfqok = (el) => {
   const r = RFQS.find((x) => x.id === el.dataset.id); if (!r) return; const st = rfqStat(r); if (!st.covered) return; const g = {};
   r.lines.forEach((l) => { const b = st.best[l.sid]; (g[b.sup] = g[b.sup] || []).push({ sid: l.sid, name: l.name, unit: l.unit, qty: l.qty, price: b.p }); });
   Object.keys(g).forEach((sid) => { const lines = g[sid]; const sup = supById(sid); const total = Math.round(lines.reduce((a, l) => a + l.qty * l.price, 0) * 100) / 100;
-    ORDERS.unshift({ id: 'o' + (++seq), supId: sid, date: isoShort(REF_ISO), lines, total, status: 'gonderildi', msg: orderMsg(sup, lines) + '\n\nTeklifinizdeki fiyatlarla.', rfq: r.id });
+    ORDERS.unshift({ id: 'o' + (++seq), supId: sid, date: isoShort(REF_ISO), iso: REF_ISO, lines, total, status: 'gonderildi', msg: orderMsg(sup, lines) + '\n\nTeklifinizdeki fiyatlarla.', rfq: r.id });
     lines.forEach((l) => { if (sup) sup.items[l.sid] = l.price; }); });
   r.status = 'kapali'; auditAdd({ type: 'ord', text: 'Tekliften sipariş verildi: ' + Object.keys(g).length + ' tedarikçi' }); render(); toast(Object.keys(g).length + ' sipariş kaydedildi. Mesajları Siparişler listesinden kopyala.', 'ok');
 };
@@ -10819,7 +10819,7 @@ function kaIntent(text) {
   const _v = viewKaisAI;
   viewKaisAI = function () {
     let h = _v(); if (!kaMgr()) return h;
-    const P = S.user.role === 'patron'; const ch = [['box', 'Kritik ürünlere sipariş hazırla'], ['calendar', 'Yarın nasıl görünüyor?'], ['sparkle', 'Bugün ne yapmalıyım?'], ['trend', 'Tedarikçi fiyatlarını kıyasla']].concat(P ? [['users', 'Vardiya planını hazırla']] : []).concat([['check', 'Görev ver: ']]);
+    const P = S.user.role === 'patron'; const ch = [['box', 'Kritik ürünlere sipariş hazırla'], ['calendar', 'Yarın nasıl görünüyor?'], ['sparkle', 'Bugün ne yapmalıyım?'], ['trend', 'Tedarikçi fiyatlarını kıyasla'], ['bars', 'Bu hafta nasıl geçti?']].concat(P ? [['users', 'Vardiya planını hazırla']] : []).concat([['check', 'Görev ver: ']]);
     const row = `<div class="kc-wrap"><div class="kc-lab">${ic('sparkle', 14)} Hızlı komutlar <em>anında yanıtlar, işlemi sen onaylarsın</em></div><div class="kc-row">${ch.map((c) => c[1].endsWith(': ') ? `<button type="button" class="kc-p" data-a="kafill" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1].trim().replace(/:$/, ''))}</button>` : `<button type="button" class="kc-p" data-a="aiq" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1])}</button>`).join('')}</div></div>`;
     const m = '<div class="kx-sec"><div class="kx-lab"><b>Sorun</b>'; const i = h.indexOf(m); return i < 0 ? h : h.slice(0, i) + row + h.slice(i);
   };
@@ -11393,6 +11393,34 @@ H.ordsendmail = (el) => {
   const _oc = H.ordcreate;
   H.ordcreate = function (el) { const n = ORDERS.length; _oc.apply(this, arguments); if (ORDERS.length > n) { const o = ORDERS[0]; const t = supById(o.supId); if (!(t && t.sbid)) { S.modal = { type: 'ordsend', id: o.id }; renderModal(); } } };
 }
+
+/* ===== v106: haftalık özet, çevrimdışı sonrası eşitleme ===== */
+function kaWeekly() {
+  if (!kaMgr()) return kaDeny('Haftalık özet yalnızca patron ve müdür için.');
+  const a0 = addDays(REF_ISO, -6), b1 = addDays(REF_ISO, -7), b0 = addDays(REF_ISO, -13); const by = kbSales();
+  const sum = (x, y) => Object.keys(by).filter((d) => d >= x && d <= y).reduce((t, d) => t + by[d], 0);
+  const cur = sum(a0, REF_ISO), prev = sum(b0, b1);
+  const gid = (x, y) => LEDGER.filter((r) => r.iso && r.iso >= x && r.iso <= y && dirOf(r) === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const gc = gid(a0, REF_ISO), gp = gid(b0, b1);
+  const pct = (c, p) => (p > 0 ? Math.round((c / p - 1) * 100) : null); const sg = (n) => (n == null ? '' : ' (' + (n >= 0 ? '+' : '') + n + '% geçen haftaya göre)');
+  const tops = {}; SALES.filter((s) => s.date >= a0 && s.date <= REF_ISO).forEach((s) => { const k = prodKey(s.prod); tops[k] = tops[k] || { n: s.prod, q: 0, t: 0 }; tops[k].q += Number(s.qty) || 0; tops[k].t += Number(s.total) || 0; });
+  const top = Object.values(tops).sort((x, y) => y.t - x.t).slice(0, 3);
+  const low = costRows().filter((r) => r.margin != null && r.margin * 100 < MCFG.hedef).slice(0, 3);
+  const crit = stockPlan().filter((p) => p.status === 'now').length; const lines = [];
+  if (!cur && !prev && !gc) return { content: 'Son iki haftada satış ya da gider kaydı yok. Veri girdikçe haftalık özet çıkarırım.', src: 'Satış ve gider kayıtları' };
+  lines.push('**Son 7 gün**', '• Ciro: ' + fmt(Math.round(cur)) + sg(pct(cur, prev)));
+  if (gc || gp) lines.push('• Gider (kayıtlı): ' + fmt(Math.round(gc)) + sg(pct(gc, gp)));
+  if (cur && gc) lines.push('• Fark: ' + fmt(Math.round(cur - gc)));
+  if (top.length) lines.push('', '**En çok kazandıran**', ...top.map((x) => '• ' + x.n + ': ' + fmt(Math.round(x.t)) + ' (' + fq(x.q) + ' adet)'));
+  if (low.length) lines.push('', '**Hedef kârın altında**', ...low.map((r) => '• ' + r.name + ': %' + Math.round(r.margin * 100) + (r.need ? ', fiyat ' + fmt(r.need) + ' olmalı' : '')));
+  if (crit) lines.push('', '• ' + crit + ' ürün kritik stokta.');
+  return { content: lines.join('\n'), src: 'Son 14 günün satışları, gider kayıtları ve reçete maliyetleri' };
+}
+{
+  const _k = kaIntent;
+  kaIntent = function (text) { const f = kaFold(text); if (f.length < 70 && /(haftalik|bu hafta|gecen hafta|hafta nasil|hafta ozet)/.test(f) && /(ozet|nasil|rapor|durum|gecti)/.test(f)) return kaWeekly(); return _k(text); };
+}
+window.addEventListener('online', () => { try { if (typeof CL !== 'undefined' && CL.on && typeof pFlush === 'function') pFlush(); } catch (e) {} });
 </script>
 </body>
 </html>
