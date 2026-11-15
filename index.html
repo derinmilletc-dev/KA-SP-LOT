@@ -1406,7 +1406,7 @@ const S = {
   filter: 'hepsi',
   modal: null,
   weights: { late: 30, over: 25, miss: 20, task: 25 },
-  settings: { mudurRanking: false, reminders: true },
+  settings: { mudurRanking: false, reminders: true, mudurMaas: true, brkPlan: 15, brkMax: 60 },
   draft: newDraft(),
   client: 'c1',
   sampleIdx: 0,
@@ -1651,7 +1651,7 @@ function bugunCalisanV2() {
   if (a.state === 'break') {
     if (!a.bstart) a.bstart = Date.now() - a.breakMin * 60000;
     const s = Math.floor((Date.now() - a.bstart) / 1000);
-    main = `<div class="clock"><span class="pill p-info">Moladasın</span><div class="timer ${s > 900 ? 'over' : ''}" id="brk-timer">${mmss(s)}</div><p class="muted" style="margin-bottom:16px">Planlanan mola 15 dk. En fazla iki bildirim alırsın.</p><button class="btn block" data-a="breakend">Döndüm</button></div>`;
+    main = `<div class="clock"><span class="pill p-info">Moladasın</span><div class="timer ${s > (Number(S.settings.brkPlan) || 15) * 60 ? 'over' : ''}" id="brk-timer">${mmss(s)}</div><p class="muted" style="margin-bottom:16px">Planlanan mola ${Number(S.settings.brkPlan) || 15} dk. En fazla iki bildirim alırsın.</p><button class="btn block" data-a="breakend">Döndüm</button></div>`;
   }
   if (a.state === 'out') main = `<div class="clock"><span class="pill p-mute">Çıkış yaptın</span><div class="state">İyi akşamlar</div><p class="muted">Bugünün kaydı işverenle aynı şekilde görünür.</p></div>`;
   return `<div class="stack-lg">
@@ -2017,6 +2017,7 @@ function viewAyarlar() {
   ${USERS.map((u) => `<div class="emp">${avatar(u, 40)}<div class="grow"><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">${esc(u.email)}</div></div><select data-ch="role" data-id="${u.id}" aria-label="${esc(u.name)} rolü" style="width:auto;min-height:40px" ${u.role === 'patron' ? 'disabled' : ''}>${['patron', 'mudur', 'muhasebeci', 'calisan'].map((r) => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}</select></div>`).join('')}</div>
   <div class="card"><h3>Yetkiler</h3>
   ${tg('mudurRanking', 'Müdür aylık sıralamayı görsün', 'Kapalıyken yalnızca patron bireysel sıralamayı görür.')}
+  ${tg('mudurMaas', 'Müdür çalışan maaşını görsün', 'Kapalıyken müdür çalışan detayında maaş ve ödemeleri görmez.')}
   ${tg('reminders', 'Mola hatırlatmaları', 'Çalışana en fazla iki bildirim gider: bitmeden 2 dk önce ve bitişte.')}</div>
   <div class="card"><h3>Kais'in öğrendikleri</h3><p class="muted small">Sorduğun şeyleri hatırlar ve bir daha sormaz. İstediğini unutturabilirsin.</p>
   ${RULES.map((r, i) => `<div class="toggle"><span><b style="font-weight:600">${esc(r.k)}</b> <span class="muted">→ ${esc(r.v)}</span></span><button class="btn sm sec" data-a="forget" data-i="${i}">Unut</button></div>`).join('') || '<p class="muted" style="margin-top:8px">Henüz bir şey öğrenmedi.</p>'}</div>
@@ -2380,7 +2381,7 @@ function tick() {
   if (a.state !== 'break') return;
   const s = Math.floor((Date.now() - a.bstart) / 1000);
   const el = document.getElementById('brk-timer');
-  if (el) { el.textContent = mmss(s); el.classList.toggle('over', s > 900); }
+  if (el) { el.textContent = mmss(s); el.classList.toggle('over', s > (Number(S.settings.brkPlan) || 15) * 60); }
   if (S.settings.reminders) {
     if (s >= 780 && !a.n1) { a.n1 = true; toast('Molanın bitmesine 2 dk kaldı.'); }
     if (s >= 900 && !a.n2) { a.n2 = true; toast('Mola süren doldu. Döndüğünde "Döndüm"e dokun.', 'warn'); }
@@ -7293,7 +7294,7 @@ div.kz-go{cursor:default}.kz-go:is(button):hover{transform:translateY(-1px);box-
 .kz-ai{margin-top:10px;background:#fff;border:1px dashed #BFD3F0;border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.45}.kz-ai>b{display:flex;gap:6px;align-items:center;color:var(--cini);font-size:12.5px;margin-bottom:4px}.kz-ai .cl{max-height:4.4em;overflow:hidden}.kz-ai button{border:0;background:none;color:var(--cini);font-weight:700;font-size:12.5px;padding:4px 0 0}
 .kz-a{display:flex;gap:8px;margin-top:12px;background:#fff;border:1.5px solid #CFE0F7;border-radius:16px;padding:5px 5px 5px 14px;align-items:center}.kz-a:focus-within{border-color:var(--cini);box-shadow:0 0 0 3px rgba(26,86,160,.12)}
 .kz-a input{flex:1;min-width:0;border:0!important;outline:0;background:transparent!important;font:inherit;font-size:14.5px;box-shadow:none!important;padding:8px 0;min-height:0!important}.kz-a button{border:0;background:var(--cini);color:#fff;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
-.kz-s{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;scrollbar-width:none}.kz-s::-webkit-scrollbar{display:none}.kz-s button{flex:none;border:1px solid #D3E3F8;background:#fff;color:var(--ink);border-radius:99px;padding:6px 12px;font:600 12.5px inherit;font-family:inherit;white-space:nowrap}.kz-s button:hover{background:#EAF2FD}
+.kz-s{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:7px;scrollbar-width:thin;scrollbar-color:#BFD3F0 transparent;scroll-snap-type:x proximity}.kz-s::-webkit-scrollbar{height:6px}.kz-s::-webkit-scrollbar-thumb{background:#BFD3F0;border-radius:9px}.kz-s button{scroll-snap-align:start}.kz-s button{flex:none;border:1px solid #D3E3F8;background:#fff;color:var(--ink);border-radius:99px;padding:6px 12px;font:600 12.5px inherit;font-family:inherit;white-space:nowrap}.kz-s button:hover{background:#EAF2FD}
 `; document.head.appendChild(st);}
 function kzItems(scope) {
   const it = []; const R = S.user.role; const add = (tone, ico, t, d, go, q) => it.push({ tone, ico, t, d, go, q }); const nm = (id) => (byId(id).name || '').split(' ')[0];
@@ -7341,6 +7342,138 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target 
 {const _br70 = brCard; brCard = function () { if (!S.user || !['patron', 'mudur'].includes(S.user.role)) return ''; if (aiReady()) { try { _br70(); } catch (e) {} } return kzCard('bugun'); };}
 ekipGun = function () { return kzCard('ekip'); };
 {const _vh70 = viewHTML; viewHTML = function () { const h = _vh70(); if (!S.user || S.user.role !== 'muhasebeci' || S.view !== 'donem' || h.includes('class="kz"')) return h; if (h.includes('<section class="mc-hero">')) return h.replace('<section class="mc-hero">', kzCard('muh') + '<section class="mc-hero">'); return h.includes('<div class="stack-lg">') ? h.replace('<div class="stack-lg">', '<div class="stack-lg">' + kzCard('muh')) : h; }; }
+/* ===== v71: Ekip merkezi (çalışan kartları, ayrıntı paneli, izin takvimi, mola ayarları) ===== */
+{const st=document.createElement('style'); st.textContent=`
+.main:has(.ek){max-width:1360px}
+.ek{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media(min-width:1100px){.ek{grid-template-columns:minmax(0,1fr) 380px}}
+.ek-main,.ek-side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ek-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.ek-h h2{margin:0;font-size:18px}.ek-h span{font-size:13px;color:var(--ink-2)}
+.ek-f{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:6px;scrollbar-width:thin;scrollbar-color:#C9D5E6 transparent}.ek-f::-webkit-scrollbar{height:6px}.ek-f::-webkit-scrollbar-thumb{background:#C9D5E6;border-radius:9px}
+.ek-f button{flex:none;border:1px solid #E1E8F2;background:#fff;border-radius:99px;padding:7px 13px;font:600 13px inherit;font-family:inherit;color:var(--ink);white-space:nowrap}.ek-f button b{margin-left:4px;color:var(--ink-2)}.ek-f button[aria-pressed=true]{background:var(--cini);border-color:var(--cini);color:#fff}.ek-f button[aria-pressed=true] b{color:#fff}
+.ek-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;max-height:600px;overflow-y:auto;padding:2px 6px 4px 2px;scrollbar-width:thin;scrollbar-color:#C9D5E6 transparent}
+.ek-c{background:#fff;border:1px solid #E1E8F2;border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:9px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:0 3px 10px rgba(13,40,80,.04)}.ek-c:hover{transform:translateY(-2px);box-shadow:0 12px 24px -14px rgba(13,40,80,.32);border-color:#CFE0F7}
+.ek-ct{display:flex;align-items:center;gap:11px}.ek-ct .av{position:relative;flex:none}.ek-ct .av .avatar{width:44px!important;height:44px!important}.ek-ct .av i{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;background:#C5CEDB}
+.ek-c.st-working .av i{background:#2F9E5F}.ek-c.st-break .av i{background:#3B82D6}.ek-c.st-pending .av i{background:#E3A21A}.ek-c.st-fix .av i{background:#D9534F}
+.ek-ct b{display:block;font-size:15px}.ek-ct .gr{flex:1;min-width:0}.ek-ct .gr span{display:block;font-size:12.5px;color:var(--ink-2)}
+.ek-ch{display:flex;flex-wrap:wrap;gap:6px}.ek-ch span{background:#F2F5FA;border-radius:99px;padding:4px 10px;font-size:12px;color:var(--ink-2)}.ek-ch span.w{background:#FDF1DC;color:#B26B00}.ek-ch span.b{background:#E6EEFA;color:#2B67C4}
+.ek-cf{display:flex;gap:14px;border-top:1px solid #EDF1F7;padding-top:9px;font-size:12.5px;color:var(--ink-2)}.ek-cf b{color:var(--ink);font-size:13.5px;margin-left:3px}
+.ek-c .act{display:flex;gap:8px}.ek-c .act .btn{flex:1;min-height:38px;border-radius:12px;font-size:13px}
+.ek-up .row2{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #EDF1F7}.ek-up .row2:first-of-type{border-top:0}.ek-up .row2 b{font-size:14px;display:block}.ek-up .row2 span{font-size:12.5px;color:var(--ink-2)}
+.sheet.empw{max-width:760px;max-height:92vh;overflow-y:auto}
+.dr-h{display:flex;align-items:center;gap:14px}.dr-h .avatar{width:58px!important;height:58px!important;font-size:20px}.dr-h h2{margin:0;font-size:20px}.dr-h p{margin:2px 0 6px;color:var(--ink-2);font-size:13px}
+.dr-tabs{display:flex;gap:6px;overflow-x:auto;margin:12px 0;padding-bottom:6px;scrollbar-width:thin}.dr-tabs button{flex:none;border:1px solid #E1E8F2;background:#fff;border-radius:99px;padding:8px 14px;font:600 13px inherit;font-family:inherit;color:var(--ink)}.dr-tabs button[aria-pressed=true]{background:var(--cini);color:#fff;border-color:var(--cini)}
+.dr-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}.dr-k div{background:#F5F8FD;border-radius:14px;padding:10px 12px}.dr-k span{display:block;font-size:12px;color:var(--ink-2)}.dr-k b{font-size:18px}
+.dr-s{border:1px solid #E1E8F2;border-radius:16px;padding:12px 14px;margin-bottom:10px}.dr-s h4{margin:0 0 8px;font-size:14.5px}.dr-r{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #F0F3F8;font-size:14px}.dr-r:first-of-type{border-top:0}.dr-r span{color:var(--ink-2)}.dr-r small{display:block;color:var(--ink-2);font-size:12px}
+.dr-bar{height:8px;border-radius:9px;background:#E8EEF7;overflow:hidden;margin:6px 0}.dr-bar i{display:block;height:100%;background:linear-gradient(90deg,#2F9E5F,#5CC48A);border-radius:9px}
+.dr-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.dr-a .btn{flex:1;min-width:140px}
+.iz-nv{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.iz-nv h2{margin:0;font-size:18px;text-transform:capitalize}.iz-nv button{border:1px solid #E1E8F2;background:#fff;border-radius:12px;width:40px;height:40px;display:grid;place-items:center}
+.iz-sc{overflow-x:auto;padding-bottom:8px;scrollbar-width:thin;scrollbar-color:#C9D5E6 transparent}.iz-sc::-webkit-scrollbar{height:7px}.iz-sc::-webkit-scrollbar-thumb{background:#C9D5E6;border-radius:9px}
+.iz-gr{display:grid;gap:3px;min-width:max-content;align-items:center}.iz-gr .nm{font:600 13px system-ui;position:sticky;left:0;background:#fff;padding-right:8px;z-index:1;white-space:nowrap}.iz-gr .dh{font:600 11px system-ui;color:var(--ink-2);text-align:center}.iz-gr .dh.we{color:#B3BCC9}.iz-gr .dh.td{color:#fff;background:var(--cini);border-radius:8px}
+.iz-gr .c{height:26px;border-radius:7px;background:#F2F5FA;min-width:24px}.iz-gr .c.we{background:#EAEEF5}.iz-gr .c.y{background:#5E9AEA}.iz-gr .c.r{background:#E8A93C}.iz-gr .c.u{background:#9AA7BA}.iz-gr .c.m{background:#9B7BD8}.iz-gr .c.p{background:repeating-linear-gradient(45deg,#BCD3F2 0 4px,#E6EEFA 4px 8px);outline:1px dashed #5E9AEA}.iz-gr .c.t{box-shadow:0 0 0 2px var(--cini) inset}
+.iz-lg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:8px}.iz-lg i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-2px}
+.iz-bal{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}.iz-bal .it{border:1px solid #E1E8F2;border-radius:16px;padding:12px;background:#fff}
+.mb-o{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}.mb-o button{border:1px solid #E1E8F2;background:#fff;border-radius:12px;padding:10px 16px;font:700 14px inherit;font-family:inherit;color:var(--ink)}.mb-o button[aria-pressed=true]{background:var(--cini);color:#fff;border-color:var(--cini)}
+`; document.head.appendChild(st);}
+const brkCfg = () => ({ plan: Number(S.settings.brkPlan) || 15, max: Number(S.settings.brkMax) || 60 });
+const ekSt = (id) => { const a = ATT[id] || { state: 'none' }; return a.state === 'pending' && a.fix ? 'fix' : a.state; };
+const EK_L = { none: ['p-mute', 'Henüz giriş yok'], working: ['p-ok', 'Çalışıyor'], break: ['p-info', 'Molada'], pending: ['p-warn', 'Onay bekliyor'], fix: ['p-bad', 'Düzeltme bekleniyor'], out: ['p-mute', 'Çıkış yaptı'] };
+const ekNow = () => { const n = new Date(); return n.getMonth() * 40 + n.getDate(); };
+function ekLeaves(id) { const A = LEAVES.map((x) => ({ uid: x.uid, txt: x.txt, type: x.type, days: x.days, st: 'onayli', note: x.note })).concat(LVREQ.filter((r) => r.status !== 'reddedildi').map((r) => { const e = lrEff(r); return { uid: r.uid, txt: e.txt, type: r.type, days: e.days, st: r.status === 'onayli' ? 'onayli' : 'bekliyor' }; })); return id ? A.filter((x) => x.uid === id) : A; }
+const ekRange = (x) => { try { return izOrd(x.txt); } catch (e) { return null; } };
+const ekOnLeave = (id) => { const o = ekNow(); return ekLeaves(id).some((x) => x.st === 'onayli' && (() => { const q = ekRange(x); return q && q[0] <= o && o <= q[1]; })()); };
+function ekBal(id) { const p = PROFILES[id] || {}; const mm = p.hire ? monthsBetween(p.hire) : 0; const ent = leaveDays(mm); const used = LEAVES.filter((x) => x.uid === id && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used), mm }; }
+function ekCard(id) {
+  const u = byId(id), a = ATT[id] || { state: 'none', breakMin: 0 }, st = ekSt(id), L = EK_L[st] || EK_L.none, b = ekBal(id), c = brkCfg(), sc = scores().find((x) => x.id === id);
+  const chips = [`<span class="${st === 'none' ? '' : 'b'}">Giriş ${a.inAt || '—'}</span>`, `<span class="${a.breakMin > c.max ? 'w' : ''}">Mola ${a.breakMin || 0} dk</span>`].concat(a.late ? [`<span class="w">${a.late} dk geç girdi</span>`] : []).concat(ekOnLeave(id) ? ['<span class="b">Bugün izinli</span>'] : []);
+  const act = st === 'pending' ? `<div class="act"><button class="btn sm" data-a="attok" data-id="${id}">Onayla</button><button class="btn sm sec" data-a="attfix" data-id="${id}">Düzeltme iste</button></div>` : '';
+  return `<div class="ek-c st-${st}" data-a="empdrw" data-id="${id}" role="button" tabindex="0" aria-label="${esc(u.name)} ayrıntıları"><div class="ek-ct"><span class="av">${avatar(u, 44)}<i></i></span><div class="gr"><b>${esc(u.name)}</b><span>${esc(u.title)}</span></div><span class="pill ${L[0]}">${L[1]}</span></div><div class="ek-ch">${chips.join('')}</div>${act}<div class="ek-cf"><span>Yıllık izin<b>${b.ent ? b.left + ' gün' : '—'}</b></span><span>Puan<b>${sc ? sc.score.toFixed(1).replace('.', ',') : '—'}</b></span></div></div>`;
+}
+function ekTeam() {
+  const f = S.ekf || ''; const ids = EMP_IDS.slice(); const cnt = (k) => ids.filter((id) => (k === 'leave' ? ekOnLeave(id) : k === 'off' ? ['none', 'out'].includes(ekSt(id)) : ekSt(id) === k)).length;
+  const F = [['', 'Hepsi', ids.length], ['working', 'Çalışıyor', cnt('working')], ['break', 'Molada', cnt('break')], ['pending', 'Onay bekliyor', cnt('pending')], ['fix', 'Düzeltmede', cnt('fix')], ['off', 'Dışarıda', cnt('off')], ['leave', 'İzinli', cnt('leave')]].filter((x) => x[0] === '' || x[2] > 0 || f === x[0]);
+  const ord = { pending: 0, break: 1, working: 2, fix: 3, none: 4, out: 5 }; let L = ids.filter((id) => !f || (f === 'leave' ? ekOnLeave(id) : f === 'off' ? ['none', 'out'].includes(ekSt(id)) : ekSt(id) === f)).sort((x, y) => (ord[ekSt(x)] ?? 9) - (ord[ekSt(y)] ?? 9));
+  return `<section class="mg-card"><div class="ek-h"><h2>Ekip</h2><span>${ids.length} kişi</span></div><div class="ek-f">${F.map((x) => `<button type="button" data-a="ekf" data-v="${x[0]}" aria-pressed="${f === x[0]}">${x[1]}<b>${x[2]}</b></button>`).join('')}</div><div class="ek-g">${L.length ? L.map(ekCard).join('') : '<p class="muted" style="padding:14px">Bu durumda kimse yok.</p>'}</div>${ids.length > 6 ? '<div class="mg-more">↓ Daha fazla kişi için kaydır</div>' : ''}</section>`;
+}
+H.ekf = (el) => { S.ekf = el.dataset.v; render(); };
+function ekUpcoming() {
+  const o = ekNow(); const L = ekLeaves().map((x) => ({ x, q: ekRange(x) })).filter((y) => y.q && y.q[1] >= o).sort((a, b) => a.q[0] - b.q[0]).slice(0, 5);
+  return `<section class="mg-card ek-up"><div class="ek-h"><h2>Yaklaşan izinler</h2><button type="button" class="mg-lnk" data-a="sub" data-g="ekip" data-v="izin">Takvim ${mgi('r', 14)}</button></div>${L.length ? L.map(({ x, q }) => `<div class="row2">${avatar(byId(x.uid), 34)}<div class="grow"><b>${esc(byId(x.uid).name)}</b><span>${esc(x.txt)} · ${x.days} gün · ${LV_KIND[x.type] || x.type}</span></div><span class="pill ${x.st === 'onayli' ? (q[0] <= o ? 'p-ok' : 'p-info') : 'p-warn'}">${x.st === 'onayli' ? (q[0] <= o ? 'İzinde' : 'Onaylı') : 'Bekliyor'}</span></div>`).join('') : '<p class="muted" style="padding:6px 0 12px">Yaklaşan izin yok.</p>'}</section>`;
+}
+/* --- ayrıntı paneli --- */
+const canSal = () => S.user.role === 'patron' || S.settings.mudurMaas !== false;
+function empDrawer(id) {
+  const m = S.modal, u = byId(id), p = PROFILES[id] || {}, a = ATT[id] || { state: 'none', breakMin: 0 }, st = ekSt(id), L = EK_L[st] || EK_L.none, b = ekBal(id), c = brkCfg(), sc = scores().find((x) => x.id === id), d = EMPDATA[id] || {};
+  const tabs = [['ozet', 'Özet'], ['izin', 'İzinler']].concat(canSal() ? [['maas', 'Maaş ve ödemeler']] : []).concat([['hak', 'Haklar ve süreler']]); const tab = tabs.some((x) => x[0] === m.tab) ? m.tab : 'ozet';
+  const R = (k, v, sub) => `<div class="dr-r"><span>${k}${sub ? `<small>${sub}</small>` : ''}</span><b>${v}</b></div>`;
+  let body = '';
+  if (tab === 'ozet') {
+    body = `<div class="dr-k"><div><span>Puan</span><b>${sc ? sc.score.toFixed(1).replace('.', ',') : '—'}</b></div><div><span>Yıllık izin kalan</span><b>${b.ent ? b.left + ' gün' : '—'}</b></div><div><span>Geç kalma</span><b>${d.late != null ? d.late + ' kez' : '—'}</b></div><div><span>Görev</span><b>${d.task != null ? '%' + d.task : '—'}</b></div></div>
+    <div class="dr-s"><h4>Bugün</h4>${R('Durum', `<span class="pill ${L[0]}">${L[1]}</span>`)}${R('Giriş', a.inAt || '—')}${R('Mola', (a.breakMin || 0) + ' dk', 'Planlanan ' + c.plan + ' dk, günlük sınır ' + c.max + ' dk')}${a.late ? R('Geç giriş', a.late + ' dk') : ''}${a.note ? R('Not', esc(a.note)) : ''}${ekOnLeave(id) ? R('İzin', 'Bugün izinli') : ''}</div>
+    <div class="dr-s"><h4>Bu ayki performans</h4>${R('Geç kalma', (d.late != null ? d.late : 0) + ' kez')}${R('Mola aşımı', (d.over != null ? d.over : 0) + ' dk')}${R('Eksik kayıt', (d.miss != null ? d.miss : 0) + ' kez')}${R('Görev tamamlama', '%' + (d.task != null ? d.task : 0))}${d.prot ? R('Puan kapsamı dışı', esc(d.prot)) : ''}</div>
+    <div class="dr-s"><h4>Sözleşme</h4>${R('İş sözleşmesi', p.contract ? '<span class="pill p-ok">Kayıtlı</span>' : '<span class="pill p-warn">Eksik</span>', p.cAt ? esc(p.cAt) : '')}${R('İşe giriş', p.hire ? esc(isoTxt(p.hire)) : '—', 'Kıdem ' + (p.hire ? tenureTxt(b.mm) : '—'))}</div>`;
+  } else if (tab === 'izin') {
+    const A = ekLeaves(id); const pct = b.ent ? Math.min(100, Math.round(b.used / b.ent * 100)) : 0;
+    body = `<div class="dr-s"><h4>Yıllık izin hakkı</h4>${b.ent ? `<div class="dr-k" style="margin:0"><div><span>Hak</span><b>${b.ent} gün</b></div><div><span>Kullanılan</span><b>${b.used} gün</b></div><div><span>Kalan</span><b>${b.left} gün</b></div></div><div class="dr-bar"><i style="width:${pct}%"></i></div>` : '<p class="muted small">Yıllık izin hakkı 1 yıl dolunca doğar.</p>'}</div>
+    <div class="dr-s"><h4>İzin geçmişi ve talepler</h4>${A.length ? A.map((x) => R(`<span class="pill ${LV_PILL[x.type] || 'p-mute'}">${LV_KIND[x.type] || x.type}</span> ${esc(x.txt)}`, `${x.days} gün ${x.st === 'onayli' ? '' : '<span class="pill p-warn">Bekliyor</span>'}`, x.note ? esc(x.note) : '')).join('') : '<p class="muted small">Kayıtlı izin yok.</p>'}</div>
+    <div class="dr-a"><button class="btn sec" data-a="lvadd" data-id="${id}">${ic('plus', 16)} İzin ekle</button></div>`;
+  } else if (tab === 'maas') {
+    let du = null; try { du = dueOf(id); } catch (e) {} const pays = PAYS.filter((x) => x.uid === id && x.per === NEXTP);
+    body = du ? `<div class="dr-k"><div><span>Hak edilen</span><b>${fmt0(du.total)}</b></div><div><span>Ödenen</span><b>${fmt0(du.paid)}</b></div><div><span>Kalan</span><b>${fmt0(Math.max(0, du.left))}</b></div></div><div class="dr-bar"><i style="width:${du.total ? Math.max(0, Math.min(100, Math.round(du.paid / du.total * 100))) : 0}%"></i></div>
+    <div class="dr-s"><h4>Maaş</h4>${R('Maaş (' + (p.stype === 'net' ? 'net' : 'brüt') + ')', fmt(p.salary))}${R('Ödeme günü', 'Her ayın ' + p.payday + '\'u')}${R('Saat ücreti', fmt(du.hourly), 'Maaş 225 saate bölünür')}${R('Fazla mesai', fmt(du.ot), (p.otMonth || 0) + ' saat bu ay')}${du.ded ? R('İzin kesintisi', fmt(-du.ded)) : ''}</div>
+    <div class="dr-s"><h4>Bu ay yapılan ödemeler</h4>${pays.length ? pays.map((x) => R(`<span class="pill p-info">${PAY_KIND[x.kind]}</span> ${esc(x.date)}`, fmt(x.amt))).join('') : '<p class="muted small">Bu ay henüz ödeme yok.</p>'}</div>
+    ${S.user.role === 'patron' ? `<div class="dr-a"><button class="btn sec" data-a="payadd" data-id="${id}">${ic('plus', 16)} Ödeme ekle</button></div>` : ''}<p class="small muted">Tutarlar tahmindir. Bordro ve vergi hesabı muhasebecidedir.</p>` : '<p class="muted">Maaş bilgisi bulunamadı.</p>';
+  } else {
+    const mm = b.mm, wk = noticeWeeks(mm), eligible = p.hire ? isoTxt(String(Number(p.hire.slice(0, 4)) + 1) + p.hire.slice(4)) : '';
+    body = `<div class="dr-s"><h4>Yan haklar ve süreler</h4>${R('Haftalık çalışma', (p.hours || 45) + ' saat', 'Aşan süre %50 zamlı ödenir')}${R('Yıllık izin', b.ent ? b.ent + ' gün' : 'Henüz doğmadı', b.ent ? '' : 'Doğacağı tarih ' + esc(eligible))}${R('Fazla mesai sınırı', (p.otYear || 0) + ' / 270 saat', 'Bu yıl kullanılan')}${R('İhbar süresi', wk + ' hafta')}${R('Deneme süresi', mm >= (p.trial || 2) ? 'Tamamlandı' : 'Sürüyor', 'Sözleşmede ' + (p.trial || 2) + ' ay')}${R('Kıdem tazminatı', mm >= 12 ? 'Şart sağlandı' : 'Henüz değil', mm >= 12 ? 'En az 1 yıl çalışma şartı doldu' : '1 yıl dolunca (' + esc(eligible) + ')')}</div><p class="small muted">Kıdeme göre kanundaki asgari değerler. Sözleşme daha lehte olabilir.</p>`;
+  }
+  const pend = st === 'pending' ? `<div class="dr-a"><button class="btn" data-a="attok" data-id="${id}">Mola dönüşünü onayla</button><button class="btn sec" data-a="attfix" data-id="${id}">Düzeltme iste</button></div>` : '';
+  const foot = `<div class="dr-a">${S.user.role === 'patron' ? `<button class="btn sec" data-a="empopen" data-id="${id}">Tam sayfada aç</button>` : ''}<button class="btn sec" data-a="nav" data-v="duyuru">${ic('megaphone', 16)} Duyuru gönder</button></div>`;
+  return sheet(u.name, `<div class="dr-h">${avatar(u, 58)}<div class="grow"><h2>${esc(u.name)}</h2><p>${esc(u.title)}${p.hire ? ' · ' + esc(isoTxt(p.hire)) + ' tarihinde başladı' : ''}</p><div class="row wrap" style="gap:6px"><span class="pill ${L[0]}">${L[1]}</span>${p.hire ? `<span class="pill p-info">Kıdem ${tenureTxt(b.mm)}</span>` : ''}${p.contract ? '<span class="pill p-ok">Sözleşme kayıtlı</span>' : '<span class="pill p-warn">Sözleşme eksik</span>'}</div></div></div>${pend}<div class="dr-tabs" role="group">${tabs.map((x) => `<button type="button" data-a="empdt" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[1]}</button>`).join('')}</div>${body}${foot}`).replace('class="sheet"', 'class="sheet empw"');
+}
+H.empdrw = (el) => { S.modal = { type: 'empdrw', id: el.dataset.id, tab: 'ozet' }; renderModal(); };
+H.empdt = (el) => { if (S.modal && S.modal.type === 'empdrw') { S.modal.tab = el.dataset.v; renderModal(); } };
+{const _rm71 = renderModal; renderModal = function () { if (S.modal && S.modal.type === 'empdrw') { const root = $('#modal-root'); if (!root) return; try { root.innerHTML = empDrawer(S.modal.id); } catch (e) { root.innerHTML = ''; S.modal = null; } return; } return _rm71.apply(this, arguments); }; }
+document.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('ek-c')) { e.preventDefault(); H.empdrw(e.target); } });
+/* --- izin takvimi --- */
+S.izM = S.izM || 0; H.izm = (el) => { S.izM = (S.izM || 0) + Number(el.dataset.v); render(); }; H.izm0 = () => { S.izM = 0; render(); };
+function izinTakvim() {
+  const now = new Date(); const base = new Date(now.getFullYear(), now.getMonth() + (S.izM || 0), 1); const y = base.getFullYear(), mo = base.getMonth(), dim = new Date(y, mo + 1, 0).getDate(); const todayD = (S.izM || 0) === 0 ? now.getDate() : -1;
+  const A = ekLeaves(); const cls = { yillik: 'y', rapor: 'r', ucretsiz: 'u', mazeret: 'm' };
+  const cell = (id, d) => { const o = mo * 40 + d; const hit = A.filter((x) => x.uid === id).find((x) => { const q = ekRange(x); return q && q[0] <= o && o <= q[1]; }); const we = [0, 6].includes(new Date(y, mo, d).getDay()); return `<div class="c ${hit ? (hit.st === 'onayli' ? cls[hit.type] || 'y' : 'p') : (we ? 'we' : '')}${d === todayD ? ' t' : ''}" title="${hit ? esc(byId(id).name + ': ' + (LV_KIND[hit.type] || hit.type) + ' ' + hit.txt + (hit.st === 'onayli' ? '' : ' (bekliyor)')) : ''}"></div>`; };
+  const heads = Array.from({ length: dim }, (_, i) => { const d = i + 1, we = [0, 6].includes(new Date(y, mo, d).getDay()); return `<div class="dh${we ? ' we' : ''}${d === todayD ? ' td' : ''}">${d}</div>`; }).join('');
+  const rows = EMP_IDS.map((id) => `<div class="nm">${esc(byId(id).name)}</div>${Array.from({ length: dim }, (_, i) => cell(id, i + 1)).join('')}`).join('');
+  const per = {}; for (let d = 1; d <= dim; d++) { const o = mo * 40 + d; const w = EMP_IDS.filter((id) => A.some((x) => x.uid === id && (() => { const q = ekRange(x); return q && q[0] <= o && o <= q[1]; })())); if (w.length >= 2) per[d] = w; }
+  const ov = Object.keys(per); let note = '';
+  if (ov.length) { const f = Number(ov[0]); note = `<div class="callout warn">${ic('alert')}<div><b>Çakışma var</b><p style="margin-top:2px">${f}${ov.length > 1 ? '–' + ov[ov.length - 1] : ''} ${base.toLocaleDateString('tr-TR', { month: 'long' })} arasında aynı günlerde ${Math.max(...ov.map((k) => per[k].length))} kişi izinde olabilir: ${per[f].map((id) => byId(id).name.split(' ')[0]).join(', ')}. Vardiyayı önceden planla.</p></div></div>`; }
+  const o = ekNow(); const UP = A.map((x) => ({ x, q: ekRange(x) })).filter((v) => v.q && v.q[1] >= o).sort((a, b) => a.q[0] - b.q[0]);
+  const list = UP.length ? UP.map(({ x, q }) => `<div class="row2">${avatar(byId(x.uid), 34)}<div class="grow"><b>${esc(byId(x.uid).name)}</b><span>${esc(x.txt)} · ${x.days} gün · ${LV_KIND[x.type] || x.type}</span></div><span class="pill ${x.st === 'onayli' ? (q[0] <= o ? 'p-ok' : 'p-info') : 'p-warn'}">${x.st === 'onayli' ? (q[0] <= o ? 'İzinde' : 'Onaylı') : 'Karar bekliyor'}</span></div>`).join('') : '<p class="muted" style="padding:6px 0 12px">Yaklaşan izin yok.</p>';
+  const bal = EMP_IDS.map((id) => { const b = ekBal(id); const pct = b.ent ? Math.min(100, Math.round(b.used / b.ent * 100)) : 0; return `<div class="it" data-a="empdrw" data-id="${id}" style="cursor:pointer"><div class="row" style="gap:10px">${avatar(byId(id), 34)}<div class="grow"><b>${esc(byId(id).name)}</b><div class="small muted">${b.ent ? b.used + ' / ' + b.ent + ' gün kullanıldı' : 'Hak henüz doğmadı'}</div></div><b>${b.ent ? b.left + ' gün' : '—'}</b></div><div class="dr-bar"><i style="width:${pct}%"></i></div></div>`; }).join('');
+  return `${note}<section class="mg-card"><div class="iz-nv"><button type="button" data-a="izm" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h2>${base.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</h2>${(S.izM || 0) !== 0 ? '<button type="button" class="mg-lnk" data-a="izm0" style="border:0;width:auto;height:auto">Bu aya dön</button>' : ''}</div><button type="button" data-a="izm" data-v="1" aria-label="Sonraki ay" style="transform:scaleX(-1)">${ic('back', 18)}</button></div><div class="iz-sc"><div class="iz-gr" style="grid-template-columns:130px repeat(${dim},minmax(24px,1fr))"><div></div>${heads}${rows}</div></div><div class="iz-lg"><span><i style="background:#5E9AEA"></i>Yıllık izin</span><span><i style="background:#E8A93C"></i>Rapor</span><span><i style="background:#9AA7BA"></i>Ücretsiz</span><span><i style="background:#9B7BD8"></i>Mazeret</span><span><i style="background:repeating-linear-gradient(45deg,#BCD3F2 0 3px,#E6EEFA 3px 6px);outline:1px dashed #5E9AEA"></i>Onay bekliyor</span></div></section>
+  <div class="ek"><section class="mg-card ek-up"><div class="ek-h"><h2>İzin günleri listesi</h2><span>Devam eden ve yaklaşan</span></div>${list}</section><section class="mg-card"><div class="ek-h"><h2>Yıllık izin bakiyeleri</h2></div><div class="iz-bal">${bal}</div></section></div>`;
+}
+/* --- mola ayarları --- */
+H.brkp = (el) => { S.settings.brkPlan = Number(el.dataset.v); try { pSched && pSched(); } catch (e) {} render(); toast('Planlanan mola ' + el.dataset.v + ' dk olarak ayarlandı.', 'ok'); };
+H.brkm = (el) => { S.settings.brkMax = Number(el.dataset.v); try { pSched && pSched(); } catch (e) {} render(); toast('Günlük mola sınırı ' + el.dataset.v + ' dk olarak ayarlandı.', 'ok'); };
+function molaAyar() {
+  const c = brkCfg(); const over = EMP_IDS.filter((id) => (ATT[id] && ATT[id].breakMin || 0) > c.max);
+  const live = EMP_IDS.map((id) => { const a = ATT[id] || { breakMin: 0 }, m = a.breakMin || 0, pct = Math.min(100, Math.round(m / c.max * 100)); return `<div class="dr-r" style="align-items:center"><span style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">${avatar(byId(id), 30)}<span style="color:var(--ink)">${esc(byId(id).name)}<small>${m} / ${c.max} dk${m > c.max ? ' · sınır aşıldı' : ''}</small></span></span><div style="width:40%;min-width:90px"><div class="dr-bar" style="margin:0"><i style="width:${pct}%;${m > c.max ? 'background:#D9534F' : ''}"></i></div></div></div>`; }).join('');
+  const tgl = `<div class="toggle"><div><b style="font-weight:600">Mola hatırlatmaları</b><div class="small muted">Çalışana en fazla iki bildirim gider: bitmeden 2 dk önce ve bitişte.</div></div><button class="sw" role="switch" aria-checked="${S.settings.reminders}" aria-label="Mola hatırlatmaları" data-a="toggle" data-k="reminders"></button></div>`;
+  return `<div class="ek"><div class="ek-main"><section class="mg-card"><div class="ek-h"><h2>Mola ayarları</h2></div><b style="font-size:14px">Planlanan mola süresi</b><p class="small muted" style="margin:2px 0 0">Çalışanın zamanlayıcısı bu süreyi geçince kırmızıya döner.</p><div class="mb-o">${[10, 15, 20, 30, 45].map((v) => `<button type="button" data-a="brkp" data-v="${v}" aria-pressed="${c.plan === v}">${v} dk</button>`).join('')}</div><b style="font-size:14px">Günlük toplam mola sınırı</b><p class="small muted" style="margin:2px 0 0">Aşan çalışan yönetici ekranında uyarı olarak görünür. Otomatik kesinti yapılmaz.</p><div class="mb-o">${[30, 45, 60, 90, 120].map((v) => `<button type="button" data-a="brkm" data-v="${v}" aria-pressed="${c.max === v}">${v} dk</button>`).join('')}</div>${tgl}</section></div>
+  <div class="ek-side"><section class="mg-card"><div class="ek-h"><h2>Bugünkü mola durumu</h2><span>${over.length ? over.length + ' kişi sınırı aştı' : 'Sınır aşan yok'}</span></div>${live}</section></div></div>`;
+}
+/* --- Ekip sayfası --- */
+const _viewEkip71 = viewEkip;
+viewEkip = function () {
+  if (!S.user || !['patron', 'mudur'].includes(S.user.role)) return _viewEkip71();
+  const isP = S.user.role === 'patron'; const cur0 = S.sub.ekip; const nReq = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status)).length;
+  const items = [['bugun', 'Bugün'], ['izin', 'İzin takvimi'], ['mola', 'Mola ayarları'], ['talep', 'İzin talepleri' + (nReq ? ' (' + nReq + ')' : '')]].concat(isP ? [['maas', 'Maaş ve haklar']] : []).concat(isP && ID.active ? [['hesap', 'Hesap bağlantıları']] : []).concat([['siralama', 'Aylık sıralama']]);
+  const cur = items.some((x) => x[0] === cur0) ? cur0 : 'bugun'; const segH = seg('ekip', items, cur).replace('<div class="seg"', '<div class="seg seg-b"');
+  if (cur === 'izin') return `<div class="stack-lg">${segH}${izinTakvim()}</div>`;
+  if (cur === 'mola') return `<div class="stack-lg">${segH}${molaAyar()}</div>`;
+  if (cur === 'bugun') { const tk = ekipTasks(); return `<div class="stack-lg">${segH}<div class="ek"><div class="ek-main">${kzCard('ekip')}${ekTeam()}</div><div class="ek-side">${ekipKais()}${ekUpcoming()}<section class="dsec"><div class="dsec-h"><h2>Bugün ne yapmalısın?</h2><p class="muted">${tk.length ? 'Ekibinle ilgili ' + tk.length + ' konu seni bekliyor.' : 'Ekipte bekleyen konu yok.'}</p></div>${tk.length ? `<div class="dtodo">${tk.join('')}</div>` : ''}</section>${codeCardEkip()}</div></div></div>`; }
+  const h = _viewEkip71(); const m = h.match(/<div class="seg[^"]*" role="group">[\s\S]*?<\/div>/); return m ? h.replace(m[0], segH) : h;
+};
 /* Ayarlar: tüm verileri sıfırla */
 const viewAyarlarV66 = viewAyarlar;
 viewAyarlar = function () {
@@ -7895,9 +8028,9 @@ bugunCalisan = function () {
   let worked = 0; const m = /^(\d{1,2}):(\d{2})/.exec(a.inAt || '');
   if (m && (a.state === 'working' || a.state === 'break' || a.state === 'pending')) worked = Math.max(0, nm - (Number(m[1]) * 60 + Number(m[2])) - (a.breakMin || 0));
   const hm = (x) => `${Math.floor(x / 60)} sa ${String(x % 60).padStart(2, '0')} dk`;
-  const T = { none: ['Henüz giriş yok', `Günaydın ${esc(first)}`, 'Çalışma gününe başlamak için giriş yap.'], working: ['Çalışıyorsun', `Giriş ${esc(a.inAt)}`, `Mola toplamı ${a.breakMin || 0} dk`], break: ['Moladasın', '', 'Planlanan mola 15 dk. En fazla iki bildirim alırsın.'], pending: a.fix ? ['Düzeltme istendi', 'Mola kaydını kontrol et', 'İşveren düzeltme istedi. Kontrol edip tekrar gönder, kesinti yapılmaz.'] : ['Onay bekliyor', 'Mola dönüşün onayda', 'İşveren onaylayınca kayıt kesinleşir. Kesinti yapılmaz.'], out: ['Çıkış yaptın', 'İyi akşamlar', 'Bugünün kaydı işverenle aynı şekilde görünür.'] }[a.state];
+  const T = { none: ['Henüz giriş yok', `Günaydın ${esc(first)}`, 'Çalışma gününe başlamak için giriş yap.'], working: ['Çalışıyorsun', `Giriş ${esc(a.inAt)}`, `Mola toplamı ${a.breakMin || 0} dk`], break: ['Moladasın', '', `Planlanan mola ${Number(S.settings.brkPlan) || 15} dk. En fazla iki bildirim alırsın.`], pending: a.fix ? ['Düzeltme istendi', 'Mola kaydını kontrol et', 'İşveren düzeltme istedi. Kontrol edip tekrar gönder, kesinti yapılmaz.'] : ['Onay bekliyor', 'Mola dönüşün onayda', 'İşveren onaylayınca kayıt kesinleşir. Kesinti yapılmaz.'], out: ['Çıkış yaptın', 'İyi akşamlar', 'Bugünün kaydı işverenle aynı şekilde görünür.'] }[a.state];
   let big = `<b class="cb-big">${T[1]}</b>`;
-  if (a.state === 'break') { if (!a.bstart) a.bstart = Date.now() - (a.breakMin || 0) * 60000; const s = Math.floor((Date.now() - a.bstart) / 1000); big = `<b class="cb-big timer ${s > 900 ? 'over' : ''}" id="brk-timer">${mmss(s)}</b>`; }
+  if (a.state === 'break') { if (!a.bstart) a.bstart = Date.now() - (a.breakMin || 0) * 60000; const s = Math.floor((Date.now() - a.bstart) / 1000); big = `<b class="cb-big timer ${s > (Number(S.settings.brkPlan) || 15) * 60 ? 'over' : ''}" id="brk-timer">${mmss(s)}</b>`; }
   const btn = { none: `<button class="cb-b pri" data-a="clockin">${ic('clock', 20)} Giriş yap</button>`, working: `<button class="cb-b" data-a="breakstart">${ic('coffee', 18)} Molaya çık</button><button class="cb-b ghost" data-a="clockout">Çıkış yap</button>`, break: `<button class="cb-b pri" data-a="breakend">Döndüm</button>`, pending: a.fix ? `<button class="cb-b pri" data-a="attre">Düzelttim, tekrar gönder</button>` : '', out: '' }[a.state];
   const hint = [];
   if (a.state === 'working' && worked >= 300 && !(a.breakMin > 0)) hint.push(['5 saati geçti ve bugün mola kaydın yok. Mola hakkını kullanmayı unutma.', 'breakstart', 'Molaya çık']);
