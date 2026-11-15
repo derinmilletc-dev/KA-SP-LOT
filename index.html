@@ -1033,6 +1033,7 @@ div.now{font-size:11px}
 .tid>.tid-in>h2:first-child,.tid>.tid-in .row>div>h3:first-child{display:none}.tid>.tid-in{border:0;box-shadow:none;margin:0;border-radius:0;border-top:1px solid #E8EEF7}.tid>.tid-in.kz{background:transparent}
 .tid.kb-w{}main>.su-bn,main>.kb-st,main>.dsec,main>.tid,main>.dfin,main>.dash>.pf-card{margin-bottom:12px}main>.kb-st{margin-top:2px}.kb-more{list-style:none;font-size:13px;color:var(--ink-2);padding:2px 0 0 4px}
 .pf-min .pf-miss{display:none}.pf-min{padding:12px 14px!important}.pf-min .pf-top p{display:none}
+.ro-note{display:inline-flex;align-items:center;gap:6px;background:#EEF3FB;color:#46607F;border-radius:999px;padding:6px 12px;font-size:13px;margin:0 0 10px}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -1620,7 +1621,7 @@ const S = {
   filter: 'hepsi',
   modal: null,
   weights: { late: 30, over: 25, miss: 20, task: 25 },
-  settings: { mudurRanking: false, reminders: true, mudurMaas: true, brkPlan: 15, brkMax: 60 },
+  settings: { mudurRanking: false, reminders: true, mudurMaas: false, brkPlan: 15, brkMax: 60 },
   draft: newDraft(),
   client: 'c1',
   sampleIdx: 0,
@@ -10479,7 +10480,7 @@ let __ekC = null;
 
 /* ===== v90: Roller ve yetkiler, Kais bağlantılı öneri, Bugün özeti, fiyat kıyası ===== */
 const KP_G = [
-  ['Sayfalar', [['stokView', 'Stok', 'Stok listesi ve sayım'], ['saView', 'Satın alma', 'Alınacaklar ve siparişler'], ['rezView', 'Rezervasyon', 'Liste, masa planı, rapor'], ['opsView', 'Operasyon', 'Görev, arıza, kasa, raporlar'], ['kaisAi', 'Kais AI', 'Kais ile sohbet']]],
+  ['Sayfalar', [['stokView', 'Stok', 'Stok listesi ve sayım'], ['saView', 'Satın alma', 'Alınacaklar ve siparişler'], ['rezView', 'Rezervasyon', 'Liste, masa planı, rapor'], ['opsView', 'Operasyon', 'Görev, arıza, kasa, raporlar'], ['kaisAi', 'Kais AI', 'Kais ile sohbet'], ['maliyetView', 'Maliyet ve kâr', 'Stok maliyet sekmesi, kâr oranları (varsayılan kapalı)']]],
   ['İşlemler', [['stokEdit', 'Stok düzenleme', 'Miktar, ürün ve toplu giriş'], ['saOrder', 'Sipariş verme', 'Oluştur, gönder, teslim al, iptal et'], ['rezEdit', 'Rezervasyon yazma', 'Ekle, düzenle, durum değiştir'], ['rezDel', 'Rezervasyon iptali ve masa silme', 'Geri alınması zor işlemler'], ['reqApprove', 'Talep ve izin kararı', 'Avans, takas, izin onayı ve reddi']]],
 ];
 const KP_ALL = KP_G.reduce((a, g) => a.concat(g[1].map((x) => x[0])), []);
@@ -10489,7 +10490,9 @@ const KP_PRE = {
   dengeli: () => ({ saOrder: false, rezDel: false, reqApprove: true, stokEdit: true }),
   izleme: () => ({ stokEdit: false, saOrder: false, rezEdit: false, rezDel: false, reqApprove: false }),
 };
-const kpCan = (k) => { const u = S.user; if (!u || u.role !== 'mudur') return true; const p = S.settings.perm; return !p || p[k] !== false; };
+const KP_OFF = ['maliyetView'];
+const kpOn = (k) => { const p = S.settings.perm; return KP_OFF.includes(k) ? !!(p && p[k] === true) : (!p || p[k] !== false); };
+const kpCan = (k) => { const u = S.user; if (!u || u.role !== 'mudur') return true; return kpOn(k); };
 const kpDeny = () => toast('Bu işlem için yetkin kapalı. Patronla konuş.', 'warn');
 {
   const base = NAV.mudur.slice();
@@ -10510,17 +10513,17 @@ const kpDeny = () => toast('Bu işlem için yetkin kapalı. Patronla konuş.', '
 H.perm = (el) => {
   if (!S.user || S.user.role !== 'patron') return;
   const k = el.dataset.k; if (!KP_ALL.includes(k)) return;
-  const p = S.settings.perm || (S.settings.perm = {}); p[k] = p[k] === false; pSched(); render();
+  const p = S.settings.perm || (S.settings.perm = {}); if (KP_OFF.includes(k)) p[k] = p[k] !== true; else p[k] = p[k] === false; pSched(); render();
 };
 H.permpre = (el) => {
   if (!S.user || S.user.role !== 'patron') return;
   const f = KP_PRE[el.dataset.v]; if (!f) return; const o = f(); const p = {}; KP_ALL.forEach((k) => { if (o[k] === false) p[k] = false; });
-  S.settings.perm = p; if (el.dataset.v === 'izleme') { S.settings.mudurMaas = false; } pSched(); render(); toast('Yetkiler güncellendi.', 'ok');
+  KP_OFF.forEach((k) => { if (el.dataset.v === 'tam') p[k] = true; }); S.settings.perm = p; if (el.dataset.v === 'izleme') { S.settings.mudurMaas = false; } pSched(); render(); toast('Yetkiler güncellendi.', 'ok');
 };
 const kpPreOn = () => { const p = S.settings.perm || {}; const off = KP_ALL.filter((k) => p[k] === false).sort().join(','); return ['tam', 'dengeli', 'izleme'].find((n) => { const o = KP_PRE[n](); return KP_ALL.filter((k) => o[k] === false).sort().join(',') === off; }) || ''; };
 function kpCard() {
   const on = KP_ALL.filter((k) => kpCan(k)).length; const pre = kpPreOn();
-  const sw = (k, t, s) => `<div class="toggle"><div><b style="font-weight:600">${esc(t)}</b><div class="small muted">${esc(s)}</div></div><button class="sw" role="switch" aria-checked="${S.settings.perm ? S.settings.perm[k] !== false : true}" aria-label="${esc(t)}" data-a="perm" data-k="${k}"></button></div>`;
+  const sw = (k, t, s) => `<div class="toggle"><div><b style="font-weight:600">${esc(t)}</b><div class="small muted">${esc(s)}</div></div><button class="sw" role="switch" aria-checked="${kpOn(k)}" aria-label="${esc(t)}" data-a="perm" data-k="${k}"></button></div>`;
   return `<div class="card kp-card"><div class="row between wrap"><div><h3>Müdür yetkileri</h3><p class="muted small" style="margin-top:2px">Müdürün neyi görüp neyi yapabileceğini sen belirlersin. Kapattığın sayfa menüsünden kalkar.</p></div><span class="pill p-info">${on}/${KP_ALL.length} açık</span></div>
   <div class="kp-pre">${[['tam', 'Tam yetki'], ['dengeli', 'Dengeli'], ['izleme', 'Sadece izleme']].map((x) => `<button type="button" data-a="permpre" data-v="${x[0]}" aria-pressed="${pre === x[0]}">${x[1]}</button>`).join('')}</div>
   ${KP_G.map((g) => `<div class="kp-g"><div class="kp-gh">${g[0]}</div>${g[1].map((x) => sw(x[0], x[1], x[2])).join('')}</div>`).join('')}
@@ -11463,6 +11466,48 @@ function kbFoldCards(sel, ico, firstOpen) {
   render = function () {
     const r = _r2.apply(this, arguments);
     if (S.user && !S.modal) { if (S.view === 'ayarlar' && S.user.role === 'patron') kbFoldCards('main .stack-lg > .card, main > .card.flush', 'gear', false); else if (S.view === 'sartlar') kbFoldCards('main .sz > .sz-card', 'file', true); }
+    return r;
+  };
+}
+
+/* ===== v108: rol görünürlüğü: müdür maliyet/kâr kapalı, muhasebeci stok sayımı, arıza ve kampanyayı salt okunur görür ===== */
+NAV.muhasebeci.push(['stok', 'Stok sayımı', 'box', 'more'], ['ops', 'Arıza ve bakım', 'gear', 'more'], ['musteri', 'Kampanyalar', 'mail', 'more']);
+TITLES.stok = TITLES.stok || 'Stok'; TITLES.ops = TITLES.ops || 'Operasyon'; TITLES.musteri = TITLES.musteri || 'Müşteri';
+{
+  const _vh = viewHTML;
+  viewHTML = function () { const u = S.user; if (u && u.role === 'muhasebeci') { if (S.view === 'stok') return viewStok(); if (S.view === 'ops') return viewOps(); if (S.view === 'musteri') return roCamps(); } return _vh.apply(this, arguments); };
+}
+function roCamps() {
+  const L = (typeof CAMPAIGNS !== 'undefined' ? CAMPAIGNS : []).slice().reverse();
+  return `<div class="stack-lg"><div><h2>Kampanyalar</h2><p class="muted small" style="margin-top:4px">Gönderilen toplu e-postalar. Yeni kampanyayı patron hazırlar.</p></div>${L.length ? `<div class="card flush">${L.map((c) => `<div class="rrow"><div><b style="font-weight:600">${esc(c.subj)}</b><div class="small muted">${esc(c.date)} · ${c.sent} kişiye</div></div><span class="pill p-info">${esc(c.open || 'gitti')}</span></div>`).join('')}</div>` : `<div class="empty">Henüz kampanya gönderilmedi.</div>`}</div>`;
+}
+const RO_VIEWS = ['stok', 'ops', 'musteri'];
+const RO_OK = ['nav', 'sub', 'sttab', 'stkf', 'stg', 'sthist', 'stkgo', 'opgo', 'mtf', 'closemodal', 'togmore', 'moremenu', 'more'];
+const RO_HIDE = ['stk', 'stkadd', 'stkbulk', 'cntstart', 'lotadd', 'wasteadd', 'wasteopen', 'minall', 'minapply', 'etkopen', 'campsend', 'camptpl', 'campseg', 'chk', 'rqnew', 'opnew', 'mtnew', 'mpnew', 'mpq'];
+const roOn = () => !!(S.user && S.user.role === 'muhasebeci' && RO_VIEWS.includes(S.view));
+window.addEventListener('click', (e) => {
+  if (!roOn()) return; const el = e.target && e.target.closest && e.target.closest('[data-a]'); if (!el) return; const a = el.dataset.a;
+  if (RO_OK.includes(a) || /^(sub|nav)$/.test(a)) return; if (el.closest('.nav, nav, .tabbar, .bnav, header')) return;
+  e.stopImmediatePropagation(); e.preventDefault(); try { toast('Muhasebeci bu bölümü yalnızca görüntüler.', 'warn'); } catch (x) {}
+}, true);
+{
+  const _r = render;
+  render = function () {
+    const u = S.user;
+    if (u && u.role === 'mudur' && !kpCan('maliyetView') && S.stTab === 'maliyet') S.stTab = 'liste';
+    if (u && u.role === 'muhasebeci') { S.sub = S.sub || {}; if (S.view === 'ops' && S.sub.ops !== 'ariza') S.sub.ops = 'ariza'; if (S.view === 'musteri' && S.sub.musteri !== 'kampanya') S.sub.musteri = 'kampanya'; if (S.view === 'stok' && !['liste', 'sayim', 'fire'].includes(S.stTab)) S.stTab = 'sayim'; }
+    const r = _r.apply(this, arguments);
+    try {
+      const m = document.querySelector('main'); if (!m || !u) return r;
+      if (u.role === 'mudur' && !kpCan('maliyetView')) m.querySelectorAll('[data-a="sttab"][data-t="maliyet"], [data-a="sttab"][data-v="maliyet"]').forEach((b) => b.remove());
+      if (roOn()) {
+        m.querySelectorAll('[data-a]').forEach((b) => { if (RO_HIDE.includes(b.dataset.a)) b.style.display = 'none'; });
+        if (S.view === 'ops') m.querySelectorAll('[data-a="sub"]').forEach((b) => { if (b.dataset.v !== 'ariza') b.style.display = 'none'; });
+        if (S.view === 'musteri') m.querySelectorAll('[data-a="sub"]').forEach((b) => { if (b.dataset.v !== 'kampanya') b.style.display = 'none'; });
+        if (S.view === 'stok') m.querySelectorAll('[data-a="sttab"]').forEach((b) => { if (!['liste', 'sayim', 'fire'].includes(b.dataset.v || b.dataset.t)) b.style.display = 'none'; });
+        if (!m.querySelector('.ro-note')) { const n = document.createElement('div'); n.className = 'ro-note'; n.textContent = 'Bu bölümü yalnızca görüntülersin.'; m.insertBefore(n, m.firstChild); }
+      }
+    } catch (e) {}
     return r;
   };
 }
