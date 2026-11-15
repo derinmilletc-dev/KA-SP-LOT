@@ -998,6 +998,19 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .dl-link{display:block;margin:6px auto 0;border:0;background:none;color:#A33;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:8px}
 .dl-card .btn{color:var(--nar);border-color:#E7B8C0}
 .au-card{display:flex;flex-direction:column;gap:10px}.au-l{display:flex;flex-direction:column;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}.au-r{display:flex;gap:12px;padding:10px 12px;border-bottom:1px solid #EEF2F7;font-size:14px}.au-r:last-child{border-bottom:0}.au-r b{display:block;font-weight:600}.au-r small{color:var(--ink-2);font-size:12px}.au-t{flex:none;width:78px;color:var(--ink-2);font-size:12px;font-variant-numeric:tabular-nums}
+@media(max-width:560px){
+button.mg-lnk{min-height:36px;padding-top:7px;padding-bottom:7px}
+button[data-a=pfopen]{min-height:36px}
+button[data-a=rzkh]{min-height:36px}
+button[data-a=aimic]{min-width:40px;min-height:40px}
+.sw[data-a]{position:relative}.sw[data-a]::before{content:"";position:absolute;inset:-8px -6px}
+div.nm[data-a=empdrw]{padding:9px 0;min-height:36px;display:flex;align-items:center}
+.vd small,.vdg small,[class*=vd] small{font-size:10.5px}
+small{font-size:max(11.5px,.83em)}
+.vc small{font-size:10.5px}
+div.now{font-size:11px}
+}
+@media(max-width:560px){.kz .kz-s{flex-wrap:wrap;overflow:visible;padding-bottom:0}.kz .kz-s button{flex:0 1 auto;max-width:100%;white-space:normal;text-align:left;line-height:1.3;padding-top:8px;padding-bottom:8px}}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -5483,7 +5496,7 @@ const RZ_ST = { bekliyor: ['p-warn', 'Onay bekliyor'], onay: ['p-info', 'Bekleni
 const rzActive = (r) => ['bekliyor', 'onay', 'geldi'].includes(r.st);
 const rzDigits = (p) => String(p || '').replace(/\D/g, '').slice(-10);
 function seedTables() { if (TABLES.length || RCFG.seeded) return; [['1', 2, 'İç'], ['2', 2, 'İç'], ['3', 4, 'İç'], ['4', 4, 'İç'], ['5', 4, 'Bahçe'], ['6', 6, 'İç'], ['7', 6, 'Bahçe'], ['8', 8, 'İç']].forEach((x) => TABLES.push({ id: 't' + x[0], name: 'Masa ' + x[0], cap: x[1], zone: x[2] })); RCFG.seeded = true; }
-function rzSeat() { RESV.forEach((r) => { if (r.st === 'bekliyor') r.st = 'onay'; if (!r.tids.length && rzActive(r)) { const a = rzAssign(r.date, r.time, r.dur, r.n, r.id); if (a) r.tids = a; } }); }
+function rzSeat() { RESV.forEach((r) => { if (r.st === 'bekliyor') r.st = 'onay'; if ((!r.tids || !r.tids.length) && rzActive(r)) { const a = rzAssign(r.date, r.time, r.dur, r.n, r.id); if (a) r.tids = a; } }); }
 function rzBusy(date, s, e, ignore) { const m = {}; RESV.filter((r) => r.date === date && rzActive(r) && r.id !== ignore).forEach((r) => { const rs = toMin(r.time); if (rs < e && s < rs + r.dur) r.tids.forEach((t) => { m[t] = r; }); }); return m; }
 function rzAssign(date, time, dur, n, ignore) {
   const s = toMin(time); const busy = rzBusy(date, s, s + dur, ignore); const free = TABLES.filter((t) => !busy[t.id]);
@@ -7514,7 +7527,7 @@ function kzCard(scope) {
   const brief = txt ? `<div class="kz-ai"><b>${ic('sparkle', 14)} Kais'in yorumu</b><div class="${long && !S.gunOpen ? 'cl' : ''}" style="white-space:pre-wrap">${esc(txt).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')}</div>${long ? `<button type="button" data-a="gundet">${S.gunOpen ? 'Daha az göster' : 'Devamını oku'}</button>` : ''}</div>` : '';
   const sug = [...new Set(it.filter((x) => x.tone !== 'ok').slice(0, 2).map((x) => x.q).concat(['Bugün önce neye bakmalıyım?']))].slice(0, 3);
   const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
-  return `<div class="kz"><div class="kz-h"><span class="kz-i">${ic('sparkle', 22)}</span><div class="kz-t"><h3>Günün özeti</h3><p>${esc(date)} ${chip}</p></div><button type="button" class="kz-r" data-a="gunyen" aria-label="Yenile">${ic('refresh', 18)}</button></div><div class="kz-l">${rows}</div>${brief}<div class="kz-a"><input id="kz-in" type="text" placeholder="Anlamadığın bir şey mi var? Kais'e sor" autocomplete="off" enterkeyhint="send"><button type="button" data-a="kzsend" aria-label="Gönder">${ic('arrow', 18)}</button></div><div class="kz-s">${sug.map((q) => `<button type="button" data-a="kzq" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+  return `<div class="kz"><div class="kz-h"><span class="kz-i">${ic('sparkle', 22)}</span><div class="kz-t"><h3>Günün özeti</h3><p>${esc(date)} ${chip}</p></div><button type="button" class="kz-r" data-a="gunyen" aria-label="Yenile">${ic('refresh', 18)}</button></div><div class="kz-l">${rows}</div>${brief}<div class="kz-a"><input id="kz-in" type="text" placeholder="Kais'e sor…" autocomplete="off" enterkeyhint="send"><button type="button" data-a="kzsend" aria-label="Gönder">${ic('arrow', 18)}</button></div><div class="kz-s">${sug.map((q) => `<button type="button" data-a="kzq" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
 }
 function kzAsk(t) { t = String(t || '').trim(); if (!t) { const e = document.getElementById('kz-in'); if (e) e.focus(); return; } if (!aiReady() || !AI_ROLES.includes(S.user.role)) { toast('Kais AI deneme modunda kapalı. Bulut hesabıyla giriş yapınca sorun yanıtlanır.', 'warn'); return; } S.view = 'kaisai'; AIC.draft = ''; window.scrollTo && window.scrollTo(0, 0); aiAsk(t); }
 H.kzq = (el) => kzAsk(el.dataset.q); H.kzsend = () => kzAsk((document.getElementById('kz-in') || {}).value);
@@ -10951,6 +10964,9 @@ async function kmPush() {
   const _ms = aiMemSave; aiMemSave = function () { const r = _ms.apply(this, arguments); if (KM.key === aiMemKey()) kmSched(); return r; };
   const _mc = H.aimemclr; if (_mc) H.aimemclr = function () { const r = _mc.apply(this, arguments); AIC.notes = []; kmSched(); return r; };
 }
+
+/* v97: alt menü etiketi sığsın */
+NAV.mudur.forEach((x) => { if (x[0] === 'rezerv') x[1] = 'Rezerv.'; });
 </script>
 </body>
 </html>
