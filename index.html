@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>KaisPilot</title>
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" as="image" href="/login-hero.jpg">
 <meta name="theme-color" content="#12213B">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
 <style>/* Yerleşim fikri: telefonda alt sekme çubuğu, geniş ekranda sol menü. Defter satırı gibi okunan listeler, İznik çinisinden gelen mavi ve geometrik desen. */
 :root{
   --ink:#12213B;
@@ -12551,6 +12552,29 @@ kaCard = function () { const h = kaCardV129(); return h.replace(/(<h3>(?:İyi ge
 
 const kbTidyV129 = kbTidy;
 kbTidy = function () { const r = kbTidyV129.apply(this, arguments); try { const m = document.querySelector('main'); if (m && S.user && S.user.role === 'patron' && S.view === 'bugun') { const f = m.firstElementChild; Array.from(m.querySelectorAll('.dash>.pp-hero,.dash>.pp-q,.dash>.pp-box')).forEach((e) => m.insertBefore(e, f)); } } catch (e) {} return r; };
+
+/* ===== v130: Boş durum ekranları (stok, satın alma) + muhasebeci ana sayfa sırası ===== */
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.ep{text-align:center;border:1px dashed #C9D6EA;background:linear-gradient(180deg,#F7FAFF,#fff);border-radius:24px;padding:28px 20px 22px;animation:ppIn .5s cubic-bezier(.2,.8,.2,1) both}
+.ep-i{width:64px;height:64px;border-radius:20px;margin:0 auto 14px;display:grid;place-items:center;color:#fff;background:linear-gradient(160deg,#2A7FDB,#0A3F7A);box-shadow:0 14px 26px -12px rgba(10,63,122,.6)}
+.ep h3{margin:0 0 6px;font:800 20px system-ui;letter-spacing:-.01em;color:#0E2B4D}.ep p{margin:0 auto 16px;max-width:300px;font:500 14px/1.45 system-ui;color:#5B6B82}
+.ep-b{display:flex;flex-direction:column;gap:8px}.ep-b button{border:0;border-radius:14px;padding:13px;font:700 14px system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;background:#EEF3FB;color:#1B5FB8}.ep-b button.pri{background:#1B5FB8;color:#fff}
+.ep-s{display:flex;justify-content:center;gap:14px;margin-top:14px;font:600 12px system-ui;color:#7A8AA0}.ep-s span{display:flex;align-items:center;gap:5px}
+`; document.head.appendChild(st); } catch (e) {} })();
+const epCard = (ico, title, text, btns, steps) => `<section class="ep"><div class="ep-i">${ic(ico, 30)}</div><h3>${esc(title)}</h3><p>${esc(text)}</p><div class="ep-b">${btns.map((x, i) => `<button type="button" class="${i ? '' : 'pri'}" data-a="${x[0]}"${x[2] ? ' data-v="' + x[2] + '"' : ''}>${ic(x[3] || 'plus', 16)}${esc(x[1])}</button>`).join('')}</div>${steps ? `<div class="ep-s">${steps.map((t, i) => `<span>${i + 1}. ${esc(t)}</span>`).join('')}</div>` : ''}</section>`;
+const viewStokV130 = viewStok;
+viewStok = function () {
+  if (STOCK.length) return viewStokV130();
+  const canAdd = !S.user || ['patron', 'mudur'].includes(S.user.role);
+  return `<div class="stack-lg"><div><h2>Stok</h2><p class="muted" style="margin-top:4px">Ne kadar kaldı, ne zaman biter, ne alınmalı.</p></div>${epCard('box', 'Stoğunu birkaç dakikada kur', 'Ürünlerini ekle. Kais azalanları sana söyler ve siparişi hazırlar.', canAdd ? [['stkadd', 'Ürün ekle', '', 'plus'], ['stkbulk', 'Excel ya da listeden aktar', '', 'file'], ['cntphoto', 'Raf fotoğrafı at, Kais saysın', '', 'sparkle']] : [], ['Ekle', 'Say', 'Kais uyarır'])}</div>`;
+};
+const viewSatinAlmaV130 = viewSatinAlma;
+viewSatinAlma = function () {
+  if (STOCK.length) return viewSatinAlmaV130();
+  return `<div class="stack-lg"><div><h2>Satın alma</h2><p class="muted" style="margin-top:4px">Stok, satış ve reçetelerden hesaplanır. Kais önerir, sipariş sende onaylanır.</p></div>${epCard('box', 'Önce stoğunu ekle', 'Ürünlerin olunca Kais neyin ne zaman biteceğini hesaplar ve tedarikçi fiyatlarını karşılaştırır.', [['nav', 'Stoğa git', 'stok', 'box']], ['Stok ekle', 'Fiyat gir', 'Karşılaştır'])}</div>`;
+};
+const kbTidyV130 = kbTidy;
+kbTidy = function () { const r = kbTidyV130.apply(this, arguments); try { const m = document.querySelector('main'); if (m && S.user && S.user.role === 'muhasebeci' && S.view === 'donem') { const mc = m.querySelector('.mc'); const hd = mc && mc.querySelector('.mc-hd'); const hero = mc && mc.querySelector('.mc-hero'); if (hd && hero && hd.nextElementSibling !== hero) { hd.after(hero); const tasks = mc.querySelector('.mc-s'); if (tasks) hero.after(tasks); const kz = m.querySelector('.kz'); if (kz && kz.parentElement) { const d = kz.parentElement; if (d === mc || d === m) { const w = document.createElement('div'); w.style.marginTop = '12px'; d.appendChild(kz); } } } } } catch (e) {} return r; };
 </script>
 </body>
 </html>
