@@ -2428,5 +2428,69 @@ document.addEventListener('change',e=>{const t=e.target; if(t&&t.id==='up-sort')
 (function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
 })();
 
+/* ===== v14: Stok ve Hareketler yeniden tasarım ===== */
+(function(){const st=document.createElement('style'); st.textContent=`
+body[data-tab=urun][data-sub=stok] .sp-body,body[data-tab=urun][data-sub=hrk] .sp-body{display:block!important}
+body[data-tab=urun][data-sub=stok] .sp-body>.sp-seg,body[data-tab=urun][data-sub=hrk] .sp-body>.sp-seg{margin-left:auto;margin-right:auto}
+.us-k{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 12px}
+.us-k>div{background:#fff;border:1px solid rgba(29,42,36,.07);border-radius:14px;padding:11px 14px;box-shadow:0 1px 2px rgba(20,40,30,.04)}
+.us-k span{display:block;font:600 12.5px system-ui;color:var(--mut)}.us-k b{display:block;font:700 21px/1.2 'Bricolage Grotesque',system-ui,sans-serif;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums}
+.us-k .bad b{color:var(--bad)}.us-k .warn b{color:#b07a0a}
+.us-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:stretch}
+.us-grid .sp-empty{grid-column:1/-1}
+.us-more{background:transparent;color:var(--acc);padding:2px 4px;font:600 13px system-ui;margin:-4px 0 10px}
+.us-bar{display:flex;height:6px;border-radius:9px;background:#e9eeea;overflow:hidden}.us-bar i{display:block;height:100%}.us-bar .r{background:#3a78b8}.us-bar .a{background:var(--acc)}.us-bar .a.warn{background:#e0a21a}.us-bar .a.bad{background:#d6483d}
+.us-lg{display:flex;justify-content:space-between;gap:8px;font:500 12.5px system-ui;color:var(--mut);margin-top:6px}.us-lg em{font-style:normal;display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--acc)}.us-lg em.r{background:#3a78b8}.us-lg b{color:var(--ink);font-weight:650}
+.us-who{background:#f5f8f6;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+.us-who>div{display:flex;justify-content:space-between;gap:8px;align-items:center;font:500 12.5px system-ui;color:var(--ink)}.us-who>div span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.us-who strong{font:650 12.5px system-ui;flex:none}.us-who .sp-b{font-size:11px;padding:2px 7px;margin-left:4px}
+.us-who small{font:500 12px system-ui;color:var(--mut)}
+.us-ac{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-top:1px solid #eef1ee;padding-top:8px;margin-top:auto}.us-ac button{background:transparent;color:var(--acc);padding:7px 4px;border-radius:9px;font:600 13px system-ui}.us-ac button:hover{background:#eaf3ee}.us-ac button:nth-child(2){color:#b3392f}.us-ac button:nth-child(2):hover{background:#fdeceb}.us-ac button:nth-child(4){color:var(--mut)}
+.us-c.t-bad{box-shadow:inset 3px 0 0 #d6483d,0 1px 2px rgba(20,40,30,.04)!important}.us-c.t-warn{box-shadow:inset 3px 0 0 #e0a21a,0 1px 2px rgba(20,40,30,.04)!important}
+.uh-day{grid-column:1/-1;font:700 13px system-ui;color:var(--mut);text-transform:none;margin:16px 2px 8px;display:flex;gap:8px;align-items:baseline}.uh-g>.uh-day:first-child{margin-top:4px}.uh-g>.uh-day{margin-bottom:0}.uh-day span{font-weight:500}
+.uh-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+.uh-r{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid rgba(29,42,36,.07);border-radius:14px;padding:10px 12px;box-shadow:0 1px 2px rgba(20,40,30,.04)}
+.uh-i{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:700 16px system-ui;background:#eef1ee;color:var(--mut)}.uh-i.pos{background:#e3f2ea;color:var(--acc)}.uh-i.neg{background:#fdeceb;color:var(--bad)}
+.uh-t{flex:1;min-width:0}.uh-t b{display:block;font:650 14px/1.25 system-ui;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.uh-t span{display:block;font:500 12.5px system-ui;color:var(--mut);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uh-q{flex:none;text-align:right}.uh-q b{display:block;font:700 15px system-ui;color:var(--ink);font-variant-numeric:tabular-nums}.uh-q b.pos{color:var(--acc)}.uh-q b.neg{color:var(--bad)}.uh-q span{display:block;font:500 11.5px system-ui;color:var(--mut)}
+@media(max-width:640px){.up-top .sp-add{flex:1 1 100%}.us-k{grid-template-columns:1fr 1fr;gap:8px}.us-k b{font-size:18px}.us-ac button{font-size:12.5px}}
+`; document.head.appendChild(st);
+const HUE=s=>{let h=0; for(const c of String(s||'x')) h=(h*31+c.charCodeAt(0))%360; return h;};
+SPS.sf=SPS.sf||''; SPS.hf=SPS.hf||''; SPS.tall=!!SPS.tall;
+spStok=function(){const R=spRes(); const L=SPS.prods.filter(p=>p.active!==false); const q=nrm(SPS.sq);
+  const S=L.map(p=>({p,s:spStk(p,R)})); const val=S.reduce((a,x)=>a+x.s.val,0), resv=S.reduce((a,x)=>a+x.s.res*(Number(x.p.price)||0),0);
+  const F={kritik:x=>x.s.crit||x.s.short, skt:x=>x.s.sktRisk, fazla:x=>x.s.over, takipsiz:x=>!x.s.tracked};
+  const cnt=k=>S.filter(F[k]).length; const crit=cnt('kritik'), risk=cnt('skt');
+  const chips=[['','Hepsi',S.length,''],['kritik','Kritik / eksik',crit,'bad'],['skt','SKT riski',risk,'warn'],['fazla','Fazla stok',cnt('fazla'),'ok'],['takipsiz','Takipsiz',cnt('takipsiz'),'info']].filter(c=>c[0]===''||c[2]>0||SPS.sf===c[0]);
+  const shown=S.filter(x=>(!q||nrm(x.p.name).includes(q))&&(!SPS.sf||F[SPS.sf](x))).sort((a,b)=>(b.s.short-a.s.short)||(b.s.crit-a.s.crit)||(b.s.sktRisk-a.s.sktRisk)||a.p.name.localeCompare(b.p.name,'tr'));
+  const tips=spStokTips(); const tv=SPS.tall?tips:tips.slice(0,2);
+  const tipH=tv.map(t=>`<div class="up-tip ${t[0]==='bad'?'bad':t[0]==='info'?'':'warn'}">${SPI(t[0]==='info'?'tag':'alert',18)}<span>${esc(t[1])}</span><button data-sp="${t[2]==='promo'?'pedit':'mv'}" data-id="${t[3]}" data-v="giris">${t[2]==='promo'?'Kampanya':'Giriş yap'}</button></div>`).join('')+(tips.length>2?`<button class="us-more" data-sp="utall">${SPS.tall?'Daha az göster':(tips.length-2)+' uyarı daha'}</button>`:'');
+  const card=({p,s})=>{const tot=Math.max(s.qty,s.res,1); const rp=Math.min(100,s.res/tot*100); const ap=Math.max(0,Math.min(100-rp,Math.max(0,s.avail)/tot*100)); const tone=s.short?'bad':s.crit?'warn':''; const h=HUE(p.category||p.name);
+    const img=(p.photos&&p.photos[0])?`<img src="${esc(p.photos[0])}" alt="" loading="lazy">`:esc(String(p.name||'?').trim().charAt(0).toLocaleUpperCase('tr')); const imS=(p.photos&&p.photos[0])?'':` style="background:hsl(${h} 38% 92%);color:hsl(${h} 42% 30%)"`;
+    const w=s.list.slice(0,2), more=s.list.length-w.length;
+    return `<div class="sp-pc up-c us-c${tone?' t-'+tone:''}" data-pid="${p.id}"><div class="up-h"><div class="up-im"${imS}>${img}</div><div class="up-nm"><b>${esc(p.name)}</b><span>${s.tracked?'Alt sınır '+(s.min?fmt2(s.min)+' '+esc(p.unit):'yok')+(p.cost?' · maliyet '+tl0(p.cost):''):'Stok takibi başlamadı'}</span></div><div class="up-pr"><b>${fmt2(s.qty)}</b><span>${esc(p.unit)} elde</span></div></div>
+    ${s.tracked?`<div><div class="us-bar"><i class="r" style="width:${rp}%"></i><i class="a ${tone}" style="width:${ap}%"></i></div><div class="us-lg"><span><em class="r"></em>Rezerve <b>${fmt2(s.res)}</b></span><span><em></em>Satılabilir <b>${fmt2(Math.max(0,s.avail))}</b></span></div></div>
+    <div class="up-bg">${s.short?'<span class="sp-b bad">Yetersiz</span>':s.crit?'<span class="sp-b warn">Kritik</span>':'<span class="sp-b ok">Yeterli</span>'}${s.cover!=null?`<span class="sp-b ${s.cover<7?'warn':'mut'}">~${Math.round(s.cover)} gün yeter</span>`:'<span class="sp-b mut">Satış hızı yok</span>'}${s.sktRisk?`<span class="sp-b bad">SKT riski · ${fmt2(s.unsold)} ${esc(p.unit)}</span>`:''}${s.over?'<span class="sp-b promo">Fazla stok</span>':''}${s.vel>0?`<span class="sp-b mut">günlük ~${fmt2(s.vel)}</span>`:''}</div>
+    ${w.length?`<div class="us-who">${w.map(r=>`<div><span>${esc(r.who)}<em class="sp-b ${r.st==='onaylandi'?'ok':'warn'}">${r.st==='onaylandi'?'onaylı':'onay bekliyor'}</em></span><strong>${fmt2(r.qty)} ${esc(p.unit)}</strong></div>`).join('')}${more>0?`<small>+${more} sipariş daha</small>`:''}</div>`:''}`:''}
+    <div class="us-ac"><button data-sp="mv" data-id="${p.id}" data-v="giris">+ Giriş</button><button data-sp="mv" data-id="${p.id}" data-v="cikis">− Çıkış</button><button data-sp="mv" data-id="${p.id}" data-v="sayim">Sayım</button><button data-sp="mv" data-id="${p.id}" data-v="fire">Fire</button></div></div>`;};
+  return `<div class="us-k"><div><span>Stok değeri</span><b>${tl0(val)}</b></div><div><span>Rezerve (sipariş)</span><b>${tl0(resv)}</b></div><div class="${crit?'bad':''}"><span>Kritik / eksik</span><b>${crit}</b></div><div class="${risk?'warn':''}"><span>SKT riski</span><b>${risk}</b></div></div>
+  <div class="up-top"><label class="sp-s">${SPI('search',18)}<input id="sp-sq" placeholder="Stokta ara" value="${esc(SPS.sq)}" autocomplete="off"></label><button class="sp-add" data-sp="bsopen">${SPI('box',18)}<span>Toplu sayım</span></button></div>
+  <div class="up-row">${chips.map(c=>`<button class="up-k ${c[3]}${SPS.sf===c[0]?' on':''}" data-sp="usf" data-v="${c[0]}"><i></i>${c[1]} <b>${c[2]}</b></button>`).join('')}</div>
+  ${tipH}
+  <div class="us-grid">${shown.length?shown.map(card).join(''):(L.length?'<div class="sp-empty"><b>Sonuç yok</b><span>Aramayı ya da filtreyi değiştir.</span></div>':'<div class="sp-empty"><b>Ürün yok</b><span>Önce katalogdan ürün ekle.</span></div>')}</div>`;};
+spHrk=function(){const all=SPS.books.slog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,100);
+  if(!all.length) return `<div class="sp-empty">${SPI('box',30)}<b>Henüz hareket yok</b><span>Giriş, çıkış, sayım ve fire kayıtları burada listelenir.</span></div>`;
+  const T=[['','Hepsi'],['giris','Giriş'],['cikis','Çıkış'],['sayim','Sayım'],['fire','Fire']].map(x=>[x[0],x[1],x[0]?all.filter(m=>m.type===x[0]).length:all.length]).filter(x=>x[0]===''||x[2]>0||SPS.hf===x[0]);
+  const L=SPS.hf?all.filter(m=>m.type===SPS.hf):all; const today=new Date().toDateString(), yest=new Date(Date.now()-864e5).toDateString();
+  const dayName=d=>{const s=d.toDateString(); return s===today?'Bugün':s===yest?'Dün':d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});};
+  const groups=[]; L.forEach(m=>{const d=new Date(m.date); const k=d.toDateString(); let g=groups[groups.length-1]; if(!g||g.k!==k){g={k,d,items:[]};groups.push(g);} g.items.push(m);});
+  const row=m=>{const p=SPS.prods.find(x=>x.id===m.pid); const t=SP_MV[m.type]||[m.type,'mut']; const sign=(m.type==='cikis'||m.type==='fire')?'−':m.type==='giris'?'+':''; const ic=m.type==='giris'?'↓':m.type==='cikis'?'↑':m.type==='fire'?'✕':'✓';
+    return `<div class="uh-r"><div class="uh-i ${t[1]}">${ic}</div><div class="uh-t"><b>${esc(p?p.name:'Silinmiş ürün')}</b><span>${dayName(new Date(m.date))} ${new Date(m.date).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}${m.who?' · '+esc(m.who):''}${m.note?' · '+esc(m.note):''}</span></div><div class="uh-q"><b class="${t[1]}">${sign}${fmt2(m.qty)}${p?' '+esc(p.unit):''}</b><span>${esc(t[0])}</span></div></div>`;};
+  return `<div class="up-row">${T.map(x=>`<button class="up-k${SPS.hf===x[0]?' on':''}" data-sp="uhf" data-v="${x[0]}">${x[1]} <b>${x[2]}</b></button>`).join('')}</div>`+`<div class="uh-g">${L.map(row).join('')}</div>`;};
+SPA.usf=(el)=>{const v=el.dataset.v; SPS.sf=(SPS.sf===v)?'':v; spRender(true);};
+SPA.uhf=(el)=>{const v=el.dataset.v; SPS.hf=(SPS.hf===v)?'':v; spRender(true);};
+SPA.utall=()=>{SPS.tall=!SPS.tall; spRender(true);};
+(function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
+})();
+
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
 </script></body></html>
