@@ -6412,17 +6412,25 @@ const lxArt = () => { const ic = (cx, cy, d) => `<g transform="translate(${cx - 
   ${ic(30, 58, '<path d="M4 2h12v16l-2.5-1.5L11 18l-2.5-1.5L6 18 4 16.5z"/><path d="M7 7h6M7 11h6"/>')}${ic(270, 58, '<circle cx="8" cy="7" r="3"/><path d="M2 17c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="15.5" cy="8" r="2"/>')}${ic(30, 142, '<path d="M10 2l7 3.5v8L10 17l-7-3.5v-8z"/><path d="M3 5.5L10 9l7-3.5M10 9v8"/>')}${ic(270, 142, '<path d="M2 3h3l2 10h9l2-7H6"/><circle cx="8" cy="17" r="1.4"/><circle cx="15" cy="17" r="1.4"/>')}</svg>`; };
 function lxLogin() {
   const cloud = sbOK(); const tab = cloud ? (S.lgTab || 'own') : 'own'; const em = esc(S.lgEm || ''); const create = !!S.lgCreate && cloud;
-  const tabs = cloud ? `<div class="lx-tabs" role="group" aria-label="Giriş türü">${[['own', 'İşveren', 'İşletmeni yönet', LXI.store], ['emp', 'Çalışan', 'Görevlerine eriş', LXI.users], ['sup', 'Tedarikçi', 'Siparişlerini yönet', LXI.truck]].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[3]}<b>${x[1]}</b><span>${x[2]}</span></button>`).join('')}</div>` : '';
+  const tabs = cloud ? `<div class="lx-tabs" role="group" aria-label="Giriş türü">${[['own', 'İşveren', 'İşletmeni yönet', LXI.store], ['emp', 'Çalışan', 'Görevlerine eriş', LXI.users], ['sup', 'Tedarikçi', 'Siparişlerini yönet', LXI.truck]].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[3]}<b>${x[1]}</b></button>`).join('')}</div>` : '';
   const eid = cloud ? 'id-em' : 'em', pid = cloud ? 'id-pw' : 'pw', errId = cloud ? 'id-err' : 'lerr';
   const fields = `<div class="lx-f"><label for="${eid}">E-posta</label><div class="lx-in">${LXI.mail}<input id="${eid}" type="email" autocomplete="username" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com" value="${em}"></div></div>
    <div class="lx-f"><div class="lx-lr"><label for="${pid}">Şifre</label>${cloud ? '<button type="button" class="lx-link" data-a="idforgot">Şifremi unuttum?</button>' : ''}</div><div class="lx-in">${LXI.lock}<input id="${pid}" type="password" autocomplete="${create ? 'new-password' : 'current-password'}" placeholder="Şifre"><button type="button" class="lx-eye" data-a="pwtog" aria-label="Şifreyi göster veya gizle">${LXI.eye}</button></div></div>`;
   const err = `<div class="err" id="${errId}" role="alert">${esc(S.loginErr)}</div>`;
   const forgot = '';
   const go = `<button class="lx-go" type="${cloud ? 'button' : 'submit'}" ${cloud ? 'data-a="idin"' : ''}><span>Giriş yap</span>${LXI.arrow}</button>`;
+  const demoBox = AUTH.demo === false ? '' : `<button type="button" class="lx-demo" data-a="demo" data-id="u1">${LXI.play}<b>Demo hesabını dene</b><span>Örnek verilerle sistemi keşfedin</span></button><details class="lx-more"><summary>Diğer roller <span aria-hidden="true">▾</span></summary><div class="lx-roles">${[['u2', 'Müdür'], ['u3', 'Muhasebeci'], ['u4', 'Çalışan']].map((x) => `<button type="button" data-a="demo" data-id="${x[0]}">${x[1]}</button>`).join('') + '<button type="button" data-a="lgrole" data-v="sup">Tedarikçi</button>'}</div></details>`;
   let body;
   if (cloud && SBS.user && ID.mems.length > 1 && !ID.active) body = `<div class="stack"><p class="lbl">Hangi işletmeye girmek istiyorsun?</p>${ID.mems.map((m) => `<button type="button" class="btn sec block" data-a="idpick" data-id="${m.business_id}">${esc(m.businesses.name)} · ${esc(ROLE_LABEL[m.role])}</button>`).join('')}<button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div>`;
-  else if (tab === 'sup') body = `<p class="lx-note">Tedarikçiysen teklif ve siparişlerini kendi panelinden yönetirsin. İşletme seni e-postanla davet eder.</p><a class="lx-go" href="/tedarikci"><span>Tedarikçi paneline git</span>${LXI.arrow}</a>`;
-  else if (cloud && tab === 'emp' && !(SBS.user && !ID.active && ID.mems.length === 0)) body = lxEmp(fields, err, go);
+  else if (tab === 'sup') {
+    if (cloud && SBS.user) body = `<p class="lx-note">${esc(SBS.user.email || 'Hesabın')} olarak giriş yapıldı.</p><a class="lx-go" href="/tedarikci/"><span>Tedarikçi paneline git</span>${LXI.arrow}</a><button type="button" class="lx-alt lx-out" data-a="idout"><b>Çıkış yap</b></button>${demoBox}`;
+    else {
+      const goS = `<button class="lx-go" type="button" data-a="supin"><span>Giriş yap</span>${LXI.arrow}</button>`;
+      const ex = `<div class="lx-or"><span>veya</span></div><button type="button" class="lx-alt" data-a="supnew">${LXI.plus}<b>Yeni hesap oluştur</b></button><p class="lx-hint">Yukarıya e-postanı ve en az 8 karakterlik şifreni yaz, sonra bu düğmeye bas. Hesabı açınca işletmenin verdiği davet koduyla bağlanırsın.</p>`;
+      body = `${fields}${err}${goS}${ex}${demoBox}`;
+    }
+  }
+  else if (cloud && tab === 'emp' && !(SBS.user && !ID.active && ID.mems.length === 0)) body = lxEmp(fields, err, go) + demoBox;
   else {
     const note = cloud && SBS.user && !ID.active && ID.mems.length === 0 ? `<div class="callout warn">${ic('alert')}<div>${esc(SBS.user.email || 'Bu hesap')} giriş yapmış ama bir işletmeye bağlı değil. <button type="button" class="btn sm sec" data-a="idout">Çıkış yap</button></div></div>` : '';
     let extra = '';
@@ -6433,12 +6441,11 @@ function lxLogin() {
         ? `<div class="lx-box"><p class="small muted">İşvereninin verdiği kodu yaz. Yukarıya e-postanı ve kendi belirlediğin en az 8 karakterlik şifreni yaz.</p><div class="lx-f"><label for="id-code">Davet kodu</label><div class="lx-in"><input id="id-code" type="text" autocapitalize="characters" placeholder="Örn. K7M2QX" style="text-transform:uppercase"></div></div><button type="button" class="btn block" data-a="idnew">Hesap oluştur ve katıl</button></div>`
         : `<div class="lx-box"><p class="small muted">Yukarıya e-postanı ve en az 8 karakterlik şifreni yaz, buraya işletmeni. Yeni işletme boş başlar.</p><div class="lx-f"><label for="id-biz">İşletme adı</label><div class="lx-in"><input id="id-biz" type="text" autocomplete="organization"></div></div><div class="lx-f"><label>İşletme türü <span class="lx-opt">isteğe bağlı</span></label><div class="pf-cs lx-tur" data-grp="tur"><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Kafe">Kafe</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Restoran">Restoran</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Fırın / pastane">Fırın / pastane</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Market">Market</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Kuaför / berber">Kuaför / berber</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Mağaza">Mağaza</button><button type="button" class="pf-c" data-a="pfchip" data-g="tur" data-v="Diğer">Diğer</button></div></div><div class="lx-f"><label for="id-name">Adın soyadın</label><div class="lx-in"><input id="id-name" type="text" autocomplete="name"></div></div><button type="button" class="btn block" data-a="idnew">İşletmemi oluştur</button></div>`;
     }
-    const demoBox = AUTH.demo === false ? '' : `<button type="button" class="lx-demo" data-a="demo" data-id="u1">${LXI.play}<b>Demo hesabını dene</b><span>Örnek verilerle sistemi keşfedin</span></button><details class="lx-more"><summary>Diğer roller <span aria-hidden="true">▾</span></summary><div class="lx-roles">${[['u2', 'Müdür'], ['u3', 'Muhasebeci'], ['u4', 'Çalışan']].map((x) => `<button type="button" data-a="demo" data-id="${x[0]}">${x[1]}</button>`).join('')}</div></details>`;
     body = `${note}${fields}${err}${forgot}${go}${extra}${demoBox}`;
   }
-  const inner = (cloud && tab !== 'sup' && !(SBS.user && ID.mems.length > 1 && !ID.active)) ? `<form id="${create ? 'idform' : 'idform'}" class="lx-form" novalidate>${body}</form>` : (cloud ? `<div class="lx-form">${body}</div>` : `<form id="login" class="lx-form" novalidate>${body}</form>`);
+  const inner = (cloud && (tab !== 'sup' || !SBS.user) && !(SBS.user && ID.mems.length > 1 && !ID.active)) ? `<form id="${create ? 'idform' : 'idform'}" class="lx-form" novalidate>${body}</form>` : (cloud ? `<div class="lx-form">${body}</div>` : `<form id="login" class="lx-form" novalidate>${body}</form>`);
   return `<div class="login lx"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>İşletmenizi tek yerden yönetin.</h2><p>Fiş, ekip, stok ve tedarik süreçlerinizi tek ekrandan kontrol edin.</p></div>${lxArt()}</section>
-  <section class="lx-card"><div class="lx-cin"><h1>Giriş yap</h1><p class="lx-sub">Hesabınıza devam edin</p>${tabs}${inner}</div></section></div>`;
+  <section class="lx-card"><div class="lx-cin"><h1>Giriş yap</h1><p class="lx-sub">${{ own: 'İşletmeni yönet', emp: 'Görevlerine eriş', sup: 'Teklif ve siparişlerini yönet' }[tab] || 'Hesabınıza devam edin'}</p>${tabs}${inner}</div></section></div>`;
 }
 loginHTML = lxLogin;
 const _lgtab35 = H.lgtab; H.lgtab = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.lgCreate = false; S.loginErr = ''; _lgtab35(el); };
@@ -12179,6 +12186,77 @@ H.mkpre = (el) => {
     return h.replace('<option>' + esc(p.unit) + '</option>', '<option selected>' + esc(p.unit) + '</option>');
   };
 }
+
+/* ===== v124: sade, tek tasarımlı giriş (tedarikçi aynı ekranda) ===== */
+{
+  const st = document.createElement('style'); st.textContent = `
+.login.lx.lx2{display:flex!important;flex-direction:column;align-items:center;min-height:100%;padding:28px 16px 36px;background:linear-gradient(180deg,#E3ECF7 0,#F3F6FB 260px,#F3F6FB 100%)!important}
+.lx2 .lx-hero{position:static!important;aspect-ratio:auto!important;background:none!important;min-height:0!important;height:auto!important;padding:0 0 18px!important;overflow:visible!important;display:block!important;width:100%;max-width:440px}
+.lx2 .lx-hero::before,.lx2 .lx-hero::after{display:none!important;content:none!important}
+.lx2 .lx-hero>*{position:static!important;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;white-space:normal!important}
+.lx2 .lx-copy,.lx2 .lx-art{display:none!important}
+.lx2 .lx-brand{display:flex!important;align-items:center;gap:11px;color:#0E2B4D;font-size:21px;font-weight:700;letter-spacing:-.3px}
+.lx2 .lx-brand svg{width:40px!important;height:40px!important;padding:8px;border-radius:12px;background:linear-gradient(160deg,#1363B8,#0A3F7A);box-shadow:0 6px 14px rgba(10,63,122,.25)}
+.lx2 .lx-card{width:100%;max-width:440px;margin:0!important;padding:24px 20px 22px!important;border-radius:24px!important;background:#fff!important;border:1px solid #E3EAF3;box-shadow:0 12px 36px rgba(14,43,77,.08)!important;display:block!important}
+.lx2 .lx-card h1{font-size:26px!important;letter-spacing:-.4px}
+.lx2 .lx-sub{margin-top:4px!important;font-size:14.5px!important;color:var(--muted)}
+.lx2 .lx-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px!important;margin:18px 0 18px!important;padding:4px;border-radius:15px;background:#EEF2F8}
+.lx2 .lx-tabs button{flex-direction:row!important;justify-content:center;gap:6px!important;min-height:42px!important;padding:0 4px!important;border:0!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important;color:var(--muted)}
+.lx2 .lx-tabs button svg{width:18px!important;height:18px!important;margin:0!important;color:currentColor}
+.lx2 .lx-tabs button b{font-size:13.5px!important;font-weight:600;color:currentColor!important}
+.lx2 .lx-tabs button[aria-pressed=true]{background:#fff!important;color:var(--cini)!important;box-shadow:0 1px 4px rgba(14,43,77,.14)!important}
+.lx2 .lx-in{min-height:50px;border-radius:14px}
+.lx2 .lx-go{min-height:52px!important;border-radius:14px!important;font-size:17px!important;background:var(--cini)!important;box-shadow:0 6px 16px rgba(13,86,166,.28)!important}
+.lx2 .lx-or{margin:0 8px!important;font-size:13px}
+.lx2 .lx-alt,.lx2 .lx-demo{min-height:48px!important;padding:6px 12px!important;border-radius:14px!important;gap:8px!important}
+.lx2 .lx-alt b,.lx2 .lx-demo b{font-size:15px!important}
+.lx2 .lx-alt span,.lx2 .lx-demo span{display:none!important}
+.lx2 .lx-alt{border:1.5px solid #CBD7E6!important;background:#fff!important}
+.lx2 .lx-alt b{color:var(--cini)!important}
+.lx2 .lx-alt svg,.lx2 .lx-demo svg{width:20px;height:20px}
+.lx2 .lx-demo{background:#EEF2F8!important}
+.lx2 .lx-more summary{font-size:13.5px;color:var(--muted);padding:6px 0;cursor:pointer;text-align:center;list-style:none}
+.lx2 .lx-more summary::-webkit-details-marker{display:none}
+.lx2 .lx-roles{margin-top:2px!important;gap:6px!important}
+.lx2 .lx-roles button{border:1px solid #D5DEEA!important;border-radius:999px!important;background:#fff!important;padding:6px 14px!important;min-height:34px!important}
+.lx2 .lx-out{margin-top:8px}
+@media(min-width:900px){.login.lx.lx2{justify-content:center;padding:40px 16px}}
+`; document.head.appendChild(st);
+}
+const _lg124 = loginHTML;
+loginHTML = function () {
+  let h = _lg124(); h = h.replace('<div class="login lx', '<div class="login lx lx2');
+  h = h.replace(/<a class="lx-supq"[\s\S]*?<\/a>/, '').replace(/<div class="lx-rq">[\s\S]*?<\/div><\/div>/, ''); return h;
+};
+const lgSay = (t) => { S.loginErr = t; const e = document.getElementById('id-err'); if (e) e.textContent = t; };
+const lgRem = () => { try { const e = (document.getElementById('id-em') || {}).value; if (e) localStorage.setItem('kp_lgem', e.trim()); } catch (x) {} };
+H.lgtab = (el) => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.lgCreate = false; S.loginErr = ''; S.lgTab = el.dataset.v; try { localStorage.setItem('kp_lgtab', S.lgTab); } catch (x) {} render(); };
+{ const _i = H.idin; H.idin = function () { lgRem(); return _i.apply(this, arguments); }; }
+const supAuth = async (mode) => {
+  const em = ((document.getElementById('id-em') || {}).value || '').trim(); const pw = (document.getElementById('id-pw') || {}).value || '';
+  if (!/^\S+@\S+\.\S+$/.test(em)) return lgSay('Geçerli bir e-posta adresi yaz.');
+  if (mode === 'new' && pw.length < 8) return lgSay('Şifre en az 8 karakter olmalı.');
+  if (!pw) return lgSay('Şifreni yaz.');
+  const c = sbClient(); if (!c) return lgSay('Bulut bağlantısı kullanılamıyor.'); lgSay(''); lgRem();
+  try {
+    if (mode === 'in') { const r = await c.auth.signInWithPassword({ email: em, password: pw }); if (r.error) throw r.error; location.href = '/tedarikci/'; return; }
+    const r = await c.auth.signUp({ email: em, password: pw }); if (r.error) throw r.error;
+    if (r.data && r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0) return lgSay('Bu e-postayla zaten bir hesap var. Giriş yapmayı dene.');
+    if (r.data && r.data.session) { location.href = '/tedarikci/'; return; }
+    lgSay(em + ' adresine bir onay bağlantısı gönderdik. Tıkladıktan sonra buradan giriş yap. Gelmediyse spam klasörüne bak.');
+  } catch (x) { const m = String((x && x.message) || x || ''); lgSay(/invalid login/i.test(m) ? 'E-posta ya da şifre yanlış.' : /not confirmed/i.test(m) ? 'E-postanı henüz onaylamadın. Gelen kutundaki bağlantıya tıkla.' : /already/i.test(m) ? 'Bu e-postayla zaten bir hesap var. Giriş yapmayı dene.' : /rate limit|too many/i.test(m) ? 'Kısa sürede çok fazla deneme yapıldı. Birkaç dakika bekle.' : idMsg(x)); }
+};
+H.supin = () => supAuth('in'); H.supnew = () => supAuth('new');
+if (typeof document !== 'undefined') {
+  document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'idform' && S.lgTab === 'sup') { e.preventDefault(); e.stopImmediatePropagation(); (S.lgCreate ? H.supnew : H.supin)(); } }, true);
+  document.addEventListener('keydown', (e) => { if (e.key !== 'Enter' || S.lgTab !== 'sup') return; const t = e.target; if (!t || t.tagName !== 'INPUT' || !t.closest || !t.closest('#idform')) return; e.preventDefault(); e.stopImmediatePropagation(); (S.lgCreate ? H.supnew : H.supin)(); }, true);
+}
+try {
+  const q = new URLSearchParams(location.search).get('t'); const last = localStorage.getItem('kp_lgtab'); const t = q === 'sup' ? 'sup' : last;
+  if (['own', 'emp', 'sup'].includes(t)) S.lgTab = t;
+  if (!S.lgEm) S.lgEm = localStorage.getItem('kp_lgem') || '';
+  if (!S.user && sbOK()) render();
+} catch (x) {}
 </script>
 </body>
 </html>

@@ -246,6 +246,7 @@ async function boot(){
 function head(t,role){return `<div class="row"><div><h1>${esc(t)}</h1>${role?`<span class="pill">${esc(role)}</span>`:''}</div><button class="s sm" id="out">Çıkış</button></div>`}
 function bindOut(){const o=$('#out'); if(o) o.onclick=async()=>{await sb.auth.signOut();boot();};}
 function loginView(mode){
+  if(!DEMO&&/^https?:/.test(location.protocol)){location.replace('/?t=sup');return;}
   mode=mode==='up'?'up':'in';
   document.body.classList.add('lg');
   const prev=(document.getElementById('em')||{}).value||'';
