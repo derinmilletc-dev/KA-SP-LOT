@@ -1706,7 +1706,7 @@ function loginHTML() {
       <p class="lead">Patron, müdür, muhasebeci ve çalışan aynı sisteme girer, herkes yalnızca kendi işini görür.</p>
       <div class="roles"><span>Patron: bugün ne yapman gerektiğini görür</span><span>Muhasebeci: ayın paketini hazır alır</span><span>Çalışan: giriş, mola ve masrafını tek dokunuşla yapar</span></div>
     </div>
-    <p class="small" style="color:#CFE0F4">Prototip sürüm. Ekrandaki tüm veriler örnektir.</p>
+    <p class="small" style="color:#CFE0F4">Demo hesaplarda ekrandaki veriler örnektir.</p>
   </section>
   <section class="login-form"><div class="inner">
     <div><h1 style="font-size:28px">Giriş yap</h1><p class="muted" style="margin-top:6px">${esc(BIZ)} hesabına gir.</p></div>
@@ -4571,7 +4571,7 @@ async function sbBoot() {
   try { const s = await c.auth.getSession(); SBS.user = s && s.data && s.data.session ? s.data.session.user : null; if (SBS.user) { await sbLoadBiz(); await sbPull(); } } catch (e) { SBS.err = sbMsg(e); }
   render();
 }
-const sbMsg = (e) => { const m = String((e && e.message) || e || ''); return /Invalid login/i.test(m) ? 'E-posta veya şifre yanlış.' : /already registered/i.test(m) ? 'Bu e-posta zaten kayıtlı, Bağlan ile gir.' : /Email not confirmed/i.test(m) ? 'E-postanı onayla, sonra tekrar dene.' : m || 'Bağlanılamadı.'; };
+const sbMsg = (e) => { const m = String((e && e.message) || e || ''); return /Invalid login/i.test(m) ? 'E-posta veya şifre yanlış.' : /already registered/i.test(m) ? 'Bu e-posta zaten kayıtlı, Bağlan ile gir.' : /Email not confirmed/i.test(m) ? 'E-postanı onayla, sonra tekrar dene.' : trErr(m); };
 async function sbSyncSups() {
   const c = sbClient(); if (!c || !SBS.biz) return;
   const q = await c.from('suppliers').select('*').eq('business_id', SBS.biz.id); if (q.error) throw q.error; SBS.sups = q.data || [];
@@ -12608,6 +12608,49 @@ function hitFix() { try { document.querySelectorAll('main button,main .sw,main [
       const pp = root.querySelector('.sheet p.small.muted'); if (pp && /Prototip/.test(pp.textContent)) { if (SBS && SBS.user) pp.remove(); else pp.textContent = 'Demo sürüm. Ekrandaki veriler örnektir.'; }
     } catch (x) {}
   };
+}
+
+/* ===== v131: Fiyat listesi sonucu: eski fiyatla fark, eşleşmeyen satır uyarısı, satırı çıkar ===== */
+(function () { try { const st = document.createElement('style'); st.textContent = '.pl-r.pl-un{background:#FFF8E6;border-radius:12px}.pl-h{display:block;font:600 11.5px system-ui;margin-top:2px;color:#6B7A90}.pl-h.up{color:#C0392B}.pl-h.dn{color:#1E9E5A}.pl-h.nw{color:#B26A00}.pl-x{border:0;background:#EEF3FB;color:#6B7A90;border-radius:9px;width:30px;height:30px;font:700 15px system-ui;cursor:pointer;flex:none}.pl-r.pl-gone{display:none}.pl-l .pl-r{display:grid!important;grid-template-columns:1fr 96px 30px;grid-template-areas:"n n x" "s p p";gap:8px;align-items:center;padding:10px}.pl-r .pl-n{grid-area:n}.pl-r select{grid-area:s;min-width:0;width:100%}.pl-r input{grid-area:p;min-width:0;width:100%}.pl-r .pl-x{grid-area:x}'; document.head.appendChild(st); } catch (e) {} })();
+{
+  const _rm3 = renderModal;
+  renderModal = function () {
+    _rm3.apply(this, arguments); const m = S.modal; const root = $('#modal-root'); if (!root || !m || m.type !== 'pl' || m.step !== 'res') return;
+    try {
+      const sup = SUPPLIERS.find((t) => t.id === PL.sup);
+      const upd = (i) => {
+        const row = root.querySelectorAll('.pl-r')[i]; if (!row) return; const sel = document.getElementById('pl-m' + i); const inp = document.getElementById('pl-p' + i); const nm = row.querySelector('.pl-n');
+        let h = nm.querySelector('.pl-h'); if (!h) { h = document.createElement('span'); h.className = 'pl-h'; nm.appendChild(h); }
+        const v = Number(String(inp.value).replace(',', '.')); const old = sup && sel.value && sup.items && sup.items[sel.value];
+        row.classList.toggle('pl-un', !sel.value);
+        if (!sel.value) { h.className = 'pl-h nw'; h.textContent = 'Eşleşmedi. Ürün seç ya da atla'; }
+        else if (old > 0 && v > 0) { const d = Math.round((v / old - 1) * 100); h.className = 'pl-h ' + (d > 0 ? 'up' : d < 0 ? 'dn' : ''); h.textContent = d === 0 ? 'Fiyat aynı' : 'Eski ' + fmt(old) + ' ' + (d > 0 ? '↑ %' : '↓ %') + Math.abs(d); }
+        else { h.className = 'pl-h'; h.textContent = old > 0 ? '' : 'Yeni fiyat'; }
+      };
+      root.querySelectorAll('.pl-r').forEach((row, i) => {
+        upd(i); const sel = document.getElementById('pl-m' + i), inp = document.getElementById('pl-p' + i); if (!sel || !inp) return;
+        sel.addEventListener('change', () => upd(i)); inp.addEventListener('input', () => upd(i));
+        const x = document.createElement('button'); x.type = 'button'; x.className = 'pl-x'; x.setAttribute('aria-label', 'Satırı çıkar'); x.textContent = '×'; x.addEventListener('click', () => { sel.value = ''; row.classList.add('pl-gone'); });
+        row.appendChild(x);
+      });
+    } catch (e) {}
+  };
+}
+
+/* ===== v131: Hata mesajları Türkçe ===== */
+function trErr(m) {
+  m = String(m || '');
+  if (!m) return 'Bağlanılamadı. İnternetini kontrol edip tekrar dene.';
+  if (/failed to fetch|networkerror|network request|load failed|fetch failed|timeout|timed out/i.test(m)) return 'Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.';
+  if (/password should be at least|weak_password|password.*(short|weak)/i.test(m)) return 'Şifre en az 6 karakter olmalı. Harf ve rakam karışık yaparsan daha güvenli olur.';
+  if (/unable to validate email|invalid email|email address.*invalid|invalid format/i.test(m)) return 'E-posta adresi geçerli görünmüyor. Yazımı kontrol et.';
+  if (/signups? not allowed|signup.*disabled/i.test(m)) return 'Şu an yeni kayıt alınmıyor. Biraz sonra tekrar dene.';
+  if (/rate limit|too many|over_.*_rate/i.test(m)) return 'Kısa sürede çok fazla deneme yapıldı. Birkaç dakika bekleyip tekrar dene.';
+  if (/same password|different from the old/i.test(m)) return 'Yeni şifren eskisinden farklı olmalı.';
+  if (/session.*(expired|missing)|jwt expired|refresh token/i.test(m)) return 'Oturumun sona erdi. Tekrar giriş yap.';
+  if (/user not found|no user/i.test(m)) return 'Bu e-postayla kayıtlı bir hesap bulamadım.';
+  if (/[a-z]{4,} [a-z]{3,} [a-z]{3,}/i.test(m) && !/[çğıöşüÇĞİÖŞÜ]/.test(m)) return 'Bir sorun oluştu. Tekrar dene, sürerse bize yaz.';
+  return m;
 }
 </script>
 </body>
