@@ -8374,6 +8374,276 @@ const _sbPull93 = sbPull;
 sbPull = async function () { let ch = await _sbPull93(); try { const c = sbClient(); const L = ORDERS.filter((o) => o.sbid && o.status !== 'iptal'); if (c && L.length) { const q = await c.from('orders').select('id,invoice').in('id', L.map((o) => o.sbid)); if (!q.error) (q.data || []).forEach((row) => { const o = ORDERS.find((x) => x.sbid === row.id); if (o && JSON.stringify(o.inv || null) !== JSON.stringify(row.invoice || null)) { o.inv = row.invoice || null; ch = true; } }); } } catch (e) {} return ch; };
 const _ordExtra93 = ordExtra; ordExtra = function (o) { let h = _ordExtra93(o); const v = o.inv; if (v) { const d = Math.round((Number(v.total) - Number(o.total)) * 100) / 100; h += `<div class="small" style="margin-top:6px">Fatura${v.no ? ' ' + esc(v.no) : ''}: <b>${fmt(v.total)}</b>${Math.abs(d) >= 0.5 ? ` <span style="color:var(--nar,#b3392f)">(sipariş tutarından ${d > 0 ? '+' : ''}${fmt(d)}${v.why ? ', ' + esc(v.why) : ''})</span>` : ''}</div>`; } return h; };
 const _nl93 = notifList; notifList = function () { const out = _nl93(); const u = S.user; if (!u || !['patron', 'mudur', 'muhasebeci'].includes(u.role)) return out; ORDERS.filter((o) => o.inv && Math.abs(Number(o.inv.total) - Number(o.total)) >= 0.5).forEach((o) => { const t = supById(o.supId); const d = Math.round((Number(o.inv.total) - Number(o.total)) * 100) / 100; out.push({ key: 'inv' + o.id + o.inv.total, sev: Math.abs(d) / (Number(o.total) || 1) >= 0.05 ? 'warn' : 'info', text: (t ? t.name : 'Toptancı') + ' faturası sipariş tutarından ' + fmt(Math.abs(d)) + (d > 0 ? ' fazla' : ' eksik') + (o.inv.why ? ' (' + o.inv.why + ')' : '') + '. Kontrol et.', view: 'satinalma', tab: null }); }); const rank = { bad: 0, warn: 1, info: 2 }; return out.sort((a, b) => rank[a.sev] - rank[b.sev]); };
+
+/* ===== v94: düzenli raporlar (haftalık, ay sonu): PDF, bildirim ve e-posta ===== */
+/* ===== KaisPilot rapor modülü: bağımlılıksız PDF yazıcı + rapor kurucular (tarayıcı ve edge function ortak) ===== */
+var KP = {};
+KP.WR = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+KP.WB = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+KP.TRB = { 'Ş': 138, 'ş': 154, 'Ğ': 208, 'ğ': 240, 'İ': 221, 'ı': 253 };
+KP.OTH = { '–': 150, '—': 151, '…': 133, '•': 149, '’': 39, '‘': 39, '“': 34, '”': 34, '→': 62, '₺': 0 };
+KP.bytes = function (s) {
+  var out = [];
+  for (var i = 0; i < s.length; i++) {
+    var ch = s.charAt(i), c = s.charCodeAt(i);
+    if (KP.TRB[ch] !== undefined) out.push(KP.TRB[ch]);
+    else if (KP.OTH[ch] !== undefined) { if (ch === '₺') { out.push(84); out.push(76); } else out.push(KP.OTH[ch]); }
+    else if (c < 256) out.push(c);
+    else out.push(63);
+  }
+  return out;
+};
+KP.esc = function (s) {
+  var b = KP.bytes(s), o = '';
+  for (var i = 0; i < b.length; i++) {
+    var c = b[i];
+    if (c === 40 || c === 41 || c === 92) o += '\\' + String.fromCharCode(c);
+    else if (c < 32 || c > 126) o += '\\' + ('00' + c.toString(8)).slice(-3);
+    else o += String.fromCharCode(c);
+  }
+  return o;
+};
+KP.cw = function (ch, bold) {
+  var T = bold ? KP.WB : KP.WR, c = ch.charCodeAt(0);
+  if (c >= 32 && c <= 126) return T[c - 32];
+  if (ch === 'ı') return bold ? 278 : 222;
+  if (ch === '₺') return 2 * (bold ? 611 : 556);
+  var b = ch.normalize ? ch.normalize('NFD').charAt(0) : ch, bc = b.charCodeAt(0);
+  if (bc >= 32 && bc <= 126) return T[bc - 32];
+  return 556;
+};
+KP.tw = function (s, size, bold) { var w = 0; for (var i = 0; i < s.length; i++) w += KP.cw(s.charAt(i), bold); return w * size / 1000; };
+KP.fit = function (s, w, size, bold) { s = String(s); if (KP.tw(s, size, bold) <= w) return s; while (s.length > 1 && KP.tw(s + '…', size, bold) > w) s = s.slice(0, -1); return s + '…'; };
+KP.rgb = function (h) { h = String(h || '#000000').replace('#', ''); var r = parseInt(h.substr(0, 2), 16) / 255, g = parseInt(h.substr(2, 2), 16) / 255, b = parseInt(h.substr(4, 2), 16) / 255; return r.toFixed(3) + ' ' + g.toFixed(3) + ' ' + b.toFixed(3); };
+KP.pdf = function () {
+  var W = 595.28, H = 841.89, pages = [], cur = null;
+  var api = {
+    W: W, H: H,
+    page: function () { cur = { c: [] }; pages.push(cur); return api; },
+    rect: function (x, y, w, h, fill) { cur.c.push(KP.rgb(fill) + ' rg ' + x.toFixed(2) + ' ' + (H - y - h).toFixed(2) + ' ' + w.toFixed(2) + ' ' + h.toFixed(2) + ' re f'); },
+    line: function (x1, y1, x2, y2, col, wd) { cur.c.push(KP.rgb(col) + ' RG ' + (wd || 0.6) + ' w ' + x1.toFixed(2) + ' ' + (H - y1).toFixed(2) + ' m ' + x2.toFixed(2) + ' ' + (H - y2).toFixed(2) + ' l S'); },
+    text: function (x, y, s, o) {
+      o = o || {}; var size = o.size || 10, bold = !!o.bold; s = String(s); var w = KP.tw(s, size, bold);
+      if (o.align === 'r') x -= w; else if (o.align === 'c') x -= w / 2;
+      cur.c.push('BT ' + KP.rgb(o.color || '#16231c') + ' rg /' + (bold ? 'F2' : 'F1') + ' ' + size + ' Tf ' + x.toFixed(2) + ' ' + (H - y).toFixed(2) + ' Td (' + KP.esc(s) + ') Tj ET');
+    },
+    count: function () { return pages.length; },
+    build: function () {
+      var objs = [], enc = '<< /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [138 /Scedilla 154 /scedilla 208 /Gbreve 240 /gbreve 221 /Idotaccent 253 /dotlessi] >>';
+      objs[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+      var kids = [];
+      for (var i = 0; i < pages.length; i++) kids.push((5 + i * 2) + ' 0 R');
+      objs[2] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + pages.length + ' >>';
+      objs[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding ' + enc + ' >>';
+      objs[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding ' + enc + ' >>';
+      for (var p = 0; p < pages.length; p++) {
+        var st = pages[p].c.join('\n');
+        objs[5 + p * 2] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + (6 + p * 2) + ' 0 R >>';
+        objs[6 + p * 2] = '<< /Length ' + st.length + ' >>\nstream\n' + st + '\nendstream';
+      }
+      var out = '%PDF-1.4\n', off = [];
+      for (var k = 1; k < objs.length; k++) { off[k] = out.length; out += k + ' 0 obj\n' + objs[k] + '\nendobj\n'; }
+      var xr = out.length; out += 'xref\n0 ' + objs.length + '\n0000000000 65535 f \n';
+      for (var j = 1; j < objs.length; j++) out += ('0000000000' + off[j]).slice(-10) + ' 00000 n \n';
+      out += 'trailer\n<< /Size ' + objs.length + ' /Root 1 0 R >>\nstartxref\n' + xr + '\n%%EOF';
+      var u = new Uint8Array(out.length); for (var q = 0; q < out.length; q++) u[q] = out.charCodeAt(q) & 255; return u;
+    }
+  };
+  return api;
+};
+/* sayı ve para biçimi (ICU'ya bağlı kalmadan) */
+KP.n = function (v, d) { v = Number(v) || 0; var neg = v < 0; v = Math.abs(v); var s = v.toFixed(d || 0), p = s.split('.'), i = p[0], o = ''; while (i.length > 3) { o = '.' + i.slice(-3) + o; i = i.slice(0, -3); } o = i + o; if (p[1]) o += ',' + p[1]; return (neg ? '-' : '') + o; };
+KP.tl = function (v) { return KP.n(v, 0) + ' TL'; };
+KP.tl2 = function (v) { return KP.n(v, 2) + ' TL'; };
+KP.pct = function (a, b) { return b > 0 ? Math.round((a - b) / b * 100) : null; };
+KP.delta = function (a, b) { var p = KP.pct(a, b); return p === null ? { t: 'önceki dönem yok', tone: '' } : { t: (p >= 0 ? '+' : '') + p + '% önceki döneme göre', tone: p >= 0 ? 'ok' : 'bad' }; };
+KP.nrm = function (s) { return String(s || '').toLowerCase().replace(/İ/g, 'i').replace(/ı/g, 'i').replace(/[^a-z0-9ğüşöç ]/g, ''); };
+KP.dayMs = 864e5;
+/* ---- sayfa yerleşimi ---- */
+KP.render = function (R) {
+  var d = KP.pdf(), W = d.W, H = d.H, M = 40, G = '#1f6f55', INK = '#16231c', MUT = '#5b6b63', y = 0;
+  function head(first) {
+    d.page();
+    if (first) {
+      d.rect(0, 0, W, 86, G); d.text(M, 38, R.brand || 'KaisPilot', { size: 10, color: '#cfeadd', bold: true });
+      d.text(M, 64, R.title, { size: 22, bold: true, color: '#ffffff' }); d.text(W - M, 38, R.org || '', { size: 10, align: 'r', color: '#ffffff', bold: true }); d.text(W - M, 64, R.sub || '', { size: 10, align: 'r', color: '#cfeadd' });
+      y = 112;
+    } else { d.rect(0, 0, W, 34, G); d.text(M, 22, (R.brand || 'KaisPilot') + ' · ' + R.title, { size: 9.5, bold: true, color: '#ffffff' }); d.text(W - M, 22, R.sub || '', { size: 9, align: 'r', color: '#cfeadd' }); y = 58; }
+  }
+  function need(h) { if (y + h > H - 54) { head(false); } }
+  head(true);
+  var kp = R.kpis || [], gap = 10, kw = (W - 2 * M - gap * (kp.length - 1)) / Math.max(1, kp.length);
+  kp.forEach(function (k, i) {
+    var x = M + i * (kw + gap); d.rect(x, y, kw, 66, '#f1f6f3'); d.rect(x, y, 3, 66, k.tone === 'bad' ? '#b3392f' : G);
+    d.text(x + 12, y + 18, k.l, { size: 8.5, color: MUT, bold: true }); d.text(x + 12, y + 40, KP.fit(k.v, kw - 18, 15, true), { size: 15, bold: true });
+    d.text(x + 12, y + 56, KP.fit(k.d || '', kw - 18, 7.5, false), { size: 7.5, color: k.tone === 'bad' ? '#b3392f' : k.tone === 'ok' ? G : MUT });
+  });
+  y += 66 + 22;
+  if (R.bullets && R.bullets.length) {
+    d.text(M, y, 'Öne çıkanlar', { size: 12, bold: true }); y += 8;
+    R.bullets.forEach(function (b) {
+      var lines = KP.wrap(b, W - 2 * M - 16, 9.5, false); need(lines.length * 13 + 6); y += 14;
+      d.rect(M, y - 7, 4, 4, G); lines.forEach(function (l, i) { d.text(M + 12, y + i * 13, l, { size: 9.5 }); }); y += (lines.length - 1) * 13;
+    });
+    y += 30;
+  }
+  if (R.bars && R.bars.items && R.bars.items.length) {
+    var items = R.bars.items, bh = 92, bw = W - 2 * M; need(bh + 56); d.text(M, y, R.bars.title, { size: 12, bold: true }); y += 14;
+    var mx = 1; items.forEach(function (it) { mx = Math.max(mx, it.v || 0, it.v2 || 0); });
+    var n = items.length, slot = bw / n, two = items.some(function (it) { return it.v2 !== undefined; }), base = y + bh;
+    d.line(M, base, W - M, base, '#cfdad4', 0.8);
+    items.forEach(function (it, i) {
+      var x = M + i * slot, bwid = Math.min(26, slot * (two ? 0.34 : 0.62)), h1 = Math.round((it.v || 0) / mx * (bh - 14)), c = x + slot / 2;
+      if (two) { var h2 = Math.round((it.v2 || 0) / mx * (bh - 14)); d.rect(c - bwid - 1, base - h1, bwid, Math.max(h1, 0), G); d.rect(c + 1, base - h2, bwid, Math.max(h2, 0), '#d98a2b'); }
+      else { d.rect(c - bwid / 2, base - h1, bwid, Math.max(h1, 0), it.hi ? G : '#9ccbb6'); }
+      if (n <= 10 && (it.v || 0) > 0 && !two) d.text(c, base - h1 - 3, KP.n(it.v, 0), { size: 7, align: 'c', color: MUT });
+      if (n <= 12 || i % Math.ceil(n / 12) === 0) d.text(c, base + 11, it.l, { size: 7.5, align: 'c', color: MUT });
+    });
+    if (two) { d.rect(W - M - 150, y - 12, 8, 8, G); d.text(W - M - 138, y - 5, R.bars.n1 || 'Gelir', { size: 8, color: MUT }); d.rect(W - M - 80, y - 12, 8, 8, '#d98a2b'); d.text(W - M - 68, y - 5, R.bars.n2 || 'Gider', { size: 8, color: MUT }); }
+    y = base + 34;
+  }
+  (R.tables || []).forEach(function (t) {
+    need(70); d.text(M, y, t.title, { size: 12, bold: true }); y += 8;
+    if (t.note) { y += 12; d.text(M, y, t.note, { size: 8.5, color: MUT }); y -= 2; }
+    if (!t.rows || !t.rows.length) { y += 20; d.text(M, y, t.empty || 'Bu dönemde kayıt yok.', { size: 9.5, color: MUT }); y += 24; return; }
+    var tw = W - 2 * M;
+    function th() { y += 4; d.rect(M, y, tw, 20, '#e8efea'); var x = M; t.cols.forEach(function (c) { var cw = c.w * tw; d.text(c.a === 'r' ? x + cw - 8 : x + 8, y + 13.5, c.h, { size: 8.5, bold: true, color: MUT, align: c.a === 'r' ? 'r' : 'l' }); x += cw; }); y += 20; }
+    th();
+    t.rows.forEach(function (r, ri) {
+      if (y + 20 > H - 54) { head(false); th(); }
+      if (ri % 2) d.rect(M, y, tw, 20, '#f7faf8'); var x = M;
+      t.cols.forEach(function (c, ci) { var cw = c.w * tw, v = r[ci], tone = r.tone && r.tone[ci]; var col = tone === 'bad' ? '#b3392f' : tone === 'ok' ? G : INK; d.text(c.a === 'r' ? x + cw - 8 : x + 8, y + 13.5, KP.fit(v === undefined || v === null ? '' : v, cw - 14, 9, ci === 0 && t.boldFirst), { size: 9, align: c.a === 'r' ? 'r' : 'l', color: col, bold: ci === 0 && t.boldFirst }); x += cw; });
+      y += 20;
+    });
+    y += 22;
+  });
+  var N = d.count();
+  return { doc: d, pages: N };
+};
+KP.wrap = function (s, w, size, bold) { var words = String(s).split(' '), lines = [], l = ''; words.forEach(function (x) { var t = l ? l + ' ' + x : x; if (KP.tw(t, size, bold) > w && l) { lines.push(l); l = x; } else l = t; }); if (l) lines.push(l); return lines; };
+KP.build = function (R) { var r = KP.render(R); return r.doc.build(); };
+/* ---- dönem hesabı (İstanbul, UTC+3) ---- */
+KP.istDay = function (iso) { return Date.parse(iso + 'T00:00:00+03:00'); };
+KP.isoOf = function (ms) { var d = new Date(ms + 3 * 3600000); return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2); };
+KP.MON = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+KP.MONL = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+KP.fd = function (ms) { var d = new Date(ms + 3 * 3600000); return d.getUTCDate() + ' ' + KP.MON[d.getUTCMonth()]; };
+/* kind: 'w' (geçen hafta, Pzt-Paz) ya da 'm' (bu ay, 1'inden yarına kadar); todayIso: İstanbul bugünü */
+KP.period = function (kind, todayIso) {
+  var t0 = KP.istDay(todayIso), from, to, pf, pt, label;
+  if (kind === 'w') {
+    var dow = (new Date(t0 + 3 * 3600000).getUTCDay() + 6) % 7; to = t0 - dow * KP.dayMs; from = to - 7 * KP.dayMs; pf = from - 7 * KP.dayMs; pt = from;
+    label = KP.fd(from) + ' - ' + KP.fd(to - KP.dayMs) + ' ' + new Date(from + 3 * 3600000).getUTCFullYear();
+  } else {
+    var a = todayIso.split('-').map(Number); from = KP.istDay(a[0] + '-' + ('0' + a[1]).slice(-2) + '-01'); to = t0 + KP.dayMs;
+    var py = a[1] === 1 ? a[0] - 1 : a[0], pm = a[1] === 1 ? 12 : a[1] - 1; pf = KP.istDay(py + '-' + ('0' + pm).slice(-2) + '-01'); pt = from;
+    label = KP.MONL[a[1] - 1] + ' ' + a[0];
+  }
+  return { kind: kind, from: from, to: to, pfrom: pf, pto: pt, label: label, title: kind === 'w' ? 'Haftalık rapor' : 'Aylık rapor' };
+};
+KP.buckets = function (P, getT, getV, getV2) {
+  var n = Math.round((P.to - P.from) / KP.dayMs), items = [], i;
+  for (i = 0; i < n; i++) { var s = P.from + i * KP.dayMs, d = new Date(s + 3 * 3600000), lab = P.kind === 'w' ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'][(d.getUTCDay() + 6) % 7] : String(d.getUTCDate()); items.push({ l: lab, v: 0, v2: getV2 ? 0 : undefined, s: s }); }
+  getT.forEach(function (o) { var k = Math.floor((o.t - P.from) / KP.dayMs); if (k >= 0 && k < n) { items[k].v += getV(o) || 0; if (getV2) items[k].v2 += getV2(o) || 0; } });
+  return items;
+};
+/* ---- toptancı raporu ---- */
+KP.supReport = function (D) {
+  var P = D.P, inP = function (t, a, b) { return t >= a && t < b; };
+  var ok = D.orders.filter(function (o) { return o.status === 'onaylandi' || o.status === 'teslim'; });
+  var cur = ok.filter(function (o) { return inP(o.t, P.from, P.to); }), prv = ok.filter(function (o) { return inP(o.t, P.pfrom, P.pto); });
+  var sum = function (L) { return L.reduce(function (s, o) { return s + (Number(o.total) || 0); }, 0); };
+  var costOf = function (name) { var c = D.costs[KP.nrm(name)]; return c > 0 ? c : 0; };
+  var profit = function (L) { var k = 0, any = false; L.forEach(function (o) { o.lines.forEach(function (l) { var c = costOf(l.name); if (c > 0) { any = true; k += (Number(l.price) - c) * Number(l.qty); } }); }); return { v: k, any: any }; };
+  var c1 = sum(cur), c0 = sum(prv), p1 = profit(cur), p0 = profit(prv), avg = cur.length ? c1 / cur.length : 0, avg0 = prv.length ? c0 / prv.length : 0;
+  var dc = KP.delta(c1, c0), dn = KP.delta(cur.length, prv.length), dp = KP.delta(p1.v, p0.v);
+  var kpis = [{ l: 'CİRO', v: KP.tl(c1), d: dc.t, tone: dc.tone }, { l: 'SİPARİŞ', v: String(cur.length), d: dn.t, tone: dn.tone }, { l: 'ORTALAMA SEPET', v: KP.tl(avg), d: KP.delta(avg, avg0).t, tone: KP.delta(avg, avg0).tone }, { l: 'TAHMİNİ KÂR', v: p1.any ? KP.tl(p1.v) : '-', d: p1.any ? dp.t : 'maliyet girilmemiş', tone: p1.any ? dp.tone : '' }];
+  var by = {}; cur.forEach(function (o) { var b = by[o.biz] = by[o.biz] || { n: 0, t: 0 }; b.n++; b.t += Number(o.total) || 0; });
+  var cus = Object.keys(by).sort(function (a, b) { return by[b].t - by[a].t; });
+  var pr = {}; cur.forEach(function (o) { o.lines.forEach(function (l) { var p = pr[l.name] = pr[l.name] || { q: 0, t: 0, k: 0, u: l.unit }; var q = Number(l.qty) || 0, v = (Number(l.price) || 0) * q; p.q += q; p.t += v; var c = costOf(l.name); if (c > 0) p.k += v - c * q; }); });
+  var prd = Object.keys(pr).sort(function (a, b) { return pr[b].t - pr[a].t; });
+  var items = KP.buckets(P, cur, function (o) { return Number(o.total) || 0; }); var best = items.reduce(function (a, b) { return b.v > a.v ? b : a; }, items[0] || { v: 0 }); items.forEach(function (i) { i.hi = i.v === best.v && i.v > 0; });
+  var bullets = [];
+  if (prv.length || cur.length) bullets.push('Ciro ' + KP.tl(c1) + ' oldu' + (c0 > 0 ? ', önceki döneme göre %' + Math.abs(KP.pct(c1, c0)) + (c1 >= c0 ? ' arttı.' : ' azaldı.') : '.'));
+  if (best.v > 0) bullets.push('En güçlü gün ' + (P.kind === 'w' ? best.l : best.l + '. gün') + ' oldu (' + KP.tl(best.v) + ').');
+  if (cus.length) { var share = Math.round(by[cus[0]].t / (c1 || 1) * 100); bullets.push('En çok alan müşteri ' + cus[0] + ' (cironun %' + share + "'i)." + (share >= 50 ? ' Tek müşteriye bağımlılık yüksek, yeni müşteri kazanmayı düşün.' : '')); }
+  var open = D.cari.filter(function (c) { return c.kind === 'alacak' && !c.paid; }), late = open.filter(function (c) { return c.due && Date.parse(c.due) < D.now; });
+  if (late.length) bullets.push(late.length + ' alacağın vadesi geçti, toplam ' + KP.tl(late.reduce(function (s, c) { return s + (Number(c.amt) || 0); }, 0)) + '. Hatırlatma gönder.');
+  var low = D.prods.filter(function (p) { return p.active !== false && Number(p.min) > 0 && Number(p.qty) <= Number(p.min); });
+  if (low.length) bullets.push(low.length + ' ürün kritik stok seviyesinde.');
+  var mg = prd.filter(function (k) { return pr[k].t > 0 && pr[k].k !== 0 && pr[k].k / pr[k].t < 0.08; }); if (mg.length) bullets.push(mg.length + ' üründe marj %8 altında: ' + mg.slice(0, 2).join(', ') + '.');
+  var tables = [];
+  tables.push({ title: 'En çok alan müşteriler', cols: [{ h: 'Müşteri', w: 0.46 }, { h: 'Sipariş', w: 0.14, a: 'r' }, { h: 'Ciro', w: 0.22, a: 'r' }, { h: 'Pay', w: 0.18, a: 'r' }], rows: cus.slice(0, 8).map(function (k) { return [k, by[k].n, KP.tl(by[k].t), '%' + Math.round(by[k].t / (c1 || 1) * 100)]; }), boldFirst: true });
+  tables.push({ title: 'En çok satan ürünler', cols: [{ h: 'Ürün', w: 0.4 }, { h: 'Miktar', w: 0.18, a: 'r' }, { h: 'Ciro', w: 0.2, a: 'r' }, { h: 'Tahmini kâr', w: 0.22, a: 'r' }], rows: prd.slice(0, 8).map(function (k) { var p = pr[k]; return [k, KP.n(p.q, 1) + ' ' + (p.u || ''), KP.tl(p.t), p.k ? KP.tl(p.k) : '-']; }), boldFirst: true });
+  tables.push({ title: 'Alacaklar', note: 'Açık alacak toplamı ' + KP.tl(open.reduce(function (s, c) { return s + (Number(c.amt) || 0); }, 0)) + ', vadesi geçen ' + late.length + ' kayıt.', cols: [{ h: 'Müşteri', w: 0.4 }, { h: 'Vade', w: 0.2 }, { h: 'Gecikme', w: 0.18, a: 'r' }, { h: 'Tutar', w: 0.22, a: 'r' }], rows: open.slice().sort(function (a, b) { return String(a.due || '9').localeCompare(String(b.due || '9')); }).slice(0, 8).map(function (c) { var g = c.due ? Math.round((D.now - Date.parse(c.due)) / KP.dayMs) : 0; var r = [c.who, c.due || '-', g > 0 ? g + ' gün' : '-', KP.tl(c.amt)]; r.tone = [null, null, g > 0 ? 'bad' : null, null]; return r; }), boldFirst: true, empty: 'Açık alacak yok.' });
+  tables.push({ title: 'Stok uyarıları', cols: [{ h: 'Ürün', w: 0.46 }, { h: 'Elde', w: 0.18, a: 'r' }, { h: 'Kritik seviye', w: 0.2, a: 'r' }, { h: 'Durum', w: 0.16, a: 'r' }], rows: low.sort(function (a, b) { return (a.qty / (a.min || 1)) - (b.qty / (b.min || 1)); }).slice(0, 8).map(function (p) { var r = [p.name, KP.n(p.qty, 1) + ' ' + (p.unit || ''), KP.n(p.min, 1), Number(p.qty) <= 0 ? 'Bitti' : 'Az']; r.tone = [null, null, null, 'bad']; return r; }), boldFirst: true, empty: 'Kritik stokta ürün yok.' });
+  var gl = D.ledger.filter(function (e) { return inP(e.t, P.from, P.to); }), gel = 0, gid = 0; gl.forEach(function (e) { if (e.type === 'gider') gid += Number(e.amt) || 0; else gel += Number(e.amt) || 0; });
+  tables.push({ title: 'Defter (gelir ve gider)', cols: [{ h: 'Kalem', w: 0.6 }, { h: 'Tutar', w: 0.4, a: 'r' }], rows: [['Kayıtlı gelir', KP.tl(gel)], ['Kayıtlı gider', KP.tl(gid)], ['Net', KP.tl(gel - gid)]], boldFirst: true });
+  var seen = {}; D.orders.forEach(function (o) { if (o.status === 'onaylandi' || o.status === 'teslim') { var s = seen[o.biz] = seen[o.biz] || { last: 0, n: 0 }; s.n++; if (o.t > s.last) s.last = o.t; } });
+  var quiet = Object.keys(seen).filter(function (k) { return D.now - seen[k].last > 30 * KP.dayMs && seen[k].n >= 2; }).sort(function (a, b) { return seen[a].last - seen[b].last; });
+  if (quiet.length) tables.push({ title: 'Sessiz kalan müşteriler', note: 'Son 30 gündür sipariş vermeyenler.', cols: [{ h: 'Müşteri', w: 0.5 }, { h: 'Son sipariş', w: 0.3 }, { h: 'Gün', w: 0.2, a: 'r' }], rows: quiet.slice(0, 8).map(function (k) { return [k, KP.fd(seen[k].last), String(Math.round((D.now - seen[k].last) / KP.dayMs))]; }), boldFirst: true });
+  return { brand: 'KaisPilot Toptancı', title: P.title, sub: P.label, org: D.name, kpis: kpis, bullets: bullets, bars: { title: P.kind === 'w' ? 'Günlük ciro' : 'Günlük ciro (ay boyunca)', items: items }, tables: tables, summary: 'Ciro ' + KP.tl(c1) + (c0 > 0 ? ' (' + dc.t.split(' önceki')[0] + ')' : '') + ', ' + cur.length + ' sipariş' + (cus.length ? ', en çok ' + cus[0] : '') };
+};
+/* ---- işletme raporu (patron ve muhasebeci) ---- */
+KP.trDate = function (s, nowMs) {
+  var m = /^(\d{1,2})\s+(\S+)/.exec(String(s || '')); if (!m) return null; var mi = KP.MON.indexOf(m[2]); if (mi < 0) return null;
+  var ny = new Date(nowMs + 3 * 3600000).getUTCFullYear(), nm = new Date(nowMs + 3 * 3600000).getUTCMonth(), y = ny; if (mi > nm + 1) y = ny - 1;
+  return KP.istDay(y + '-' + ('0' + (mi + 1)).slice(-2) + '-' + ('0' + Number(m[1])).slice(-2));
+};
+KP.bizReport = function (D) {
+  var P = D.P, role = D.role, inP = function (t, a, b) { return t >= a && t < b; }, L = [];
+  D.ledger.forEach(function (r) { var t = r.iso ? KP.istDay(r.iso) : KP.trDate(r.date, D.now); if (t === null) return; L.push({ t: t, dir: r.dir || 'gider', total: Number(r.total) || 0, rate: Number(r.rate) || 0, acc: r.acc || 'Diğer', desc: r.desc || '', doc: r.doc, date: r.date }); });
+  var cur = L.filter(function (e) { return inP(e.t, P.from, P.to); }), prv = L.filter(function (e) { return inP(e.t, P.pfrom, P.pto); });
+  var tot = function (A, dir) { return A.filter(function (e) { return e.dir === dir; }).reduce(function (s, e) { return s + e.total; }, 0); };
+  var kd = function (A, dir) { return A.filter(function (e) { return e.dir === dir; }).reduce(function (s, e) { return s + (e.total - e.total / (1 + e.rate / 100)); }, 0); };
+  var g1 = tot(cur, 'gelir'), x1 = tot(cur, 'gider'), g0 = tot(prv, 'gelir'), x0 = tot(prv, 'gider'), n1 = g1 - x1, n0 = g0 - x0;
+  var dg = KP.delta(g1, g0), dx = KP.delta(x1, x0); var dn = n0 !== 0 ? KP.delta(n1, Math.abs(n0)) : { t: 'önceki dönem yok', tone: '' }; if (x1 > x0 && x0 > 0) dx.tone = 'bad'; else if (x0 > 0) dx.tone = 'ok';
+  var debts = D.debts.filter(function (d) { return !d.paid; }), lateD = debts.filter(function (d) { return d.due && Date.parse(d.due) < D.now; }), recv = D.recv.filter(function (a) { return !a.paid; });
+  var kpis = [{ l: 'GELİR', v: KP.tl(g1), d: dg.t, tone: dg.tone }, { l: 'GİDER', v: KP.tl(x1), d: dx.t, tone: dx.tone }, { l: 'NET', v: KP.tl(n1), d: dn.t, tone: n1 < 0 ? 'bad' : dn.tone }];
+  var kv = kd(cur, 'gelir') - kd(cur, 'gider');
+  kpis.push(role === 'muhasebeci' ? { l: 'KDV FARKI', v: KP.tl(kv), d: kv >= 0 ? 'ödenecek KDV tahmini' : 'devreden KDV tahmini', tone: '' } : { l: 'AÇIK BORÇ', v: KP.tl(debts.reduce(function (s, d) { return s + (Number(d.amt) || 0); }, 0)), d: lateD.length ? lateD.length + ' kaydın vadesi geçti' : 'vadesi geçen yok', tone: lateD.length ? 'bad' : 'ok' });
+  var items = KP.buckets(P, cur, function (e) { return e.dir === 'gelir' ? e.total : 0; }, function (e) { return e.dir === 'gider' ? e.total : 0; });
+  var byA = {}; cur.filter(function (e) { return e.dir === 'gider'; }).forEach(function (e) { byA[e.acc] = (byA[e.acc] || 0) + e.total; }); var ak = Object.keys(byA).sort(function (a, b) { return byA[b] - byA[a]; });
+  var byG = {}; cur.filter(function (e) { return e.dir === 'gelir'; }).forEach(function (e) { byG[e.acc] = (byG[e.acc] || 0) + e.total; }); var gk = Object.keys(byG).sort(function (a, b) { return byG[b] - byG[a]; });
+  var nodoc = cur.filter(function (e) { return !e.doc || e.doc === '—' || e.doc === 'eksik'; });
+  var bullets = [];
+  bullets.push('Dönem sonucu: gelir ' + KP.tl(g1) + ', gider ' + KP.tl(x1) + ', net ' + KP.tl(n1) + (n1 < 0 ? ' (zarar).' : '.'));
+  if (ak.length) bullets.push('En büyük gider kalemi ' + ak[0] + ': ' + KP.tl(byA[ak[0]]) + ' (giderin %' + Math.round(byA[ak[0]] / (x1 || 1) * 100) + ').');
+  if (x0 > 0 && x1 > x0 * 1.15) bullets.push('Giderler önceki döneme göre %' + KP.pct(x1, x0) + ' arttı, kalemleri kontrol et.');
+  if (lateD.length) bullets.push(lateD.length + ' borcun vadesi geçti, toplam ' + KP.tl(lateD.reduce(function (s, d) { return s + (Number(d.amt) || 0); }, 0)) + '.');
+  if (nodoc.length) bullets.push(nodoc.length + ' kayıtta belge yok' + (role === 'muhasebeci' ? ', KDV indirimi için belgeleri tamamla.' : '.'));
+  var low = D.stock.filter(function (s) { return Number(s.min) > 0 && Number(s.qty) <= Number(s.min); });
+  if (role !== 'muhasebeci' && low.length) bullets.push(low.length + ' ürün kritik stokta.');
+  var tables = [];
+  tables.push({ title: 'Gider dağılımı', cols: [{ h: 'Kalem', w: 0.5 }, { h: 'Tutar', w: 0.28, a: 'r' }, { h: 'Pay', w: 0.22, a: 'r' }], rows: ak.slice(0, 8).map(function (k) { return [k, KP.tl(byA[k]), '%' + Math.round(byA[k] / (x1 || 1) * 100)]; }), boldFirst: true });
+  tables.push({ title: 'Gelir dağılımı', cols: [{ h: 'Kalem', w: 0.5 }, { h: 'Tutar', w: 0.28, a: 'r' }, { h: 'Pay', w: 0.22, a: 'r' }], rows: gk.slice(0, 6).map(function (k) { return [k, KP.tl(byG[k]), '%' + Math.round(byG[k] / (g1 || 1) * 100)]; }), boldFirst: true });
+  tables.push({ title: 'Borçlar', note: 'Açık borç toplamı ' + KP.tl(debts.reduce(function (s, d) { return s + (Number(d.amt) || 0); }, 0)) + '.', cols: [{ h: 'Kime', w: 0.4 }, { h: 'Vade', w: 0.2 }, { h: 'Kalan gün', w: 0.18, a: 'r' }, { h: 'Tutar', w: 0.22, a: 'r' }], rows: debts.slice().sort(function (a, b) { return String(a.due || '9').localeCompare(String(b.due || '9')); }).slice(0, 8).map(function (d) { var k = d.due ? Math.round((Date.parse(d.due) - D.now) / KP.dayMs) : null; var r = [d.who, d.due || '-', k === null ? '-' : (k < 0 ? Math.abs(k) + ' gün geçti' : k + ' gün'), KP.tl(d.amt)]; r.tone = [null, null, k !== null && k < 0 ? 'bad' : null, null]; return r; }), boldFirst: true, empty: 'Açık borç yok.' });
+  if (role !== 'muhasebeci') {
+    tables.push({ title: 'Alacaklar', note: 'Açık alacak toplamı ' + KP.tl(recv.reduce(function (s, a) { return s + (Number(a.amt) || 0); }, 0)) + '.', cols: [{ h: 'Kimden', w: 0.5 }, { h: 'Gecikme', w: 0.22, a: 'r' }, { h: 'Tutar', w: 0.28, a: 'r' }], rows: recv.slice(0, 6).map(function (a) { return [a.name, (a.days || 0) + ' gün', KP.tl(a.amt)]; }), boldFirst: true, empty: 'Açık alacak yok.' });
+    tables.push({ title: 'Kritik stok', cols: [{ h: 'Ürün', w: 0.5 }, { h: 'Elde', w: 0.25, a: 'r' }, { h: 'Alt sınır', w: 0.25, a: 'r' }], rows: low.slice(0, 8).map(function (s) { return [s.name, KP.n(s.qty, 1) + ' ' + (s.unit || ''), KP.n(s.min, 1)]; }), boldFirst: true, empty: 'Kritik stokta ürün yok.' });
+  } else {
+    tables.push({ title: 'Belgesiz kayıtlar', note: 'Belge türü girilmemiş giderler. Eksik belge KDV indirimini engeller.', cols: [{ h: 'Tarih', w: 0.16 }, { h: 'Açıklama', w: 0.5 }, { h: 'KDV', w: 0.1, a: 'r' }, { h: 'Tutar', w: 0.24, a: 'r' }], rows: nodoc.slice(0, 12).map(function (e) { return [e.date, e.desc, '%' + e.rate, KP.tl(e.total)]; }), empty: 'Tüm kayıtların belgesi var.' });
+  }
+  return { brand: 'KaisPilot', title: P.title, sub: P.label, org: D.name, kpis: kpis, bullets: bullets, bars: { title: P.kind === 'w' ? 'Günlük gelir ve gider' : 'Günlük gelir ve gider (ay boyunca)', items: items, n1: 'Gelir', n2: 'Gider' }, tables: tables, summary: 'Gelir ' + KP.tl(g1) + ', gider ' + KP.tl(x1) + ', net ' + KP.tl(n1) + (lateD.length ? ', ' + lateD.length + ' vadesi geçen borç' : '') };
+};
+
+
+const rpPref = () => { const s = S.settings; s.reports = s.reports || {}; return s.reports; };
+const rpOn = (k) => rpPref()[k] !== false;
+function rpDl(name, bytes) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+function rpData(kind) { return { P: KP.period(kind, KP.isoOf(Date.now())), role: S.user.role, name: BIZ, now: Date.now(), ledger: LEDGER, debts: DEBTS, recv: RECV, stock: STOCK }; }
+function rpWhy(j) { const w = String((j && (j.why || j.error)) || ''); if (/RESEND/i.test(w)) return 'E-posta servisi henüz kurulmamış. Kurulumu yapan kişiye ilet.'; if (/yetki/i.test(w)) return 'Bu raporu e-postayla alma yetkin yok.'; if (/veri yok|okunamad/i.test(w)) return 'İşletme verisi henüz buluta kaydedilmemiş. Biraz sonra tekrar dene.'; return w || 'Gönderilemedi.'; }
+function reportCard() { const u = S.user; if (!u || !['patron', 'muhasebeci'].includes(u.role)) return '';
+  const row = (k, t, d) => `<div class="toggle"><div><b style="font-weight:600">${t}</b><div class="small muted">${d}</div></div><button class="sw" data-a="rptog" data-v="${k}" role="switch" aria-checked="${rpOn(k)}" aria-label="${t}"></button></div>`;
+  return `<div class="card flush"><div style="padding:16px 16px 6px"><h3>Düzenli raporlar</h3><p class="muted small" style="margin-top:2px">${u.role === 'muhasebeci' ? 'KDV, belgesiz kayıt ve borç vadelerini öne çıkaran' : 'Gelir, gider, borç ve stok durumunu özetleyen'} PDF rapor.</p></div>
+  ${row('w', 'Haftalık rapor', 'Her Pazartesi 08:30 civarı, geçen haftanın özeti')}${row('m', 'Aylık rapor', 'Ay sonu akşamı, o ayın özeti')}${row('push', 'Bildirim olarak gelsin', 'Rapor hazır olunca telefona haber verir')}${row('mail', 'E-postaya PDF gelsin', 'Hesabına kayıtlı e-posta adresine ek olarak')}
+  <div style="padding:12px 16px" class="stack"><div class="row wrap"><button class="btn sec sm" data-a="rptpdf" data-v="w">Geçen haftayı PDF indir</button><button class="btn sec sm" data-a="rptpdf" data-v="m">Bu ayı PDF indir</button></div><div class="row wrap"><button class="btn sec sm" data-a="rptmail" data-v="w">Haftalığı e-postama gönder</button><button class="btn sec sm" data-a="rptmail" data-v="m">Aylığı e-postama gönder</button></div></div></div>`; }
+H.rptog = (el) => { const k = el.dataset.v; rpPref()[k] = !rpOn(k); if (typeof pSched === 'function') pSched(); render(); };
+H.rptpdf = (el) => { try { const kind = el.dataset.v; const D = rpData(kind); const R = KP.bizReport(D); rpDl('kaispilot-' + (kind === 'w' ? 'haftalik' : 'aylik') + '-rapor.pdf', KP.build(R)); toast('PDF hazır.', 'ok'); } catch (e) { toast('PDF oluşturulamadı.', 'warn'); } };
+H.rptmail = async (el) => { const c = sbClient(); if (!c || !SBS.biz) { toast('E-posta için önce Tedarikçi ekranından hesabına bağlan.', 'warn'); return; } if (SBS.busy) return; SBS.busy = true;
+  try { try { if (typeof pFlush === 'function') await pFlush(); } catch (e) {} const s = await c.auth.getSession(); const tok = s && s.data && s.data.session && s.data.session.access_token; const r = await fetch(SB_URL + '/functions/v1/kais-push', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, apikey: SB_KEY }, body: JSON.stringify({ action: 'report_now', scope: 'biz', business_id: SBS.biz.id, kind: el.dataset.v }) }); const j = await r.json().catch(() => ({})); if (j && j.ok) toast('PDF rapor ' + j.to + ' adresine gönderildi.', 'ok'); else toast(rpWhy(j), 'warn'); } catch (e) { toast('Bağlantı kurulamadı. Sonra tekrar dene.', 'warn'); } finally { SBS.busy = false; } };
+const _va94 = viewAyarlar; viewAyarlar = function () { return _va94() + reportCard(); };
+const _vd94 = viewDonem; viewDonem = function () { return _vd94() + reportCard(); };
 if (typeof window !== 'undefined') { window.__K = { RESV, TABLES, RCFG, ONB, ONB_DEF, onbDecide, onbPage, viewSartlar, lxEmp, BR, brCard, brLoad, cstat, clientsCard, BK, bkMake, bkAuto, bkApply, xlsxToText, buildXlsx, aiReady, aiCall, AIC, aiContext, aiAsk, viewKaisAI, POS, posRow, posPoll, posCard, ocrParse, barBits, barcodeSVG, eanOk, genCode, C39, code39Bits, notifList, nfUnread, nfCheck, costRows, supPerf, MCFG, RESV, TABLES, rzAssign, rzAlt, rzHeat, rzInsights, viewRezerv, splitSnap, canR, canW, addSeatLocal, SEATS, wipeData, NAV, ID, NAMES, idAuth, idEnter, CL, PS, cloudPoll, pFlush, pSnap, parseBulk, codeFind, autoMin, salesProfile, abcList, anomalies, transitOf, LOTS, WASTE, COUNTLOG, lotSync, SBS, sbPull, sbSyncSups, sbCard, supTag, RFQS: () => RFQS, rfqStat, priceInfo, priceAlerts, matchReceipt, pricePoints, RECEIPTS, stockPlan, proposals, SUPPLIERS: () => SUPPLIERS, ORDERS: () => ORDERS, useOf, onSubmit, pwOK: null, parseSales, importSales, salesStats, previewOf, SALES: () => SALES, SALEIMP: () => SALEIMP, RECIPES, CLOCK: () => CLOCK, shopCode, codeOk, pSnap, pApply, AUTH, PS, pwHash, ebChecks, vknOk, EDOC, payroll, netToBrut, exitInfo, kvkkText, buildXlsx, AUDIT: () => AUDIT, otFromLog, mismatch, DEBTS: () => DEBTS, DRAFTS: () => DRAFTS, dfParse, onChange, LEDGER: () => LEDGER, PROFILES, PAYS, LEAVES, LVREQ: () => LVREQ, STOCK, STOCKLOG, MSGS, S, H, render, go, loginAs, USERS, ATT, ROWS, RECEIPTS, csvText, scores, viewHTML, startRead }; }
 init();
 
