@@ -989,6 +989,9 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .ka-card{display:flex;flex-direction:column;gap:12px}.ka-l{display:flex;flex-direction:column;gap:8px}.ka-r{display:flex;gap:10px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer;width:100%}.ka-r b{display:block;font-size:14.5px;font-weight:600}.ka-r small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:1px}.ka-r[aria-pressed=true]{border-color:#9DB8E8;background:#F5F8FE}.ka-r.done{background:#F4FBF5;border-color:#BFE0C6;cursor:default}.ka-r.done b{color:#2F7A3A}
 .ka-ck{flex:none;width:22px;height:22px;border-radius:7px;border:1.5px solid #B8C6DA;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:#fff}.ka-r[aria-pressed=true] .ka-ck,.ka-r.done .ka-ck{background:var(--cini);border-color:var(--cini)}.ka-r.done .ka-ck{background:#2F7A3A;border-color:#2F7A3A}
 .ka-ic{flex:none;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;background:#FFF4DC;color:#9A6A00}.ka-ic.bad{background:var(--nar-wash);color:var(--nar)}.ka-r.go{color:var(--ink-2)}
+.kc-wrap{display:flex;flex-direction:column;gap:8px}.kc-lab{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ink-2)}.kc-lab em{font-style:normal;font-weight:500;color:#7A8CA5;font-size:12px}
+.kc-row{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;margin:0 -2px}.kc-row::-webkit-scrollbar{display:none}.kc-p{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid #D7E4DD;background:#F6FBF8;color:#0B4D2E;border-radius:999px;min-height:38px;padding:0 14px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}.kc-p:active{background:#E4F4EB}
+.kc-act{border-color:#CFE3D8;background:#FBFEFC}.kc-h{display:flex;gap:10px;align-items:center}.kc-h>span{display:inline-flex;width:30px;height:30px;border-radius:9px;align-items:center;justify-content:center;background:#E4F4EB;color:#0B6B3F}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -10645,6 +10648,147 @@ H.kaall = () => {
 };
 H.kaundo = (el) => { const d = KACT.done[el.dataset.k]; const it = kaItems().find((i) => i.key === el.dataset.k); if (!d || !it || !it.undo) return; try { kaUndoD(d); } catch (e) {} delete KACT.done[el.dataset.k]; pSched(); render(); toast('Geri alındı.'); };
 { const _v = viewHTML; viewHTML = function () { let h = _v(); const u = S.user; if (!u || S.view !== 'bugun' || !['patron', 'mudur'].includes(u.role) || h.includes('ka-card')) return h; const c = kaCard(); if (!c) return h; const i = h.indexOf('<section class="card kb-card">'); if (i < 0) { const t = '<div class="stack-lg">'; const j = h.indexOf(t); return j < 0 ? c + h : h.slice(0, j + t.length) + c + h.slice(j + t.length); } const e = h.indexOf('</section>', i) + 10; return h.slice(0, e) + c + h.slice(e); }; }
+
+/* ===== v94: Kais sohbette iş yapar (yerel komutlar: anında, ücretsiz, veri cihazdan çıkmaz) ===== */
+const kaFold = (s) => String(s || '').toLocaleLowerCase('tr-TR').replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u').replace(/â/g, 'a').replace(/[’'`]/g, "'").trim();
+const kaMgr = () => !!S.user && ['patron', 'mudur'].includes(S.user.role);
+const kaDeny = (t) => ({ content: t });
+function kaOrderAct() {
+  if (!kaMgr()) return kaDeny('Sipariş hazırlamak patron ve müdürün işi. Bu rolde yapamam.');
+  if (!kpCan('saOrder')) return kaDeny('Sipariş verme yetkin kapalı. Patronla konuş.');
+  const rows = stockPlan().filter((p) => p.pick && p.qty > 0); const props = proposals();
+  if (!rows.length) return { content: 'Şu an sipariş vermen gereken ürün yok. Stok seviyeleri yeterli görünüyor.' };
+  const tot = props.reduce((a, o) => a + o.total, 0);
+  return { content: `${rows.length} ürün için ${props.length} tedarikçiye sipariş hazırladım, toplam ${fmt0(Math.round(tot))}. Her ürün için en uygun tedarikçiyi fiyat, teslim süresi ve mesafeye göre seçtim. Miktarları düzeltip onaylayabilirsin.`, acts: [{ type: 'siparis_olustur', args: { urunler: rows.map((p) => ({ stok_id: p.st.id, miktar: p.qty })) }, st: 'open' }] };
+}
+function kaUidFrom(f) {
+  if (/\b(herkes|ekip|tum calisan|calisanlara)/.test(f)) return 'all';
+  const us = USERS.filter((u) => u.role !== 'patron' || u.id !== (S.user && S.user.id)).sort((a, b) => b.name.length - a.name.length);
+  for (const u of us) { const fn = kaFold(u.name.split(' ')[0]); if (fn.length >= 3 && new RegExp('(^|[^a-z])' + fn + "([^a-z]|$)").test(f)) return u.id; }
+  return null;
+}
+function kaTaskAct(text) {
+  if (!kaMgr()) return kaDeny('Görev vermek patron ve müdürün işi.');
+  if (!kpCan('opsView')) return kaDeny('Operasyon yetkin kapalı, görev veremem.');
+  const f = kaFold(text); const ci = text.indexOf(':'); let body = ci >= 0 ? text.slice(ci + 1).trim() : '';
+  const uid = kaUidFrom(ci >= 0 ? kaFold(text.slice(0, ci)) : f);
+  if (!body) { body = text.replace(/\b(\S+'?(a|e|ya|ye|na|ne)\s+)?g[öo]rev\s+(ver|ata|olu[sş]tur|ekle)\w*/i, '').replace(/\b(herkese|ekibe)\b/i, '').replace(/^[\s,.:;-]+|[\s,.:;-]+$/g, ''); const nm = uid && uid !== 'all' ? (byId(uid).name.split(' ')[0]) : ''; if (nm) body = body.replace(new RegExp(nm + "('?\\w{0,3})\\s*", 'i'), '').trim(); }
+  if (body.length < 4) return { content: 'Görev ne olsun? Şöyle yaz: "Mehmet\'e görev ver: bar temizliğini bitir".' };
+  const due = /\byarin\b/.test(f) ? addDays(REF_ISO, 1) : REF_ISO;
+  return { content: 'Görevi hazırladım. Kime verileceğini ve metni kontrol et, sonra onayla.', acts: [{ type: 'gorev_ver', args: { t: body.replace(/\s*\b(bugun|yarin)\b\s*/i, ' ').trim() || body, uid: uid || 'all', due }, st: 'open' }] };
+}
+function kaShiftAct() {
+  if (!S.user || S.user.role !== 'patron') return kaDeny('Vardiya planını yalnızca patron hazırlayabilir.');
+  const vm = kaVdMonth() || { y: new Date().getFullYear(), m: new Date().getMonth() };
+  if (!VD_T.length) return kaDeny('Önce vardiya şablonu eklemelisin (Ekip, Vardiya). Şablon olmadan plan çıkaramam.');
+  const ym = vm.y + '-' + String(vm.m + 1).padStart(2, '0');
+  if (Object.keys(VD_F).some((d) => d.startsWith(ym))) return kaDeny(`${vm.m + 1}. ay için plan zaten girilmiş. Elle yaptığın değişiklikleri silmemek için dokunmadım.`);
+  return { content: `${vm.m + 1}. ay için ${EMP_IDS.length} kişiye vardiya dağıtabilirim: şablonlara dönüşümlü, herkese haftalık izin günü. Taslağı kaydedince Ekip, Vardiya'dan gözden geçirip yayınlarsın.`, acts: [{ type: 'vardiya_taslak', args: { y: vm.y, m: vm.m }, st: 'open' }] };
+}
+function kaTomorrow() {
+  if (!kaMgr()) return kaDeny('Bu özet yalnızca patron ve müdür için.');
+  const f = kbDay(); const wd = kbWd(f.tm); const L = [];
+  L.push(f.res.n ? `Rezervasyon: ${f.res.n} kayıt, ${f.res.guests} kişi${f.res.cap ? ', en yoğun saat ' + f.res.at + ' (doluluk %' + Math.round(f.res.peak / f.res.cap * 100) + ')' : ''}.` : 'Rezervasyon: henüz kayıt yok.');
+  if (f.pct != null) L.push(`Satış: ${wd} günleri ortalamanın %${Math.abs(f.pct)} ${f.pct >= 0 ? 'üstünde' : 'altında'} seyrediyor.`);
+  L.push(f.sh.pub ? `Vardiya: ${f.sh.n} kişi çalışıyor${f.sh.lv ? ', ' + f.sh.lv + ' kişi izinli' : ''}.` : 'Vardiya: bu ayın planı yayında değil.');
+  const sc = f.crit.concat(f.soon); L.push(sc.length ? `Stok: ${sc.slice(0, 4).map((p) => kbName(p.st) + (p.left === Infinity ? '' : ' (~' + Math.max(0, Math.round(p.left)) + ' gün)')).join(', ')} azalıyor.` : 'Stok: kritik ürün yok.');
+  const tip = []; if (f.busy) tip.push(`${wd} yoğun görünüyor`); if (f.busy && f.sh.pub && f.sh.n < f.shToday.n) tip.push('vardiyaya kişi eklemeyi düşün'); if (sc.length) tip.push('siparişi bugün verirsen yetişir');
+  return { content: `${wd} için bütün resim:\n\n${L.map((x) => '• ' + x).join('\n')}${tip.length ? '\n\nÖnerim: ' + tip.join(', ') + '.' : '\n\nDikkat çeken bir şey yok.'}` };
+}
+function kaToday() {
+  if (!kaMgr()) return kaDeny('Bu özet yalnızca patron ve müdür için.');
+  const it = kaItems(); if (!it.length) return { content: 'Şu an dikkat çeken bir konu yok. Her şey yolunda görünüyor.' };
+  const todo_ = it.filter((i) => i.fn && !i.d); const info = it.filter((i) => !i.fn);
+  return { content: `${it.length} konu dikkatimi çekti:\n\n${it.filter((i) => !i.d).map((i) => '• ' + i.text).join('\n')}${todo_.length ? '\n\nBunlardan ' + todo_.length + ' tanesini senin için hazırlayabilirim. Bugün ekranındaki Kais kartından seçip onaylayabilirsin.' : ''}`, acts: [] };
+}
+function kaCritical() {
+  if (!kaMgr()) return kaDeny('Stok durumu yalnızca patron ve müdür için.');
+  const p = stockPlan().filter((x) => x.status !== 'ok').sort((a, b) => a.left - b.left);
+  if (!p.length) return { content: 'Kritik ya da azalan ürün yok.' };
+  return { content: `${p.length} ürün azalıyor:\n\n${p.slice(0, 10).map((x) => `• ${kbName(x.st)}: ${fq(x.st.qty)} ${x.st.unit}${x.left === Infinity ? '' : ', yaklaşık ' + Math.max(0, Math.round(x.left * 10) / 10) + ' gün yeter'}${x.pick ? ' → ' + x.pick.name + ' (' + fmt(x.price) + ')' : ''}`).join('\n')}\n\nİstersen "sipariş hazırla" yaz, hepsini ayarlayayım.` };
+}
+function kaCompare() {
+  if (!kaMgr()) return kaDeny('Tedarikçi fiyatları yalnızca patron ve müdür için.');
+  const rows = stockPlan().filter((x) => x.status !== 'ok' && offersOf(x.st.id).length > 1);
+  if (!rows.length) return { content: 'Karşılaştırılacak, birden fazla tedarikçisi olan azalan ürün yok.' };
+  return { content: rows.slice(0, 6).map((x) => { const o = offersOf(x.st.id).slice().sort((a, b) => a.items[x.st.id] - b.items[x.st.id]); const best = o[0].items[x.st.id]; return `${kbName(x.st)}:\n` + o.map((t) => `  ${x.pick && x.pick.id === t.id ? '★' : '•'} ${t.name}: ${fmt(t.items[x.st.id])}${t.items[x.st.id] > best ? ' (+%' + Math.round((t.items[x.st.id] / best - 1) * 100) + ')' : ''}, ${t.lead} gün${sgKm(t) != null ? ', ' + q1(sgKm(t)) + ' km' : ''}`).join('\n'); }).join('\n\n') + '\n\n★ Kais seçimi: fiyat, teslim süresi ve mesafeye göre.' };
+}
+function kaIntent(text) {
+  const f = kaFold(text); if (f.length > 220) return null;
+  if (/(\bsiparis\b.*\b(hazirla|ver|olustur|cikar|gec)|\b(hazirla|olustur)\b.*\bsiparis|eksikleri?\s+(tamamla|sipar))/.test(f) && !/\b(neden|nasil|ne zaman|kac|gecmis|durum)\b/.test(f)) return kaOrderAct();
+  if (/\bgorev\b.*\b(ver|ata|olustur|ekle)|\b(gorev)\s+(ver|ata)/.test(f)) return kaTaskAct(text);
+  if (/\bvardiya\b.*\b(hazirla|planla|olustur|dagit|doldur|cikar)/.test(f)) return kaShiftAct();
+  if (/^yarin\b.*(nasil|yogun|durum|hazirlik|ozet)/.test(f) || /^yarin[?. ]*$/.test(f)) return kaTomorrow();
+  if (/^(bugun|bugun ne yapmaliyim|bugun neye dikkat etmeliyim|durum|ozet|gunaydin|merhaba kais|neye dikkat etmeliyim|ne yapmaliyim)[?!. ]*$/.test(f)) return kaToday();
+  if (/(kritik|azalan|biten|bitecek).*(stok|urun)|stok.*(kritik|azal|biten)/.test(f) && f.length < 70) return kaCritical();
+  if (/(tedarikci|fiyat).*(karsilastir|kiyasla|ucuz)|(karsilastir|kiyasla).*(tedarikci|fiyat)/.test(f)) return kaCompare();
+  return null;
+}
+{
+  const _ask = aiAsk;
+  aiAsk = async function (text) {
+    const r = AIC.files && AIC.files.length ? null : kaIntent(text);
+    if (!r) return _ask(text);
+    AIC.err = ''; AIC.mode = null; AIC.msgs.push({ role: 'user', content: text }); AIC.msgs.push({ role: 'assistant', content: r.content, acts: r.acts || [], local: true });
+    try { aiMemSave(); } catch (e) {} render(); const el = document.getElementById('ai-end'); if (el && el.scrollIntoView) el.scrollIntoView();
+  };
+}
+{
+  const _c = aiActCard;
+  aiActCard = function (a, i, j) {
+    if (a.type === 'gorev_ver' && a.st === 'open') {
+      const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`; const us = USERS.filter((u) => u.id !== S.user.id);
+      return `<div class="card stack kc-act"><div class="kc-h"><span>${ic('check', 16)}</span><div><b>Görev</b><div class="small muted">Verilince çalışana bildirim gider</div></div></div>
+      <div class="field"><label for="${id('t')}">Ne yapılacak?</label><input id="${id('t')}" type="text" value="${esc(g.t)}"></div>
+      <div class="row wrap"><div class="field grow"><label for="${id('u')}">Kime</label><select id="${id('u')}"><option value="all"${g.uid === 'all' ? ' selected' : ''}>Herkes</option>${us.map((u) => `<option value="${u.id}"${g.uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></div>
+      <div class="field grow"><label for="${id('d')}">Son gün</label><input id="${id('d')}" type="date" min="${REF_ISO}" value="${esc(g.due)}"></div></div>
+      <div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">Görevi ver</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+    }
+    if (a.type === 'vardiya_taslak' && a.st === 'open') {
+      const g = a.args; return `<div class="card stack kc-act"><div class="kc-h"><span>${ic('users', 16)}</span><div><b>Vardiya taslağı</b><div class="small muted">${g.m + 1}. ay · ${EMP_IDS.length} kişi · ${VD_T.length} şablon</div></div></div>
+      <p class="small muted" style="margin:0">Taslak yayınlanmaz. Ekip, Vardiya sayfasında düzeltip yayınlarsın.</p>
+      <div class="row wrap"><button class="btn sm" data-a="aiact" data-i="${i}" data-j="${j}">Taslağı hazırla</button><button class="btn sm sec" data-a="aiskip" data-i="${i}" data-j="${j}">Vazgeç</button></div></div>`;
+    }
+    if (a.type === 'gorev_ver' || a.type === 'vardiya_taslak') return a.st === 'done' ? `<div class="callout info">${ic('info')}<div>${esc(a.msg || 'Tamamlandı.')}</div></div>` : '<div class="small muted">Vazgeçildi.</div>';
+    return _c(a, i, j);
+  };
+}
+{
+  const _a = H.aiact;
+  H.aiact = async function (el) {
+    const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; if (!a || a.st !== 'open') return;
+    const done = (m) => { a.st = 'done'; a.msg = m; try { aiMemSave(); } catch (e) {} render(); };
+    if (a.type === 'siparis_olustur' && S.user.role === 'mudur' && !kpCan('saOrder')) return kpDeny();
+    if (a.type === 'stok_guncelle' && S.user.role === 'mudur' && !kpCan('stokEdit')) return kpDeny();
+    if (a.type === 'gorev_ver') {
+      if (!kaMgr() || !kpCan('opsView')) return kpDeny();
+      const g = (k) => ((document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-${k}`) || {}).value || '').trim(); const t = g('t');
+      if (t.length < 3) { toast('Görevi yaz.', 'warn'); return; }
+      const uid = g('u') || 'all'; let due = g('d') || REF_ISO; if (due < REF_ISO) due = REF_ISO;
+      TASKS.unshift({ id: 'tk' + (++seq), t, uid, by: S.user.id, due, pri: 'normal', st: 'acik', at: nowT() }); if (TASKS.length > 500) TASKS.length = 500; pSched();
+      try { pushSend(uid === 'all' ? EMP_IDS : [uid], 'Yeni görev', t + (due === REF_ISO ? ' (bugün)' : ' · ' + isoShort(due))); } catch (e) {}
+      try { auditAdd({ type: 'kais', text: 'Kais görev verdi: ' + t }); } catch (e) {}
+      done('Görev verildi: ' + t + ' (' + (uid === 'all' ? 'herkes' : opN(uid).split(' ')[0]) + ').'); toast('Görev verildi.', 'ok'); return;
+    }
+    if (a.type === 'vardiya_taslak') {
+      if (!S.user || S.user.role !== 'patron') return kpDeny();
+      const ym = a.args.y + '-' + String(a.args.m + 1).padStart(2, '0'); if (Object.keys(VD_F).some((d) => d.startsWith(ym))) { done('Bu ay için plan zaten vardı, dokunmadım.'); return; }
+      vdAuto(a.args.y, a.args.m); pSched(); try { auditAdd({ type: 'kais', text: 'Kais vardiya taslağı hazırladı: ' + ym }); } catch (e) {}
+      done('Vardiya taslağı hazır. Ekip, Vardiya sayfasından gözden geçirip yayınla.'); toast('Taslak hazır.', 'ok'); return;
+    }
+    return _a.call(this, el);
+  };
+}
+{
+  const _v = viewKaisAI;
+  viewKaisAI = function () {
+    let h = _v(); if (!kaMgr()) return h;
+    const P = S.user.role === 'patron'; const ch = [['box', 'Kritik ürünlere sipariş hazırla'], ['calendar', 'Yarın nasıl görünüyor?'], ['sparkle', 'Bugün ne yapmalıyım?'], ['trend', 'Tedarikçi fiyatlarını kıyasla']].concat(P ? [['users', 'Vardiya planını hazırla']] : []).concat([['check', 'Görev ver: ']]);
+    const row = `<div class="kc-wrap"><div class="kc-lab">${ic('sparkle', 14)} Hızlı komutlar <em>anında yanıtlar, işlemi sen onaylarsın</em></div><div class="kc-row">${ch.map((c) => c[1].endsWith(': ') ? `<button type="button" class="kc-p" data-a="kafill" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1].trim().replace(/:$/, ''))}</button>` : `<button type="button" class="kc-p" data-a="aiq" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1])}</button>`).join('')}</div></div>`;
+    const m = '<div class="kx-sec"><div class="kx-lab"><b>Sorun</b>'; const i = h.indexOf(m); return i < 0 ? h : h.slice(0, i) + row + h.slice(i);
+  };
+}
+H.kafill = (el) => { const t = document.getElementById('ai-q'); if (t) { t.value = el.dataset.q; AIC.draft = t.value; t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (e) {} } };
 </script>
 </body>
 </html>
