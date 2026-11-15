@@ -976,6 +976,25 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 .iz-act .btn .ic{margin-right:4px}.iz-no{color:var(--nar)!important}
 .iz-e{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:34px 20px;background:#fff;border:1px dashed #C9D5E5;border-radius:18px;color:var(--cini)}.iz-e b{color:var(--ink);font-size:16px}.iz-e p{margin:0;color:var(--ink-2);font-size:14px;max-width:280px}
 .iz-tip{display:flex;gap:8px;align-items:flex-start;margin:0;font-size:13px;color:var(--ink-2);padding:0 4px}.iz-tip .ic{flex:none;margin-top:1px}
+.tq{gap:12px}
+.tq-sg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#EAF0F8;border-radius:14px}
+.tq-sg button{border:0;background:none;border-radius:11px;padding:10px 6px;font-family:inherit;font-weight:600;font-size:14px;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:6px}
+.tq-sg button em{font-style:normal;font-size:12px;background:#fff;border-radius:999px;min-width:22px;padding:1px 7px;color:var(--ink)}
+.tq-sg button[aria-pressed=true]{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,40,80,.12)}
+.tq-k{display:flex;gap:10px;align-items:flex-start;background:var(--cini-wash);color:var(--cini);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.4}.tq-k .ic{flex:none;margin-top:1px}.tq-k span{color:var(--ink)}
+.tq-l{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 280px);min-height:200px;overflow-y:auto;padding:2px 2px 6px;-webkit-overflow-scrolling:touch}
+.tq-c{background:#fff;border:1px solid #E6ECF4;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.tq-t{display:flex;align-items:center;gap:10px}.tq-w{flex:1;min-width:0;display:flex;flex-direction:column}.tq-w b{font-size:15.5px}.tq-w span{font-size:12.5px;color:var(--ink-2)}
+.tq-s{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.tq-w .tq-s{}.tq-c.tq-w .tq-s{background:#FFF1CC;color:#8A5200}.tq-c.tq-i .tq-s{background:var(--cini-wash);color:var(--cini)}.tq-c.tq-g .tq-s{background:#DDF3E6;color:#14804A}.tq-c.tq-m .tq-s{background:#EDF0F4;color:#5A6678}
+.tq-d{display:flex;align-items:center;gap:8px;color:var(--cini)}.tq-d b{font-size:16px;color:var(--ink);flex:1;min-width:0}.tq-d em{font-style:normal;font-size:12.5px;font-weight:700;background:#F0F4FA;color:var(--ink);padding:3px 10px;border-radius:999px}
+.tq-h{display:flex;flex-wrap:wrap;gap:6px}.tq-p{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 10px;border-radius:999px;background:#F3F6FA;color:var(--ink-2)}.tq-p i{width:7px;height:7px;border-radius:50%;background:#9AA7B8}
+.tq-p.o{background:#EAF7F0;color:#14683F}.tq-p.o i{background:#1E9E5A}.tq-p.w{background:#FFF3DB;color:#8A5200}.tq-p.w i{background:#E8A317}
+.tq-m{font-size:13.5px;line-height:1.45;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.tq-m b{color:var(--ink)}
+.tq-tg{align-self:flex-start;border:0;background:none;color:var(--cini);font-weight:600;font-size:13px;padding:0;font-family:inherit}
+.tq-ct{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--cini);background:var(--cini-wash);border-radius:12px;padding:8px 10px}.tq-ct span{color:var(--ink)}
+.tq-fin{font-size:12.5px;color:var(--ink-2)}
+.tq-a{display:flex;gap:8px}.tq-a .btn{flex:1 1 0;min-width:0;min-height:42px;padding:0 6px;font-size:13.5px;white-space:nowrap}.tq-a .btn:first-child{flex:1.25}.tq-no{color:var(--nar)!important}
 
 .dy{gap:14px}.dy-hd h2{margin:0;font-size:26px;letter-spacing:-.3px}.dy-hd p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 .dy-cm{background:#fff;border:1px solid #E1E8F2;border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 2px rgba(16,40,80,.04)}
@@ -8044,6 +8063,50 @@ molaAyar = function () {
 {const _tk = vdTick; vdTick = function () { _tk.apply(this, arguments); try { if (!S.user || !MB.cfg || !MB.pub || S.settings.brNotify === false) return; const n = new Date(), y = n.getFullYear(), m = n.getMonth(), d = n.getDate(), ds = vdYmd(y, m, d), now = n.getHours() * 60 + n.getMinutes() + n.getSeconds() / 60; let dirty = false;
   if (['patron', 'mudur'].includes(S.user.role)) { EMP_IDS.forEach((id) => brSlots(id, y, m, d).forEach((k, i) => { const key = ds + '|' + id + '|br' + i; if (now >= k.a && now < k.a + 4 && !VD_SENT[key]) { VD_SENT[key] = 1; dirty = true; pushSend([id], 'Mola zamanı', `${k.m} dakika molanız başlamıştır. Kais iyi dinlenmeler diler.`); } })); if (dirty) vdSave(); }
   else if (S.user.role === 'calisan') { brSlots(S.user.id, y, m, d).forEach((k, i) => { const key = 'br' + ds + i; if (now >= k.a && now < k.a + 4 && !VD_LOC[key]) { VD_LOC[key] = 1; toast(`${k.m} dakika molanız başlamıştır. Kais iyi dinlenmeler diler.`, 'ok'); } }); } } catch (e) {} }; }
+/* ===== v79: İzin talepleri, minimal ve akıllı ===== */
+function tqHints(r) {
+  const h = []; const e = lrEff(r); const p = PROFILES[r.uid];
+  if (r.type === 'yillik') {
+    const l = izLeft(r.uid);
+    if (l) h.push(l.ent === 0 ? ['w', 'Yıllık hak henüz doğmadı'] : e.days > l.left ? ['w', `Hak yetmiyor: ${l.left} gün kaldı`] : ['o', `Kalan hak ${l.left} gün, sonra ${l.left - e.days}`]);
+  } else if (p && p.salary) h.push(['i', `Kesinti en fazla ${fmt(Math.round(p.salary / 30 * e.days))}`]);
+  const o = izOrd(e.txt);
+  if (o) {
+    const same = LVREQ.filter((x) => x.id !== r.id && x.uid !== r.uid && x.status !== 'reddedildi').filter((x) => { const q = izOrd(lrEff(x).txt); return q && q[0] <= o[1] && o[0] <= q[1]; });
+    if (same.length) h.push(['w', `Çakışma: ${same.map((x) => byId(x.uid).name.split(' ')[0]).join(', ')}`]);
+    else h.push(['o', 'Başka talep çakışmıyor']);
+  }
+  try { const hw = vdHolWarn ? vdHolWarn(e.txt) : ''; if (hw) h.push(['w', 'Resmi tatile denk geliyor']); } catch (x) {}
+  try { const cw = vdCoverWarn(r.uid, e.txt); if (cw) h.push(['w', 'Kadro minimumun altına düşer']); else if (o) h.push(['o', 'Vardiya kadrosu yeterli']); } catch (x) {}
+  return h;
+}
+function tqCard(r) {
+  const u = byId(r.uid); const e = lrEff(r); const th = r.thread || []; const last = th[th.length - 1];
+  const kind = r.type === 'ucretsiz' ? 'Ücretsiz izin' : 'Yıllık izin';
+  const decided = ['onayli', 'reddedildi'].includes(r.status);
+  const st = { bekliyor: ['Yeni', 'w'], yanit: ['Çalışan cevapladı', 'w'], karsi: ['Cevap bekleniyor', 'i'], onayli: ['Onaylandı', 'g'], reddedildi: ['Reddedildi', 'm'] }[r.status] || ['', 'm'];
+  const open = S.izOpen && S.izOpen[r.id];
+  const hints = decided ? '' : `<div class="tq-h">${tqHints(r).map((x) => `<span class="tq-p ${x[0]}"><i></i>${esc(x[1])}</span>`).join('')}</div>`;
+  const msg = last && !decided ? `<div class="tq-m"><b>${esc(byId(last.by).name.split(' ')[0])}:</b> ${esc(last.text)}</div>` : '';
+  const tg = th.length > 1 && !decided ? `<button class="tq-tg" data-a="izth" data-id="${r.id}">${open ? 'Yazışmayı gizle' : 'Yazışma (' + th.length + ')'}</button>${open ? thread(th) : ''}` : '';
+  const ct = r.counter && r.status === 'karsi' ? `<div class="tq-ct">${ic('clock', 16)}<span>Karşı teklif: <b>${esc(r.counter.txt)} · ${r.counter.days} gün</b></span></div>` : '';
+  const fin = r.fin ? `<div class="tq-fin">${esc(LV_KIND[r.fin.type])}${r.fin.type === 'ucretsiz' && r.fin.ded ? ' · maaştan ' + fmt(r.fin.ded) + ' kesildi' : ' · maaştan kesinti yok'}</div>` : '';
+  const act = ['bekliyor', 'yanit'].includes(r.status) ? `<div class="tq-a"><button class="btn sm" data-a="lrok" data-id="${r.id}">${ic('check', 16)} Onayla</button><button class="btn sm sec" data-a="lrctr" data-id="${r.id}">Karşı teklif</button><button class="btn sm sec tq-no" data-a="lrrej" data-id="${r.id}">Reddet</button></div>` : '';
+  return `<article class="tq-c tq-${st[1]}"><div class="tq-t">${avatar(u, 36)}<div class="tq-w"><b>${esc(u.name)}</b><span>${kind}</span></div><span class="tq-s">${st[0]}</span></div>
+  <div class="tq-d">${ic('calendar', 18)}<b>${esc(e.txt)}</b><em>${e.days} gün</em></div>${ct}${hints}${msg}${tg}${fin}${act}</article>`;
+}
+function tqHTML() {
+  const A = (a) => LVREQ.filter((r) => a.includes(r.status)).slice().reverse();
+  const bek = A(['bekliyor', 'yanit']).concat(A(['karsi'])); const ver = A(['onayli', 'reddedildi']);
+  const t = S.tqt === 'ver' ? 'ver' : 'bek'; const arr = t === 'ver' ? ver : bek;
+  const warn = bek.filter((r) => tqHints(r).some((x) => x[0] === 'w')).length;
+  const seg = (k, l, n) => `<button data-a="tqt" data-v="${k}" aria-pressed="${t === k}">${l}<em>${n}</em></button>`;
+  const kais = t === 'bek' && bek.length ? `<div class="tq-k">${ic('sparkle', 18)}<span>${warn ? `<b>${warn} talepte dikkat edilecek nokta var.</b> Kartlardaki işaretlere bak.` : '<b>Tüm talepler uygun görünüyor.</b> Çakışma ya da kadro sorunu yok.'}</span></div>` : '';
+  const emptyTxt = t === 'bek' ? ['check', 'Bekleyen talep yok', 'Yeni izin talepleri burada görünür.'] : ['calendar', 'Henüz karar verilen talep yok', 'Onayladığın ve reddettiğin talepler burada birikir.'];
+  return `<div class="stack-lg tq"><div class="tq-sg">${seg('bek', 'Karar bekleyenler', bek.length)}${seg('ver', 'Karar verilenler', ver.length)}</div>${kais}
+  ${arr.length ? `<div class="tq-l">${arr.map(tqCard).join('')}</div>` : `<div class="iz-e">${ic(emptyTxt[0], 30)}<b>${emptyTxt[1]}</b><p>${emptyTxt[2]}</p></div>`}</div>`;
+}
+H.tqt = (el) => { S.tqt = el.dataset.v; render(); };
 /* Ayarlar: tüm verileri sıfırla */
 const viewAyarlarV66 = viewAyarlar;
 viewAyarlar = function () {
@@ -9476,6 +9539,7 @@ init();
 
 /* v72: çalışan Bugün'e vardiya kartı (en son sarmal) */
 {const _bc = bugunCalisan; bugunCalisan = function () { let h = _bc.apply(this, arguments); try { if (S.user && S.user.role === 'calisan') { const c = vdEmpCard(S.user.id); if (c) h = h.replace('<section class="cb-h', c + '<section class="cb-h'); const now = new Date(), s = vdMyDay(S.user.id, now); if (s.k === 'shift') h = h.replace(/Vardiya \d{2}:\d{2} – \d{2}:\d{2}/, 'Vardiya ' + s.t.s + ' – ' + vdEnd(s.t)); } } catch (e) {} return h; };}
+talepHTML = tqHTML;
 </script>
 </body>
 </html>
