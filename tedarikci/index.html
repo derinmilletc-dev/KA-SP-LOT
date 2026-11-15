@@ -2203,9 +2203,23 @@ try{new MutationObserver((ms)=>{ms.forEach(m=>{const el=m.target&&(m.target.node
  .oz-hero{padding:26px 28px 20px}.oz-hi{font-size:32px}.oz-dt b{font-size:40px}.oz-hero .sd-ask{max-width:640px}
  .oz-kpis{display:grid;grid-template-columns:repeat(5,1fr);overflow:visible}.oz-k{width:auto}
  .oz-q{grid-template-columns:repeat(7,1fr)}
- .oz-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0 24px;align-items:start}
+ .oz-grid{display:block;columns:2;column-gap:24px}.oz-col{display:contents}.oz-grid>*,.oz-col>*{break-inside:avoid}.oz-col>.oz-h{break-after:avoid;margin-top:0}.oz-col>.oz-h:not(:first-child){margin-top:22px}.oz-tr svg{max-height:210px}.oz-hero .sd-ask{max-width:760px}
+ body.sp[data-tab=ozet] .sp-body{max-width:1440px!important;padding-left:40px;padding-right:40px}
 }
+@media(min-width:1700px){.oz-grid{columns:3}.oz-kpis{gap:14px}}
 @media(min-width:900px) and (hover:hover){.oz-k:hover,.oz-q button:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(20,40,30,.05),0 16px 30px -18px rgba(20,40,30,.4)}}
+
+@media(min-width:900px){
+body[data-tab=urun] .sp-body,body[data-tab=kais] .sp-body.__x{max-width:1440px}
+body.sp[data-tab=is] .sp-body,body.sp[data-tab=muh] .sp-body,body.sp[data-tab=profil] .sp-body,body.sp[data-tab=urun] .sp-body{max-width:1440px;padding-left:40px;padding-right:40px}
+body[data-tab=urun][data-sub=stok] .sp-body,body[data-tab=urun][data-sub=hrk] .sp-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:0 24px;align-items:start}
+body[data-tab=urun][data-sub=stok] .sp-body>*,body[data-tab=urun][data-sub=hrk] .sp-body>*{grid-column:1/-1}
+body[data-tab=urun][data-sub=stok] .sp-body>.sp-pc,body[data-tab=urun][data-sub=hrk] .sp-body>.sp-le{grid-column:auto}
+body[data-tab=urun][data-sub=stok] .sp-body>.sp-seg,body[data-tab=urun][data-sub=hrk] .sp-body>.sp-seg{max-width:560px;justify-self:center;width:100%}
+body[data-tab=urun][data-sub=stok] .sp-kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+body[data-tab=muh] .sp-body>.sp-seg,body[data-tab=is] .sp-body>.sp-seg{max-width:560px;margin-left:auto;margin-right:auto}
+}
+@media(min-width:1700px){body.sp[data-tab=urun][data-sub=kat] .sp-body>div:not([class]){grid-template-columns:repeat(auto-fill,minmax(400px,1fr))}}
 `; document.head.appendChild(st);})();
 SPA.ozgo=(el)=>{SPS.tab=el.dataset.t; if(el.dataset.a) SPS.acc=el.dataset.a; SPS.sheet=null; spRender(); window.scrollTo(0,0);};
 SPA.ozck=(el)=>{const c=el.closest('.oz-ck'); if(!c) return; c.classList.toggle('all'); el.textContent=c.classList.contains('all')?'Tamamlananları gizle':'Tamamlananları göster';};
