@@ -817,7 +817,7 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .sz-sw.wide{align-items:flex-start;line-height:1.4}.sz-sw.wide .sz-tr{margin-top:1px}
 .sz-del{width:34px;height:34px;border-radius:10px;border:0;background:#fff;color:var(--ink-2);display:grid;place-items:center;border:1px solid #E1E7F0}.sz-del:active{background:#FDECEC;color:var(--nar)}
 .sz-add{border:1.5px dashed #B9CBE2;background:transparent;color:var(--cini);border-radius:14px;padding:12px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
-.sz-sug{display:flex;gap:6px;overflow-x:auto;align-items:center;padding-bottom:2px;scrollbar-width:none}.sz-sug::-webkit-scrollbar{display:none}.sz-sug>span{font-size:12px;color:var(--ink-2);flex:none;margin-right:2px}
+.sz-sug{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-bottom:2px;scrollbar-width:none}.sz-sug::-webkit-scrollbar{display:none}.sz-sug>span{font-size:12px;color:var(--ink-2);flex:none;margin-right:2px}
 .sz-sug button{flex:none;display:inline-flex;align-items:center;gap:4px;border:1px solid #D3E3F6;background:var(--cini-wash);color:var(--cini-d);border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:500;white-space:nowrap}
 .sz-empty{margin:0;font-size:13px;color:var(--ink-2);background:#F6F9FD;border-radius:12px;padding:12px}
 .sz-lab{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:-6px}
@@ -1028,6 +1028,11 @@ div.now{font-size:11px}
 @media(max-width:899px){.vd-hint{display:block}}
 .lg-yasal{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;margin:14px 0 4px;font-size:13px;color:#7A8AA2}.lg-yasal a{color:#5B6F8F;text-decoration:underline;padding:6px 2px}.lg-yasal.lg-in{justify-content:flex-start;margin:6px 0 0}.lg-ok{margin:10px 2px 0;font-size:12.5px;line-height:1.5;color:#6B7B94}.lg-ok a{color:#3B5E99;text-decoration:underline}
 .os-p{white-space:pre-wrap;background:#F5F8FD;border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.5;max-height:34vh;overflow:auto;margin-bottom:12px}.os-b{display:flex;flex-direction:column;gap:8px}.os-b small{margin:-2px 4px 4px;font-size:12.5px}.os-wa{background:#1FA855;border-color:#1FA855;color:#fff}.os-ok{color:#1E8F55;display:flex;align-items:center;gap:6px;margin:0 0 10px}.os-lk{border:0;background:none;color:var(--ink-2);font:inherit;font-size:14px;text-decoration:underline;padding:10px;min-height:44px;cursor:pointer}
+.tid{padding:0;overflow:hidden}.tid>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;min-height:64px}.tid>summary::-webkit-details-marker{display:none}.tid>summary::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid var(--ink-2);border-bottom:2px solid var(--ink-2);transform:rotate(45deg);transition:transform .2s;flex:none}.tid[open]>summary::after{transform:rotate(-135deg)}
+.tid-i{flex:none;width:38px;height:38px;border-radius:12px;background:var(--cini-wash,#EAF1FB);color:var(--cini);display:grid;place-items:center}.tid-t{display:flex;flex-direction:column;gap:2px;min-width:0}.tid-t b{font-size:15.5px;font-weight:600}.tid-t small{font-size:13px;color:var(--ink-2)}
+.tid>.tid-in>h2:first-child,.tid>.tid-in .row>div>h3:first-child{display:none}.tid>.tid-in{border:0;box-shadow:none;margin:0;border-radius:0;border-top:1px solid #E8EEF7}.tid>.tid-in.kz{background:transparent}
+.tid.kb-w{}main>.su-bn,main>.kb-st,main>.dsec,main>.tid,main>.dfin,main>.dash>.pf-card{margin-bottom:12px}main>.kb-st{margin-top:2px}.kb-more{list-style:none;font-size:13px;color:var(--ink-2);padding:2px 0 0 4px}
+.pf-min .pf-miss{display:none}.pf-min{padding:12px 14px!important}.pf-min .pf-top p{display:none}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -11421,6 +11426,46 @@ function kaWeekly() {
   kaIntent = function (text) { const f = kaFold(text); if (f.length < 70 && /(haftalik|bu hafta|gecen hafta|hafta nasil|hafta ozet)/.test(f) && /(ozet|nasil|rapor|durum|gecti)/.test(f)) return kaWeekly(); return _k(text); };
 }
 window.addEventListener('online', () => { try { if (typeof CL !== 'undefined' && CL.on && typeof pFlush === 'function') pFlush(); } catch (e) {} });
+
+/* ===== v107: Bugün ekranı sadeleştirme (patron) ===== */
+function kbTidy() {
+  try {
+    if (!S.user || !['patron', 'mudur'].includes(S.user.role) || S.view !== 'bugun' || S.modal) return; const m = document.querySelector('main'); if (!m || m.querySelector('.tid, .tid-done')) return;
+    const q = (s) => m.querySelector(s); const kst = q('.kb-st'); if (!kst) return; const pat = S.user.role === 'patron';
+    const fold = (el, ico, title, sub, open) => { if (!el) return; const d = document.createElement('details'); d.className = 'tid card'; if (open) d.open = true; d.innerHTML = `<summary><span class="tid-i">${ic(ico, 18)}</span><span class="tid-t"><b>${title}</b><small>${esc(sub)}</small></span></summary>`; el.parentNode.insertBefore(d, el); el.classList.add('tid-in'); d.appendChild(el); };
+    const bn = kst.querySelector('.su-bn'); if (bn && pat) m.insertBefore(bn, kst);
+    const dsec = q('.dsec'); if (dsec && pat) m.insertBefore(dsec, kst.nextSibling);
+    if (!pat) { const dup = q('.stx-ks'); if (dup) dup.style.display = 'none'; const mq = q('.mg-q'); const hi = q('.mg-hi'); if (mq && hi) hi.parentNode.insertBefore(mq, hi.nextSibling); const tm = Array.from(m.querySelectorAll('.mg-card')).find((x) => !x.classList.contains('mg-att') && /Ekip durumu/.test(x.textContent)); if (tm) { const out = (tm.textContent.match(/(\d+)\s*dışarıda/) || [])[0]; fold(tm, 'users', 'Ekip durumu', out || 'Kim çalışıyor', false); } }
+    const lis = m.querySelectorAll('.kb-card .kb-l .kb-r'); if (lis.length > 3) { for (let i = 3; i < lis.length; i++) lis[i].style.display = 'none'; const more = document.createElement('li'); more.className = 'kb-more'; more.textContent = '+' + (lis.length - 3) + ' madde daha'; lis[0].parentNode.appendChild(more); }
+    const kb = q('.kb-card'); const f1 = kb && kb.querySelector('.kb-r'); fold(kb, 'calendar', 'Kais: yarın için bütün resim', f1 ? f1.textContent.trim().slice(0, 70) : 'Yarının özeti', false);
+    const ka = q('.ka-card'); const kn = ka && (ka.querySelector('.btn.block') || {}).textContent; fold(ka, 'sparkle', 'Kais senin için hazırladı', (kn || '').replace(/[^\d]/g, '') ? (kn.replace(/[^\d]/g, '') + ' iş, tek dokunuşla yap') : 'Önerileri gör', false);
+    const kz = q('.kz'); const kp = kz && kz.querySelector('.pill'); fold(kz, 'list', 'Günün özeti', kp ? kp.textContent.trim() : 'Kais günü değerlendirdi', false);
+    const ki = q('.ki'); if (ki && /Henüz veri yok/i.test(ki.textContent)) ki.style.display = 'none';
+    const pf = q('.pf-card'); if (pf && pat) { pf.classList.add('pf-min'); m.querySelector('.dash') && m.querySelector('.dash').appendChild(pf); }
+    const mk = document.createElement('i'); mk.className = 'tid-done'; mk.hidden = true; m.appendChild(mk);
+  } catch (e) {}
+}
+{ const _r = render; render = function () { const r = _r.apply(this, arguments); kbTidy(); return r; }; }
+function kbFoldCards(sel, ico, firstOpen) {
+  try {
+    const m = document.querySelector('main'); if (!m || m.querySelector('.tid-done')) return;
+    Array.from(m.querySelectorAll(sel)).forEach((el, i) => {
+      if (el.closest('details.tid')) return; const h = el.querySelector('h2, h3, h4'); if (!h) return; const t = h.textContent.trim(); const sm = el.querySelector('.muted, p.small, small'); let sub = sm ? sm.textContent.trim().replace(/\s+/g, ' ') : ''; if (sub === t) sub = ''; if (sub.length > 60) sub = sub.slice(0, 58) + '…';
+      const d = document.createElement('details'); d.className = 'tid card'; if (firstOpen && i === 0) d.open = true; d.innerHTML = `<summary><span class="tid-i">${ic(ico, 18)}</span><span class="tid-t"><b>${esc(t)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></summary>`;
+      el.parentNode.insertBefore(d, el); el.classList.add('tid-in'); d.appendChild(el);
+      const hh = el.querySelector(':scope > .row h3, :scope > div > h3, :scope > h3, :scope > header'); 
+    });
+    const mk = document.createElement('i'); mk.className = 'tid-done'; mk.hidden = true; m.appendChild(mk);
+  } catch (e) {}
+}
+{
+  const _r2 = render;
+  render = function () {
+    const r = _r2.apply(this, arguments);
+    if (S.user && !S.modal) { if (S.view === 'ayarlar' && S.user.role === 'patron') kbFoldCards('main .stack-lg > .card, main > .card.flush', 'gear', false); else if (S.view === 'sartlar') kbFoldCards('main .sz > .sz-card', 'file', true); }
+    return r;
+  };
+}
 </script>
 </body>
 </html>
