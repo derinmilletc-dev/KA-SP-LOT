@@ -11661,6 +11661,69 @@ H.mhtes = () => { const m = S.modal; if (!m || m.type !== 'mhes') return; m.tes 
     return _k2(text);
   };
 }
+
+/* ===== v112: çok şube (patron birden fazla işletmeyi tek hesapla yönetir) ===== */
+const SBR = { sum: null, busy: false, t: 0, name: '' };
+const sbrOwn = () => (ID.mems || []).filter((m) => m.role === 'patron' && m.businesses);
+const sbrOn = () => S.user && S.user.role === 'patron' && ID.active && ID.active.role === 'patron';
+async function sbrLoad() {
+  if (!sbrOn() || SBR.busy) return; SBR.busy = true; const own = sbrOwn(); const out = {};
+  try {
+    const c = sbClient(); const r = await c.from('app_state').select('business_id,state,updated_at').eq('scope', 'muh').in('business_id', own.map((m) => m.business_id)); if (r.error) throw r.error;
+    (r.data || []).forEach((x) => {
+      let S2 = []; try { S2 = JSON.parse(x.state).SALES || []; } catch (e) {} const by = {}; S2.forEach((s) => { by[s.date] = (by[s.date] || 0) + (Number(s.total) || 0); });
+      const sum = (a, b) => Object.keys(by).filter((d) => d >= a && d <= b).reduce((t, d) => t + by[d], 0);
+      out[x.business_id] = { today: by[REF_ISO] || 0, w: sum(addDays(REF_ISO, -6), REF_ISO), pw: sum(addDays(REF_ISO, -13), addDays(REF_ISO, -7)), at: x.updated_at };
+    });
+  } catch (e) {}
+  SBR.sum = out; SBR.busy = false; SBR.t = Date.now(); if (['ayarlar', 'bugun'].includes(S.view) && !S.modal) render();
+}
+const sbrCur = (m) => ID.active && m.business_id === ID.active.business_id;
+function sbrRows() {
+  const own = sbrOwn(); const sm = SBR.sum || {}; const mx = Math.max(1, ...own.map((m) => (sm[m.business_id] || {}).w || 0));
+  return own.map((m) => { const s = sm[m.business_id]; const d = s && s.pw > 0 ? Math.round((s.w - s.pw) / s.pw * 100) : null;
+    return `<div class="sbr-r"><div class="sbr-h"><b>${esc(m.businesses.name)}</b>${sbrCur(m) ? '<span class="pill p-ok">Buradasın</span>' : `<button class="btn sm sec" data-a="bizgo" data-id="${m.business_id}">Geç</button>`}</div>
+    ${s ? `<div class="sbr-n"><span>Bugün <b>${esc(fmt0(s.today))}</b></span><span>7 gün <b>${esc(fmt0(s.w))}</b>${d == null ? '' : ` <em class="${d >= 0 ? 'up' : 'dn'}">${d >= 0 ? '+' : ''}${d}%</em>`}</span></div><div class="sbr-bar"><i style="width:${Math.round(s.w / mx * 100)}%"></i></div>` : `<div class="small muted">${SBR.sum ? 'Henüz satış verisi yok.' : 'Yükleniyor…'}</div>`}</div>`; }).join('');
+}
+function sbrCard() {
+  const own = sbrOwn(); const tot = own.reduce((t, m) => t + (((SBR.sum || {})[m.business_id] || {}).w || 0), 0);
+  return `<div class="card kp-card sbr-card"><div class="row between wrap" style="gap:8px"><div><h3 style="margin:0">Şubeler</h3><p class="muted small" style="margin-top:2px">Her şubenin verisi, ekibi ve yetkileri ayrı tutulur. Tek hesapla hepsini yönetirsin.</p></div><span class="pill p-info">${own.length} şube</span></div>
+  ${own.length > 1 && SBR.sum ? `<div class="mh-yr" style="margin-top:12px"><div><small>Tüm şubeler, 7 gün</small><b>${esc(fmt0(tot))}</b></div><div><small>Bugün</small><b>${esc(fmt0(own.reduce((t, m) => t + (((SBR.sum || {})[m.business_id] || {}).today || 0), 0)))}</b></div></div>` : ''}
+  <div class="sbr-l">${sbrRows()}</div>
+  <div class="field" style="margin-top:12px"><label for="sbr-name">Yeni şube</label><div class="row" style="gap:8px"><input type="text" id="sbr-name" maxlength="60" placeholder="Örn. Kadıköy şubesi" style="flex:1"><button class="btn" data-a="sbradd">Ekle</button></div><p class="small muted" style="margin-top:6px">Yeni şube boş başlar. Müdür ve ekibi şubeye ayrıca davet edersin.</p></div></div>`;
+}
+function sbrStrip() {
+  const own = sbrOwn(); if (own.length < 2) return '';
+  const sm = SBR.sum || {}; return `<div class="card sbr-strip" style="margin-bottom:12px"><div class="row between" style="gap:8px"><b style="font-weight:600">Şubeler · bugün</b><button class="btn sm sec" data-a="nav" data-v="ayarlar">Tümü</button></div><div class="sbr-chips">${own.map((m) => `<button class="sbr-c${sbrCur(m) ? ' on' : ''}" ${sbrCur(m) ? '' : `data-a="bizgo" data-id="${m.business_id}"`}><small>${esc(m.businesses.name)}</small><b>${sm[m.business_id] ? esc(fmt0(sm[m.business_id].today)) : '—'}</b></button>`).join('')}</div></div>`;
+}
+H.sbradd = async () => {
+  if (!sbrOn()) return; const n = ((document.getElementById('sbr-name') || {}).value || '').trim(); if (n.length < 2) { toast('Şube adını yaz.', 'warn'); return; }
+  if (sbrOwn().length >= 10) { toast('En fazla 10 şube ekleyebilirsin.', 'warn'); return; }
+  try {
+    const c = sbClient(); const i = await c.from('businesses').insert({ name: n, owner_id: SBS.user.id }).select('id').single(); if (i.error) throw i.error;
+    const id = i.data.id; await sbLoadBiz(); if (!ID.mems.some((m) => m.business_id === id)) { toast('Şube oluştu ama erişim eklenemedi. Yenileyip tekrar dene.', 'bad'); return; }
+    try { localStorage.setItem('kp_newbiz', id); } catch (e) {} try { auditAdd({ type: 'kais', text: 'Yeni şube eklendi: ' + n }); } catch (e) {}
+    await H.bizgo({ dataset: { id } });
+  } catch (e) { toast('Şube eklenemedi. ' + idMsg(e), 'bad'); }
+};
+{
+  const _ie = idEnter;
+  idEnter = async function () {
+    try { const f = localStorage.getItem('kp_newbiz'); if (f && ID.active && ID.active.business_id === f && ID.active.role === 'patron') { localStorage.removeItem('kp_newbiz'); NAMES.u1 = NAMES.u1 || { name: 'İşveren', title: 'Patron' }; BIZ = ID.active.businesses.name; wipeData(); applyNames(); } } catch (e) {}
+    return _ie.apply(this, arguments);
+  };
+  const _vs = viewHTML;
+  viewHTML = function () {
+    let h = _vs.apply(this, arguments);
+    if (sbrOn()) {
+      if (!SBR.sum && !SBR.busy) sbrLoad(); else if (Date.now() - SBR.t > 90000 && !SBR.busy && ['ayarlar', 'bugun'].includes(S.view)) sbrLoad();
+      if (S.view === 'ayarlar' && !h.includes('sbr-card')) { const i = h.indexOf('<div class="card"><h3>Diğer ayarlar</h3>'); if (i >= 0) h = h.slice(0, i) + sbrCard() + h.slice(i); }
+      if (S.view === 'bugun' && !h.includes('sbr-strip')) h = sbrStrip() + h;
+    }
+    return h;
+  };
+}
+(function () { try { const st = document.createElement('style'); st.textContent = '.sbr-l{margin-top:12px;display:flex;flex-direction:column;gap:10px}.sbr-r{border:1px solid var(--line);border-radius:14px;padding:12px}.sbr-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.sbr-n{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:6px}.sbr-n b{color:var(--ink);font-weight:600}.sbr-n em{font-style:normal;font-size:12px;font-weight:600}.sbr-n .up{color:#16803c}.sbr-n .dn{color:var(--nar)}.sbr-bar{height:6px;border-radius:4px;background:var(--canvas);margin-top:8px;overflow:hidden}.sbr-bar i{display:block;height:100%;background:var(--cini);border-radius:4px}.sbr-chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;-webkit-overflow-scrolling:touch}.sbr-c{flex:0 0 auto;min-width:112px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:10px 12px;font:inherit;cursor:pointer}.sbr-c small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}.sbr-c b{display:block;font-size:15px;margin-top:2px}.sbr-c.on{border-color:var(--cini);background:var(--cini-wash);cursor:default}'; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
