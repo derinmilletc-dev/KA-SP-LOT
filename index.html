@@ -7526,12 +7526,12 @@ function vdHolCard(y, m) {
 function vdHolWarn(txt) {
   if (S.settings.holClosed) return ''; let q = null; try { q = izOrd(txt); } catch (e) {} if (!q) return ''; const y = new Date().getFullYear(); const hs = [];
   for (let o = q[0]; o <= q[1] && o - q[0] < 60; o++) { const m = Math.floor(o / 40), d = o % 40; if (d < 1 || d > 31 || m > 11) continue; const h = vdHolFull(y, m, d); if (h) hs.push(d + ' ' + VD_MON[m] + ' (' + h.n + ')'); }
-  return hs.length ? `<b>${hs.slice(0, 3).join(', ')}</b> resmi tatile denk geliyor. Resmi tatillerde müşteri yoğunluğu artabilir. Bu günlerde izin vermek istediğine emin misin? Devam etmek için tekrar dokun.` : '';
+  return hs.length ? `<b>${hs.slice(0, 3).join(', ')}</b> resmi tatile denk geliyor. Resmi tatillerde müşteri yoğunluğu artabilir. Bu günlerde izin vermek istediğine emin misin? ` : '';
 }
-{const _lv = H.lvok; H.lvok = (el) => { const g = (i) => document.getElementById(i); const txt = ((g('lv-txt') || {}).value || '').trim(); const w = vdHolWarn(txt);
+{const _lv = H.lvok; H.lvok = (el) => { const g = (i) => document.getElementById(i); const txt = ((g('lv-txt') || {}).value || '').trim(); const w = vdLeaveWarn(el.dataset.id, txt);
   if (w && S.holAck !== txt) { S.holAck = txt; const e = g('lv-err'); if (e) { e.innerHTML = w; e.style.color = '#B26B00'; } if (el && el.textContent) el.textContent = 'Yine de onayla'; return; }
   S.holAck = null; const e = g('lv-err'); if (e) e.style.color = ''; return _lv(el); };
- const _lf = H.lrfinal; H.lrfinal = (el) => { const r = S.modal && LVREQ.find((x) => x.id === S.modal.id); const txt = r ? lrEff(r).txt : ''; const w = vdHolWarn(txt); const g = (i) => document.getElementById(i);
+ const _lf = H.lrfinal; H.lrfinal = (el) => { const r = S.modal && LVREQ.find((x) => x.id === S.modal.id); const txt = r ? lrEff(r).txt : ''; const w = vdLeaveWarn(r ? r.uid : '', txt); const g = (i) => document.getElementById(i);
   if (w && S.holAck !== txt) { S.holAck = txt; const e = g('la-err'); if (e) { e.innerHTML = w; e.style.color = '#B26B00'; } if (el && el.textContent) el.textContent = 'Yine de onayla'; return; }
   S.holAck = null; const e = g('la-err'); if (e) e.style.color = ''; return _lf(el); };}
 /* vardiya çekirdeği */
@@ -7651,6 +7651,67 @@ function vdTick() {
   if (dirty) vdSave();
 }
 if (!window.__vdT) { window.__vdT = setInterval(() => { try { vdTick(); } catch (e) {} }, 60000); setTimeout(() => { try { vdTick(); } catch (e) {} }, 4000); }
+/* ===== v73: Akıllı izin takvimi (çakışmasız haftalık izin, kadro kontrolü) ===== */
+{const st=document.createElement('style'); st.textContent=`
+.iz-t{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.iz-t div{background:#fff;border:1px solid #E1E8F2;border-radius:16px;padding:12px 14px}.iz-t span{display:block;font-size:12.5px;color:var(--ink-2)}.iz-t b{display:block;font-size:24px;margin-top:2px}.iz-t b small{font-size:13px;font-weight:600;color:var(--ink-2);margin-left:4px}.iz-t .bad b{color:#D9534F}.iz-t .ok b{color:#2F9E5F}
+.iz-k{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-radius:20px;padding:16px 18px;background:linear-gradient(135deg,#EAF2FE,#F4F8FF);border:1px solid #D7E6FB}.iz-k>div:first-child{flex:1 1 280px;min-width:0;text-align:left}.iz-k h3{margin:0 0 3px;font-size:16px;display:flex;align-items:center;gap:8px}.iz-k p{margin:0;font-size:13.5px;color:var(--ink-2);max-width:560px}.iz-k .btn{min-height:44px;border-radius:14px}
+.iz-gr .c.wo{background:#fff;border:1.5px dashed #8FA3C0;box-sizing:border-box}.iz-gr .cv{font:700 12px system-ui;text-align:center;color:#2F9E5F}.iz-gr .cv.b{color:#D9534F}
+.iz-rq{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #EDF1F7}.iz-rq:first-of-type{border-top:0}.iz-rq .grow{min-width:0}.iz-rq b{font-size:14.5px;display:block}.iz-rq span.s{font-size:12.5px;color:var(--ink-2);display:block}.iz-rq .v{font-size:12.5px;margin-top:4px;display:inline-block;border-radius:99px;padding:3px 10px}.iz-rq .v.ok{background:#E8F6EE;color:#1F6B42}.iz-rq .v.w{background:#FDF1DC;color:#8F5A00}.iz-rq .btn{flex:none;min-height:38px;border-radius:12px}
+`; document.head.appendChild(st);}
+const vdPlanned = (y) => Object.keys(VD_F).some((k) => k.startsWith(y + '-'));
+function vdAvail(y, m, d, skip) { const plan = vdPlanned(y); return EMP_IDS.filter((id) => { if (id === skip) return false; const s = vdState(y, m, d, id); return plan ? s.k === 'shift' : s.k !== 'leave' && s.k !== 'hol'; }).length; }
+function vdCoverWarn(uid, txt) {
+  let q = null; try { q = izOrd(txt); } catch (e) {} if (!q) return ''; const y = new Date().getFullYear(), min = Number(S.settings.shMin) || 1, bad = [];
+  for (let o = q[0]; o <= q[1] && o - q[0] < 60; o++) { const m = Math.floor(o / 40), d = o % 40; if (d < 1 || d > 31 || m > 11) continue; if (S.settings.holClosed && vdHolFull(y, m, d)) continue; if (vdAvail(y, m, d, uid) < min) bad.push(d + ' ' + VD_MON[m]); }
+  return bad.length ? `<b>${bad.slice(0, 3).join(', ')}</b> günlerinde bu izinle çalışan sayısı ${min} kişinin altına düşer.` : '';
+}
+const vdLeaveWarn = (uid, txt) => { const a = [vdHolWarn(txt), vdCoverWarn(uid, txt)].filter(Boolean); return a.length ? a.join('<br>') + '<br>Yine de onaylamak için tekrar dokun.' : ''; };
+/* çakışmasız haftalık izin planı */
+vdAuto = function (y, m) {
+  const n = EMP_IDS.length, dim = new Date(y, m + 1, 0).getDate(), T = VD_T; if (!T.length || !n) return 0; const off0 = vdMon0(y, m);
+  for (let d = 1; d <= dim; d++) delete VD_F[vdYmd(y, m, d)];
+  const need = Number(S.settings.wkOff) === 2 ? 2 : 1; const offCnt = {}; const weeks = {};
+  for (let d = 1; d <= dim; d++) { const wi = Math.floor((d + off0 - 1) / 7); (weeks[wi] = weeks[wi] || []).push(d); }
+  let total = 0;
+  EMP_IDS.forEach((id, i) => { Object.keys(weeks).forEach((w) => { const days = weeks[w], wi = Number(w);
+    const free = days.filter((d) => !vdOnLeave(id, m, d) && !(S.settings.holClosed && vdHolFull(y, m, d)));
+    let k = Math.round(need * days.length / 7) - (days.length - free.length); if (k < 0) k = 0; k = Math.min(k, free.length);
+    const pick = free.slice().sort((a, b) => ((offCnt[a] || 0) * 10 + ((a + i * 2 + wi) % 7) / 10) - ((offCnt[b] || 0) * 10 + ((b + i * 2 + wi) % 7) / 10)).slice(0, k);
+    pick.forEach((d) => { offCnt[d] = (offCnt[d] || 0) + 1; vdSet(vdYmd(y, m, d), id, 'off'); total++; });
+    free.forEach((d) => { if (!pick.includes(d)) vdSet(vdYmd(y, m, d), id, T[(i + wi) % T.length].id); }); }); });
+  return total;
+};
+S.izM = S.izM || 0;
+H.izoff = (el) => { S.settings.wkOff = Number(el.dataset.v); vdSave(); render(); };
+H.izweek = () => { const now = new Date(); const b = new Date(now.getFullYear(), now.getMonth() + (S.izM || 0), 1), y = b.getFullYear(), m = b.getMonth(), ym = vdYm(y, m);
+  const has = Array.from({ length: 31 }, (_, i) => VD_F[vdYmd(y, m, i + 1)]).some(Boolean);
+  if (has && S.izAsk !== ym) { S.izAsk = ym; toast('Bu ayın vardiya planı yeniden düzenlenecek. Onaylamak için tekrar dokun.', 'warn'); return; } S.izAsk = null;
+  const n = vdAuto(y, m); const pub = VD_M[ym] && VD_M[ym].pub; VD_M[ym] = { pub: !!pub, auto: true }; vdSave(); render();
+  if (pub) pushSend(EMP_IDS.slice(), 'Vardiya programın güncellendi', `${VD_MON[m]} ayı haftalık izin günlerin düzenlendi. Kais iyi çalışmalar diler.`);
+  toast(`${n} haftalık izin günü dağıtıldı. Herkese haftada bir gün, çakışma yok.`, 'ok'); };
+izinTakvim = function () {
+  const now = new Date(); const base = new Date(now.getFullYear(), now.getMonth() + (S.izM || 0), 1); const y = base.getFullYear(), mo = base.getMonth(), dim = new Date(y, mo + 1, 0).getDate(), todayD = (S.izM || 0) === 0 ? now.getDate() : -1, min = Number(S.settings.shMin) || 1;
+  const A = ekLeaves(); const cls = { yillik: 'y', rapor: 'r', ucretsiz: 'u', mazeret: 'm' }; const plan = vdPlanned(y) && Array.from({ length: dim }, (_, i) => VD_F[vdYmd(y, mo, i + 1)]).some(Boolean);
+  const hitOf = (id, d) => { const o = mo * 40 + d; return A.filter((x) => x.uid === id).find((x) => { const q = ekRange(x); return q && q[0] <= o && o <= q[1]; }); };
+  let leaveDays = 0;
+  const cell = (id, d) => { const hit = hitOf(id, d); const hl = vdHolFull(y, mo, d), we = [0, 6].includes(new Date(y, mo, d).getDay()); const wo = plan && vdAsg(vdYmd(y, mo, d), id) === 'off'; if (hit && hit.st === 'onayli') leaveDays++;
+    const c = hit ? (hit.st === 'onayli' ? cls[hit.type] || 'y' : 'p') : hl ? (S.settings.holClosed ? 'hc' : 'hd') : vdHol(y, mo, d) ? 'hh' : wo ? 'wo' : we ? 'we' : '';
+    const tt = hit ? byId(id).name + ': ' + (LV_KIND[hit.type] || hit.type) + ' ' + hit.txt + (hit.st === 'onayli' ? '' : ' (bekliyor)') : wo ? byId(id).name + ': haftalık izin' : hl ? hl.n : vdHol(y, mo, d) ? vdHol(y, mo, d).n + ' (yarım gün)' : '';
+    return `<div class="c ${c}${d === todayD ? ' t' : ''}" title="${esc(tt)}"></div>`; };
+  const heads = Array.from({ length: dim }, (_, i) => { const d = i + 1, we = [0, 6].includes(new Date(y, mo, d).getDay()), hl = vdHolFull(y, mo, d); return `<div class="dh${we ? ' we' : ''}${d === todayD ? ' td' : ''}${hl ? ' hl' : ''}" title="${hl ? esc(hl.n) : ''}">${d}</div>`; }).join('');
+  const rows = EMP_IDS.map((id) => `<div class="nm" data-a="empdrw" data-id="${id}" style="cursor:pointer">${esc(byId(id).name)}</div>${Array.from({ length: dim }, (_, i) => cell(id, i + 1)).join('')}`).join('');
+  let risky = 0; const cov = Array.from({ length: dim }, (_, i) => { const d = i + 1; if (S.settings.holClosed && vdHolFull(y, mo, d)) return '<div class="cv">–</div>'; const c = vdAvail(y, mo, d, ''); if (c < min) risky++; return `<div class="cv${c < min ? ' b' : ''}" title="Çalışabilecek kişi">${c}</div>`; }).join('');
+  const nowOn = EMP_IDS.filter((id) => ekOnLeave(id)).length; const pend = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status));
+  const tiles = `<div class="iz-t"><div><span>Şu an izinde</span><b>${nowOn}<small>kişi</small></b></div><div><span>${VD_MON[mo]} izin günü</span><b>${leaveDays}<small>gün</small></b></div><div class="${pend.length ? '' : 'ok'}"><span>Bekleyen talep</span><b>${pend.length}</b></div><div class="${risky ? 'bad' : 'ok'}"><span>Kadro durumu</span><b>${risky ? risky + '<small>riskli gün</small>' : 'Tam'}</b></div></div>`;
+  const kais = `<div class="iz-k"><div><h3>${ic('sparkle', 18)} Haftalık izinleri Kais ayarlasın</h3><p>Herkese haftada seçtiğin kadar gün izin verir. Onaylı izinlerle, resmi tatillerle ve vardiyalarla çakışmaz. Her gün en az ${min} kişi çalışacak şekilde dengeler.</p></div><div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="mb-o" style="margin:0"><button type="button" data-a="izoff" data-v="1" aria-pressed="${Number(S.settings.wkOff) !== 2}">Haftada 1 gün</button><button type="button" data-a="izoff" data-v="2" aria-pressed="${Number(S.settings.wkOff) === 2}">Haftada 2 gün</button></div><button class="btn" data-a="izweek">${VD_MON[mo]} için ayarla</button></div></div>`;
+  const o = ekNow(); const rq = pend.map((r) => { const e = lrEff(r); const w = [vdHolWarn(e.txt), vdCoverWarn(r.uid, e.txt)].filter(Boolean).length; return `<div class="iz-rq">${avatar(byId(r.uid), 38)}<div class="grow"><b>${esc(byId(r.uid).name)}</b><span class="s">${esc(e.txt)} · ${e.days} gün · ${LV_KIND[r.type] || r.type}</span><span class="v ${w ? 'w' : 'ok'}">${w ? 'Kais: dikkat, çakışma var' : 'Kais: çakışma yok, onaya uygun'}</span></div><button class="btn sm sec" data-a="lrok" data-id="${r.id}">İncele</button></div>`; }).join('');
+  const UP = A.filter((x) => x.st === 'onayli').map((x) => ({ x, q: ekRange(x) })).filter((v) => v.q && v.q[1] >= o).sort((a, b) => a.q[0] - b.q[0]);
+  const list = UP.length ? UP.map(({ x, q }) => `<div class="row2">${avatar(byId(x.uid), 34)}<div class="grow"><b>${esc(byId(x.uid).name)}</b><span>${esc(x.txt)} · ${x.days} gün · ${LV_KIND[x.type] || x.type}</span></div><span class="pill ${q[0] <= o ? 'p-ok' : 'p-info'}">${q[0] <= o ? 'İzinde' : 'Onaylı'}</span></div>`).join('') : '<p class="muted" style="padding:6px 0 12px">Onaylı yaklaşan izin yok.</p>';
+  const bal = EMP_IDS.map((id) => { const b = ekBal(id); const pct = b.ent ? Math.min(100, Math.round(b.used / b.ent * 100)) : 0; return `<div class="it" data-a="empdrw" data-id="${id}" style="cursor:pointer"><div class="row" style="gap:10px">${avatar(byId(id), 34)}<div class="grow"><b>${esc(byId(id).name)}</b><div class="small muted">${b.ent ? b.used + ' / ' + b.ent + ' gün kullanıldı' : 'Hak henüz doğmadı'}</div></div><b>${b.ent ? b.left + ' gün' : '—'}</b></div><div class="dr-bar"><i style="width:${pct}%"></i></div></div>`; }).join('');
+  return `${tiles}${kais}<section class="mg-card"><div class="iz-nv"><button type="button" data-a="izm" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h2>${base.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</h2>${(S.izM || 0) !== 0 ? '<button type="button" class="mg-lnk" data-a="izm0" style="border:0;width:auto;height:auto">Bu aya dön</button>' : ''}</div><button type="button" data-a="izm" data-v="1" aria-label="Sonraki ay" style="transform:scaleX(-1)">${ic('back', 18)}</button></div><div class="iz-sc"><div class="iz-gr" style="grid-template-columns:130px repeat(${dim},minmax(24px,1fr))"><div></div>${heads}${rows}<div class="nm" style="color:var(--ink-2)">Çalışan sayısı</div>${cov}</div></div><div class="iz-lg"><span><i style="background:#5E9AEA"></i>Yıllık izin</span><span><i style="background:#E8A93C"></i>Rapor</span><span><i style="background:#9AA7BA"></i>Ücretsiz</span><span><i style="background:#9B7BD8"></i>Mazeret</span><span><i style="background:repeating-linear-gradient(45deg,#BCD3F2 0 3px,#E6EEFA 3px 6px);outline:1px dashed #5E9AEA"></i>Onay bekliyor</span><span><i style="background:#fff;border:1.5px dashed #CBD5E4"></i>Haftalık izin</span><span><i style="background:#FBE3E0"></i>Resmi tatil</span><span><i style="background:#FDF1DC"></i>Yarım gün</span></div></section>
+  <div class="ek"><div class="ek-main">${pend.length ? `<section class="mg-card"><div class="ek-h"><h2>Bekleyen talepler</h2><span>Kais çakışma kontrolü yaptı</span></div>${rq}</section>` : ''}<section class="mg-card ek-up"><div class="ek-h"><h2>Onaylı ve yaklaşan izinler</h2></div>${list}</section></div><div class="ek-side">${vdHolCard(y, mo)}<section class="mg-card"><div class="ek-h"><h2>Yıllık izin bakiyeleri</h2></div><div class="iz-bal" style="grid-template-columns:1fr">${bal}</div></section></div></div>`;
+};
 /* Ayarlar: tüm verileri sıfırla */
 const viewAyarlarV66 = viewAyarlar;
 viewAyarlar = function () {
