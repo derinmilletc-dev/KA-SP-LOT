@@ -95,9 +95,9 @@ begin
   begin select count(*) into n from public.supplier_cprice c where not exists (select 1 from public.suppliers s where s.id = c.supplier_id and s.user_id = p.sup_user);
     insert into pg_temp.res(name, ok, info) values ('Tedarikçi başkasının özel fiyatını GÖREMEZ', n = 0, 'görülen: ' || n);
   exception when others then insert into pg_temp.res(name, ok, info) values ('Tedarikçi başkasının özel fiyatını GÖREMEZ', true, sqlerrm); end;
-  begin select count(*) into n from public.app_state;
-    insert into pg_temp.res(name, ok, info) values ('Tedarikçi işletme verisini (app_state) GÖREMEZ', n = 0, 'görülen: ' || n);
-  exception when others then insert into pg_temp.res(name, ok, info) values ('Tedarikçi işletme verisini (app_state) GÖREMEZ', true, sqlerrm); end;
+  begin select count(*) into n from public.app_state a where not exists (select 1 from public.members m where m.business_id = a.business_id and m.user_id = p.sup_user);
+    insert into pg_temp.res(name, ok, info) values ('Tedarikçi üyesi olmadığı işletmenin verisini (app_state) GÖREMEZ', n = 0, 'görülen: ' || n);
+  exception when others then insert into pg_temp.res(name, ok, info) values ('Tedarikçi üyesi olmadığı işletmenin verisini (app_state) GÖREMEZ', true, sqlerrm); end;
   begin select count(*) into n from public.rfqs where status <> 'acik';
     insert into pg_temp.res(name, ok, info) values ('Tedarikçi kapalı teklif isteğini GÖREMEZ', n = 0, 'görülen: ' || n);
   exception when others then insert into pg_temp.res(name, ok, info) values ('Tedarikçi kapalı teklif isteğini GÖREMEZ', true, sqlerrm); end;
