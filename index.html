@@ -7841,6 +7841,50 @@ H.yizsave = () => { const g = (k) => document.getElementById(k), id = S.modal.id
 {const _r = renderModal; renderModal = function () { const t = S.modal && S.modal.type; if (t === 'yizd' || t === 'yizadd') { const root = $('#modal-root'); if (!root) return; try { root.innerHTML = t === 'yizd' ? yizDetail() : yizAddSheet(); } catch (e) { root.innerHTML = ''; S.modal = null; } return; } return _r.apply(this, arguments); };}
 /* mevcut ekranlara devreden izin */
 {const _eb = ekBal; ekBal = function (id) { const r = _eb.apply(this, arguments); const c = yizCarry(id); if (c) { r.ent += c; r.left = Math.max(0, r.ent - r.used); } return r; };}
+/* ===== v76: Vardiya sayfası alt kartları (gün çizelgesi, çalışan özeti, 7 gün) ===== */
+{const st=document.createElement('style'); st.textContent=`
+.tl-ds{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin;scrollbar-color:#C9D5E6 transparent}.tl-ds::-webkit-scrollbar{height:6px}.tl-ds::-webkit-scrollbar-thumb{background:#C9D5E6;border-radius:9px}
+.tl-ds button{flex:none;border:1px solid #E1E8F2;background:#fff;border-radius:12px;padding:6px 10px;font:600 13px inherit;font-family:inherit;color:var(--ink);text-align:center;min-width:46px}.tl-ds button small{display:block;font-weight:500;color:var(--ink-2);font-size:11px}.tl-ds button[aria-pressed=true]{background:var(--cini);border-color:var(--cini);color:#fff}.tl-ds button[aria-pressed=true] small{color:#DCE8FA}.tl-ds button.h{border-color:#F3C9C5}
+.tl-w{position:relative;display:grid;grid-template-columns:104px 1fr;gap:6px 8px;align-items:center;margin-top:6px}
+.tl-ax{display:flex;justify-content:space-between;font-size:11px;color:#9AA7BA}.tl-n{font:600 13px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-t{position:relative;height:30px;border-radius:9px;background:repeating-linear-gradient(90deg,#F2F5FA 0 1px,#F8FAFD 1px 4.1666%);overflow:hidden}
+.tl-b{position:absolute;top:3px;bottom:3px;border-radius:7px;color:#fff;font:700 11px system-ui;display:flex;align-items:center;padding:0 8px;white-space:nowrap;overflow:hidden}
+.tl-o{position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#7A8799}
+.tl-now{position:absolute;top:22px;bottom:0;width:2px;background:#D9534F;border-radius:2px;pointer-events:none}.tl-now::before{content:'Şimdi';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:700 10px system-ui;color:#D9534F}
+.vs-t{width:100%;border-collapse:collapse;min-width:620px}.vs-t th{font:600 12px system-ui;color:var(--ink-2);text-align:left;padding:6px 8px}.vs-t td{padding:9px 8px;border-top:1px solid #EDF1F7;font-size:13.5px;white-space:nowrap}.vs-t td b{font-weight:700}
+.vs-t .tc{display:inline-flex;align-items:center;gap:4px;margin-right:8px;font-size:12.5px}.vs-t .tc i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.vs-t .wk{display:inline-block;min-width:34px;text-align:center;border-radius:8px;padding:3px 6px;background:#E8F6EE;color:#1F6B42;font-weight:600;font-size:12.5px;margin-right:4px}.vs-t .wk.o{background:#FDF1DC;color:#8F5A00}
+.vs-sc{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#C9D5E6 transparent}
+.nx-r{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EDF1F7}.nx-r:first-of-type{border-top:0}.nx-r .d{width:62px;flex:none}.nx-r .d b{display:block;font-size:14px}.nx-r .d span{font-size:12px;color:var(--ink-2)}.nx-r .ch{display:flex;gap:5px;flex-wrap:wrap;flex:1;min-width:0}.nx-r .ch span{border-radius:99px;padding:3px 10px;font-size:12px;color:#fff}.nx-r .cn{font:700 13px system-ui;color:#2F9E5F}.nx-r .cn.b{color:#D9534F}
+`; document.head.appendChild(st);}
+const vdHr = (s) => { const [h, m] = s.split(':').map(Number); return h + m / 60; };
+function vdExtra(y, m) {
+  const dim = new Date(y, m + 1, 0).getDate(), now = new Date(), isCur = now.getFullYear() === y && now.getMonth() === m; let sd = Number(S.vdDay) || (isCur ? now.getDate() : 1); if (sd > dim || sd < 1) sd = isCur ? now.getDate() : 1;
+  const dsel = Array.from({ length: dim }, (_, i) => { const d = i + 1; return `<button type="button" data-a="vdday" data-v="${d}" aria-pressed="${d === sd}" class="${vdHolFull(y, m, d) ? 'h' : ''}">${d}<small>${VD_DAY[new Date(y, m, d).getDay()]}</small></button>`; }).join('');
+  const lo = Math.min(6, ...VD_T.map((t) => Math.floor(vdHr(t.s)))), hi = 24; const pc = (x) => ((x - lo) / (hi - lo) * 100);
+  const rows = EMP_IDS.map((id) => { const s = vdState(y, m, sd, id); let inner = '';
+    if (s.k === 'shift') { const a = vdHr(s.t.s); let e = vdHr(s.t.e); if (e <= a) e = 24; if (e > 24) e = 24; inner = `<div class="tl-b" style="left:${pc(a)}%;width:${pc(e) - pc(a)}%;background:${s.t.c}">${esc(s.t.n)} ${s.t.s}–${vdEnd(s.t)}</div>`; }
+    else inner = `<div class="tl-o">${s.k === 'leave' ? 'İzinli' : s.k === 'off' ? 'Haftalık izin' : s.k === 'hol' ? 'Resmi tatil, kapalı' : 'Vardiya yok'}</div>`;
+    return `<div class="tl-n">${esc(byId(id).name)}</div><div class="tl-t">${inner}</div>`; }).join('');
+  const ticks = []; for (let h = lo; h <= hi; h += 3) ticks.push(`<span>${vdP(h % 24)}:00</span>`);
+  const nowP = isCur && sd === now.getDate() ? pc(now.getHours() + now.getMinutes() / 60) : -1; const hs = vdHolFull(y, m, sd);
+  const onN = EMP_IDS.filter((id) => vdState(y, m, sd, id).k === 'shift').length;
+  const tl = `<section class="mg-card"><div class="ek-h"><h2>Günün çizelgesi</h2><span>${sd} ${VD_MON[m]} · ${onN} kişi çalışıyor${hs ? ' · ' + esc(hs.n) : ''}</span></div><div class="tl-ds">${dsel}</div><div class="tl-w"><div></div><div class="tl-ax">${ticks.join('')}</div>${rows}${nowP >= 0 && nowP <= 100 ? `<div class="tl-now" style="left:calc(112px + (100% - 112px) * ${nowP / 100})"></div>` : ''}</div></section>`;
+  /* çalışan özeti */
+  const off0 = vdMon0(y, m); const nW = Math.floor((dim + off0 - 1) / 7) + 1;
+  const trs = EMP_IDS.map((id) => { const cnt = {}; let we = 0, offN = 0, lvN = 0, hrs = 0; const W = {};
+    for (let d = 1; d <= dim; d++) { const s = vdState(y, m, d, id); if (s.k === 'shift') { cnt[s.t.id] = (cnt[s.t.id] || 0) + 1; const h = vdHours(s.t); hrs += h; const w = Math.floor((d + off0 - 1) / 7); W[w] = (W[w] || 0) + h; if ([0, 6].includes(new Date(y, m, d).getDay())) we++; } else if (s.k === 'off') offN++; else if (s.k === 'leave') lvN++; }
+    const wk = Array.from({ length: nW }, (_, w) => W[w] ? `<span class="wk${W[w] > 45 ? ' o' : ''}" title="${w + 1}. hafta">${W[w]}</span>` : '').join('');
+    return `<tr><td><b>${esc(byId(id).name)}</b></td><td>${VD_T.map((t) => `<span class="tc"><i style="background:${t.c}"></i>${cnt[t.id] || 0}</span>`).join('')}</td><td>${we}</td><td>${offN}${lvN ? ' + ' + lvN + ' izin' : ''}</td><td><b>${hrs}</b> sa</td><td>${wk || '—'}</td></tr>`; }).join('');
+  const sum = `<section class="mg-card"><div class="ek-h"><h2>Çalışan özeti</h2><span>${VD_MON[m]} · haftalık saatler, 45 üstü turuncu</span></div><div class="vs-sc"><table class="vs-t"><thead><tr><th>Çalışan</th><th>Vardiya sayısı</th><th>Hafta sonu</th><th>İzin günü</th><th>Toplam</th><th>Haftalık saat</th></tr></thead><tbody>${trs}</tbody></table></div></section>`;
+  /* sonraki 7 gün */
+  const st0 = isCur ? now.getDate() : 1; const nx = []; for (let i = 0; i < 7; i++) { const dt = new Date(y, m, st0 + i); const yy = dt.getFullYear(), mm = dt.getMonth(), dd = dt.getDate(); const W = EMP_IDS.map((id) => ({ id, s: vdState(yy, mm, dd, id) })).filter((x) => x.s.k === 'shift'); const h = vdHolFull(yy, mm, dd); const min = Number(S.settings.shMin) || 1;
+    nx.push(`<div class="nx-r"><div class="d"><b>${dd} ${VD_MON[mm].slice(0, 3)}</b><span>${VD_DAY[dt.getDay()]}${h ? ' · tatil' : ''}</span></div><div class="ch">${W.length ? W.map((x) => `<span style="background:${x.s.t.c}" title="${esc(x.s.t.n + ' ' + x.s.t.s + '–' + vdEnd(x.s.t))}">${esc(byId(x.id).name.split(' ')[0])} ${x.s.t.s}</span>`).join('') : '<span style="background:#B3BCC9">Vardiya yok</span>'}</div><span class="cn${W.length < min && !(S.settings.holClosed && h) ? ' b' : ''}">${W.length}</span></div>`); }
+  const nxt = `<section class="mg-card"><div class="ek-h"><h2>Önümüzdeki 7 gün</h2><span>Kim hangi saatte</span></div>${nx.join('')}</section>`;
+  return tl + nxt + sum;
+}
+H.vdday = (el) => { S.vdDay = Number(el.dataset.v); render(); };
+{const _v = vdView; vdView = function (segH) { let h = _v.apply(this, arguments); try { const [y, m] = vdBase(); const i = h.indexOf('<div class="ek-side">'); if (i > 0) { const j = h.lastIndexOf('</div>', i); h = h.slice(0, j) + vdExtra(y, m) + h.slice(j); } } catch (e) {} return h; }; }
 /* Ayarlar: tüm verileri sıfırla */
 const viewAyarlarV66 = viewAyarlar;
 viewAyarlar = function () {
