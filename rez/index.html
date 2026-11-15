@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rezervasyon</title><meta name="robots" content="noindex"><meta name="theme-color" content="#0f4c9a">
+<style>
+:root{--b:#0f4c9a;--ink:#0f1b2d;--mut:#64748b;--ln:#e2e8f0;--bg:#f3f6fb}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;display:flex;justify-content:center;padding:20px 16px 40px}
+main{width:100%;max-width:440px}.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 1px 2px rgba(15,27,45,.06),0 8px 30px rgba(15,27,45,.06)}
+h1{font-size:22px;margin:0 0 2px;letter-spacing:-.02em}p.s{color:var(--mut);margin:0 0 18px;font-size:14px}
+label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+input,select,textarea{width:100%;font:inherit;padding:12px 14px;border:1.5px solid var(--ln);border-radius:12px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b);box-shadow:0 0 0 3px rgba(15,76,154,.15)}
+.r{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;background:var(--b);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5}.err{color:#b42318;font-size:13px;margin-top:10px;min-height:18px}
+.ok{text-align:center;padding:10px 0}.ok .t{width:56px;height:56px;border-radius:50%;background:#e7f6ec;color:#16803c;display:grid;place-items:center;font-size:28px;margin:0 auto 14px}
+.hp{position:absolute;left:-9999px}.f{text-align:center;color:var(--mut);font-size:12px;margin-top:16px}
+</style></head><body><main><div class="card" id="c"><p class="s">Yükleniyor…</p></div><div class="f">KaisPilot ile hazırlandı</div></main>
+<script>
+const U='https://bbcsbkgbwzciyfymvpxh.supabase.co',K='sb_publishable_Pc2JtwezlCiezDW4P4IKxw_gXFXUjnA';
+const slug=new URLSearchParams(location.search).get('k')||'';const c=document.getElementById('c');
+const rpc=(f,b)=>fetch(U+'/rest/v1/rpc/'+f,{method:'POST',headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const MSG={ad:'Adını yaz.',telefon:'Telefon numarasını kontrol et.',kisi:'Kişi sayısı bu işletmenin sınırını aşıyor.',saat:'Bu saatte rezervasyon alınmıyor.',gecmis:'Bu saat çok yakın veya geçmiş. Daha ileri bir saat seç.',uzak:'Bu tarih için henüz rezervasyon alınmıyor.',cok:'Bekleyen talebin var. İşletme dönünce yenisini verebilirsin.',yogun:'Şu an çok yoğun, biraz sonra dene.',kapali:'Rezervasyon şu an kapalı.'};
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+(async()=>{
+ let i=null;try{i=slug&&await rpc('booking_info',{p_slug:slug})}catch(e){}
+ if(!i||typeof i!=='object'||!i.name){c.innerHTML='<h1>Rezervasyon kapalı</h1><p class="s">Bu bağlantı geçersiz ya da rezervasyon şu an alınmıyor.</p>';return}
+ document.title=i.name+' · Rezervasyon';
+ const sl=[];for(let h=i.open;h<i.close;h++){sl.push(String(h).padStart(2,'0')+':00',String(h).padStart(2,'0')+':30')}
+ const t=new Date(),mx=new Date(t.getTime()+i.days*864e5);
+ c.innerHTML=`<h1>${esc(i.name)}</h1><p class="s">Masa ayırtmak için formu doldur. İşletme onaylayınca seninle iletişime geçer.</p>
+ <form id="f" autocomplete="on"><label for="a">Ad soyad</label><input id="a" name="name" autocomplete="name" maxlength="80" required>
+ <label for="p">Telefon</label><input id="p" name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="05xx xxx xx xx" required>
+ <div class="r"><div><label for="d">Tarih</label><input id="d" type="date" min="${ymd(t)}" max="${ymd(mx)}" value="${ymd(t)}" required></div>
+ <div><label for="h">Saat</label><select id="h">${sl.map(x=>`<option>${x}</option>`).join('')}</select></div></div>
+ <label for="n">Kişi sayısı</label><select id="n">${Array.from({length:i.max},(_,k)=>`<option>${k+1}</option>`).join('')}</select>
+ <label for="o">Not (isteğe bağlı)</label><textarea id="o" rows="2" maxlength="200" placeholder="Pencere kenarı, doğum günü…"></textarea>
+ <input class="hp" id="w" tabindex="-1" autocomplete="off" aria-hidden="true">
+ <div class="err" id="e" role="alert"></div><button id="b">Rezervasyon iste</button>
+ <p class="s" style="margin:14px 0 0;font-size:12px">Bilgilerin yalnızca rezervasyon için işletmeye iletilir. <a href="/gizlilik/" style="color:var(--b)">Gizlilik</a></p></form>`;
+ const f=document.getElementById('f'),e=document.getElementById('e'),b=document.getElementById('b');
+ f.onsubmit=async ev=>{ev.preventDefault();e.textContent='';if(document.getElementById('w').value)return;b.disabled=true;
+  let r='';try{r=await rpc('booking_submit',{p_slug:slug,p_name:a.value,p_phone:p.value,p_n:+n.value,p_date:d.value,p_time:h.value,p_note:o.value})}catch(x){}
+  if(r==='ok'){c.innerHTML=`<div class="ok"><div class="t">✓</div><h1>Talebin alındı</h1><p class="s">${esc(i.name)} sana telefonla dönecek. ${esc(d.value.split('-').reverse().join('.'))} · ${esc(h.value)} · ${n.value} kişi</p></div>`;return}
+  e.textContent=MSG[r]||'Gönderilemedi. İnternetini kontrol edip tekrar dene.';b.disabled=false};
+})();
+</script></body></html>

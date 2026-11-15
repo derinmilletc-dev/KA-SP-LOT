@@ -21,7 +21,7 @@ begin
 
   for b in select id from public.businesses where owner_id = v and deleted_at is null loop
     foreach t in array array['app_state','backups','invites','members','onboard_config','onboard_docs','onboard_sub',
-                             'pos_tokens','push_subs','push_log','sales_inbox','audit_log','kais_memory','mail_log'] loop
+                             'pos_tokens','booking_requests','booking_config','push_subs','push_log','sales_inbox','audit_log','kais_memory','mail_log'] loop
       if to_regclass('public.' || t) is not null then
         execute format('delete from public.%I where business_id = $1', t) using b;
       end if;

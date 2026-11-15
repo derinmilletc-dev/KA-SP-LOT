@@ -11537,6 +11537,56 @@ H.mperm = (el) => {
   if (!S.user || S.user.role !== 'patron') return; const k = el.dataset.k; if (!MP_G.some((g) => g[0] === k)) return;
   const p = S.settings.mperm || (S.settings.mperm = {}); p[k] = p[k] === false; try { auditAdd({ type: 'kais', text: 'Muhasebeci yetkisi ' + (p[k] === false ? 'kapatıldı' : 'açıldı') + ': ' + MP_G.find((g) => g[0] === k)[1] }); } catch (e) {} pSched(); render();
 };
+
+/* ===== v110: herkese açık online rezervasyon ===== */
+const RBK = { cfg: null, reqs: [], loaded: false, busy: false, err: '', t: 0 };
+const rbCan = () => S.user && ['patron', 'mudur'].includes(S.user.role) && typeof SBS !== 'undefined' && SBS.biz && sbClient();
+const rbLink = () => (RBK.cfg ? location.origin + '/rez/?k=' + RBK.cfg.slug : '');
+async function rbLoad() {
+  if (!rbCan() || RBK.busy) return; RBK.busy = true;
+  try {
+    const c = sbClient(); const b = SBS.biz.id;
+    const [a, r] = await Promise.all([c.from('booking_config').select('*').eq('business_id', b).maybeSingle(), c.from('booking_requests').select('*').eq('business_id', b).eq('status', 'bekliyor').order('date').order('time').limit(50)]);
+    if (a.error) throw a.error; if (r.error) throw r.error; RBK.cfg = a.data || null; RBK.reqs = r.data || []; RBK.err = '';
+  } catch (e) { RBK.err = /relation|schema cache|booking/i.test(String((e && e.message) || e)) ? 'kurulmamış' : 'bağlanamadı'; }
+  RBK.busy = false; RBK.loaded = true; RBK.t = Date.now(); if (S.view === 'rezerv' && !S.modal) render();
+}
+function rbCard() {
+  if (RBK.err === 'kurulmamış') return S.user.role === 'patron' ? `<div class="callout warn">${ic('alert')}<div>Online rezervasyon kurulmamış. Supabase'de <b>tenant_booking.sql</b> dosyasını çalıştır.</div></div>` : '';
+  const q = RBK.reqs.map((x) => `<div class="rrow"><div><b style="font-weight:600">${esc(x.name)}</b> · ${x.n} kişi<div class="small muted">${esc(String(x.date).split('-').reverse().join('.'))} · ${esc(x.time)} · ${esc(x.phone)}${x.note ? ' · ' + esc(x.note) : ''}</div></div><div class="row" style="gap:6px"><button class="btn sec" data-a="bkno" data-id="${x.id}">Reddet</button><button class="btn" data-a="bkok" data-id="${x.id}">Onayla</button></div></div>`).join('');
+  const head = RBK.cfg && RBK.cfg.enabled
+    ? `<div class="row between wrap" style="gap:8px"><div><h3 style="margin:0">Online rezervasyon</h3><p class="muted small" style="margin-top:2px">Müşteri linkten talep gönderir, sen onaylarsın.</p></div><span class="pill ${RBK.reqs.length ? 'p-warn' : 'p-ok'}">${RBK.reqs.length ? RBK.reqs.length + ' bekliyor' : 'Açık'}</span></div>
+    <div class="row wrap" style="gap:8px;margin-top:10px"><button class="btn sec" data-a="bkcopy">Linki kopyala</button><button class="btn sec" data-a="bkwa">WhatsApp'ta paylaş</button>${S.user.role === 'patron' ? '<button class="btn sec" data-a="bkoff">Kapat</button>' : ''}</div>`
+    : `<div class="row between wrap" style="gap:8px"><div><h3 style="margin:0">Online rezervasyon</h3><p class="muted small" style="margin-top:2px">Müşterilerine bir link ver, masa talebini kendileri göndersin.</p></div>${S.user.role === 'patron' ? '<button class="btn" data-a="bkon">Aç</button>' : '<span class="pill">Kapalı</span>'}</div>`;
+  return `<div class="card bk-card">${head}${q ? `<div style="margin-top:12px">${q}</div>` : ''}</div>`;
+}
+{
+  const _vr = viewRezerv;
+  viewRezerv = function () {
+    let h = _vr.apply(this, arguments);
+    if (rbCan()) { if (!RBK.loaded) rbLoad(); const c = rbCard(); const m = '<div class="seg" role="group" aria-label="Rezervasyon bölümleri">'; const i = h.indexOf(m); if (c && i >= 0) h = h.slice(0, i) + c + h.slice(i); }
+    return h;
+  };
+  setInterval(() => { if (S.view === 'rezerv' && !document.hidden && !S.modal && Date.now() - RBK.t > 40000) rbLoad(); }, 20000);
+}
+H.bkon = async () => {
+  if (!rbCan() || S.user.role !== 'patron') return;
+  const slug = Array.from(crypto.getRandomValues(new Uint8Array(6))).map((x) => 'abcdefghjkmnpqrstuvwxyz23456789'[x % 31]).join('');
+  const c = sbClient(); const r = RBK.cfg ? await c.from('booking_config').update({ enabled: true }).eq('business_id', SBS.biz.id) : await c.from('booking_config').insert({ business_id: SBS.biz.id, slug, open_h: RCFG.open || 8, close_h: RCFG.close || 22 });
+  if (r.error) { toast('Açılamadı.', 'bad'); return; } try { auditAdd({ type: 'kais', text: 'Online rezervasyon açıldı' }); } catch (e) {} RBK.loaded = false; await rbLoad(); toast('Online rezervasyon açıldı.', 'ok');
+};
+H.bkoff = async () => { if (!rbCan() || S.user.role !== 'patron') return; const r = await sbClient().from('booking_config').update({ enabled: false }).eq('business_id', SBS.biz.id); if (r.error) { toast('Kapatılamadı.', 'bad'); return; } try { auditAdd({ type: 'kais', text: 'Online rezervasyon kapatıldı' }); } catch (e) {} RBK.loaded = false; await rbLoad(); toast('Kapatıldı. Link artık çalışmaz.', 'ok'); };
+H.bkcopy = async () => { try { await navigator.clipboard.writeText(rbLink()); toast('Link kopyalandı.', 'ok'); } catch (e) { toast(rbLink(), 'ok'); } };
+H.bkwa = () => { window.open('https://wa.me/?text=' + encodeURIComponent('Rezervasyon için: ' + rbLink()), '_blank', 'noopener'); };
+H.bkno = async (el) => { if (!rbCan()) return; const r = await sbClient().from('booking_requests').update({ status: 'red' }).eq('id', el.dataset.id); if (r.error) { toast('Güncellenemedi.', 'bad'); return; } RBK.reqs = RBK.reqs.filter((x) => String(x.id) !== String(el.dataset.id)); render(); toast('Talep reddedildi. Müşteriyi aramayı unutma.', 'ok'); };
+H.bkok = async (el) => {
+  if (!rbCan()) return; const q = RBK.reqs.find((x) => String(x.id) === String(el.dataset.id)); if (!q) return;
+  const m = { date: q.date, time: q.time, dur: RCFG.dur || 90, n: q.n, tid: 'auto' }; const c = rzCheck(m);
+  if (!c.res) { toast('O saatte uygun masa yok. Müşteriyi arayıp başka saat öner veya reddet.', 'warn'); return; }
+  const r = await sbClient().from('booking_requests').update({ status: 'onaylandi' }).eq('id', q.id).eq('status', 'bekliyor'); if (r.error) { toast('Güncellenemedi.', 'bad'); return; }
+  RESV.push({ id: 'r' + (++seq), name: q.name, phone: q.phone, n: q.n, date: q.date, time: q.time, dur: m.dur, tids: c.res, src: 'Online', note: q.note || '', st: 'onay', by: S.user.id });
+  RBK.reqs = RBK.reqs.filter((x) => x.id !== q.id); S.rzDate = q.date; pSched(); render(); toast('Onaylandı, masa ' + rzNames(c.res) + '. Müşteriyi arayıp teyit et.', 'ok');
+};
 </script>
 </body>
 </html>
