@@ -12459,7 +12459,7 @@ function karsView() {
   const _l = loginHTML;
   loginHTML = function () {
     let h = _l.apply(this, arguments); if (h.indexOf('lx2') < 0) return h;
-    h = h.replace(/<details class="lx-more"><summary>[\s\S]*?<\/summary>/, '<div class="lx-more2"><small>Başka bir rolle dene</small>').replace('</details>', '</div>');
+    h = h.replace(/<details class="lx-more"><summary>[\s\S]*?<\/summary>/, '<div class="lx-more2"><small>Ya da bir rol seç</small>').replace('<div class="lx-roles"><button type="button" data-a="demo" data-id="u2">','<div class="lx-roles"><button type="button" data-a="demo" data-id="u1">Patron</button><button type="button" data-a="demo" data-id="u2">').replace('</details>', '</div>');
     h = h.replace('<span>Örnek verilerle sistemi keşfedin</span>', '<span>Kayıt gerekmez, 1 dakikada keşfet</span>');
     h = h.replace(/(<b>Demo hesabını dene<\/b>)(<span>[^<]*<\/span>)/, '<div style="flex:1;min-width:0">$1$2</div>');
     h = h.replace('<span>KaisPilot</span></div>', '<span>KaisPilot</span></div><p class="lx2-tag">İşletmeni tek yerden yönet.</p>');
