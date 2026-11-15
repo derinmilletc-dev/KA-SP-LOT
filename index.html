@@ -5260,7 +5260,7 @@ async function idAuth(kind, mode) {
       if (kind === 'emp') return fail('Bu hesap henüz bir işletmeye katılmamış. "Davet koduyla katıl"a basıp kodunu gir.');
       if (!bn) return fail('Bu hesapta işletme yok. İşletme adını yazıp İşletmemi oluştur\'a bas.');
       const i = await c.from('businesses').insert({ name: bn, owner_id: SBS.user.id }); if (i.error) throw i.error;
-      NAMES.u1 = { name: nm || 'İşveren', title: 'Patron' }; BIZ = bn; wipeData(); PEND.tur = (document.getElementById('id-tur') || {}).value || ''; applyNames(); await sbLoadBiz();
+      NAMES.u1 = { name: nm || 'Patron', title: 'Patron' }; BIZ = bn; wipeData(); PEND.tur = (document.getElementById('id-tur') || {}).value || ''; applyNames(); await sbLoadBiz();
     }
     ID.busy = false; if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter();
   } catch (e) { fail(idMsg(e)); }
@@ -5284,7 +5284,7 @@ const loginHTMLV17 = loginHTML;
 loginHTML = function () {
   const h = loginHTMLV17(); if (!sbOK()) return h; const tab = S.lgTab || 'own';
   const demo = USERS.filter((u) => ['u1', 'u2', 'u3', 'u4'].includes(u.id));
-  const tabs = `<div class="seg" role="group" aria-label="Giriş türü">${[['own', 'İşveren'], ['emp', 'Çalışan'], ['sup', 'Toptancı']].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[1]}</button>`).join('')}</div>`;
+  const tabs = `<div class="seg" role="group" aria-label="Giriş türü">${[['own', 'Patron'], ['emp', 'Çalışan'], ['sup', 'Toptancı']].map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[1]}</button>`).join('')}</div>`;
   const cred = `<div class="field"><label for="id-em">E-posta</label><input id="id-em" type="email" autocomplete="username" placeholder="ad@sirket.com"></div><div class="field"><label for="id-pw">Şifre (en az 8 karakter)</label><input id="id-pw" type="password" autocomplete="current-password"></div>`;
   const err = `<div class="err" id="id-err" role="alert">${esc(S.loginErr)}</div>`;
   let inner;
@@ -6415,7 +6415,7 @@ const lxArt = () => { const ic = (cx, cy, d) => `<g transform="translate(${cx - 
   ${ic(30, 58, '<path d="M4 2h12v16l-2.5-1.5L11 18l-2.5-1.5L6 18 4 16.5z"/><path d="M7 7h6M7 11h6"/>')}${ic(270, 58, '<circle cx="8" cy="7" r="3"/><path d="M2 17c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="15.5" cy="8" r="2"/>')}${ic(30, 142, '<path d="M10 2l7 3.5v8L10 17l-7-3.5v-8z"/><path d="M3 5.5L10 9l7-3.5M10 9v8"/>')}${ic(270, 142, '<path d="M2 3h3l2 10h9l2-7H6"/><circle cx="8" cy="17" r="1.4"/><circle cx="15" cy="17" r="1.4"/>')}</svg>`; };
 function lxLogin() {
   const cloud = sbOK(); const tab = cloud ? (S.lgTab || 'own') : 'own'; const em = esc(S.lgEm || ''); const create = !!S.lgCreate && cloud;
-  const tabs = cloud ? `<div class="lx-tabs" role="group" aria-label="Giriş türü">${[['own', 'İşveren', 'İşletmeni yönet', LXI.store], ['emp', 'Çalışan', 'Görevlerine eriş', LXI.users], ['sup', 'Tedarikçi', 'Siparişlerini yönet', LXI.truck]].filter((x) => MARKET_ON || x[0] !== 'sup').map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[3]}<b>${x[1]}</b></button>`).join('')}</div>` : '';
+  const tabs = cloud ? `<div class="lx-tabs" role="group" aria-label="Giriş türü">${[['own', 'Patron', 'İşletmeni yönet', LXI.store], ['emp', 'Çalışan', 'Görevlerine eriş', LXI.users], ['sup', 'Tedarikçi', 'Siparişlerini yönet', LXI.truck]].filter((x) => MARKET_ON || x[0] !== 'sup').map((x) => `<button type="button" data-a="lgtab" data-v="${x[0]}" aria-pressed="${tab === x[0]}">${x[3]}<b>${x[1]}</b></button>`).join('')}</div>` : '';
   const eid = cloud ? 'id-em' : 'em', pid = cloud ? 'id-pw' : 'pw', errId = cloud ? 'id-err' : 'lerr';
   const fields = `<div class="lx-f"><label for="${eid}">E-posta</label><div class="lx-in">${LXI.mail}<input id="${eid}" type="email" autocomplete="username" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com" value="${em}"></div></div>
    <div class="lx-f"><div class="lx-lr"><label for="${pid}">Şifre</label>${cloud ? '<button type="button" class="lx-link" data-a="idforgot">Şifremi unuttum?</button>' : ''}</div><div class="lx-in">${LXI.lock}<input id="${pid}" type="password" autocomplete="${create ? 'new-password' : 'current-password'}" placeholder="Şifre"><button type="button" class="lx-eye" data-a="pwtog" aria-label="Şifreyi göster veya gizle">${LXI.eye}</button></div></div>`;
@@ -7211,7 +7211,7 @@ H.tplai = async () => {
 (function () {
   AUTH.demo = false;
   const wd = wipeData;
-  wipeData = function () { wd(); [CUSTOMERS, CAMPAIGNS, RULES, MAILDOCS, MONTHS, UPCOMING, RECV].forEach((a) => { a.length = 0; }); if (!(SBS && SBS.user)) { NAMES.u1 = { name: 'İşveren', title: 'Patron' }; } USERS.forEach((u) => { u.email = ''; }); try { applyNames(); } catch (e) {} };
+  wipeData = function () { wd(); [CUSTOMERS, CAMPAIGNS, RULES, MAILDOCS, MONTHS, UPCOMING, RECV].forEach((a) => { a.length = 0; }); if (!(SBS && SBS.user)) { NAMES.u1 = { name: 'Patron', title: 'Patron' }; } USERS.forEach((u) => { u.email = ''; }); try { applyNames(); } catch (e) {} };
   wipeData();
   const pa = pApply; pApply = function (s) { AUTH.demo = false; return pa(s); };
 })();
@@ -11719,7 +11719,7 @@ H.sbradd = async () => {
 {
   const _ie = idEnter;
   idEnter = async function () {
-    try { const f = localStorage.getItem('kp_newbiz'); if (f && ID.active && ID.active.business_id === f && ID.active.role === 'patron') { localStorage.removeItem('kp_newbiz'); NAMES.u1 = NAMES.u1 || { name: 'İşveren', title: 'Patron' }; BIZ = ID.active.businesses.name; wipeData(); applyNames(); } } catch (e) {}
+    try { const f = localStorage.getItem('kp_newbiz'); if (f && ID.active && ID.active.business_id === f && ID.active.role === 'patron') { localStorage.removeItem('kp_newbiz'); NAMES.u1 = NAMES.u1 || { name: 'Patron', title: 'Patron' }; BIZ = ID.active.businesses.name; wipeData(); applyNames(); } } catch (e) {}
     return _ie.apply(this, arguments);
   };
   const _vs = viewHTML;
@@ -12514,7 +12514,7 @@ const PPW = { on: true, last: '' }; P_OBJ.push(['PPW', () => PPW]); P_SCOPE.PPW 
 .pp-sh{border:0;background:#EEF3FB;color:#1B5FB8;border-radius:10px;padding:8px 11px;font:700 12px system-ui;cursor:pointer}
 .pp-fade{animation:ppIn .5s cubic-bezier(.2,.8,.2,1) both}@keyframes ppIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 `; document.head.appendChild(st); } catch (e) {} })();
-const ppHello = () => { const u = S.user || {}; const n = String(u.name || '').split(' ')[0]; const g = kaHello(); return (!n || /^[iİ][şs]veren$/i.test(n)) ? g : g + ', ' + n; };
+const ppHello = () => { const u = S.user || {}; const n = String(u.name || '').split(' ')[0]; const g = kaHello(); return (!n || /^(?:[iİ][şs]veren|patron)$/i.test(n)) ? g : g + ', ' + n; };
 function ppAlerts() {
   const o = [];
   try { const al = priceAlerts(); if (al.length) o.push({ i: 'trend', t: 'bad', x: al.length + ' üründe fiyat artışı', s: 'Tedarikçi fiyatlarını karşılaştır', v: 'satinalma' }); } catch (e) {}
@@ -12547,7 +12547,7 @@ H.ppinv = () => { if (ID.active) { S.view = 'ekip'; S.sub.ekip = 'hesap'; render
 const bugunPatronV129 = bugunPatron;
 bugunPatron = function () { const h = bugunPatronV129(); const add = ppHome(); const m = h.match(/^\s*<div class="stack-lg dash">/); return m ? h.replace(m[0], m[0] + add) : h.replace(/<div class="stack-lg dash">/, '<div class="stack-lg dash">' + add); };
 const kaCardV129 = kaCard;
-kaCard = function () { const h = kaCardV129(); return h.replace(/(<h3>(?:İyi geceler|Günaydın|İyi günler|İyi akşamlar)) İşveren<\/h3>/, '$1</h3>'); };
+kaCard = function () { const h = kaCardV129(); return h.replace(/(<h3>(?:İyi geceler|Günaydın|İyi günler|İyi akşamlar)) (?:İşveren|Patron)<\/h3>/, '$1</h3>'); };
 (function () { const n = NAV.patron; const f = (id, more) => { const x = n.find((y) => y[0] === id); if (x) { if (more) x[3] = 'more'; else x.length = 3; } }; f('musteri', true); f('kaisai', false); const i = n.findIndex((y) => y[0] === 'kaisai'); if (i > 3) n.splice(3, 0, n.splice(i, 1)[0]); })();
 
 const kbTidyV129 = kbTidy;
@@ -12575,6 +12575,40 @@ viewSatinAlma = function () {
 };
 const kbTidyV130 = kbTidy;
 kbTidy = function () { const r = kbTidyV130.apply(this, arguments); try { const m = document.querySelector('main'); if (m && S.user && S.user.role === 'muhasebeci' && S.view === 'donem') { const mc = m.querySelector('.mc'); const hd = mc && mc.querySelector('.mc-hd'); const hero = mc && mc.querySelector('.mc-hero'); if (hd && hero && hd.nextElementSibling !== hero) { hd.after(hero); const tasks = mc.querySelector('.mc-s'); if (tasks) hero.after(tasks); const kz = m.querySelector('.kz'); if (kz && kz.parentElement) { const d = kz.parentElement; if (d === mc || d === m) { const w = document.createElement('div'); w.style.marginTop = '12px'; d.appendChild(kz); } } } } } catch (e) {} return r; };
+
+/* ===== v131: dokunma alanı, taşma ===== */
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.rz2,.rz2-l,.rz2-r,.rz2-l>*{min-width:0;max-width:100%}.rz-card,.rz-free{max-width:100%;box-sizing:border-box}
+.hit{position:relative}.hit::after{content:"";position:absolute;left:-6px;right:-6px;top:-6px;bottom:-6px}
+`; document.head.appendChild(st); } catch (e) {} })();
+function hitFix() { try { document.querySelectorAll('main button,main .sw,main [data-a],header button').forEach((e) => { if (e.classList.contains('hit')) return; const r = e.getBoundingClientRect(); if (!r.width || !r.height || (r.width >= 40 && r.height >= 40)) return; if (getComputedStyle(e).position !== 'static') return; e.classList.add('hit'); }); } catch (x) {} }
+{ const _r = render; render = function () { const r = _r.apply(this, arguments); hitFix(); return r; }; }
+
+/* ===== v131: Menü grupları + arama ===== */
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.mn-q{width:100%;box-sizing:border-box;border:1px solid #DCE5F2;background:#F6F9FE;border-radius:14px;padding:11px 14px;font:500 14px system-ui;margin:10px 0 4px;outline:0}.mn-q:focus{border-color:#1B5FB8;box-shadow:0 0 0 3px rgba(27,95,184,.15)}
+.mn-g{margin-top:12px}.mn-g>small{display:block;font:700 11px system-ui;letter-spacing:.06em;text-transform:uppercase;color:#7A8AA0;margin:0 2px 6px}
+.mn-t{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mn-t button{display:flex;align-items:center;gap:9px;border:1px solid #E1E8F3;background:#fff;border-radius:14px;padding:12px;font:600 13.5px system-ui;color:#0E2B4D;cursor:pointer;text-align:left;min-height:48px}.mn-t button:active{transform:scale(.97)}.mn-t button .ic{flex:0 0 auto;color:#1B5FB8}
+.mn-e{display:none;text-align:center;color:#7A8AA0;font:500 13px system-ui;padding:14px}
+`; document.head.appendChild(st); } catch (e) {} })();
+{
+  const MN_G = { satis: 'Para', ebelge: 'Para', satinalma: 'Para', stok: 'Para', borc: 'Para', paket: 'Para', rezerv: 'İşletme', ops: 'İşletme', musteri: 'İşletme', duyuru: 'İşletme', ayarlar: 'İşletme', kaisai: 'Kais', sartlar: 'Yasal' };
+  const _rm2 = renderModal;
+  renderModal = function () {
+    _rm2.apply(this, arguments); const m = S.modal; const root = $('#modal-root'); if (!root || !m || m.type !== 'menu' || root.querySelector('.mn-g')) return;
+    try {
+      const btns = Array.from(root.querySelectorAll('.sheet button[data-a="nav"]')); if (!btns.length) return;
+      const groups = {}; btns.forEach((b) => { const g = MN_G[b.dataset.v] || 'Diğer'; (groups[g] = groups[g] || []).push(b); });
+      const order = ['Para', 'İşletme', 'Kais', 'Yasal', 'Diğer'].filter((g) => groups[g]);
+      const wrap = document.createElement('div'); wrap.className = 'mn';
+      if (btns.length > 5) { const q = document.createElement('input'); q.className = 'mn-q'; q.type = 'search'; q.placeholder = 'Menüde ara'; q.setAttribute('aria-label', 'Menüde ara'); wrap.appendChild(q); q.addEventListener('input', () => { const t = q.value.trim().toLocaleLowerCase('tr-TR'); let any = false; wrap.querySelectorAll('.mn-g').forEach((g) => { let n = 0; g.querySelectorAll('button').forEach((b) => { const ok = !t || b.textContent.toLocaleLowerCase('tr-TR').includes(t); b.style.display = ok ? '' : 'none'; if (ok) n++; }); g.style.display = n ? '' : 'none'; if (n) any = true; }); e.style.display = any ? 'none' : 'block'; }); }
+      order.forEach((g) => { const d = document.createElement('div'); d.className = 'mn-g'; d.innerHTML = order.length > 1 ? `<small>${g}</small>` : ''; const t = document.createElement('div'); t.className = 'mn-t'; groups[g].forEach((b) => { b.className = ''; t.appendChild(b); }); d.appendChild(t); wrap.appendChild(d); });
+      const e = document.createElement('div'); e.className = 'mn-e'; e.textContent = 'Eşleşen bir şey yok.'; wrap.appendChild(e);
+      const lo = root.querySelector('[data-a="logout"]'); if (lo) lo.parentNode.insertBefore(wrap, lo);
+      const pp = root.querySelector('.sheet p.small.muted'); if (pp && /Prototip/.test(pp.textContent)) { if (SBS && SBS.user) pp.remove(); else pp.textContent = 'Demo sürüm. Ekrandaki veriler örnektir.'; }
+    } catch (x) {}
+  };
+}
 </script>
 </body>
 </html>
