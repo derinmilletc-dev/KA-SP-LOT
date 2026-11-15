@@ -12257,6 +12257,39 @@ try {
   if (!S.lgEm) S.lgEm = localStorage.getItem('kp_lgem') || '';
   if (!S.user && sbOK()) render();
 } catch (x) {}
+
+/* ===== v125: Müdür Bugün sayfasında kompakt Operasyon kartı ===== */
+{
+  const st = document.createElement('style'); st.textContent = `
+.opm{background:#fff;border:1px solid #E6ECF4;border-radius:20px;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px}
+.opm-h{display:flex;align-items:center;gap:8px}.opm-h .ic{color:var(--cini)}
+.opm-h h3{margin:0;font-size:16px;color:var(--ink)}.opm-h>span{margin-left:auto;font-size:12.5px;color:var(--muted)}
+.opm-h button{border:0;background:#EEF3FA;color:var(--cini);font-weight:600;font-size:13px;border-radius:999px;padding:6px 12px;min-height:32px}
+.opm-t{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.opm-k{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:9px 10px;border:1px solid #E6ECF4;border-radius:14px;background:#F8FAFD;text-align:left;font-family:inherit}
+.opm-k b{font-size:19px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.opm-k small{font-size:11px;line-height:1.2;color:var(--muted)}
+.opm-k.w{background:#FFF8E6;border-color:#F6E2AE}.opm-k.w b{color:#8A5200}.opm-k.g b{color:#14804A}
+.opm-l{display:flex;flex-direction:column}
+.opm-r{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid #EEF2F7;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;font-family:inherit;width:100%}
+.opm-r i{flex:none;width:8px;height:8px;border-radius:50%;background:#E09A12}.opm-r.r i{background:#D0443A}.opm-r.g i{background:#1E9E5A}.opm-r.i i{background:var(--cini)}
+.opm-r div{flex:1;min-width:0}.opm-r b{display:block;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opm-r span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opm-r svg{flex:none;color:#9AA7BA}
+.opm-m{border:0;background:none;color:var(--cini);font-weight:600;font-size:13px;padding:8px 2px 10px;text-align:left;font-family:inherit}
+.opm-ok{margin:0;padding:2px 0 10px;font-size:13px;color:var(--muted)}
+`; document.head.appendChild(st);
+}
+opMini = function () {
+  const tips = opTips(); const stt = opStatus(); const on = stt.filter((x) => ['working', 'break', 'pending'].includes(x.a.state)).length; const ac = chkStat('ac');
+  const nP = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status)).length + REQS.filter((r) => r.st === 'bekliyor').length; const nA = mtOpen().length;
+  const K = (cls, v, l, t) => `<button type="button" class="opm-k ${cls}" data-a="opgo" data-t="${t}"><b>${v}</b><small>${l}</small></button>`;
+  const chev = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+  const row = (t) => { const inner = `<i></i><div><b>${esc(t[1])}</b><span>${esc(t[2])}</span></div>${t[3] ? chev : ''}`; return t[3] ? `<button type="button" class="opm-r ${t[0]}" data-a="${t[3]}" data-t="${t[4]}">${inner}</button>` : `<div class="opm-r ${t[0]}">${inner}</div>`; };
+  return `<section class="opm"><div class="opm-h">${ic('sparkle', 18)}<h3>Operasyon</h3><span>${tips.length ? tips.length + ' konu' : 'Her şey yolunda'}</span><button type="button" data-a="opgo" data-t="ozet">Aç</button></div>
+  <div class="opm-t">${K('', on + '/' + stt.length, 'Çalışıyor', 'ozet')}${K(ac.n && ac.d === ac.n ? 'g' : 'w', ac.d + '/' + ac.n, 'Açılış', 'liste')}${K(nA ? 'w' : 'g', nA, 'Arıza', 'ariza')}${K(nP ? 'w' : 'g', nP, 'Talep', 'talep')}</div>
+  ${tips.length ? `<div class="opm-l">${tips.slice(0, 3).map(row).join('')}</div>${tips.length > 3 ? `<button type="button" class="opm-m" data-a="opgo" data-t="ozet">+${tips.length - 3} konu daha</button>` : '<div style="height:4px"></div>'}` : '<p class="opm-ok">Geç kalan, açık arıza ya da bekleyen talep yok.</p>'}</section>`;
+};
 </script>
 </body>
 </html>
