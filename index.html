@@ -11724,6 +11724,58 @@ H.sbradd = async () => {
   };
 }
 (function () { try { const st = document.createElement('style'); st.textContent = '.sbr-l{margin-top:12px;display:flex;flex-direction:column;gap:10px}.sbr-r{border:1px solid var(--line);border-radius:14px;padding:12px}.sbr-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.sbr-n{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:6px}.sbr-n b{color:var(--ink);font-weight:600}.sbr-n em{font-style:normal;font-size:12px;font-weight:600}.sbr-n .up{color:#16803c}.sbr-n .dn{color:var(--nar)}.sbr-bar{height:6px;border-radius:4px;background:var(--canvas);margin-top:8px;overflow:hidden}.sbr-bar i{display:block;height:100%;background:var(--cini);border-radius:4px}.sbr-chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;-webkit-overflow-scrolling:touch}.sbr-c{flex:0 0 auto;min-width:112px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:10px 12px;font:inherit;cursor:pointer}.sbr-c small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}.sbr-c b{display:block;font-size:15px;margin-top:2px}.sbr-c.on{border-color:var(--cini);background:var(--cini-wash);cursor:default}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v113: çalışan Vardiyam yeniden tasarım ===== */
+const vwMin = (t) => { const a = t.split(':').map(Number); return a[0] * 60 + a[1]; };
+const vwDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), k = m % 60; return h ? h + ' sa' + (k ? ' ' + k + ' dk' : '') : k + ' dk'; };
+function vwWeek(me) {
+  const n = new Date(); const out = [];
+  for (let k = 0; k < 7; k++) { const dt = new Date(n.getFullYear(), n.getMonth(), n.getDate() + k); const ym = dt.getFullYear() + '-' + vdP(dt.getMonth() + 1); const pub = !!(VD_M[ym] && VD_M[ym].pub); out.push({ k, dt, pub, s: pub ? vdState(dt.getFullYear(), dt.getMonth(), dt.getDate(), me) : { k: 'none' } }); }
+  return out;
+}
+function vwHero(me, wk) {
+  const n = new Date(); const nm = n.getHours() * 60 + n.getMinutes(); const t0 = wk[0]; const att = ATT[me] || { state: 'none' };
+  const nxt = wk.find((x) => x.k > 0 && x.s.k === 'shift'); const lbl = (x) => (x.k === 0 ? 'Bugün' : x.k === 1 ? 'Yarın' : DOWN[x.dt.getDay()]);
+  const card = (cls, tag, big, sub, extra, btn) => `<section class="vw-h ${cls}"><span class="vw-tag">${tag}</span><div class="vw-big">${big}</div><p>${sub}</p>${extra || ''}${btn || ''}</section>`;
+  if (!t0.pub && !wk.some((x) => x.pub)) return card('mute', 'Plan yok', 'Plan henüz yayınlanmadı', 'Müdür bu ayın vardiya planını yayınlayınca burada görünür.');
+  if (t0.s.k === 'shift') {
+    const s = vwMin(t0.s.t.s); let e = vwMin(t0.s.t.e); if (e <= s) e += 1440; const rng = `${esc(t0.s.t.s)} – ${esc(t0.s.t.e)}`;
+    if (nm < s - 0) return card('pri', 'Bugün vardiyan var', rng, `Başlamasına ${vwDur(s - nm)} var · ${esc(t0.s.t.n)} vardiyası`, '', att.state === 'none' ? `<button class="vw-b" data-a="clockin">${ic('clock', 18)} Mesaiye gir</button>` : '');
+    if (nm < e) { const pr = Math.min(100, Math.round((nm - s) / (e - s) * 100)); return card('ok', 'Vardiyadasın', rng, `Bitmesine ${vwDur(e - nm)} kaldı`, `<div class="vw-pr"><i style="width:${pr}%"></i></div>`, att.state === 'none' ? `<button class="vw-b" data-a="clockin">${ic('clock', 18)} Mesaiye gir</button>` : ''); }
+    if (nxt) return card('mute', 'Bugünkü vardiya bitti', esc(lbl(nxt)) + ' ' + esc(nxt.s.t.s), `${esc(nxt.s.t.s)} – ${esc(nxt.s.t.e)} · ${esc(nxt.s.t.n)} vardiyası`);
+    return card('mute', 'Bugünkü vardiya bitti', 'İyi dinlenmeler', 'Önümüzdeki günlerde vardiya görünmüyor.');
+  }
+  const why = t0.s.k === 'leave' ? 'İzinlisin' : t0.s.k === 'hol' ? 'Bugün tatil' : t0.s.k === 'off' ? 'Bugün izin günün' : 'Bugün vardiyan yok';
+  return card('mute', why, nxt ? 'Sıradaki: ' + esc(lbl(nxt)) + ' ' + esc(nxt.s.t.s) : 'Vardiya görünmüyor', nxt ? `${esc(nxt.s.t.s)} – ${esc(nxt.s.t.e)} · ${esc(nxt.s.t.n)} vardiyası` : 'Önümüzdeki 7 günde planlı vardiya yok.');
+}
+function viewVardiyam() {
+  const me = S.user.id; const wk = vwWeek(me); const n = new Date();
+  const b = new Date(n.getFullYear(), n.getMonth() + (S.vmO || 0), 1); const y = b.getFullYear(), m = b.getMonth(); const dim = new Date(y, m + 1, 0).getDate(); const ym = y + '-' + vdP(m + 1);
+  const pub = !!(VD_M[ym] && VD_M[ym].pub); const off0 = vdMon0(y, m); const isCur = (S.vmO || 0) === 0;
+  const cells = []; for (let i = 0; i < off0; i++) cells.push('<div class="vm-c e"></div>'); let hrs = 0, days = 0;
+  for (let d = 1; d <= dim; d++) { const s = pub ? vdState(y, m, d, me) : { k: 'none' }; const today = isCur && d === n.getDate(); let inner = '';
+    if (s.k === 'shift') { hrs += vdHours(s.t); days++; inner = `<i style="background:${s.t.c || '#3F86DD'}"></i><b>${esc(s.t.s)}</b><small>${esc(s.t.e)}</small>`; } else if (s.k === 'off') inner = '<small>İzin</small>'; else if (s.k === 'leave') inner = '<small class="l">İzinli</small>'; else if (s.k === 'hol') inner = '<small>Tatil</small>';
+    cells.push(`<div class="vm-c${today ? ' t' : ''}${s.k === 'shift' ? ' s' : ''}"><span>${d}</span>${inner}</div>`); }
+  const shifts = wk.filter((x) => x.s.k === 'shift'); const wkH = shifts.reduce((t, x) => t + vdHours(x.s.t), 0); const nOff = wk.filter((x) => x.pub && ['off', 'leave', 'hol'].includes(x.s.k)).length;
+  const nextOff = wk.find((x) => x.k > 0 && ['off', 'leave'].includes(x.s.k));
+  const myTk = REQS.filter((r) => r.uid === me && r.kind === 'takas' && r.st === 'bekliyor'); const myIz = REQS.filter((r) => r.uid === me && r.kind === 'izin' && r.st === 'bekliyor');
+  const ins = [];
+  if (wkH > 45) ins.push(['w', `Önümüzdeki 7 gün ${Math.round(wkH * 10) / 10} saat planlı. Haftalık 45 saati aşıyor, fazla mesai konusunu müdürle konuş.`]);
+  if (nextOff) ins.push(['i', `Sıradaki ${nextOff.s.k === 'leave' ? 'izinli' : 'izin'} günün ${DOWN[nextOff.dt.getDay()]}${nextOff.k === 1 ? ' (yarın)' : ''}.`]);
+  if (myTk.length) ins.push(['i', `Vardiya değişimi talebin onay bekliyor${myTk[0].date ? ' (' + esc(isoShort(myTk[0].date)) + ')' : ''}.`]);
+  if (myIz.length) ins.push(['i', 'İzin talebin onay bekliyor.']);
+  const day = (x) => { const s = x.s; const t = s.k === 'shift' ? `<b>${esc(s.t.s)}</b><small>${esc(s.t.e)}</small>` : s.k === 'off' ? '<small>İzin</small>' : s.k === 'leave' ? '<small class="l">İzinli</small>' : s.k === 'hol' ? '<small>Tatil</small>' : '<small>—</small>'; return `<div class="vw-d${x.k === 0 ? ' t' : ''}${s.k === 'shift' ? ' s' : ''}"><span>${x.k === 0 ? 'Bugün' : ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'][x.dt.getDay()]}</span><em>${x.dt.getDate()}</em>${s.k === 'shift' ? `<i style="background:${s.t.c || '#3F86DD'}"></i>` : ''}${t}</div>`; };
+  const hdr = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((x) => `<div class="vm-h">${x}</div>`).join('');
+  return `<div class="stack-lg vw"><div><h2>Vardiyam</h2><p class="muted" style="margin-top:4px">${esc(DOWN[n.getDay()])}, ${n.getDate()} ${VD_MON[n.getMonth()]}</p></div>
+  ${vwHero(me, wk)}
+  <section class="op-c"><div class="op-ch"><div><h3>Önümüzdeki 7 gün</h3><span>${shifts.length} vardiya · ${Math.round(wkH * 10) / 10} saat${nOff ? ' · ' + nOff + ' gün izin' : ''}</span></div></div><div class="vw-wk">${wk.map(day).join('')}</div></section>
+  ${ins.length ? `<div class="vw-in">${ins.map((x) => `<div class="vw-i ${x[0]}">${ic(x[0] === 'w' ? 'alert' : 'info', 16)}<span>${x[1]}</span></div>`).join('')}</div>` : ''}
+  <div class="vw-ac"><button class="btn sec" data-a="rqnew" data-k="takas">${ic('users', 16)} Vardiya değişimi</button><button class="btn sec" data-a="rqnew" data-k="izin">${ic('clock', 16)} İzin iste</button></div>
+  <details class="op-c vw-m"${typeof window !== 'undefined' && window.innerWidth >= 900 ? ' open' : ''}><summary><span><b>${VD_MON[m]} takvimi</b><small>${pub ? days + ' gün · ' + Math.round(hrs) + ' saat' : 'Plan yayınlanmadı'}</small></span></summary>
+  <div class="iz-nv" style="margin-top:12px"><button type="button" data-a="vmo" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h3 style="margin:0">${VD_MON[m]} ${y}</h3></div><button type="button" data-a="vmo" data-v="1" aria-label="Sonraki ay">${ic('chevron', 18)}</button></div>
+  ${pub ? `<div class="vm-g">${hdr}${cells.join('')}</div>` : '<p class="op-em" style="padding:14px 0">Bu ay için vardiya planı henüz yayınlanmadı. Müdür yayınlayınca burada görünür.</p>'}</details></div>`;
+}
+(function () { try { const st = document.createElement('style'); st.textContent = '.vw-h{border-radius:22px;padding:20px;color:#fff;display:flex;flex-direction:column;gap:6px;background:linear-gradient(135deg,#2f62b5,#173068);box-shadow:0 10px 28px rgba(23,48,104,.22)}.vw-h.ok{background:linear-gradient(135deg,#1f8f6a,#0f5a46)}.vw-h.mute{background:#fff;color:var(--ink);box-shadow:none;border:1px solid var(--line)}.vw-tag{align-self:flex-start;font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.18)}.vw-h.mute .vw-tag{background:var(--canvas);color:var(--ink-2)}.vw-big{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}.vw-h p{margin:0;opacity:.85;font-size:14px}.vw-pr{height:6px;border-radius:4px;background:rgba(255,255,255,.25);margin-top:8px;overflow:hidden}.vw-pr i{display:block;height:100%;background:#fff;border-radius:4px}.vw-b{margin-top:12px;border:0;border-radius:14px;padding:13px;background:#fff;color:#173068;font:inherit;font-weight:600;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer}.vw-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}.vw-d{border:1px solid var(--line);border-radius:12px;padding:8px 2px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:92px;position:relative}.vw-d span{font-size:10.5px;color:var(--muted)}.vw-d em{font-style:normal;font-weight:700;font-size:15px}.vw-d b{font-size:12px}.vw-d small{font-size:10.5px;color:var(--muted)}.vw-d small.l{color:var(--safran)}.vw-d i{width:18px;height:3px;border-radius:2px;margin:3px 0 1px}.vw-d.s{background:var(--cini-wash);border-color:transparent}.vw-d.t{outline:2px solid var(--cini);outline-offset:-1px}.vw-in{display:flex;flex-direction:column;gap:8px}.vw-i{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--cini-wash);color:var(--ink-2);font-size:13.5px}.vw-i svg{flex:0 0 auto;margin-top:2px}.vw-i.w{background:var(--safran-wash);color:var(--safran)}.vw-ac{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vw-m summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between}.vw-m summary::-webkit-details-marker{display:none}.vw-m summary small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}.vw-m summary:after{content:"›";font-size:20px;color:var(--muted);transform:rotate(90deg)}.vw-m[open] summary:after{transform:rotate(-90deg)}@media(min-width:900px){.vw{max-width:760px}}'; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
