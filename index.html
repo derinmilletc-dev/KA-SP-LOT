@@ -973,6 +973,10 @@ body.kx-on #ps-chip{background:#4CD08A!important;color:transparent}
 @media(max-width:1100px){.op-two{display:flex;flex-direction:column}.op-tg{grid-template-columns:repeat(2,minmax(0,1fr))}.op-g2{grid-template-columns:1fr}.op-fg{grid-template-columns:1fr}.op .dz-sts{grid-template-columns:repeat(2,1fr)}}
 .op-c .field{margin-bottom:12px}.op-c .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}.op-c .field input{width:100%;min-height:46px;border:1px solid #D5DEEA;border-radius:12px;padding:0 12px;font:inherit;background:#fff;box-sizing:border-box}.op-c .field input:focus{outline:2px solid var(--cini);outline-offset:1px}
 .rzk-in{width:100%;min-height:42px;border:1px solid #D5DEEA;border-radius:12px;padding:0 12px;font:inherit;background:#fff;box-sizing:border-box}
+.op-gh{font-size:12.5px;font-weight:700;color:var(--ink-2);text-transform:none;margin:8px 0 2px}.op-ci .bad,.op-ct em .bad{color:var(--nar);font-weight:600}
+.vm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.vm-h{text-align:center;font-size:12px;color:var(--ink-2);padding:4px 0}.vm-c{position:relative;min-height:74px;border:1px solid #EEF2F7;border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:1px;background:#fff;font-size:12px}.vm-c.e{border:0;background:transparent}.vm-c>span{font-size:12px;color:var(--ink-2)}.vm-c b{font-size:13px}.vm-c small{font-size:11px;color:var(--ink-2)}.vm-c small.l{color:#9A5B00}.vm-c i{position:absolute;left:6px;right:6px;bottom:6px;height:4px;border-radius:99px}.vm-c.s{background:#F4F8FE;border-color:#D6E4F5}.vm-c.t{outline:2px solid var(--cini);outline-offset:-1px}
+.op-ph{display:flex;flex-direction:column;gap:8px;align-items:flex-start}.op-pv img{max-width:100%;max-height:160px;border-radius:12px;display:block}.op-th{display:block;margin-top:8px;border:0;padding:0;background:none}.op-th img{width:96px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #E1E8F2}.op-big{width:100%;border-radius:14px;display:block}
+@media(max-width:560px){.vm-c{min-height:58px;padding:4px}.vm-c small{font-size:10px}.vm-c b{font-size:12px}}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -9912,7 +9916,7 @@ function rzKaisCard() {
   return `<section class="rzk"><div class="rzk-h">${ic('sparkle', 18)}<b>Kais asistan</b><label class="sz-sw rzk-m1"><input type="checkbox" data-ch="rzk" data-k="on"${k.on ? ' checked' : ''}><span class="sz-tr"></span></label></div>
   ${k.on ? `<div class="rzk-cap"><div><span>${esc(rzDayName(S.rzDate))} en yoğun</span><b>${pk.p}${cap ? ' / ' + cap : ''} kişi</b></div><div class="rzk-bar"><i style="width:${pct}%;background:${pct >= 100 ? 'var(--nar)' : pct >= 80 ? '#E3A21A' : 'var(--cini)'}"></i></div><em>${cap ? (PROF.kap ? 'Kapasite: ' + cap + ' kişi' : 'Masa kapasitesine göre (' + cap + ')') : 'Kapasite girilmedi'}${pk.t ? ' · ' + pk.t : ''}</em></div>${qh}
   ${tips.length ? `<div class="rzk-t">Kais önerileri <em>${tips.length}</em></div><div class="rzk-tl">${tips.slice(0, 6).map((t) => `<div class="sa2-ti ${t[0]}"><i></i><div><b>${esc(t[1])}</b><p>${esc(t[2])}</p>${t[3] ? `<button class="btn sm sec" data-a="${t[3]}" data-${t[3] === 'rzday' ? 'd' : 'f'}="${t[4]}">${esc(t[5])}</button>` : ''}</div></div>`).join('')}</div>` : ''}
-  <details class="rzk-set"><summary>Kais ayarları</summary>${sw('auto', 'Otomatik e-posta', 'Sunucu e-postayı kendiliğinden gönderir, uygulama kapalıyken de')}${sw('conf', 'Onay e-postası', 'Rezervasyon alınınca müşteriye gider')}${sw('rem', 'Hatırlatma e-postası', 'Gelmeden önce müşteriye gider')}<div class="rzk-hr"><span>Hatırlatma zamanı</span>${[1, 2, 3, 4].map((h) => `<button data-a="rzkh" data-h="${h}" aria-pressed="${k.hrs === h}">${h} saat</button>`).join('')}</div><div class="rzk-hr" style="flex-direction:column;align-items:stretch;gap:6px"><span>Yanıt e-postası <em style="font-style:normal;color:var(--ink-2)">(misafir yanıtlarsa buraya gider)</em></span><input class="rzk-in" type="email" inputmode="email" autocapitalize="none" placeholder="rezervasyon@isletmen.com" value="${esc(k.reply || '')}" data-ch="rzkr"></div>${sw('warn', 'Dolu gün uyarısı', 'Kapasite dolunca sormadan almam')}${sw('ns', 'Gelmeyenleri takip et', 'Önceden gelmeyenleri işaretlerim')}${nt ? `<label class="rzk-sw"><span><b>Bildirim</b><em>Misafir gelmeden 30 dk önce haber ver</em></span><span class="sz-sw"><input type="checkbox" data-ch="rznotif"${on ? ' checked' : ''}><span class="sz-tr"></span></span></label>` : ''}</details>` : '<p class="rzk-ok">Kais kapalı. Açarsan rezervasyonları takip eder, müşteri mesajlarını hazırlar, dolu günleri uyarır.</p>'}</section>`;
+  <details class="rzk-set"${S.rzkOpen ? ' open' : ''}><summary>Kais ayarları</summary>${sw('auto', 'Otomatik e-posta', 'Sunucu e-postayı kendiliğinden gönderir, uygulama kapalıyken de')}${sw('conf', 'Onay e-postası', 'Rezervasyon alınınca müşteriye gider')}${sw('rem', 'Hatırlatma e-postası', 'Gelmeden önce müşteriye gider')}<div class="rzk-hr"><span>Hatırlatma zamanı</span>${[1, 2, 3, 4].map((h) => `<button data-a="rzkh" data-h="${h}" aria-pressed="${k.hrs === h}">${h} saat</button>`).join('')}</div><div class="rzk-hr" style="flex-direction:column;align-items:stretch;gap:6px"><span>Yanıt e-postası <em style="font-style:normal;color:var(--ink-2)">(misafir yanıtlarsa buraya gider)</em></span><input class="rzk-in" type="email" inputmode="email" autocapitalize="none" placeholder="rezervasyon@isletmen.com" value="${esc(k.reply || '')}" data-ch="rzkr"></div>${sw('warn', 'Dolu gün uyarısı', 'Kapasite dolunca sormadan almam')}${sw('ns', 'Gelmeyenleri takip et', 'Önceden gelmeyenleri işaretlerim')}${nt ? `<label class="rzk-sw"><span><b>Bildirim</b><em>Misafir gelmeden 30 dk önce haber ver</em></span><span class="sz-sw"><input type="checkbox" data-ch="rznotif"${on ? ' checked' : ''}><span class="sz-tr"></span></span></label>` : ''}</details>` : '<p class="rzk-ok">Kais kapalı. Açarsan rezervasyonları takip eder, müşteri mesajlarını hazırlar, dolu günleri uyarır.</p>'}</section>`;
 }
 {
   const _v85 = viewRezerv;
@@ -9928,7 +9932,8 @@ function rzKaisCard() {
 }
 H.rzkh = (el) => { rzK().hrs = Number(el.dataset.h); pSched(); render(); };
 H.rzday = ((p) => (el) => { if (el.dataset.d) { S.rzDate = el.dataset.d; S.rzMonth = rzMon(S.rzDate); S.rzCal = false; render(); } else p(el); })(H.rzday);
-{ const _oc = onChange; onChange = function (e) { const el = e.target; if (el && el.dataset && el.dataset.ch === 'rzkr') { const v = String(el.value || '').trim(); if (v && !/^\S+@\S+\.\S{2,}$/.test(v)) { toast('E-posta adresi geçersiz görünüyor.', 'warn'); return; } rzK().reply = v; pSched(); toast('Kaydedildi.', 'ok'); return; } if (el && el.dataset && el.dataset.ch === 'rzk') { rzK()[el.dataset.k] = !!el.checked; pSched(); render(); return; } return _oc(e); }; }
+document.addEventListener('toggle', (e) => { if (e.target && e.target.classList && e.target.classList.contains('rzk-set')) S.rzkOpen = e.target.open; }, true);
+document.addEventListener('change', (e) => { const el = e.target; if (!el || !el.dataset) return; if (el.dataset.ch === 'rzkr') { const v = String(el.value || '').trim(); if (v && !/^\S+@\S+\.\S{2,}$/.test(v)) { toast('E-posta adresi geçersiz görünüyor.', 'warn'); return; } rzK().reply = v; pSched(); toast('Kaydedildi.', 'ok'); return; } if (el.dataset.ch === 'rzk') { rzK()[el.dataset.k] = !!el.checked; pSched(); render(); } });
 H.rzsend = (el) => {
   const r = RESV.find((x) => x.id === el.dataset.id); if (!r) return; const kind = el.dataset.kind; const ch = el.dataset.ch; const msg = kind === 'rem' ? rzRemMsg(r) : rzConfMsg(r);
   if (ch === 'mail') { window.open(rzMail(r, kind), '_blank'); }
@@ -9995,7 +10000,7 @@ const opMgrs = () => USERS.filter((u) => ['patron', 'mudur'].includes(u.role)).m
 const opAgo = (iso) => { const d = dleft(iso); return d == null ? '' : d === 0 ? 'Bugün' : d === -1 ? 'Dün' : Math.abs(d) + ' gün önce'; };
 const opIsMgr = () => S.user && ['patron', 'mudur'].includes(S.user.role);
 const opTl = (n) => fmt0(n);
-const opTab = () => { const t = S.sub.ops; return ['ozet', 'liste', 'ariza', 'kasa', 'talep'].includes(t) ? t : 'ozet'; };
+let opTab = () => { const t = S.sub.ops; return ['ozet', 'liste', 'ariza', 'kasa', 'talep'].includes(t) ? t : 'ozet'; };
 /* --- günlük liste --- */
 const chkDone = (id) => CHKL.find((x) => x.date === REF_ISO && x.id === id);
 const chkStat = (w) => { const it = CHKI.filter((i) => i.when === w); return { n: it.length, d: it.filter((i) => chkDone(i.id)).length }; };
@@ -10215,6 +10220,92 @@ NAV.calisan.forEach((n) => { if (n[0] === 'puanim' && !n[3]) n[3] = 'more'; }); 
   return out; }; }
 { const _g = go; go = function (v) { const r = _g.apply(this, arguments); return r; }; }
 if (!window.__op86) { window.__op86 = setInterval(() => { try { const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role)) return; window.__opL = window.__opL || {}; opLate().forEach((l) => { const k = REF_ISO + l.id; if (window.__opL[k]) return; window.__opL[k] = 1; toast(opN(l.id) + ' ' + opLt(l) + '.', 'warn'); try { pushSend([u.id], 'Geç kalan çalışan', opN(l.id) + ' henüz giriş yapmadı (' + opLt(l) + ').'); } catch (e) {} }); } catch (e) {} }, 60000); }
+/* ===== v87: görevler, vardiyam, arıza fotoğrafı, çalışan bildirimleri ===== */
+const TASKS = []; P_ARR.push(['TASKS', () => TASKS]); P_SCOPE.TASKS = 'ekip';
+{ const _w = wipeData; wipeData = function () { _w.apply(this, arguments); TASKS.length = 0; }; }
+const tkOpen = () => TASKS.filter((t) => t.st !== 'bitti');
+const tkMine = (uid) => tkOpen().filter((t) => t.uid === uid || t.uid === 'all').sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
+const tkLate = (t) => t.st !== 'bitti' && t.due && t.due < REF_ISO;
+const tkDue = (t) => !t.due ? '' : t.due === REF_ISO ? 'Bugün' : t.due < REF_ISO ? Math.abs(dleft(t.due)) + ' gün gecikti' : isoShort(t.due);
+H.tknew = () => { S.modal = { type: 'tknew' }; renderModal(); };
+NEWM.tknew = () => sheet('Görev ver', `<div class="field"><label for="tk-t">Ne yapılacak?</label><input id="tk-t" maxlength="90" placeholder="Örn. Vitrin camlarını sil"></div>
+  <div class="field"><label for="tk-u">Kime?</label><select id="tk-u"><option value="all">Herkes (ilk yapan kapatır)</option>${EMP_IDS.map((x) => `<option value="${x}">${esc(opN(x))}</option>`).join('')}</select></div>
+  <div class="field"><label for="tk-d">Ne zamana kadar?</label><input id="tk-d" type="date" min="${REF_ISO}" value="${REF_ISO}"></div>
+  <div class="field"><label>Önem</label>${pfChips('tkpri', ['Normal', 'Önemli'], 'Normal', false)}</div>
+  <div class="err" id="tk-e" role="alert"></div><button class="btn block" data-a="tksave">Görevi ver</button>`);
+H.tksave = () => {
+  const g = (id) => ((document.getElementById(id) || {}).value || '').trim(); const t = g('tk-t'); if (t.length < 3) { document.getElementById('tk-e').textContent = 'Görevi yaz.'; return; }
+  const k = { id: 'tk' + (++seq), t, uid: g('tk-u') || 'all', by: S.user.id, due: g('tk-d') || REF_ISO, pri: (pfOn('tkpri')[0] || 'Normal') === 'Önemli' ? 'onemli' : 'normal', st: 'acik', at: nowT() };
+  if (k.due < REF_ISO) k.due = REF_ISO; TASKS.unshift(k); if (TASKS.length > 500) TASKS.length = 500; pSched();
+  try { pushSend(k.uid === 'all' ? EMP_IDS : [k.uid], 'Yeni görev', t + (k.due === REF_ISO ? ' (bugün)' : ' · ' + isoShort(k.due))); } catch (e) {}
+  S.modal = null; render(); toast('Görev verildi.', 'ok');
+};
+H.tkdone = (el) => { const t = TASKS.find((x) => x.id === el.dataset.id); if (!t) return; if (t.st === 'bitti') { t.st = 'acik'; delete t.doneBy; delete t.doneAt; } else { t.st = 'bitti'; t.doneBy = S.user.id; t.doneAt = REF_ISO + ' ' + opHM(); } pSched(); render(); };
+H.tkdel = (el) => { const i = TASKS.findIndex((x) => x.id === el.dataset.id); if (i >= 0) TASKS.splice(i, 1); pSched(); render(); };
+function tkRow(t, mgr) {
+  const late = tkLate(t); const done = t.st === 'bitti';
+  return `<div class="op-ci${done ? ' on' : ''}"><button type="button" class="op-cb" data-a="tkdone" data-id="${t.id}" aria-pressed="${done}"><span class="op-bx">${done ? ic('check', 14) : ''}</span><span class="op-ct"><b>${esc(t.t)}</b><em>${t.pri === 'onemli' ? 'Önemli · ' : ''}${mgr ? esc(t.uid === 'all' ? 'Herkes' : opN(t.uid).split(' ')[0]) + ' · ' : ''}${done ? esc(opN(t.doneBy).split(' ')[0]) + ' yaptı · ' + esc(String(t.doneAt || '').slice(11)) : `<span class="${late ? 'bad' : ''}">${esc(tkDue(t))}</span>`}</em></span></button>${mgr ? `<button class="op-x" data-a="tkdel" data-id="${t.id}" aria-label="Görevi sil">${ic('x', 14)}</button>` : ''}</div>`;
+}
+function tkView() {
+  const open = tkOpen().sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1); const done = TASKS.filter((t) => t.st === 'bitti' && String(t.doneAt || '').slice(0, 10) === REF_ISO); const late = open.filter(tkLate).length;
+  const by = {}; open.forEach((t) => { (by[t.uid] = by[t.uid] || []).push(t); });
+  return `<div class="op-two"><div class="op-l"><section class="op-c"><div class="op-ch"><div><h3>Açık görevler</h3><span>${open.length} görev${late ? ' · ' + late + ' gecikti' : ''}</span></div><button class="btn sm" data-a="tknew">${ic('plus', 15)} Görev ver</button></div>
+  <div class="op-ck">${open.length ? Object.keys(by).map((u) => `<div class="op-gh">${u === 'all' ? 'Herkes' : esc(opN(u))}</div>${by[u].map((t) => tkRow(t, true)).join('')}`).join('') : '<p class="op-em">Açık görev yok. "Görev ver" ile ekibe iş atayabilirsin.</p>'}</div></section></div>
+  <div class="op-r"><section class="op-c"><div class="op-ch"><div><h3>Bugün tamamlanan</h3><span>${done.length}</span></div></div><div class="op-ck">${done.length ? done.map((t) => tkRow(t, true)).join('') : '<p class="op-em">Bugün tamamlanan görev yok.</p>'}</div></section></div></div>`;
+}
+/* Operasyon sekmesine görevleri ekle */
+opTab = () => { const t = S.sub.ops; return ['ozet', 'liste', 'gorev', 'ariza', 'kasa', 'talep'].includes(t) ? t : 'ozet'; };
+{ const _vo = viewOps; viewOps = function () { if (opTab() !== 'gorev') return _vo(); opSeed(); const n = tkOpen().length; const cur = 'gorev';
+  const items = [['ozet', 'Özet'], ['liste', 'Günlük liste'], ['gorev', 'Görevler' + (n ? ' (' + n + ')' : '')], ['ariza', 'Arıza ve bakım' + (mtOpen().length ? ' (' + mtOpen().length + ')' : '')], ['kasa', 'Kasa'], ['talep', 'Talepler' + (REQS.filter((r) => r.st === 'bekliyor').length ? ' (' + REQS.filter((r) => r.st === 'bekliyor').length + ')' : '')]];
+  return `<div class="stack-lg op"><div><h2>Operasyon</h2><p class="muted" style="margin-top:4px">${esc(today())} · günlük işleyişi tek yerden takip et</p></div>${seg('ops', items, cur).replace('<div class="seg"', '<div class="seg seg-b"')}${tkView()}</div>`; }; }
+{ const _vo2 = viewOps; viewOps = function () { const h = _vo2(); if (opTab() === 'gorev') return h; const n = tkOpen().length; return h.replace(/(<button data-a="sub" data-g="ops" data-v="liste"[^>]*>[^<]*<\/button>)/, `$1<button data-a="sub" data-g="ops" data-v="gorev" aria-pressed="false">Görevler${n ? ' (' + n + ')' : ''}</button>`); }; }
+{ const _ot = opTips; opTips = function () { const T = _ot(); const l = tkOpen().filter(tkLate); if (l.length) T.splice(Math.min(T.length, 2), 0, ['a', l.length + ' görev gecikti', l.slice(0, 2).map((t) => (t.uid === 'all' ? 'Herkes' : opN(t.uid).split(' ')[0]) + ': ' + t.t).join('; '), 'opgo', 'gorev', 'Görevlere git']); return T; }; }
+/* çalışan: Bugün'e görevler */
+{ const _oe = opEmp; opEmp = function () { const mine = tkMine(S.user.id); const dn = TASKS.filter((t) => t.st === 'bitti' && t.doneBy === S.user.id && String(t.doneAt || '').slice(0, 10) === REF_ISO).slice(0, 3);
+  const h = mine.length || dn.length ? `<section class="cb-s op-ce"><section class="op-c"><div class="op-ch"><div><h3>Görevlerim</h3><span>${mine.length} açık${mine.some(tkLate) ? ' · gecikmiş var' : ''}</span></div></div><div class="op-ck">${mine.concat(dn).map((t) => tkRow(t, false)).join('')}</div></section></section>` : ''; return h + _oe(); }; }
+/* çalışan: Vardiyam */
+S.vmO = 0; H.vmo = (el) => { S.vmO = el.dataset.v === '0' ? 0 : (S.vmO || 0) + Number(el.dataset.v); render(); };
+function viewVardiyam() {
+  const me = S.user.id; const n = new Date(); const b = new Date(n.getFullYear(), n.getMonth() + (S.vmO || 0), 1); const y = b.getFullYear(), m = b.getMonth(); const dim = new Date(y, m + 1, 0).getDate(); const ym = y + '-' + vdP(m + 1);
+  const pub = !!(VD_M[ym] && VD_M[ym].pub); const off0 = vdMon0(y, m); const isCur = (S.vmO || 0) === 0;
+  const cells = []; for (let i = 0; i < off0; i++) cells.push('<div class="vm-c e"></div>'); let hrs = 0, days = 0;
+  for (let d = 1; d <= dim; d++) { const s = pub ? vdState(y, m, d, me) : { k: 'none' }; const today = isCur && d === n.getDate(); let inner = '';
+    if (s.k === 'shift') { hrs += vdHours(s.t); days++; inner = `<i style="background:${s.t.c || '#3F86DD'}"></i><b>${esc(s.t.s)}</b><small>${esc(s.t.e)}</small>`; } else if (s.k === 'off') inner = '<small>İzin</small>'; else if (s.k === 'leave') inner = '<small class="l">İzinli</small>'; else if (s.k === 'hol') inner = '<small>Tatil</small>';
+    cells.push(`<div class="vm-c${today ? ' t' : ''}${s.k === 'shift' ? ' s' : ''}"><span>${d}</span>${inner}</div>`); }
+  const up = []; if (pub || isCur) for (let k = 0; k < 14; k++) { const dt = new Date(n.getFullYear(), n.getMonth(), n.getDate() + k); const ymk = dt.getFullYear() + '-' + vdP(dt.getMonth() + 1); if (!(VD_M[ymk] && VD_M[ymk].pub)) continue; const s = vdState(dt.getFullYear(), dt.getMonth(), dt.getDate(), me); if (s.k === 'shift') up.push({ dt, s, k }); }
+  const wk = up.filter((x) => x.k < 7).reduce((a, x) => a + vdHours(x.s.t), 0); const nx = up[0];
+  const hdr = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((x) => `<div class="vm-h">${x}</div>`).join('');
+  return `<div class="stack-lg op"><div><h2>Vardiyam</h2><p class="muted" style="margin-top:4px">Çalışma günlerin ve saatlerin</p></div>
+  <div class="dz-sts"><div class="dz-st i"><span>${ic('clock', 20)}</span><div><b>${nx ? (nx.k === 0 ? 'Bugün' : DOWN[nx.dt.getDay()].slice(0, 3)) + ' ' + nx.s.t.s : '—'}</b><small>Sıradaki vardiya</small></div></div><div class="dz-st"><span>${ic('list', 20)}</span><div><b>${Math.round(wk * 10) / 10} sa</b><small>Önümüzdeki 7 gün</small></div></div><div class="dz-st"><span>${ic('users', 20)}</span><div><b>${days} gün</b><small>${VD_MON[m]} çalışma</small></div></div><div class="dz-st g"><span>${ic('check', 20)}</span><div><b>${Math.round(hrs)} sa</b><small>${VD_MON[m]} toplam</small></div></div></div>
+  <div class="op-two"><div class="op-l"><section class="op-c"><div class="iz-nv"><button type="button" data-a="vmo" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h3 style="margin:0">${VD_MON[m]} ${y}</h3></div><button type="button" data-a="vmo" data-v="1" aria-label="Sonraki ay">${ic('chevron', 18)}</button></div>
+  ${pub ? `<div class="vm-g">${hdr}${cells.join('')}</div>` : '<p class="op-em" style="padding:14px 0">Bu ay için vardiya planı henüz yayınlanmadı. Müdür yayınlayınca burada görünür.</p>'}</section></div>
+  <div class="op-r"><section class="op-c"><div class="op-ch"><div><h3>Yaklaşan vardiyalar</h3><span>14 gün</span></div></div><div class="op-ls op-hs">${up.length ? up.map((x) => `<div class="op-kr"><div><b>${x.k === 0 ? 'Bugün' : x.k === 1 ? 'Yarın' : DOWN[x.dt.getDay()] + ' ' + x.dt.getDate() + ' ' + VD_MON[x.dt.getMonth()].slice(0, 3)}</b><span>${esc(x.s.t.n)} vardiyası</span></div><span class="pill p-info">${esc(x.s.t.s)}–${esc(x.s.t.e)}</span></div>`).join('') : '<p class="op-em">Yaklaşan vardiya görünmüyor.</p>'}</div>
+  <button class="btn block sec" style="margin-top:12px" data-a="rqnew" data-k="takas">${ic('users', 16)} Vardiya değişimi iste</button></section></div></div></div>`;
+}
+{ const _vv = viewHTML; viewHTML = function () { if (S.view === 'vardiyam' && S.user && S.user.role === 'calisan') return viewVardiyam(); return _vv(); }; }
+NAV.calisan.forEach((n) => { if (n[0] === 'masraf' && !n[3]) n[3] = 'more'; }); NAV.calisan.splice(2, 0, ['vardiyam', 'Vardiyam', 'clock']); TITLES.vardiyam = 'Vardiyam';
+/* takas onayında vardiyaları değiştir + karar tarihi */
+{ const _ok = H.rqok; H.rqok = function (el) { const r = REQS.find((x) => x.id === el.dataset.id); let sw = false;
+  if (r && r.kind === 'takas' && r.with && r.st === 'bekliyor' && r.date) { const [y, m, d] = r.date.split('-').map(Number); const a = vdState(y, m - 1, d, r.uid), b = vdState(y, m - 1, d, r.with);
+    if (a.k === 'shift' && b.k === 'shift' && a.t.id !== b.t.id) { vdSet(r.date, r.uid, b.t.id); vdSet(r.date, r.with, a.t.id); sw = true; } else if (a.k === 'shift' && ['off', 'none'].includes(b.k)) { vdSet(r.date, r.uid, 'off'); vdSet(r.date, r.with, a.t.id); sw = true; } }
+  if (r) r.decAt = REF_ISO; _ok.apply(this, arguments); if (sw) { try { pushSend([r.with], 'Vardiyan değişti', isoShort(r.date) + ' tarihli vardiyan ' + opN(r.uid).split(' ')[0] + ' ile değiştirildi.'); } catch (e) {} toast('Vardiyalar karşılıklı değiştirildi.', 'ok'); } }; }
+{ const _no = H.rqnook; H.rqnook = function (el) { const r = REQS.find((x) => x.id === el.dataset.id); if (r) r.decAt = REF_ISO; return _no.apply(this, arguments); }; }
+/* çalışan bildirimleri */
+{ const _nl7 = notifList; notifList = function () { const out = _nl7(); const u = S.user; if (!u || u.role !== 'calisan') return out; const add = (key, sev, text, view, tab) => out.push({ key: key + '|' + REF_ISO, sev, text, view, tab });
+  const mine = tkMine(u.id); const lt = mine.filter(tkLate).length; if (lt) add('tkl' + lt, 'bad', lt + ' görevin gecikti.', 'bugun'); else if (mine.length) add('tk' + mine.length, 'info', mine.length + ' açık görevin var.', 'bugun');
+  REQS.filter((r) => r.uid === u.id && r.decAt && dleft(r.decAt) >= -3).forEach((r) => add('rqd' + r.id + r.st, r.st === 'onay' ? 'info' : 'warn', RQ_K[r.kind] + ' talebin ' + (r.st === 'onay' ? 'onaylandı' : 'reddedildi') + '.', 'talebim'));
+  MAINT.filter((m) => m.uid === u.id && ((m.st === 'bitti' && m.doneAt && dleft(m.doneAt) >= -3) || m.st === 'islemde')).forEach((m) => add('mtd' + m.id + m.st, 'info', m.cat + ' arızan ' + (m.st === 'bitti' ? 'çözüldü' : 'için ilgileniliyor') + '.', 'talebim'));
+  return out; }; }
+/* arıza fotoğrafı */
+function opImg(file) { return new Promise((res, rej) => { const fr = new FileReader(); fr.onerror = rej; fr.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => { const M = 720; const k = Math.min(1, M / Math.max(im.width, im.height)); const w = Math.max(1, Math.round(im.width * k)), h = Math.max(1, Math.round(im.height * k)); const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h); let q = 0.62; let u = c.toDataURL('image/jpeg', q); while (u.length > 110000 && q > 0.3) { q -= 0.1; u = c.toDataURL('image/jpeg', q); } res(u); }; im.src = fr.result; }; fr.readAsDataURL(file); }); }
+{ const _mn = NEWM.mtnew; NEWM.mtnew = function (m) { return _mn(m).replace('<div class="err" id="mt-e"', `<div class="field"><label>Fotoğraf <span class="small muted">(isteğe bağlı)</span></label><div class="op-ph"><label class="btn sec sm" for="mt-file">${ic('camera', 16)} Fotoğraf ekle</label><input id="mt-file" type="file" accept="image/*" hidden data-ch="mtph"><div class="op-pv" id="mt-pv"${S.mtPhoto ? '' : ' hidden'}>${S.mtPhoto ? `<img src="${S.mtPhoto}" alt="">` : ''}</div></div></div><div class="err" id="mt-e"`); }; }
+{ const _h = H.mtnew; H.mtnew = function () { S.mtPhoto = null; return _h.apply(this, arguments); }; }
+document.addEventListener('change', (e) => { const el = e.target; if (!el || !el.dataset || el.dataset.ch !== 'mtph') return; const f = el.files && el.files[0]; if (!f) return; if (!/^image\//.test(f.type)) { toast('Bir fotoğraf seç.', 'warn'); return; } opImg(f).then((u) => { S.mtPhoto = u; const pv = document.getElementById('mt-pv'); if (pv) { pv.hidden = false; pv.innerHTML = '<img src="' + u + '" alt="">'; } }).catch(() => toast('Fotoğraf okunamadı.', 'warn')); });
+{ const _ms = H.mtsend; H.mtsend = function () { const n0 = MAINT.length; const ph = S.mtPhoto; _ms.apply(this, arguments); if (MAINT.length > n0 && ph) { MAINT[0].photo = ph; S.mtPhoto = null; pSched(); render(); } }; }
+H.mtimg = (el) => { S.modal = { type: 'mtimg', id: el.dataset.id }; renderModal(); };
+NEWM.mtimg = (m) => { const x = MAINT.find((q) => q.id === m.id); return sheet(x ? x.cat : 'Fotoğraf', x && x.photo ? `<img class="op-big" src="${x.photo}" alt="Arıza fotoğrafı">` : '<p>Fotoğraf yok.</p>'); };
+{ const _mc = mtCard; mtCard = function (m, mgr) { const h = _mc(m, mgr); return m.photo ? h.replace('<div class="op-mm">', `<button type="button" class="op-th" data-a="mtimg" data-id="${m.id}" aria-label="Fotoğrafı büyüt"><img src="${m.photo}" alt=""></button><div class="op-mm">`) : h; }; }
+{ const _os = opSeed; opSeed = function () { _os(); let c = 0; MAINT.forEach((m) => { if (!m.photo) return; if (m.st === 'bitti' && m.doneAt && dleft(m.doneAt) < -30) delete m.photo; else if (++c > 40) delete m.photo; }); }; }
 </script>
 </body>
 </html>
