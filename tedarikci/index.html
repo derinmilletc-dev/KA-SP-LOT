@@ -2867,11 +2867,11 @@ async function spIlanLoad(force) {
   if (SPS.il && SPS.il.busy) return; if (SPS.il && SPS.il.ok && !force) return;
   SPS.il = Object.assign(SPS.il || {}, { busy: true }); await new Promise((r) => setTimeout(r, 0));
   try {
-    if (DEMO) { SPS.il = { ok: true, feed: [{ id: 'n1', product: 'Soğan', qty: 500, unit: 'kg', deliver_by: null, note: 'Kuru soğan, yarın teslim olursa iyi olur.', city: 'Ankara', district: 'Çankaya', biz_name: 'Örnek Kafe', km: 12.4, my_price: null, my_status: null }], mine: [] }; }
+    if (DEMO) { SPS.il = { ok: true, feed: [{ id: 'n1', product: 'Soğan', qty: 500, unit: 'kg', deliver_by: null, note: 'Kuru soğan, yarın teslim olursa iyi olur.', city: 'Ankara', district: 'Çankaya', biz_name: 'Örnek Kafe', km: 12.4, my_price: null, my_status: null }], mine: [], ords: [{ id: 'r1', product: 'Soğan', qty: 400, unit: 'kg', total: 3400, status: 'onaylandi', biz_name: 'Örnek Kafe', contact: '0532 000 00 00', rated: false }] }; }
     else {
-      const [f, m] = await Promise.all([sb.rpc('market_feed'), sb.rpc('market_mine')]);
+      const [f, m, od] = await Promise.all([sb.rpc('market_feed'), sb.rpc('market_mine'), sb.rpc('market_orders_sup')]);
       if (f.error && /market_feed|function/i.test(f.error.message)) { SPS.il = { ok: true, setup: true, feed: [], mine: [] }; }
-      else SPS.il = { ok: true, feed: f.data || [], mine: m.data || [], err: f.error ? f.error.message : '' };
+      else SPS.il = { ok: true, feed: f.data || [], mine: m.data || [], ords: od.error ? [] : (od.data || []), err: f.error ? f.error.message : '' };
     }
   } catch (e) { SPS.il = { ok: true, feed: [], mine: [], err: String((e && e.message) || e) }; }
   if (SPS.tab === 'ilan') spRender(true);
@@ -2887,9 +2887,10 @@ function spIlan() {
     <div class="sp-two">${n.my_status === 'bekliyor' ? `<button class="sp-sec" data-sp="iwd" data-id="${n.id}">Teklifi geri çek</button>` : '<span></span>'}<button class="sp-pri" data-sp="ioffer" data-id="${n.id}">${n.my_status ? 'Teklifi düzenle' : 'Teklif ver'}${n.my_price ? ' · ' + tl(n.my_price) : ''}</button></div></div>`).join('');
   const mine = il.mine.filter((o) => o.status !== 'geri').map((o) => `<div class="sp-card il-c"><div class="sp-ch"><b>${esc(o.product)} · ${esc(String(o.offer_qty).replace('.', ','))} ${esc(o.unit)}</b><span class="sp-b ${(st[o.status] || ['', ''])[1]}">${(st[o.status] || [o.status])[0]}</span></div>
     <p class="il-m">${esc(o.biz_name)} · birim ${tl(o.price)} · toplam <b>${tl(Math.round(o.price * o.offer_qty * 100) / 100)}</b></p>${o.status === 'kabul' ? `<p class="il-ok">${SPI('check', 16)} İşletme teklifini kabul etti.${o.contact ? ' İletişim: <b>' + esc(o.contact) + '</b>' : ' İşletme seni arayacak.'}</p>` : ''}</div>`).join('');
+  const ords = (il.ords || []).length ? `<h2 class="sp-h">Siparişlerim</h2>${il.ords.map(ilOrd).join('')}` : '';
   return `${noLoc ? `<div class="sp-tip info"><span class="sp-ti">${SPI('pin', 18)}</span><p>Konumunu Profil'e eklersen ilanları sana yakınlığa göre sıralarım.</p><button data-sp="tab" data-v="profil">Konum ekle</button></div>` : ''}
   ${il.err ? `<p class="err">${esc(il.err)}</p>` : ''}
-  <h2 class="sp-h">Yakınındaki ilanlar</h2>${feed || `<div class="sp-empty">${SPI('spark', 28)}<b>Şu an açık ilan yok</b><span>Yakındaki işletmeler ihtiyaç yayınlayınca burada görünür.</span></div>`}
+  ${ords}<h2 class="sp-h">Yakınındaki ilanlar</h2>${feed || `<div class="sp-empty">${SPI('spark', 28)}<b>Şu an açık ilan yok</b><span>Yakındaki işletmeler ihtiyaç yayınlayınca burada görünür.</span></div>`}
   ${mine ? `<h2 class="sp-h">Tekliflerim</h2>${mine}` : ''}`;
 }
 {
@@ -2916,6 +2917,53 @@ Object.assign(SPA, {
   iwd: async (el) => { if (DEMO) { const n = SPS.il.feed.find((x) => x.id === el.dataset.id); if (n) { n.my_price = null; n.my_status = null; } spRender(true); return; } const r = await sb.rpc('market_offer_withdraw', { p_need: el.dataset.id }); if (r.error) return spToast(r.error.message, 1); spToast('Teklif geri çekildi.'); await spIlanLoad(true); spRender(true); }
 });
 (function () { const st = document.createElement('style'); st.textContent = '.il-c .il-m{margin:4px 0;font-size:13.5px;color:var(--mut)}.il-c .il-n{margin:8px 0;font-size:14px;background:#f5f8f6;border-radius:10px;padding:8px 10px}.il-c .sp-two{margin-top:10px}.il-ok{display:flex;gap:6px;align-items:center;margin:8px 0 0;font-size:13.5px;color:#1d6b40;background:#E8F6EE;border-radius:10px;padding:8px 10px}'; document.head.appendChild(st); })();
+
+
+const IL_ST = { onaylandi: ['Teslimat bekleniyor', 'warn'], teslim_edildi: ['İşletme onayı bekleniyor', 'warn'], alindi: ['Ödeme bekleniyor', 'warn'], odendi: ['Ödeme geldi mi?', 'warn'], tamam: ['Tamamlandı', 'ok'], sorun: ['Sorun var', 'bad'] };
+function ilOrd(o) {
+  const st = IL_ST[o.status] || ['', '']; const a = [];
+  if (o.status === 'onaylandi') a.push(`<button class="sp-pri" data-sp="idel" data-id="${o.id}">Teslim ettim</button>`);
+  if (o.status === 'odendi') a.push(`<button class="sp-pri" data-sp="iconf" data-id="${o.id}">Ödemeyi aldım</button>`);
+  if (['odendi', 'tamam'].includes(o.status) && !o.rated) a.push(`<button class="sp-sec" data-sp="irate" data-id="${o.id}">★ İşletmeyi puanla</button>`);
+  if (o.status === 'sorun' && o.issue_by === 'uretici') a.push(`<button class="sp-sec" data-sp="ires" data-id="${o.id}">Sorun çözüldü</button>`);
+  if (!['tamam', 'sorun'].includes(o.status)) a.push(`<button class="sp-sec" data-sp="iiss" data-id="${o.id}">Sorun bildir</button>`);
+  const hint = { onaylandi: 'Malı teslim edince "Teslim ettim"e bas. İşletme teslim almayı onaylayacak.', teslim_edildi: 'İşletmenin teslim aldığını onaylamasını bekliyorsun.', alindi: 'İşletme teslim aldı. Havale yapınca burada görünecek.', odendi: 'İşletme ödemeyi bildirdi. Hesabına geçince onayla.' }[o.status] || '';
+  return `<div class="sp-card il-c"><div class="sp-ch"><b>${esc(o.product)} · ${esc(String(o.qty).replace('.', ','))} ${esc(o.unit)}</b><span class="sp-b ${st[1]}">${st[0]}</span></div>
+  <p class="il-m">${esc(o.biz_name)} · toplam <b>${tl(Number(o.total))}</b></p>${o.contact && o.status !== 'tamam' ? `<p class="il-m">İşletme telefonu: <b>${esc(o.contact)}</b></p>` : ''}
+  ${hint ? `<p class="il-m">${esc(hint)}</p>` : ''}${o.status === 'sorun' ? `<p class="il-n"><b>${o.issue_by === 'uretici' ? 'Sen' : 'İşletme'} bildirdi:</b> ${esc(o.issue || '')}</p>` : ''}
+  ${o.pay_ref || o.doc_path ? `<p class="il-m">Ödeme: ${o.pay_date ? esc(ilDt(o.pay_date)) : ''}${o.pay_ref ? ' · ref ' + esc(o.pay_ref) : ''}${o.doc_path ? ` · <button class="il-lk" data-sp="idoc" data-p="${esc(o.doc_path)}">Dekontu aç</button>` : ''}</p>` : ''}
+  ${a.length ? `<div class="il-ac">${a.join('')}</div>` : ''}</div>`;
+}
+{
+  const _s2 = spSheet;
+  spSheet = function () {
+    const s = SPS.sheet; if (!s || !['iss', 'rate'].includes(s.t)) return _s2.apply(this, arguments);
+    const o = (SPS.il.ords || []).find((x) => x.id === s.id) || {}; let t, b;
+    if (s.t === 'iss') { t = 'Sorun bildir'; b = `<p class="sp-d">Karşı taraf görür. Çözülünce "Sorun çözüldü"ye basarsın.</p><label>Ne oldu?</label><input id="is-t" maxlength="300" placeholder="Örn: Ödeme gecikti"><p class="err" id="msg"></p><div class="sp-two"><button class="sp-sec" data-sp="sclose">Vazgeç</button><button class="sp-pri" data-sp="iissok" data-id="${esc(s.id)}">Bildir</button></div>`; }
+    else { t = 'İşletmeyi puanla'; b = `<p class="sp-d">${esc(o.biz_name || '')} · ${esc(o.product || '')}</p><div class="il-st" role="group">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-sp="istar" data-v="${i}" aria-pressed="${(s.stars || 5) >= i}">★</button>`).join('')}</div><label class="il-ck"><input type="checkbox" id="rt-o" checked> Ödemeyi zamanında yaptı</label><label class="il-ck"><input type="checkbox" id="rt-f" checked> Tutar eksiksizdi</label><label>Not (isteğe bağlı)</label><input id="rt-n" maxlength="300"><p class="err" id="msg"></p><div class="sp-two"><button class="sp-sec" data-sp="sclose">Vazgeç</button><button class="sp-pri" data-sp="irateok" data-id="${esc(s.id)}">Puanı gönder</button></div>`; }
+    return `<div class="sp-ov" data-sp="sclose"><div class="sp-sh"><div class="sp-shh"><h3>${t}</h3><button data-sp="sclose" aria-label="Kapat">${SPI('x', 20)}</button></div>${b}</div></div>`;
+  };
+}
+async function ilAct(id, act, a) {
+  if (DEMO) { const o = SPS.il.ords.find((x) => x.id === id); if (o) { const nx = { delivered: 'teslim_edildi', confirm: 'tamam', issue: 'sorun', resolve: 'onaylandi' }[act]; if (nx) o.status = nx; if (act === 'issue') { o.issue = a.p_text; o.issue_by = 'uretici'; } } SPS.sheet = null; spRender(true); return true; }
+  const r = await sb.rpc('market_order_act', Object.assign({ p_order: id, p_act: act }, a || {})); const m = document.getElementById('msg');
+  if (r.error) { if (m) m.textContent = r.error.message; else spToast(r.error.message, 1); return false; }
+  SPS.sheet = null; await spIlanLoad(true); spRender(true); return true;
+}
+Object.assign(SPA, {
+  idel: (el) => ilAct(el.dataset.id, 'delivered'), iconf: (el) => ilAct(el.dataset.id, 'confirm'), ires: (el) => ilAct(el.dataset.id, 'resolve'),
+  iiss: (el) => { SPS.sheet = { t: 'iss', id: el.dataset.id }; spRender(true); },
+  iissok: (el) => { const t = ((document.getElementById('is-t') || {}).value || '').trim(); if (!t) { document.getElementById('msg').textContent = 'Sorunu kısaca yaz.'; return; } return ilAct(el.dataset.id, 'issue', { p_text: t }); },
+  irate: (el) => { SPS.sheet = { t: 'rate', id: el.dataset.id, stars: 5 }; spRender(true); },
+  istar: (el) => { SPS.sheet.stars = Number(el.dataset.v); document.querySelectorAll('.il-st button').forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.v) <= SPS.sheet.stars)); },
+  irateok: async (el) => {
+    if (DEMO) { const o = SPS.il.ords.find((x) => x.id === el.dataset.id); if (o) o.rated = true; SPS.sheet = null; spToast('Puanın kaydedildi.'); spRender(true); return; }
+    const r = await sb.rpc('market_rate', { p_order: el.dataset.id, p_stars: SPS.sheet.stars || 5, p_on_time: document.getElementById('rt-o').checked, p_complete: document.getElementById('rt-f').checked, p_note: ((document.getElementById('rt-n') || {}).value || '').trim() || null });
+    if (r.error) { document.getElementById('msg').textContent = r.error.message; return; } SPS.sheet = null; spToast('Puanın kaydedildi.'); await spIlanLoad(true); spRender(true);
+  },
+  idoc: async (el) => { try { const r = await sb.storage.from('market-docs').createSignedUrl(el.dataset.p, 300); if (r.error) throw r.error; window.open(r.data.signedUrl, '_blank', 'noopener'); } catch (e) { spToast('Dekont açılamadı.', 1); } }
+});
+(function () { const st = document.createElement('style'); st.textContent = '.il-ac{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.il-ac button{flex:1 1 auto}.il-lk{border:0;background:none;color:var(--acc);font:inherit;text-decoration:underline;padding:0;cursor:pointer}.il-st{display:flex;gap:6px;margin:8px 0 12px}.il-st button{font-size:30px;line-height:1;border:0;background:none;color:#cfd7e3;cursor:pointer;padding:2px}.il-st button[aria-pressed=true]{color:#e0a03a}.il-ck{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:15px}'; document.head.appendChild(st); })();
 
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
 </script></body></html>

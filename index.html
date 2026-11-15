@@ -12082,6 +12082,69 @@ H.mkok = async () => {
 H.mkacc = async (el) => { if (MK.busy) return; MK.busy = true; const r = await sbClient().rpc('market_accept', { p_offer: el.dataset.id }); MK.busy = false; if (r.error) { toast(r.error.message, 'warn'); return; } toast('Teklif kabul edildi.', 'ok'); MK.ok = false; render(); };
 H.mkclose = async (el) => { const r = await sbClient().from('market_needs').update({ status: 'kapali' }).eq('id', el.dataset.id); if (r.error) { toast(sbMsg(r.error), 'warn'); return; } MK.ok = false; render(); };
 (function () { try { const st = document.createElement('style'); st.textContent = '.mk-h p{font-size:14px}.mk-n{gap:12px}.mk-o{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#fff}.mk-o.top{border-color:#bcd3f3;background:#f6faff}.mk-o.ok{border-color:#bfe3cc;background:#f1faf4}.mk-tp{display:flex;gap:6px;align-items:center;font-size:12.5px;font-weight:700;color:var(--cini)}.mk-oh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.mk-oh b{display:block}.mk-oh small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.mk-pr b{font-size:20px}.mk-pr span{color:var(--muted);font-size:13px;margin-left:6px}.mk-nt{margin:0;font-size:14px}.mk-w{margin:0;font-size:12.5px;color:var(--muted)}.mk-ac{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;background:#E8F6EE;color:#1d6b40;border-radius:12px;padding:10px 12px}.mk-n>.btn,.mk-o .btn{align-self:flex-start}.mk-n,.mk-o,.mk-h{text-align:left;align-items:stretch}.sa2-tb{grid-template-columns:repeat(auto-fit,minmax(104px,1fr))!important}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v121: Teslimat akışı (teslim onayı, ödeme bildirimi, puan, sorun) ===== */
+MK.ord = []; MK.ordOk = false; MK.ordBusy = false;
+const MK_ST = { onaylandi: ['Teslimat bekleniyor', 'p-info'], teslim_edildi: ['Üretici teslim etti', 'p-warn'], alindi: ['Ödeme bekleniyor', 'p-warn'], odendi: ['Ödendi', 'p-ok'], tamam: ['Tamamlandı', 'p-ok'], sorun: ['Sorun var', 'p-bad'] };
+const mkRoleOK = () => !!(S.user && ['patron', 'mudur', 'muhasebeci'].includes(S.user.role) && sbClient() && SBS.biz);
+async function mkOrdLoad(force) {
+  if (!mkRoleOK() || MK.ordBusy || (MK.ordOk && !force)) return; MK.ordBusy = true; await new Promise((r) => setTimeout(r, 0));
+  try { const r = await sbClient().rpc('market_orders_biz', { p_biz: SBS.biz.id }); MK.ord = r.error ? [] : (r.data || []); } catch (e) { MK.ord = []; }
+  MK.ordOk = true; MK.ordBusy = false; if (S.saTab === 'ilan' || S.view === 'borc') render();
+}
+const mkStep = (st) => { const i = { onaylandi: 0, teslim_edildi: 1, alindi: 2, odendi: 3, tamam: 4, sorun: -1 }[st]; return `<div class="mk-sp" aria-hidden="true">${['Onay', 'Teslim', 'Ödeme', 'Tamam'].map((x, k) => `<span class="${i > k || (i === 4) ? 'd' : i === k ? 'c' : ''}"><i></i>${x}</span>`).join('')}</div>`; };
+function mkOrd(o, canAll) {
+  const st = MK_ST[o.status] || ['', '']; const p = [];
+  if (canAll && ['onaylandi', 'teslim_edildi'].includes(o.status)) p.push(`<button class="btn sm" data-a="mkrecv" data-id="${o.id}">${ic('check', 15)} Teslim aldım</button>`);
+  if (o.status === 'alindi') p.push(`<button class="btn sm" data-a="mkpay" data-id="${o.id}">${ic('wallet', 15)} Ödemeyi bildir</button>`);
+  if (canAll && ['alindi', 'odendi', 'tamam'].includes(o.status) && !o.rated) p.push(`<button class="btn sm sec" data-a="mkrate" data-id="${o.id}">★ Puan ver</button>`);
+  if (canAll && o.status === 'sorun' && o.issue_by === 'isletme') p.push(`<button class="btn sm sec" data-a="mkres" data-id="${o.id}">Sorun çözüldü</button>`);
+  if (canAll && !['tamam', 'sorun'].includes(o.status)) p.push(`<button class="btn sm sec" data-a="mkiss" data-id="${o.id}">Sorun bildir</button>`);
+  return `<div class="mk-o${o.status === 'sorun' ? ' bad' : o.status === 'tamam' ? ' ok' : ''}"><div class="mk-oh"><div><b>${esc(o.product)} · ${esc(String(o.received_qty || o.qty).replace('.', ','))} ${esc(o.unit)}</b><small>${esc(o.supplier_name)} · ${fmt(Number(o.total))}</small></div><span class="pill ${st[1]}">${st[0]}</span></div>${o.status === 'sorun' ? '' : mkStep(o.status)}
+  ${o.phone && !['tamam'].includes(o.status) ? `<p class="mk-w">Üretici: ${esc(o.phone)}</p>` : ''}${o.status === 'sorun' ? `<p class="mk-nt"><b>${o.issue_by === 'uretici' ? 'Üretici' : 'İşletme'} bildirdi:</b> ${esc(o.issue || '')}</p>` : ''}
+  ${o.pay_ref || o.doc_path ? `<p class="mk-w">Ödeme: ${esc(o.pay_date ? isoShort(o.pay_date) : '')}${o.pay_ref ? ' · ref ' + esc(o.pay_ref) : ''}${o.doc_path ? ` · <button class="mk-lk" data-a="mkdoc" data-p="${esc(o.doc_path)}">Dekontu aç</button>` : ''}</p>` : ''}
+  ${p.length ? `<div class="row wrap" style="gap:8px">${p.join('')}</div>` : ''}</div>`;
+}
+const mkOrdSec = () => MK.ord.length ? `<section class="op-c mk-n"><div class="op-ch"><div><h3>Teslimatlar ve ödemeler</h3><span>Mal teslim alınmadan ödeme yapılmaz</span></div></div>${MK.ord.map((o) => mkOrd(o, ['patron', 'mudur'].includes(S.user.role))).join('')}</section>` : '';
+{
+  const _mv = mkView;
+  mkView = function () { const h = _mv.apply(this, arguments); if (!mkOn()) return h; if (!MK.ordOk) mkOrdLoad(); const i = h.indexOf('<section class="op-c mk-n">'); const s = mkOrdSec(); return i < 0 ? h + s : h.slice(0, i) + s + h.slice(i); };
+}
+{
+  const _hd = H.mkacc; H.mkacc = async function (el) { await _hd.call(this, el); MK.ordOk = false; };
+  const _vb = borcAlacakHTML;
+  borcAlacakHTML = function (role) {
+    let h = _vb.apply(this, arguments); if (!mkRoleOK()) return h; if (!MK.ordOk) { mkOrdLoad(); return h; }
+    const L = MK.ord.filter((o) => o.status === 'alindi'); if (!L.length) return h;
+    const card = `<section class="bz-s2"><div class="bz-sh"><div><h3>Üretici ödemeleri</h3><p>${L.length} teslim alınmış sipariş ödeme bekliyor</p></div></div>${L.map((o) => `<div class="bz-c wn"><div class="bz-t"><div class="bz-n"><b>${esc(o.supplier_name)}</b><small>${esc(o.product)} · ${esc(String(o.received_qty || o.qty).replace('.', ','))} ${esc(o.unit)}</small></div><div class="bz-a"><b>${fmt(Number(o.total))}</b><span class="bz-w wn">Teslim alındı</span></div></div><div class="bz-f"><button class="btn sm bz-ok" data-a="mkpay" data-id="${o.id}">${ic('wallet', 15)} Ödemeyi bildir</button></div></div>`).join('')}</section>`;
+    const i = h.lastIndexOf('</div>'); return h.slice(0, i) + card + h.slice(i);
+  };
+}
+async function mkDo(id, act, a) { const r = await sbClient().rpc('market_order_act', Object.assign({ p_order: id, p_act: act }, a || {})); if (r.error) { const e = document.getElementById('mk-e'); if (e) e.textContent = r.error.message; else toast(r.error.message, 'warn'); return false; } S.modal = null; MK.ordOk = false; render(); return true; }
+const mkOrdOf = (id) => MK.ord.find((x) => x.id === id) || {};
+H.mkrecv = (el) => { S.modal = { type: 'mkrecv', id: el.dataset.id }; renderModal(); };
+NEWM.mkrecv = (m) => { const o = mkOrdOf(m.id); return sheet('Teslim aldım', `<p class="muted">${esc(o.product)} · ${esc(o.supplier_name)}. Gelen miktar farklıysa düzelt, tutar buna göre hesaplanır.</p><div class="field"><label for="mk-rq">Teslim alınan miktar (${esc(o.unit)})</label><input id="mk-rq" inputmode="decimal" value="${esc(String(o.qty || ''))}"></div><div class="err" id="mk-e" role="alert"></div><button class="btn block" data-a="mkrecvok" data-id="${m.id}">Teslim aldığımı onayla</button>`); };
+H.mkrecvok = (el) => { const q = Number(((document.getElementById('mk-rq') || {}).value || '').replace(',', '.')); if (!(q > 0)) { document.getElementById('mk-e').textContent = 'Miktarı yaz.'; return; } return mkDo(el.dataset.id, 'received', { p_qty: q }); };
+H.mkpay = (el) => { S.modal = { type: 'mkpay', id: el.dataset.id }; renderModal(); };
+NEWM.mkpay = (m) => { const o = mkOrdOf(m.id); return sheet('Ödemeyi bildir', `<p class="muted">${esc(o.supplier_name)} için havaleyi yaptıktan sonra bilgisini gir. Üretici ödemeyi görünce onaylar.</p><div class="field"><label for="mk-pa">Havale tutarı (₺)</label><input id="mk-pa" inputmode="decimal" value="${esc(String(o.total || ''))}"></div><div class="field"><label for="mk-pd">Havale tarihi</label><input type="date" id="mk-pd" value="${REF_ISO}"></div><div class="field"><label for="mk-pr">Dekont / referans no</label><input id="mk-pr" maxlength="60"></div><div class="field"><label for="mk-pf">Dekont fotoğrafı (isteğe bağlı)</label><input type="file" id="mk-pf" accept="image/*"></div><div class="err" id="mk-e" role="alert"></div><button class="btn block" data-a="mkpayok" data-id="${m.id}">Ödendi olarak kaydet</button>`); };
+function mkResize(file) { return new Promise((ok, no) => { const fr = new FileReader(); fr.onerror = () => no(new Error('Dosya okunamadı.')); fr.onload = () => { const im = new Image(); im.onerror = () => no(new Error('Görsel açılamadı.')); im.onload = () => { const k = Math.min(1, 1400 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); c.toBlob((b) => (b ? ok(b) : no(new Error('Görsel işlenemedi.'))), 'image/jpeg', 0.75); }; im.src = fr.result; }; fr.readAsDataURL(file); }); }
+H.mkpayok = async (el) => {
+  if (MK.busy) return; const v = (id) => ((document.getElementById(id) || {}).value || '').trim(); const e = document.getElementById('mk-e'); const amt = Number(v('mk-pa').replace(',', '.')); if (!(amt > 0)) { e.textContent = 'Tutarı yaz.'; return; }
+  MK.busy = true; let path = null; const f = (document.getElementById('mk-pf') || {}).files; 
+  if (f && f[0]) { try { const b = await mkResize(f[0]); path = el.dataset.id + '/' + Date.now() + '.jpg'; const u = await sbClient().storage.from('market-docs').upload(path, b, { contentType: 'image/jpeg' }); if (u.error) { path = null; toast('Dekont fotoğrafı yüklenemedi, ödeme bilgisi yine de kaydedilecek.', 'warn'); } } catch (x) { path = null; } }
+  MK.busy = false; return mkDo(el.dataset.id, 'paid', { p_amount: amt, p_date: v('mk-pd') || null, p_text: v('mk-pr') || null, p_doc: path });
+};
+H.mkdoc = async (el) => { try { const r = await sbClient().storage.from('market-docs').createSignedUrl(el.dataset.p, 300); if (r.error) throw r.error; window.open(r.data.signedUrl, '_blank', 'noopener'); } catch (e) { toast('Dekont açılamadı.', 'warn'); } };
+H.mkiss = (el) => { S.modal = { type: 'mkiss', id: el.dataset.id }; renderModal(); };
+NEWM.mkiss = (m) => sheet('Sorun bildir', `<p class="muted">Kalite, eksik miktar, gecikme gibi. Karşı taraf görür, çözülünce sorunu kapatırsın.</p><div class="field"><label for="mk-it">Ne oldu?</label><input id="mk-it" maxlength="300" placeholder="Örn: 50 kg eksik geldi"></div><div class="err" id="mk-e" role="alert"></div><button class="btn block" data-a="mkissok" data-id="${m.id}">Bildir</button>`);
+H.mkissok = (el) => mkDo(el.dataset.id, 'issue', { p_text: ((document.getElementById('mk-it') || {}).value || '').trim() });
+H.mkres = (el) => mkDo(el.dataset.id, 'resolve');
+H.mkrate = (el) => { S.modal = { type: 'mkrate', id: el.dataset.id, stars: 5 }; renderModal(); };
+NEWM.mkrate = (m) => { const o = mkOrdOf(m.id); return sheet('Üreticiyi puanla', `<p class="muted">${esc(o.supplier_name)} · ${esc(o.product)}</p><div class="mk-st" role="group" aria-label="Yıldız">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-a="mkstar" data-v="${i}" aria-pressed="${m.stars >= i}">★</button>`).join('')}</div>
+  <label class="mk-ck"><input type="checkbox" id="mk-ot" checked> Zamanında teslim etti</label><label class="mk-ck"><input type="checkbox" id="mk-fu" checked> Miktar ve kalite eksiksizdi</label><div class="field"><label for="mk-nt">Not (isteğe bağlı)</label><input id="mk-nt" maxlength="300"></div><div class="err" id="mk-e" role="alert"></div><button class="btn block" data-a="mkrateok" data-id="${m.id}">Puanı gönder</button>`); };
+H.mkstar = (el) => { S.modal.stars = Number(el.dataset.v); document.querySelectorAll('.mk-st button').forEach((b) => b.setAttribute('aria-pressed', Number(b.dataset.v) <= S.modal.stars)); };
+H.mkrateok = async (el) => { const r = await sbClient().rpc('market_rate', { p_order: el.dataset.id, p_stars: S.modal.stars || 5, p_on_time: !!document.getElementById('mk-ot').checked, p_complete: !!document.getElementById('mk-fu').checked, p_note: ((document.getElementById('mk-nt') || {}).value || '').trim() || null }); if (r.error) { document.getElementById('mk-e').textContent = r.error.message; return; } S.modal = null; MK.ordOk = false; toast('Puanın kaydedildi.', 'ok'); render(); };
+(function () { try { const st = document.createElement('style'); st.textContent = '.mk-o.bad{border-color:#f0c2c8;background:#fdf4f5}.mk-sp{display:flex;gap:4px}.mk-sp span{flex:1;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.mk-sp i{height:5px;border-radius:3px;background:#E1E8F2;display:block}.mk-sp .d i{background:#3a9d62}.mk-sp .c i{background:#E0A03A}.mk-sp .d,.mk-sp .c{color:var(--ink-2)}.mk-lk{border:0;background:none;color:var(--cini);font:inherit;text-decoration:underline;padding:0;cursor:pointer}.mk-st{display:flex;gap:6px;margin:6px 0 12px}.mk-st button{font-size:30px;line-height:1;border:0;background:none;color:#cfd7e3;cursor:pointer;padding:2px}.mk-st button[aria-pressed=true]{color:#e0a03a}.mk-ck{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:15px}'; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
