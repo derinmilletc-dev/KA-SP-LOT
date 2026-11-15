@@ -359,6 +359,7 @@ async function spLoad(){
     sb.from('orders').select('*').in('supplier_id',ids).order('created_at',{ascending:false})]);
   SPS.bizs={}; (bz.data||[]).forEach(b=>{SPS.bizs[b.id]=b;}); SPS.biz=SPS.bizs[SUP.business_id]||(bz.data&&bz.data[0])||{name:'İşletme'}; SPS.rfqs=rf.data||[]; SPS.quotes=qt.data||[]; SPS.orders=od.data||[];
   SPS.setup=!!(pr.error||pf.error); SPS.prods=pr.data||[]; SPS.prof=(pf.data&&pf.data[0])||{};
+  try{const pv=await sb.from('supplier_private').select('vehicle').eq('supplier_id',SUP.id).limit(1); SPS.prof.vehicle=(pv.data&&pv.data[0]&&pv.data[0].vehicle)||null;}catch(e){}
   SPS.hrs=JSON.parse(JSON.stringify(SPS.prof.hours||{})); SPS.dd=(SPS.prof.delivery_days||[]).map(String);
 }
 async function supView(){ document.body.classList.remove('lg'); document.body.classList.add('sp'); await spLoad(); await spPushCheck(); spRender(); spRatingsLoad(); }
@@ -858,8 +859,8 @@ function spVehCard(){const v=spVeh(); const kc=spKmCost(v); const m=spMargin();
 function spVehPrev(v,m){const kc=spKmCost(v); if(!spVehOK(v)) return 'Tüketim ve yakıt fiyatını yazınca km maliyetin burada görünür.'; return 'Km başına maliyetin: <b>'+tl(kc)+'</b>'+(v.drv>0?' + saatte '+tl(v.drv)+' sürücü':'')+'. 20 km uzağa gidiş-dönüş yakıt ve aşınma: <b>'+tl(40*kc)+'</b>.';}
 function spVehRead(){const n=(id)=>nz($v(id)); return {name:$v('vh-name')||'',fuel:$v('vh-fuel')||'dizel',l100:n('vh-l'),fp:n('vh-fp'),wear:n('vh-wear'),drv:n('vh-drv'),spd:n('vh-spd')||40,minD:n('vh-min')};}
 document.addEventListener('input',e=>{const t=e.target; if(t&&/^vh-/.test(t.id||'')){const o=document.getElementById('vh-pv'); if(o) o.innerHTML=spVehPrev(spVehRead(),spMargin());}});
-SPA.vsave=async(el)=>{if(SPS.busy) return; const veh=spVehRead(); const e=document.getElementById('vh-err'); if(veh.spd<5||veh.spd>130){if(e) e.textContent='Ortalama hız 5 ile 130 arasında olmalı.'; return;} SPS.busy=true; el.disabled=true; const r=await sb.from('supplier_profiles').upsert({supplier_id:SUP.id,vehicle:veh,updated_at:new Date().toISOString()},{onConflict:'supplier_id'}); SPS.busy=false; el.disabled=false;
-  if(spDb(r)){if(e) e.textContent=/vehicle|schema cache/i.test(spDb(r))?'Kurulum eksik. kaispilot_teslimat.sql dosyasını çalıştır.':spDb(r); return;} SPS.prof=Object.assign({},SPS.prof,{vehicle:veh}); spToast('Araç bilgisi kaydedildi.'); spRender(true);};
+SPA.vsave=async(el)=>{if(SPS.busy) return; const veh=spVehRead(); const e=document.getElementById('vh-err'); if(veh.spd<5||veh.spd>130){if(e) e.textContent='Ortalama hız 5 ile 130 arasında olmalı.'; return;} SPS.busy=true; el.disabled=true; const r=await sb.from('supplier_private').upsert({supplier_id:SUP.id,vehicle:veh,updated_at:new Date().toISOString()},{onConflict:'supplier_id'}); SPS.busy=false; el.disabled=false;
+  if(spDb(r)){if(e) e.textContent=/vehicle|schema cache|supplier_private|relation/i.test(spDb(r))?'Kurulum eksik. kaispilot_teslimat.sql dosyasını çalıştır.':spDb(r); return;} SPS.prof=Object.assign({},SPS.prof,{vehicle:veh}); spToast('Araç bilgisi kaydedildi.'); spRender(true);};
 
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};MODE='sup';supView();}else boot();
 </script></body></html>
