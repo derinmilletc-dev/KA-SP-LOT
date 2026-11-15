@@ -2657,5 +2657,68 @@ document.addEventListener('input',e=>{const t=e.target; if(!t) return; if(t.id==
 (function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v||el.dataset.t))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
 })();
 
+/* ===== v16: Kais AI ekranı yeniden tasarım ===== */
+(function(){const st=document.createElement('style'); st.textContent=`
+body[data-tab=kais] .sp-body{max-width:900px!important;padding-bottom:180px}
+.ka-wrap{max-width:780px;margin:0 auto}
+.ka-h{display:flex;align-items:center;gap:12px;margin:0 0 16px}.ka-h .sp-av{width:40px;height:40px;border-radius:13px}
+.ka-h b{display:block;font:700 17px 'Bricolage Grotesque',system-ui,sans-serif;color:var(--ink)}
+.ka-h small{display:flex;align-items:center;gap:6px;font:500 12.5px system-ui;color:var(--mut);margin-top:2px}.ka-h small i{width:7px;height:7px;border-radius:50%;background:#2fa36f;box-shadow:0 0 0 3px #dff1e8;display:block}
+.ka-new{margin-left:auto;display:inline-flex;gap:6px;align-items:center;background:#fff;color:var(--acc);border:1px solid var(--line);border-radius:12px;padding:8px 13px;font:600 13px system-ui}
+.ka-hero{text-align:center;padding:14px 0 18px}.ka-hero h2{margin:0 0 6px;font:700 26px 'Bricolage Grotesque',system-ui,sans-serif;color:var(--ink)}.ka-hero p{margin:0 auto;color:var(--mut);max-width:44ch;font:500 14.5px/1.5 system-ui}
+.ka-sec{font:650 13px system-ui;color:var(--mut);margin:18px 2px 10px}
+.ka-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ka-cd{display:flex;flex-direction:column;gap:6px;text-align:left;background:#fff;color:var(--ink);border:1px solid rgba(29,42,36,.07);border-radius:16px;padding:13px 14px;box-shadow:0 1px 2px rgba(20,40,30,.04);transition:transform .15s,box-shadow .2s}
+.ka-cd:hover{transform:translateY(-2px);box-shadow:0 12px 26px -16px rgba(20,40,30,.4)}
+.ka-ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#eaf3ee;color:var(--acc)}.ka-cd.warn .ka-ic{background:#fff3d6;color:#a06d00}.ka-cd.bad .ka-ic{background:#fdeceb;color:var(--bad)}
+.ka-cd>div{display:flex;flex-direction:column;gap:3px;min-width:0}.ka-cd b{display:block;font:650 14px/1.3 system-ui}.ka-cd>div>span{display:block;font:500 12.5px/1.4 system-ui;color:var(--mut)}
+.ka-caps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ka-cp{background:#fff;border:1px solid rgba(29,42,36,.07);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ka-cp>b{font:650 13.5px system-ui;color:var(--ink);display:flex;gap:7px;align-items:center}.ka-cp>b svg{color:var(--acc)}
+.ka-cp button{background:#f5f8f6;color:var(--ink);border-radius:10px;padding:8px 11px;text-align:left;font:500 13px/1.35 system-ui}.ka-cp button:hover{background:#eaf3ee}
+body[data-tab=kais] .sp-chat{gap:14px;min-height:0}
+body[data-tab=kais] .sp-m.u p{border-radius:18px 18px 5px 18px;padding:11px 15px;font-size:15px;box-shadow:0 6px 16px -10px rgba(31,111,85,.6)}
+body[data-tab=kais] .sp-m.a>div{border:1px solid rgba(29,42,36,.07);border-radius:18px 18px 18px 5px;padding:13px 16px;box-shadow:0 1px 2px rgba(20,40,30,.04),0 10px 24px -18px rgba(20,40,30,.3)}
+body[data-tab=kais] .sp-m.a{align-items:flex-start;gap:10px}
+body[data-tab=kais] .sp-ai-t{font:400 15px/1.6 system-ui}body[data-tab=kais] .sp-ai-t ul{margin:6px 0;padding-left:20px}body[data-tab=kais] .sp-ai-t p{margin:0 0 6px}
+.ka-cpy{display:inline-flex;gap:5px;align-items:center;background:transparent;color:var(--mut);padding:4px 7px;border-radius:8px;font:600 12px system-ui;margin:6px 0 0 -7px}.ka-cpy:hover{background:#f0f4f1;color:var(--ink)}
+body[data-tab=kais] .sp-act{border:1px solid #cfe3d8;background:linear-gradient(#f6fbf8,#fff);border-radius:14px;padding:12px 14px;margin-top:10px;box-shadow:none}
+.ka-fu{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 0 40px}.ka-fu button{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:500 13px system-ui}.ka-fu button:hover{border-color:var(--acc);color:var(--acc)}
+.ka-in{position:fixed;left:0;right:0;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;padding:10px 12px 8px;background:linear-gradient(rgba(244,246,243,0),#f4f6f3 38%)}
+.ka-box{max-width:780px;margin:0 auto;background:#fff;border:1px solid rgba(29,42,36,.1);border-radius:24px;box-shadow:0 14px 34px -16px rgba(20,40,30,.4);padding:8px}
+.ka-row{display:flex;gap:8px;align-items:flex-end}
+.ka-in .ka-row textarea{flex:1;border:0!important;outline:0;background:transparent!important;box-shadow:none!important;min-height:40px;max-height:140px;resize:none;padding:10px 4px!important;font:inherit;font-size:15px;border-radius:0!important}
+.ka-file{display:inline-flex;gap:7px;align-items:center;background:#eaf3ee;color:var(--acc);border-radius:10px;padding:6px 10px;font:600 12.5px system-ui;margin:0 0 8px 4px}.ka-file button{background:transparent;color:var(--mut);padding:0;display:grid}
+.ka-hint{max-width:780px;margin:6px auto 0;text-align:center;font:500 11.5px system-ui;color:var(--mut)}
+@media(min-width:900px){.ka-in{left:236px;bottom:0;padding:14px 32px 14px}}
+@media(max-width:820px){.ka-cards{grid-template-columns:1fr}.ka-caps{grid-template-columns:1fr}.ka-cd{flex-direction:row;align-items:center;gap:12px}.ka-cd>div{min-width:0}.ka-hint{display:none}.ka-hero h2{font-size:23px}.ka-fu{margin-left:0}}
+`; document.head.appendChild(st);
+const _fold=spDemoAI; spDemoAI=function(text){return _fold(String(text||'').replace(/İ/g,'i').toLowerCase().replace(/ş/g,'s').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ö/g,'o').replace(/ç/g,'c'));};
+function kaCards(){const R=spRes(); const pend=SPS.orders.filter(o=>o.status==='gonderildi'); const od=spOverdue(); const low=SPS.prods.filter(p=>{const s=spStk(p,R);return s.short||s.crit;}); const skt=SPS.prods.filter(p=>p.lot_exp&&dLeft(p.lot_exp)<=14&&dLeft(p.lot_exp)>=0&&p.stock!=='yok'); const rf=SPS.rfqs.filter(r=>!SPS.quotes.some(q=>q.rfq_id===r.id));
+  const C=[]; if(pend.length) C.push(['truck','warn',pend.length+' sipariş onay bekliyor','Stoğa göre değerlendirip onaylayayım.','Bekleyen siparişlerimi stoğa göre değerlendir']);
+  if(od.length) C.push(['alert','bad',od.length+' alacağın vadesi geçti',tl0(od.reduce((a,c)=>a+nz(c.amt),0))+'. Hatırlatma mesajı hazırlayayım.','Vadesi geçen alacaklarım kimde, ne kadar?']);
+  if(low.length) C.push(['box','bad',low.length+' ürünün stoğu kritik','Ne kadar tedarik etmen gerektiğini hesaplayayım.','Hangi ürünlerin stoğu azalıyor, ne kadar sipariş vermeliyim?']);
+  if(skt.length) C.push(['clock','warn',skt.length+' ürünün SKT\'si yaklaşıyor','Kampanya önerisi hazırlayayım.','SKT yaklaşan ürünler için kampanya öner']);
+  if(rf.length) C.push(['doc','',rf.length+' teklif isteği cevap bekliyor','Katalog fiyatlarıyla doldurayım.','Cevap bekleyen teklif isteklerini katalog fiyatlarıyla hazırla']);
+  [['spark','','Bugün ne yapmalıyım?','Önceliklerini sıralayayım.','Bugün ne yapmalıyım?'],['doc','','Bu ay kâr zarar durumum','Gelir, gider, net ve KDV özeti.','Bu ayın muhasebe özeti'],['truck','','Bugünkü rotam kârlı mı?','Mesafe, maliyet ve net hesabı.','Bugünkü rotam kârlı mı?'],['tag','','Fiyatlarımı gözden geçir','Hangi ürüne zam yapılabilir?','Hangi ürünlerin fiyatını artırmalıyım?']].forEach(x=>{if(C.length<6) C.push(x);});
+  return C.slice(0,6);}
+const KA_CAPS=[['box','Ürün ve fiyat',['Tüm fiyatlara %8 zam yap','Yeni ürün ekle: Pirinç, 1 kg, 45 TL']],['clock','Stok ve SKT',['SKT\'si yaklaşanlara ne yapayım?','Toz şeker için 50 kg stok girişi yap']],['truck','Sipariş ve teklif',['Bekleyen siparişleri onayla','Teklif isteklerini katalogdan doldur']],['doc','Muhasebe ve müşteri',['Bu ayın muhasebe özeti','En çok sipariş veren müşterilerim kim?']]];
+spKais=function(){const C=SPS.chat;
+  const head=`<div class="ka-h"><span class="sp-av">${SPI('spark',20)}</span><div><b>Kais AI</b><small><i></i>${SPS.prods.length} ürün · ${SPS.orders.length} sipariş · ${(SPS.books.ledger||[]).length} muhasebe kaydı okunuyor</small></div>${C.length?`<button class="ka-new" data-sp="knew">${SPI('plus',15)} Yeni sohbet</button>`:''}</div>`;
+  let body;
+  if(C.length){const asked=new Set(C.filter(m=>m.r==='user').map(m=>m.t)); const lastAi=C[C.length-1].r==='ai'&&!SPS.ai; const fu=lastAi?spSuggest().filter(q=>!asked.has(q)).slice(0,3):[];
+    body=`<div id="sp-chat" class="sp-chat">${C.map((m,i)=>m.r==='user'?`<div class="sp-m u"><p>${esc(m.t)}</p>${m.f?`<em>${SPI('up',13)} ${esc(m.f)}</em>`:''}</div>`:`<div class="sp-m a"><span class="sp-av">${SPI('spark',16)}</span><div>${m.e?`<p class="neg" style="margin:0">${esc(m.t)}</p>`:`<div class="sp-ai-t">${spMd(m.t)}</div>`}${(m.acts||[]).map((a,j)=>spActCard(a,i,j)).join('')}${m.e?'':`<button class="ka-cpy" data-sp="kcopy" data-i="${i}">${SPI('doc',13)} Kopyala</button>`}</div></div>`).join('')}${SPS.ai?`<div class="sp-m a"><span class="sp-av">${SPI('spark',16)}</span><div><div class="sp-typ"><i></i><i></i><i></i></div></div></div>`:''}${fu.length?`<div class="ka-fu">${fu.map(q=>`<button data-sp="q" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}</div>`;}
+  else{const cards=kaCards(); body=`<div id="sp-chat" class="sp-chat"><div class="ka-hero"><h2>Bugün nasıl yardımcı olayım?</h2><p>Verilerini okuyorum. Sor, iste ya da fiş fotoğrafı gönder. Önemli işlerde son onay her zaman sende.</p></div>
+    <div class="ka-sec">Bugün senin için</div><div class="ka-cards">${cards.map(c=>`<button class="ka-cd ${c[1]}" data-sp="q" data-v="${esc(c[4])}"><span class="ka-ic">${SPI(c[0],18)}</span><div><b>${esc(c[2])}</b><span>${esc(c[3])}</span></div></button>`).join('')}</div>
+    <div class="ka-sec">Bunları da yapabilirim</div><div class="ka-caps">${KA_CAPS.map(c=>`<div class="ka-cp"><b>${SPI(c[0],16)}${c[1]}</b>${c[2].map(q=>`<button data-sp="q" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div>`).join('')}</div></div>`;}
+  return `<div class="ka-wrap">${head}${body}</div><div class="ka-in"><div class="ka-box">${SPS.pf?`<div class="ka-file">${SPI('doc',14)} ${esc(SPS.pf.name)} <button data-sp="pfx" aria-label="Kaldır">${SPI('x',14)}</button></div>`:''}<div class="ka-row"><label class="sp-att" aria-label="Belge ekle">${SPI('plus',22)}<input type="file" id="sp-ai-f" accept="image/*,application/pdf" hidden></label><textarea id="sp-ai-in" rows="1" placeholder="Kais'e yaz veya iste…">${esc(SPS.draft)}</textarea><button class="sp-send" data-sp="send" aria-label="Gönder" ${SPS.ai?'disabled':''}>${SPI('up',20)}</button></div></div><div class="ka-hint">Enter gönderir, Shift+Enter yeni satır. Fiş ya da fatura fotoğrafı ekleyebilirsin.</div></div>`;};
+const _ask16=spAsk; spAsk=function(t,att){const i=document.getElementById('sp-ai-in'); if(i){i.value='';i.style.height='auto';} return _ask16.call(this,t,att);};
+const _rnd16=spRender; spRender=function(k){const r=_rnd16.apply(this,arguments); try{if(SPS.tab==='kais'&&!(SPS.chat||[]).length) window.scrollTo(0,0);}catch(e){} return r;};
+SPA.knew=()=>{SPS.chat=[]; SPS.ai=false; SPS.pf=null; SPS.draft=''; spRender(); window.scrollTo(0,0);};
+SPA.kcopy=(el)=>{const m=SPS.chat[Number(el.dataset.i)]; if(!m) return; try{navigator.clipboard.writeText(m.t).then(()=>spToast('Kopyalandı.'),()=>spToast('Kopyalanamadı.',1));}catch(e){spToast('Kopyalanamadı.',1);}};
+document.addEventListener('input',e=>{const t=e.target; if(t&&t.id==='sp-ai-in'){t.style.height='auto'; t.style.height=Math.min(140,t.scrollHeight)+'px';}});
+(function(){const run=window.__spRun; Object.keys(SPA).forEach(k=>{const f=SPA[k]; if(typeof f!=='function'||f.__g) return; const g=function(el,e){const key=k+'|'+((el&&el.dataset&&(el.dataset.id||el.dataset.v||el.dataset.t))||''); if(run.has(key)) return; let r; try{r=f.call(this,el,e);}catch(x){spToast(x.message||'Bir hata oldu.',1); return;} if(r&&typeof r.then==='function'){run.add(key); return r.catch(x=>spToast(x&&x.message||'Bir hata oldu.',1)).finally(()=>run.delete(key));} return r;}; g.__g=1; g.__f=f; SPA[k]=g;});})();
+})();
+
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};if(/staff=1/.test(location.search)){MODE='staff';staffLoad();}else{MODE='sup';supView();}}else boot();
 </script></body></html>
