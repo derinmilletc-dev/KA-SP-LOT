@@ -1011,6 +1011,7 @@ small{font-size:max(11.5px,.83em)}
 div.now{font-size:11px}
 }
 @media(max-width:560px){.kz .kz-s{flex-wrap:wrap;overflow:visible;padding-bottom:0}.kz .kz-s button{flex:0 1 auto;max-width:100%;white-space:normal;text-align:left;line-height:1.3;padding-top:8px;padding-bottom:8px}}
+.oc-dir{display:inline-flex;background:#EEF2F8;border-radius:12px;padding:3px;gap:2px}.oc-dir button{border:0;background:transparent;font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);padding:8px 16px;border-radius:9px;min-height:36px;cursor:pointer}.oc-dir button[aria-pressed=true]{background:#fff;color:var(--cini);box-shadow:0 1px 4px rgba(20,40,80,.12)}
 .cap-sc{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}
 .cap-sc::-webkit-scrollbar{width:6px}.cap-sc::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}
 @media(min-width:1101px){.sx2-r{position:sticky;top:8px;max-height:calc(100vh - 90px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#B8C6DA transparent;overscroll-behavior:contain}.sx2-r::-webkit-scrollbar{width:6px}.sx2-r::-webkit-scrollbar-thumb{background:#B8C6DA;border-radius:6px}}
@@ -10967,6 +10968,100 @@ async function kmPush() {
 
 /* v97: alt menü etiketi sığsın */
 NAV.mudur.forEach((x) => { if (x[0] === 'rezerv') x[1] = 'Rezerv.'; });
+
+/* ===== v98: fiş ve fatura anında deftere yazılır (gider ya da gelir), tam tarih, Excel durumu ===== */
+const _fiso = (s) => {
+  s = String(s || '').trim(); let m;
+  if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s))) return m[0];
+  if ((m = /^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/.exec(s))) return m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+  if ((m = /^(\d{1,2})\s+(\S+)$/.exec(s))) {
+    const k = MON.findIndex((x) => x.toLocaleLowerCase('tr') === m[2].toLocaleLowerCase('tr')); if (k < 0) return '';
+    const ry = Number(REF_ISO.slice(0, 4)); let y = ry; const cand = y + '-' + String(k + 1).padStart(2, '0') + '-' + m[1].padStart(2, '0');
+    if (dayDiff(REF_ISO, cand) > 31) y = ry - 1; return y + '-' + String(k + 1).padStart(2, '0') + '-' + m[1].padStart(2, '0');
+  }
+  return '';
+};
+const _fvalid = (iso) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false; const d = new Date(iso + 'T00:00:00Z'); return !isNaN(d) && d.toISOString().slice(0, 10) === iso; };
+const _fdmy = (iso) => iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4);
+function ledSync() {
+  let ch = false;
+  RECEIPTS.forEach((f) => {
+    if (!f.iso) return; const rows = LEDGER.filter((r) => r.rc === f.id);
+    const live = f.status === 'musavirde' || f.status === 'onayli';
+    if (live) {
+      let r = rows.find((x) => x.lg) || null; rows.filter((x) => x !== r).forEach((x) => { LEDGER.splice(LEDGER.indexOf(x), 1); ch = true; });
+      if (!r && f.lg) { r = null; if (!rows.length) return; }
+      if (!r) { r = { id: 'g' + ++seq, lg: true }; LEDGER.push(r); f.lg = true; ch = true; }
+      const pend = f.status === 'musavirde'; const want = { dir: f.dir || 'gider', date: f.date, iso: f.iso, desc: f.seller, acc: f.cat, doc: docType(f), rate: Number(f.rate), total: Number(f.total), src: 'Kais', rc: f.id, pend };
+      if (!r.edited) Object.keys(want).forEach((k) => { if (r[k] !== want[k]) { r[k] = want[k]; ch = true; } }); else if (r.pend !== pend) { r.pend = pend; ch = true; }
+    } else if (rows.length) { rows.filter((x) => x.pend || x.lg).forEach((x) => { LEDGER.splice(LEDGER.indexOf(x), 1); ch = true; }); f.lg = false; }
+  });
+  if (ch) { try { pSched(); } catch (e) {} }
+  return ch;
+}
+{ const _r = render; render = function () { try { ledSync(); } catch (e) {} return _r.apply(this, arguments); }; }
+
+/* Excel: tam tarih ve dönem, durum sütunu */
+ledgerSheet = function (kind) {
+  const rows = [['Dönem', 'Tarih', 'Açıklama', 'Hesap', 'Belge', 'KDV %', 'KDV', 'Toplam', 'Kaynak', 'Durum']];
+  const list = LEDGER.filter((r) => dirOf(r) === kind);
+  list.forEach((r, i) => {
+    const n = i + 2; const per = r.iso && _fvalid(r.iso) ? MONTH_LONG[Number(r.iso.slice(5, 7)) - 1] + ' ' + r.iso.slice(0, 4) : lper(r); const dt = r.iso && _fvalid(r.iso) ? _fdmy(r.iso) : rDateY(r);
+    rows.push([per, dt, String(r.desc), String(r.acc), String(r.doc || ''), Number(r.rate), { f: 'H' + n + '-H' + n + '/(1+F' + n + '/100)', v: r2(kdv(r)) }, { n: Number(r.total) }, r.edited ? 'Düzenlendi' : String(r.src || ''), r.pend ? 'Muhasebeci teyidi bekliyor' : 'Teyitli']);
+  });
+  const e = list.length + 1;
+  rows.push(['', '', '', '', '', { b: 'Toplam' }].concat(list.length ? [{ bf: 'SUM(G2:G' + e + ')', v: r2(list.reduce((a, r) => a + kdv(r), 0)) }, { bf: 'SUM(H2:H' + e + ')', v: r2(list.reduce((a, r) => a + Number(r.total), 0)) }] : [{ n: 0 }, { n: 0 }]));
+  return rows;
+};
+
+/* okuma sonucu: tür (gider/gelir), tam tarih */
+const _rm98 = renderModal;
+renderModal = function () {
+  _rm98.apply(this, arguments); const m = S.modal; const root = $('#modal-root'); if (!m || !root || typeof root.innerHTML !== 'string') return;
+  if (m.type === 'upload' && m.step === 'result' && m.sample) {
+    const dir = m.sample.dir || 'gider'; let h = root.innerHTML; if (h.includes('data-a="ocdir"')) return;
+    const seg = `<dt>Tür</dt><dd><div class="oc-dir" role="group" aria-label="Tür"><button type="button" data-a="ocdir" data-v="gider" aria-pressed="${dir === 'gider'}">Gider</button><button type="button" data-a="ocdir" data-v="gelir" aria-pressed="${dir === 'gelir'}">Gelir</button></div></dd>`;
+    const k = h.indexOf('<dt><label for="mcat">'); if (k < 0) return; h = h.slice(0, k) + seg + h.slice(k);
+    if (dir === 'gelir') h = h.replace(/(<select id="mcat"[^>]*>)[\s\S]*?(<\/select>)/, (mm, a, b) => a + INCATS.map((c) => `<option ${c === m.cat ? 'selected' : ''}>${esc(c)}</option>`).join('') + b);
+    h = h.replace('Kaydedince fiş muhasebeciye anında bildirim olarak gider. Gider, muhasebeci onaylayınca tabloya yazılır.', 'Kaydedince hemen Gider ya da Gelir tablosuna ve Excel\'e yazılır. Muhasebeci teyit eder, hata görürse düzeltme ister.');
+    if (m.sample.dateGuess) h = h.replace('<dt><label for="oc-date">Tarih</label></dt>', '<dt><label for="oc-date">Tarih (okunamadı, kontrol et)</label></dt>');
+    root.innerHTML = h;
+  }
+  if (m.type === 'rev') { const f = RECEIPTS.find((x) => x.id === m.id); if (f && f.dir === 'gelir') root.innerHTML = root.innerHTML.replace(/(<select[^>]*data-ch="rcat"[^>]*>)[\s\S]*?(<\/select>)/, (mm, a, b) => a + INCATS.map((c) => `<option ${c === m.cat ? 'selected' : ''}>${esc(c)}</option>`).join('') + b); }
+};
+H.ocdir = (el) => { const m = S.modal; if (!m || !m.sample) return; const d = el.dataset.v === 'gelir' ? 'gelir' : 'gider'; if ((m.sample.dir || 'gider') === d) return; m.sample.dir = d; m.cat = d === 'gelir' ? INCATS[0] : 'Diğer'; renderModal(); };
+{
+  const _sv = H.savereceipt;
+  H.savereceipt = function () {
+    const m = S.modal; const s = m && m.sample; const n0 = RECEIPTS.length; const dir = (s && s.dir) || 'gider'; const typed = (document.getElementById('oc-date') || {}).value;
+    let iso = s && s.iso && !typed ? s.iso : _fiso(typed || (s && s.date)) || (s && s.iso) || '';
+    if (s && !_fvalid(iso)) { toast('Tarihi GG.AA.YYYY olarak yaz (örnek 14.11.2026).', 'warn'); return; }
+    if (s && Number(s.total) > 0 && !(Number(s.total) < 1e8)) { toast('Toplam tutarı kontrol et.', 'warn'); return; }
+    const r = _sv.apply(this, arguments);
+    if (RECEIPTS.length > n0) { const f = RECEIPTS[RECEIPTS.length - 1]; f.iso = iso || f.iso || _fiso(f.date); f.dir = dir; if (f.iso) { f.date = f.date; } try { ledSync(); render(); } catch (e) {} }
+    return r;
+  };
+}
+{
+  const _ai = H.aiact;
+  H.aiact = async function (el) {
+    const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; const isInv = a && a.st === 'open' && !['excel_indir', 'siparis_olustur', 'stok_guncelle', 'gorev_ver', 'vardiya_taslak', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'hafiza_kaydet'].includes(a.type);
+    const n0 = RECEIPTS.length; const gv = (k) => (document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-${k}`) || {}).value;
+    const iso = isInv ? _fiso(gv('d')) : ''; const dir = isInv && gv('k') === 'gelir' ? 'gelir' : 'gider';
+    if (isInv && iso && !_fvalid(iso)) { toast('Tarih geçersiz.', 'warn'); return; }
+    const r = await _ai.call(this, el);
+    if (isInv && RECEIPTS.length > n0) { const f = RECEIPTS[RECEIPTS.length - 1]; f.iso = iso; f.dir = dir; if (dir === 'gelir' && !INCATS.includes(f.cat)) f.cat = INCATS[0]; try { ledSync(); render(); } catch (e) {} }
+    return r;
+  };
+}
+{
+  const _c = aiActCard;
+  aiActCard = function (a, i, j) {
+    const h = _c(a, i, j); if (a.st !== 'open' || h.indexOf('Gider kaydı önerisi') < 0) return h;
+    const id = `aa-${i}-${j}-k`;
+    return h.replace('Gider kaydı önerisi', 'Gider ya da gelir kaydı').replace('<div class="row wrap"><div class="field grow"><label for="aa-' + i + '-' + j + '-r">', `<div class="field"><label for="${id}">Tür</label><select id="${id}"><option value="gider" selected>Gider (aldığım fatura)</option><option value="gelir">Gelir (kestiğim fatura)</option></select></div><div class="row wrap"><div class="field grow"><label for="aa-${i}-${j}-r">`);
+  };
+}
 </script>
 </body>
 </html>
