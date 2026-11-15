@@ -37,6 +37,28 @@ async function pushManagers(bid: string, title: string, body: string, tag: strin
   return n;
 }
 
+
+// İlan ve teslimat bildirimleri (SQL tarafında üretilir: market_outbox_pull)
+async function pushMarket(): Promise<number> {
+  if (!VPUB || !VPRIV) return 0;
+  const r = await sb.rpc('market_outbox_pull'); if (r.error) { if (/market_outbox_pull|function/i.test(r.error.message)) return 0; throw r.error; }
+  let n = 0;
+  const send = async (table: string, sub: any, msg: any) => {
+    try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(msg)); n++; }
+    catch (e) { const c = (e as any).statusCode; if (c === 404 || c === 410) await sb.from(table).delete().eq('endpoint', sub.endpoint); }
+  };
+  for (const m of (r.data || []) as any[]) {
+    const msg = { title: m.title, body: m.body, tag: m.tag, url: m.url || '/' };
+    if (m.to_user) { const s = await sb.from('supplier_push').select('endpoint,p256dh,auth').eq('user_id', m.to_user); for (const x of s.data || []) await send('supplier_push', x, msg); }
+    if (m.to_biz) {
+      const mm = await sb.from('members').select('app_uid').eq('business_id', m.to_biz).in('role', m.to_roles || ['patron', 'mudur']);
+      const ids = (mm.data || []).map((x: any) => x.app_uid).filter(Boolean); if (!ids.length) continue;
+      const s = await sb.from('push_subs').select('endpoint,p256dh,auth').eq('business_id', m.to_biz).in('app_uid', ids); for (const x of s.data || []) await send('push_subs', x, msg);
+    }
+  }
+  return n;
+}
+
 // Gönderildi bayraklarını uygulamanın verisine yaz (sürüm kontrollü; çakışırsa mail_log zaten tekrarı engeller).
 async function flag(bid: string, marks: { id: string; f: 'cs' | 'rs' }[]) {
   for (let i = 0; i < 3; i++) {
@@ -83,5 +105,6 @@ Deno.serve(async (req) => {
       if (d && (await claim(bid, d.key, 'daily'))) out.pushes += await pushManagers(bid, d.title, d.body, d.key);
     } catch (e) { out.errors.push(bid + ': ' + String((e as Error).message)); }
   }
+  try { out.pushes += await pushMarket(); } catch (e) { out.errors.push('market: ' + String((e as Error).message)); }
   return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json' } });
 });
