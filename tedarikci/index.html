@@ -95,7 +95,8 @@ body.sp main{max-width:640px;margin:0 auto;padding:0 0 96px}
 .sp-chips button,.sp-chips2 button{flex:none;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:500}.sp-chips .on,.sp-chips2 .on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .sp-tools{display:flex;gap:8px;margin:6px 0 10px}.sp-tools button{display:inline-flex;gap:6px;align-items:center;background:transparent;color:var(--acc);padding:6px 4px;font-size:14px}
 .sp-pc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:10px}.sp-pc.off{opacity:.55}
-.sp-ph{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;background:var(--bg2,#eef2f7);display:inline-block;margin:0 8px 8px 0;vertical-align:top}.sp-ph img{width:100%;height:100%;object-fit:cover;display:block}.sp-ph button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;padding:0}.sp-ph.add{border:1.5px dashed var(--mut);background:transparent;color:var(--mut);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;cursor:pointer}.sp-th+div{flex:1}.sp-th{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none}
+.sp-ph{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;background:var(--bg2,#eef2f7);display:inline-block;margin:0 8px 8px 0;vertical-align:top}.sp-ph img{width:100%;height:100%;object-fit:cover;display:block}.sp-ph button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;padding:0}.sp-ph.add{border:1.5px dashed var(--mut);background:transparent;color:var(--mut);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;cursor:pointer}.sp-ec{margin-top:10px;border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:12px;padding:10px 12px;font-size:14px}.sp-ec.ok{border-left-color:#1f7a4d;background:#f1f8f4}.sp-ec.warn{border-left-color:#b7791f;background:#fdf8ec}.sp-ec.bad{border-left-color:#b3261e;background:#fdf1f0}.sp-ech{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}.sp-ech span{color:var(--mut);font-size:13px}.sp-ecl{display:flex;justify-content:space-between;gap:8px;padding:2px 0}.sp-ecl.tot{border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:700}.sp-ecn{margin:6px 0 0;font-size:13px;color:var(--mut)}.sp-ecn.bad{color:#b3261e}.sp-ecn.ok{color:#1f7a4d}.sp-rt{border-left:4px solid #164169}.sp-rs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}.sp-rs i{font-style:normal;font-size:13px;background:#eef2f7;border-radius:999px;padding:4px 10px}.sp-rs i+i:before{content:'→ ';color:var(--mut)}
+.sp-th+div{flex:1}.sp-th{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none}
 .sp-pt{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.sp-pt>div:first-child{min-width:0}.sp-pt b{font-size:16px}.sp-pt>div>span{display:block;font-size:13px;color:var(--mut)}
 .sp-pr{text-align:right;flex:none}.sp-pr b{font:700 19px 'Bricolage Grotesque',system-ui,sans-serif;display:block}.sp-pr s{font-size:12.5px;color:var(--mut)}
 .sp-bg{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
@@ -159,7 +160,8 @@ function demoSb(){
   const d=(n)=>new Date(Date.now()-n*864e5).toISOString(); const dt=(n)=>new Date(Date.now()+n*864e5).toISOString().slice(0,10); let seq=100;
   const P=(name,cat,unit,price,extra)=>Object.assign({id:'p'+(++seq),supplier_id:'s1',name,category:cat,unit,price,vat:10,min_qty:1,stock:'var',tiers:[],promo_pct:0,active:true,created_at:d(seq%9),updated_at:d(2)},extra||{});
   const T={
-    businesses:[{id:'b1',name:'Çınar Kafe (deneme)'}],
+    businesses:[{id:'b1',name:'Çınar Kafe (deneme)',lat:41.062,lng:29.01},{id:'b2',name:'Lale Catering (deneme)',lat:41.085,lng:29.05}],
+    suppliers:[{id:'s1',business_id:'b1',user_id:'demo',name:'Anadolu Un (deneme)',created_at:d(30)},{id:'s2',business_id:'b2',user_id:'demo',name:'Anadolu Un (deneme)',src_id:'s1',created_at:d(10)}],
     supplier_books:[{supplier_id:'s1',data:{seq:20,notes:[],ledger:[
       {id:'l1',type:'gelir',date:dt(-1).slice(0,8)+'03',desc:'Peşin satış',party:'Çınar Kafe',cat:'Satış',amt:8400,vat:10,doc:'var'},
       {id:'l2',type:'gelir',date:dt(-1).slice(0,8)+'09',desc:'Toptan satış',party:'Lale Catering',cat:'Satış',amt:5200,vat:10,doc:'var'},
@@ -167,7 +169,7 @@ function demoSb(){
       {id:'l4',type:'gider',date:dt(-1).slice(0,8)+'08',desc:'Akaryakıt',party:'Opet',cat:'Akaryakıt',amt:2300,vat:20,doc:'eksik'}],
       cari:[{id:'c1',kind:'alacak',who:'Lale Catering',amt:5200,due:dt(-3),note:'Aylık teslim',paid:false},{id:'c2',kind:'borc',who:'Söke Değirmen',amt:9800,due:dt(6),note:'',paid:false}],
       slog:[{id:'s1',pid:'p101',date:d(3),type:'cikis',qty:45,who:'Çınar Kafe'},{id:'s2',pid:'p101',date:d(10),type:'cikis',qty:60,who:'Lale Catering'},{id:'s3',pid:'p101',date:d(20),type:'cikis',qty:50,who:'Çınar Kafe'},{id:'s4',pid:'p102',date:d(2),type:'cikis',qty:90,who:'Çınar Kafe'},{id:'s5',pid:'p102',date:d(12),type:'cikis',qty:100,who:'Lale Catering'},{id:'s6',pid:'p103',date:d(4),type:'cikis',qty:20,who:'Çınar Kafe'},{id:'s7',pid:'p104',date:d(6),type:'cikis',qty:25,who:'Lale Catering'},{id:'s8',pid:'p101',date:d(25),type:'giris',qty:200,who:'Söke Değirmen'}]}}],
-    supplier_profiles:[{supplier_id:'s1',phone:'0532 000 00 00',hours:{'1':{o:'08:00',c:'18:00'},'2':{o:'08:00',c:'18:00'}},delivery_days:[],radius_km:25}],
+    supplier_profiles:[{supplier_id:'s1',lat:41.0,lng:28.95,phone:'0532 000 00 00',hours:{'1':{o:'08:00',c:'18:00'},'2':{o:'08:00',c:'18:00'}},delivery_days:[],radius_km:25}],
     supplier_products:[
       P('Un (tip 550)','Un ve tahıl','kg',28,{qty:120,min_stock:50,cost:22,brand:'Söke',tiers:[{q:50,p:5},{q:200,p:8}],shelf_days:365,lot_exp:dt(140),updated_at:d(45)}),
       P('Süt (tam yağlı)','Süt ve süt ürünleri','L',32,{qty:60,min_stock:20,cost:26,brand:'Pınar',shelf_days:7,lot_exp:dt(5),promo_pct:10,promo_until:dt(4)}),
@@ -176,13 +178,13 @@ function demoSb(){
       P('Çiğ badem','Kuruyemiş','kg',520,{qty:0,min_stock:5,cost:430,stock:'yok'})],
     rfqs:[{id:'r1',business_id:'b1',status:'acik',created_at:d(1),lines:[{name:'Un (tip 550)',qty:50,unit:'kg'},{name:'Süt (tam yağlı)',qty:40,unit:'L'},{name:'Tereyağı',qty:10,unit:'kg'}]},{id:'r2',business_id:'b1',status:'acik',created_at:d(3),lines:[{name:'Toz şeker',qty:25,unit:'kg'},{name:'Kakao',qty:5,unit:'kg'}]}],
     quotes:[{id:'q1',rfq_id:'r2',supplier_id:'s1',prices:{0:59.5}}],
-    orders:[{id:'o1',supplier_id:'s1',business_id:'b1',status:'gonderildi',total:3280,created_at:d(2),lines:[{name:'Un (tip 550)',qty:40,unit:'kg',price:28},{name:'Tereyağı',qty:8,unit:'kg',price:270}]},{id:'o2',supplier_id:'s1',business_id:'b1',status:'onaylandi',total:1240,created_at:d(9),lines:[{name:'Toz şeker',qty:20,unit:'kg',price:62}]}]
+    orders:[{id:'o1',supplier_id:'s1',business_id:'b1',status:'gonderildi',total:3280,created_at:d(2),lines:[{name:'Un (tip 550)',qty:40,unit:'kg',price:28},{name:'Tereyağı',qty:8,unit:'kg',price:270}]},{id:'o2',supplier_id:'s1',business_id:'b1',status:'onaylandi',total:1240,created_at:d(9),lines:[{name:'Toz şeker',qty:20,unit:'kg',price:62}]},{id:'o3',supplier_id:'s2',business_id:'b2',status:'gonderildi',total:1860,created_at:d(1),lines:[{name:'Süt (tam yağlı)',qty:30,unit:'L',price:32},{name:'Un (tip 550)',qty:30,unit:'kg',price:28}]}]
   };
   const from=(t)=>{const st={op:'select',f:[],pl:null,ord:null,lim:null,cf:null};
-    const q={select:()=>q,eq:(c,v)=>{st.f.push([c,v]);return q;},order:(c,o)=>{st.ord=[c,o&&o.ascending===false?-1:1];return q;},limit:(n)=>{st.lim=n;return q;},
+    const q={select:()=>q,eq:(c,v)=>{st.f.push([c,v]);return q;},in:(c,v)=>{st.f.push([c,v,'in']);return q;},order:(c,o)=>{st.ord=[c,o&&o.ascending===false?-1:1];return q;},limit:(n)=>{st.lim=n;return q;},
       insert:(r)=>{st.op='insert';st.pl=r;return q;},update:(r)=>{st.op='update';st.pl=r;return q;},upsert:(r,o)=>{st.op='upsert';st.pl=r;st.cf=o&&o.onConflict;return q;},delete:()=>{st.op='delete';return q;},
       then:(ok,no)=>Promise.resolve(run()).then(ok,no)};
-    const hit=(r)=>st.f.every(([c,v])=>String(r[c])===String(v));
+    const hit=(r)=>st.f.every(([c,v,m])=>m==='in'?v.map(String).includes(String(r[c])):String(r[c])===String(v));
     const run=()=>{const arr=T[t]=T[t]||[];
       if(st.op==='select'){let r=arr.filter(hit); if(st.ord) r=r.slice().sort((a,b)=>(a[st.ord[0]]>b[st.ord[0]]?1:-1)*st.ord[1]); if(st.lim) r=r.slice(0,st.lim); return {data:JSON.parse(JSON.stringify(r)),error:null};}
       if(st.op==='insert'){(Array.isArray(st.pl)?st.pl:[st.pl]).forEach(r=>arr.push(Object.assign({id:'x'+(++seq),created_at:new Date().toISOString(),active:true},r)));return {error:null};}
@@ -347,14 +349,15 @@ function sktInfo(p){const d=dLeft(p.lot_exp); if(d==null) return p.shelf_days?['
 function spDone(){const f=SPS.prof||{}; const h=Object.values(f.hours||{}).some(x=>x&&x.o);
   return [['Telefon',!!f.phone,'profil'],['Adres ve konum',!!(f.address&&f.lat!=null),'profil'],['Çalışma saatleri',h,'profil'],['Teslimat günleri ve koşulları',!!((f.delivery_days||[]).length&&f.cutoff),'profil'],['En az 5 ürün',SPS.prods.length>=5,'urun']];}
 async function spLoad(){
+  const su=await sb.from('suppliers').select('*').eq('user_id',ME.id).order('created_at'); SPS.sups=(su.data&&su.data.length)?su.data:[SUP]; const ids=SPS.sups.map(x=>x.id), bids=[...new Set(SPS.sups.map(x=>x.business_id))];
   const [bz,pf,pr,rf,qt,od]=await Promise.all([
-    sb.from('businesses').select('*').eq('id',SUP.business_id).limit(1),
+    sb.from('businesses').select('*').in('id',bids),
     sb.from('supplier_profiles').select('*').eq('supplier_id',SUP.id).limit(1),
     sb.from('supplier_products').select('*').eq('supplier_id',SUP.id).order('created_at',{ascending:false}),
-    sb.from('rfqs').select('*').eq('business_id',SUP.business_id).eq('status','acik').order('created_at',{ascending:false}),
-    sb.from('quotes').select('*').eq('supplier_id',SUP.id),
-    sb.from('orders').select('*').eq('supplier_id',SUP.id).order('created_at',{ascending:false})]);
-  SPS.biz=(bz.data&&bz.data[0])||{name:'İşletme'}; SPS.rfqs=rf.data||[]; SPS.quotes=qt.data||[]; SPS.orders=od.data||[];
+    sb.from('rfqs').select('*').in('business_id',bids).eq('status','acik').order('created_at',{ascending:false}),
+    sb.from('quotes').select('*').in('supplier_id',ids),
+    sb.from('orders').select('*').in('supplier_id',ids).order('created_at',{ascending:false})]);
+  SPS.bizs={}; (bz.data||[]).forEach(b=>{SPS.bizs[b.id]=b;}); SPS.biz=SPS.bizs[SUP.business_id]||(bz.data&&bz.data[0])||{name:'İşletme'}; SPS.rfqs=rf.data||[]; SPS.quotes=qt.data||[]; SPS.orders=od.data||[];
   SPS.setup=!!(pr.error||pf.error); SPS.prods=pr.data||[]; SPS.prof=(pf.data&&pf.data[0])||{};
   SPS.hrs=JSON.parse(JSON.stringify(SPS.prof.hours||{})); SPS.dd=(SPS.prof.delivery_days||[]).map(String);
 }
@@ -364,7 +367,7 @@ function spRender(keep){
   const open=SPS.rfqs.length, pend=SPS.orders.filter(o=>o.status==='gonderildi').length;
   const nav=[['ozet','home','Özet',0],['urun','box','Ürünler',0],['teklif','doc','Teklifler',open],['siparis','truck','Siparişler',pend],['profil','pin','Profil',0]];
   const body={ozet:spOzet,urun:spUrun,teklif:spTeklif,siparis:spSiparis,profil:spProfil}[t]();
-  app.innerHTML=`<div class="sp-top"><div><b>${esc(SUP.name)}</b><span>${esc(SPS.biz.name)} için çalışıyorsun</span></div><button class="sp-out" id="out">Çıkış</button></div>
+  app.innerHTML=`<div class="sp-top"><div><b>${esc(SUP.name)}</b><span>${spBizLabel()}</span></div><button class="sp-out" id="out">Çıkış</button></div>
   ${DEMO?'<div class="sp-demo">Deneme görünümü. Örnek veriler, kayıtlar bu sayfa açıkken durur.</div>':''}
   ${SPS.setup?'<div class="sp-warn">Katalog kurulumu eksik. İşletme sahibinin kaispilot_tedarikci2.sql dosyasını çalıştırması gerekiyor.</div>':''}
   <div class="sp-body">${body}</div>
@@ -390,11 +393,12 @@ function spOzet(){
   if(!(SPS.prof.lat!=null)) tips.push(['pin','info','Konumunu ekle. İşletmeler yakındaki tedarikçileri önce görür.','Konum ekle','profil']);
   if(!Object.values(SPS.prof.hours||{}).some(x=>x&&x.o)) tips.push(['clock','info','Çalışma saatlerini yaz. İşletmeler ne zaman arayabileceğini bilsin.','Saatleri yaz','profil']);
   if(old.length) tips.push(['tag','info',old.length+' ürünün fiyatı 30 günden uzun süredir güncellenmedi.','Toplu fiyat güncelle','bulk']);
+  if(!spVehOK(spVeh())) tips.push(['truck','info','Araç ve yakıt bilgini yaz. Siparişin teslimata değip değmediğini hesaplayayım.','Araç bilgisi','profil']);
   if(SPS.prods.length<5) tips.push(['box','info','Katalogda '+SPS.prods.length+' ürün var. Ürün ekledikçe teklifler kendiliğinden dolar.','Ürün ekle','pnew']);
   return `<div class="sp-hero"><div class="sp-ring" style="--p:${pct}"><b>%${pct}</b></div><div><h1>${pct>=100?'Profilin hazır':'Profilini tamamla'}</h1><p>${pct>=100?'İşletmeler seni konumuna, saatlerine ve ürünlerine göre bulabilir.':'Eksikleri tamamladıkça işletmeler seni daha kolay bulur.'}</p></div></div>
   <div class="sp-chk">${dn.map(d=>`<button data-sp="go" data-v="${d[2]}" class="${d[1]?'ok':''}"><i>${d[1]?SPI('check',14):''}</i>${d[0]}</button>`).join('')}</div>
   <div class="sp-kpi"><div><b>${act.length}</b><span>aktif ürün</span></div><div><b>${SPS.rfqs.length}</b><span>açık teklif isteği</span></div><div><b>${pend.length}</b><span>bekleyen sipariş</span></div></div>
-  <h2 class="sp-h">Önerilenler</h2>${tips.length?tips.map(t=>`<div class="sp-tip ${t[1]}"><span class="sp-ti">${SPI(t[0],18)}</span><p>${esc(t[2])}</p><button data-sp="go" data-v="${t[4]}">${esc(t[3])}</button></div>`).join(''):`<div class="sp-empty">${SPI('check',28)}<b>Her şey yolunda</b><span>Şu an yapılacak bir şey yok.</span></div>`}`;
+  ${spRouteHTML()}<h2 class="sp-h">Önerilenler</h2>${tips.length?tips.map(t=>`<div class="sp-tip ${t[1]}"><span class="sp-ti">${SPI(t[0],18)}</span><p>${esc(t[2])}</p><button data-sp="go" data-v="${t[4]}">${esc(t[3])}</button></div>`).join(''):`<div class="sp-empty">${SPI('check',28)}<b>Her şey yolunda</b><span>Şu an yapılacak bir şey yok.</span></div>`}`;
 }
 /* ---- ÜRÜNLER ---- */
 function spUrun(){
@@ -442,7 +446,7 @@ function spProfil(){
   <div class="sp-two2"><div><label>Sipariş kesim saati</label><input type="time" id="pf-cut" value="${esc(f.cutoff||'15:00')}"></div><div><label>Teslim süresi (gün)</label><input id="pf-lead" inputmode="decimal" value="${f.lead_days!=null?f.lead_days:1}"></div></div>
   <div class="sp-two2"><div><label>Asgari sipariş (₺)</label><input id="pf-min" inputmode="decimal" value="${f.min_order||''}" placeholder="0"></div><div><label>Teslimat ücreti (₺)</label><input id="pf-fee" inputmode="decimal" value="${f.delivery_fee||''}" placeholder="0"></div></div>
   <div class="sp-two2"><div><label>Ücretsiz teslimat üstü (₺)</label><input id="pf-free" inputmode="decimal" value="${f.free_over||''}" placeholder="Yok"></div><div><label>Ödeme</label><select id="pf-pay">${[[0,'Peşin'],[7,'7 gün vade'],[15,'15 gün vade'],[30,'30 gün vade']].map(o=>`<option value="${o[0]}" ${Number(f.pay_terms||0)===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div></div></div>
-  ${spPushCard()}<p class="err" id="msg" style="padding:0 4px"></p><button class="sp-pri sp-wide" data-sp="psave2">Profili kaydet</button>${spRatingCard()}`;
+  ${spVehCard()}${spPushCard()}<p class="err" id="msg" style="padding:0 4px"></p><button class="sp-pri sp-wide" data-sp="psave2">Profili kaydet</button>${spRatingCard()}`;
 }
 /* ---- SHEET ---- */
 function spSheet(){const s=SPS.sheet; let t='',b=''; 
@@ -510,7 +514,7 @@ const SPA={
   fill:(el)=>{const i=el.closest('.sp-ql').querySelector('[data-qi]'); i.value=el.dataset.v; spQTot(el.closest('[data-r]'));},
   fillall:(el)=>{const c=el.closest('[data-r]'); c.querySelectorAll('.sp-ql').forEach(l=>{const b=l.querySelector('.sp-fill'),i=l.querySelector('[data-qi]'); if(b&&!nz(i.value)) i.value=b.dataset.v;}); spQTot(c);},
   qsend:async(el)=>{const c=el.closest('[data-r]'),prices={}; c.querySelectorAll('[data-qi]').forEach(i=>{const v=nz(i.value); if(v>0) prices[i.dataset.i]=v;}); const e=c.querySelector('[data-e]'); e.className='err'; if(!Object.keys(prices).length){e.textContent='En az bir fiyat yaz.';return;}
-    const r=await sb.from('quotes').upsert({rfq_id:c.dataset.r,supplier_id:SUP.id,prices},{onConflict:'rfq_id,supplier_id'}); if(spDb(r)){e.textContent=spDb(r);return;} const q=SPS.quotes.find(x=>x.rfq_id===c.dataset.r); if(q) q.prices=prices; else SPS.quotes.push({rfq_id:c.dataset.r,supplier_id:SUP.id,prices}); spToast('Teklif gönderildi.'); spRender(true);},
+    const r=await sb.from('quotes').upsert({rfq_id:c.dataset.r,supplier_id:supIdFor((SPS.rfqs.find(x=>x.id===c.dataset.r)||{}).business_id),prices},{onConflict:'rfq_id,supplier_id'}); if(spDb(r)){e.textContent=spDb(r);return;} const q=SPS.quotes.find(x=>x.rfq_id===c.dataset.r); if(q) q.prices=prices; else SPS.quotes.push({rfq_id:c.dataset.r,supplier_id:SUP.id,prices}); spToast('Teklif gönderildi.'); spRender(true);},
   ook:async(el)=>{const r=await sb.from('orders').update({status:'onaylandi'}).eq('id',el.dataset.id); if(spDb(r)) return spToast(spDb(r),1); const o=SPS.orders.find(x=>x.id===el.dataset.id); if(o) o.status='onaylandi'; spToast('Sipariş onaylandı.'); spRender(true);},
   geo:(el)=>{ if(!navigator.geolocation) return spToast('Bu cihaz konumu desteklemiyor.',1); const t=document.getElementById('pf-gt'); if(t) t.textContent='Konum alınıyor…';
     navigator.geolocation.getCurrentPosition(p=>{SPS.geo={lat:Math.round(p.coords.latitude*1e6)/1e6,lng:Math.round(p.coords.longitude*1e6)/1e6}; if(t) t.innerHTML='Konum alındı (yaklaşık '+Math.round(p.coords.accuracy)+' m). Kaydetmeyi unutma.';},
@@ -522,7 +526,7 @@ const SPA={
     const row={supplier_id:SUP.id,phone:$v('pf-phone')||null,about:$v('pf-about')||null,address:$v('pf-addr')||null,city:$v('pf-city')||null,district:$v('pf-dist')||null,lat:g.lat,lng:g.lng,radius_km:nz($v('pf-rad'))||25,hours,delivery_days:SPS.dd.map(Number),cutoff:$v('pf-cut')||null,lead_days:nz($v('pf-lead')),min_order:nz($v('pf-min')),delivery_fee:nz($v('pf-fee')),free_over:nz($v('pf-free')),pay_terms:Number($v('pf-pay')||0),updated_at:new Date().toISOString()};
     SPS.busy=true; el.disabled=true; const r=await sb.from('supplier_profiles').upsert(row,{onConflict:'supplier_id'}); SPS.busy=false; el.disabled=false;
     if(spDb(r)) return spErr(/relation|schema cache/i.test(spDb(r))?'Profil kurulumu eksik. İşletme sahibi SQL dosyasını çalıştırmalı.':spDb(r));
-    SPS.prof=row; SPS.geo=null; spToast('Profil kaydedildi.'); spRender(true);}
+    SPS.prof=Object.assign({},SPS.prof,row); SPS.geo=null; spToast('Profil kaydedildi.'); spRender(true);}
 };
 async function spReloadProds(){const r=await sb.from('supplier_products').select('*').eq('supplier_id',SUP.id).order('created_at',{ascending:false}); if(!r.error) SPS.prods=r.data||[]; spRender(true);}
 if(!window.__spOn){window.__spOn=1;
@@ -557,7 +561,7 @@ function spRender(keep){
   const open=SPS.rfqs.filter(r=>!SPS.quotes.some(q=>q.rfq_id===r.id)).length, pend=SPS.orders.filter(o=>o.status==='gonderildi').length;
   const nav=[['ozet','home','Özet',0],['urun','box','Ürünler',0],['is','truck','Siparişler',open+pend],['muh','doc','Muhasebe',SPS.books.ledger.filter(e=>e.doc==='eksik').length],['kais','spark','Kais AI',0]];
   const body={ozet:spOzet,urun:spUrun,is:spIs,muh:spMuh,kais:spKais,profil:spProfil}[t]();
-  app.innerHTML=`<div class="sp-top"><div><b>${esc(SUP.name)}</b><span>Toptancı paneli · ${esc(SPS.biz.name)}</span></div><div class="sp-tr2"><button class="sp-ib ${t==='profil'?'on':''}" data-sp="tab" data-v="profil" aria-label="Firma profili">${SPI('pin',20)}</button><button class="sp-out" id="out">Çıkış</button></div></div>
+  app.innerHTML=`<div class="sp-top"><div><b>${esc(SUP.name)}</b><span>Toptancı paneli · ${(SPS.sups||[]).length>1?(SPS.sups.length+' işletme'):esc(SPS.biz.name)}</span></div><div class="sp-tr2"><button class="sp-ib ${t==='profil'?'on':''}" data-sp="tab" data-v="profil" aria-label="Firma profili">${SPI('pin',20)}</button><button class="sp-out" id="out">Çıkış</button></div></div>
   ${DEMO?'<div class="sp-demo">Deneme görünümü. Örnek veriler, kayıtlar bu sayfa açıkken durur.</div>':''}
   ${SPS.setup?'<div class="sp-warn">Kurulum eksik. İşletme sahibinin kaispilot_tedarikci2.sql ve kaispilot_toptanci.sql dosyalarını çalıştırması gerekiyor.</div>':''}
   <div class="sp-body${t==='kais'?' sp-chatb':''}">${body}</div>
@@ -620,7 +624,7 @@ function spMRapor(){
 function spCSV(all){const rows=[['Tarih','Tür','Açıklama','Taraf','Kategori','Tutar (KDV dahil)','KDV %','KDV tutarı','Belge']]; SPS.books.ledger.filter(e=>all||(e.date||'').slice(0,7)===SPS.mon).sort((a,b)=>a.date>b.date?1:-1).forEach(e=>rows.push([e.date,e.type==='gelir'?'Gelir':'Gider',e.desc||'',e.party||'',e.cat||'',String(e.amt).replace('.',','),e.vat,String(Math.round(vatOf(e.amt,e.vat)*100)/100).replace('.',','),e.doc==='eksik'?'Eksik':'Var']));
   const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(';')).join('\r\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='muhasebe-'+(all?'tumu':SPS.mon)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); spToast('Dosya indiriliyor.');}
 /* ---- KAIS AI ---- */
-const SP_Q=['Bugün ne yapmalıyım?','SKT\'si yaklaşanlara ne yapayım?','Bekleyen siparişleri onayla','Tüm fiyatlara %8 zam yap','Bu ayın muhasebe özeti'];
+const SP_Q=['Bugün ne yapmalıyım?','Bugünkü rotam kârlı mı?','SKT\'si yaklaşanlara ne yapayım?','Bekleyen siparişleri onayla','Tüm fiyatlara %8 zam yap','Bu ayın muhasebe özeti'];
 function spKais(){
   const C=SPS.chat;
   const msgs=C.length?C.map((m,i)=>m.r==='user'?`<div class="sp-m u"><p>${esc(m.t)}</p>${m.f?`<em>${SPI('up',13)} ${esc(m.f)}</em>`:''}</div>`:`<div class="sp-m a"><span class="sp-av">${SPI('spark',16)}</span><div>${m.e?`<p class="neg">${esc(m.t)}</p>`:`<div class="sp-ai-t">${spMd(m.t)}</div>`}${(m.acts||[]).map((a,j)=>spActCard(a,i,j)).join('')}</div></div>`).join(''):`<div class="sp-hello"><span class="sp-av big">${SPI('spark',24)}</span><h2>Merhaba, ben Kais</h2><p>Ürün ekleme, SKT takibi, fiyat ve indirim, teklif ve siparişler, muhasebe. Yaz ya da fiş fotoğrafı gönder.</p><div class="sp-qs">${SP_Q.map(q=>`<button data-sp="q" data-v="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
@@ -649,7 +653,8 @@ function spCtx(){
   const t=isoToday(); const wd=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][new Date().getDay()]; const s=spStats(SPS.mon); const f=SPS.prof||{};
   return {bugun:t+' '+wd,toptanci:SUP.name,isletme:SPS.biz.name,
     urunler:SPS.prods.slice(0,150).map(p=>({id:p.id,ad:p.name,birim:p.unit,fiyat:p.price,kategori:p.category,marka:p.brand,kdv:p.vat,stok:p.stock,min_miktar:p.min_qty,aktif:p.active!==false,skt:p.lot_exp||null,skt_kalan_gun:p.lot_exp?dLeft(p.lot_exp):null,raf_omru:p.shelf_days||null,kampanya:unitLeft(p)?{yuzde:p.promo_pct,bitis:p.promo_until}:null,kademeler:p.tiers||[],fiyat_guncelleme_gun:p.updated_at?Math.round((Date.now()-Date.parse(p.updated_at))/864e5):null})),
-    siparisler:SPS.orders.slice(0,30).map(o=>({id:o.id,durum:o.status,toplam:o.total,tarih:(o.created_at||'').slice(0,10),kalemler:o.lines})),
+    teslimat:(()=>{const v=spVeh(); const r=spRoute(); return {arac:v.name||null,km_maliyeti:spVehOK(v)?Math.round(spKmCost(v)*100)/100:null,minimum_teslimat:v.minD||null,rota:r?{durak:r.stops.map(x=>x.b.name),km:r.km,maliyet:Math.round(r.cost),tahmini_net:Math.round(r.net),ayri_gitmeye_gore_tasarruf:Math.round(r.save)}:null};})(),
+    siparisler:SPS.orders.slice(0,30).map(o=>({id:o.id,isletme:bizName(o.business_id),teslimat:(()=>{const e=spOrderEcon(o); return e?{km:e.d.km,maliyet:Math.round(e.d.cost),net:e.all?null:Math.round(e.net),durum:e.lvl}:null;})(),durum:o.status,toplam:o.total,tarih:(o.created_at||'').slice(0,10),kalemler:o.lines})),
     teklif_istekleri:SPS.rfqs.map(r=>({id:r.id,tarih:(r.created_at||'').slice(0,10),kalemler:r.lines,teklif_verildi:SPS.quotes.some(q=>q.rfq_id===r.id)})),
     profil:{telefon:f.phone,adres:f.address,konum_var:f.lat!=null,saat_var:Object.values(f.hours||{}).some(x=>x&&x.o),teslimat_gunleri:f.delivery_days,kesim:f.cutoff,teslim_gun:f.lead_days,asgari:f.min_order,vade:f.pay_terms},
     muhasebe:{ay:SPS.mon,gelir:s.g,gider:s.x,net:s.net,kdv_tahmini:s.kdv,eksik_belge:s.miss,gider_kategorileri:s.cats.slice(0,6),son_kayitlar:SPS.books.ledger.slice(-15).map(e=>({tarih:e.date,tur:e.type,aciklama:e.desc,tutar:e.amt,kdv:e.vat,belge:e.doc})),cari:SPS.books.cari.filter(c=>!c.paid).slice(0,30).map(c=>({id:c.id,tur:c.kind,kisi:c.who,tutar:c.amt,vade:c.due}))},
@@ -666,6 +671,7 @@ function spFile(f){return new Promise((res,rej)=>{ if(!f) return rej(new Error('
 function spDemoAI(text){const t=nrm(text); const act=SPS.prods.filter(p=>p.lot_exp&&dLeft(p.lot_exp)<=14&&dLeft(p.lot_exp)>=0&&p.stock!=='yok');
   return new Promise(ok=>setTimeout(()=>{
     if(/skt/.test(t)) return ok({reply:act.length?act.map(p=>'- **'+p.name+'**: '+dLeft(p.lot_exp)+' gün kaldı').join('\n')+'\n\nİlk ürün için bir hafta süreli %15 kampanya öneriyorum:':'SKT\'si yakın ürün görünmüyor.',actions:act.length?[{type:'indirim_ayarla',args:{urun_id:act[0].id,kampanya_yuzde:15,kampanya_bitis:new Date(Date.now()+6*864e5).toISOString().slice(0,10)}}]:[]});
+    if(/rota|teslimat|degermi|karli|yol/.test(t)){const r=spRoute(); return ok({reply:r?'**Bugünkü rota:** '+r.stops.map(x=>x.b.name).join(' → ')+'\n- '+fmt1(r.km)+' km, rota maliyeti '+tl0(r.cost)+'\n- Tahmini net: '+tl0(r.net)+(r.save>1?'\n- Tek rotada götürerek yaklaşık '+tl0(r.save)+' tasarruf edersin.':''):'Rota için profilinde araç ve yakıt bilgisini gir.',actions:[]});}
     if(/bugun|yapil|ne yap/.test(t)) return ok({reply:'**Bugün için sıran:**\n- 1 siparişin onayını bekliyor, onayla.\n- 2 teklif isteği cevap bekliyor, katalogdan hazırlayabilirim.\n- Süt (tam yağlı) SKT\'si 5 gün sonra bitiyor, kampanya yapalım.\n- Adres ve konum bilgin eksik, profilinden ekle.',actions:[]});
     if(/zam|fiyat/.test(t)) return ok({reply:'Tüm ürünlerde %8 zam hazırladım. Onaylarsan uygulanır.',actions:[{type:'toplu_fiyat',args:{yuzde:8}}]});
     if(/siparis/.test(t)){const p=SPS.orders.filter(o=>o.status==='gonderildi'); return ok({reply:p.length?p.length+' sipariş onay bekliyor.':'Onay bekleyen sipariş yok.',actions:p.map(o=>({type:'siparis_onayla',args:{siparis_id:o.id}}))});}
@@ -687,7 +693,7 @@ async function spExec(a){const g=a.args||{}; const now=new Date().toISOString();
   case 'indirim_ayarla':{const p={updated_at:now}; if(g.kampanya_yuzde!=null)p.promo_pct=g.kampanya_yuzde; if(g.kampanya_bitis)p.promo_until=g.kampanya_bitis; if((g.kademeler||[]).length)p.tiers=g.kademeler.map(k=>({q:k.miktar,p:k.yuzde})); dbe(await sb.from('supplier_products').update(p).eq('id',g.urun_id)); await spReloadProds(); return 'İndirim ayarlandı';}
   case 'toplu_fiyat':{const L=SPS.prods.filter(p=>!g.kategori||p.category===g.kategori); if(!L.length) throw new Error('Bu kapsamda ürün yok.'); const rs=await Promise.all(L.map(p=>sb.from('supplier_products').update({price:Math.round(p.price*(1+g.yuzde/100)*100)/100,updated_at:now}).eq('id',p.id))); rs.forEach(dbe); await spReloadProds(); return L.length+' ürün güncellendi';}
   case 'siparis_onayla':{dbe(await sb.from('orders').update({status:'onaylandi'}).eq('id',g.siparis_id)); const o=SPS.orders.find(x=>x.id===g.siparis_id); if(o){o.status='onaylandi'; spOrderCari(o); spNotify(o,'onay');} return 'Sipariş onaylandı';}
-  case 'teklif_hazirla':{const prices={}; (g.fiyatlar||[]).forEach(f=>{if(f.fiyat>0)prices[f.sira]=f.fiyat;}); if(!Object.keys(prices).length) throw new Error('Fiyat yok.'); dbe(await sb.from('quotes').upsert({rfq_id:g.istek_id,supplier_id:SUP.id,prices},{onConflict:'rfq_id,supplier_id'})); const q=SPS.quotes.find(x=>x.rfq_id===g.istek_id); if(q) q.prices=prices; else SPS.quotes.push({rfq_id:g.istek_id,supplier_id:SUP.id,prices}); return 'Teklif gönderildi';}
+  case 'teklif_hazirla':{const prices={}; (g.fiyatlar||[]).forEach(f=>{if(f.fiyat>0)prices[f.sira]=f.fiyat;}); if(!Object.keys(prices).length) throw new Error('Fiyat yok.'); dbe(await sb.from('quotes').upsert({rfq_id:g.istek_id,supplier_id:supIdFor((SPS.rfqs.find(x=>x.id===g.istek_id)||{}).business_id),prices},{onConflict:'rfq_id,supplier_id'})); const q=SPS.quotes.find(x=>x.rfq_id===g.istek_id); if(q) q.prices=prices; else SPS.quotes.push({rfq_id:g.istek_id,supplier_id:SUP.id,prices}); return 'Teklif gönderildi';}
   case 'gider_kaydet':SPS.books.ledger.push({id:bid(),type:'gider',date:g.tarih||isoToday(),desc:g.aciklama||g.taraf||'Gider',party:g.taraf||'',cat:g.kategori||'Diğer',amt:Number(g.tutar)||0,vat:g.kdv_orani!=null?g.kdv_orani:10,doc:g.belge||'var'}); spSaveBooks(); return 'Deftere işlendi';
   case 'gelir_kaydet':SPS.books.ledger.push({id:bid(),type:'gelir',date:g.tarih||isoToday(),desc:g.aciklama||'Satış',party:g.taraf||'',cat:'Satış',amt:Number(g.tutar)||0,vat:g.kdv_orani!=null?g.kdv_orani:10,doc:'var'}); spSaveBooks(); return 'Deftere işlendi';
   case 'cari_ekle':SPS.books.cari.push({id:bid(),kind:g.tur,who:g.kisi,amt:Number(g.tutar)||0,due:g.vade||'',note:g.not||'',paid:false}); spSaveBooks(); return 'Cariye eklendi';
@@ -780,10 +786,10 @@ spSheet=function(){const s=SPS.sheet; if(s.t!=='mv') return _spSheet1(); const p
 /* ---- siparişler: stok kontrolü + teslim ---- */
 spSiparis=function(){
   if(!SPS.orders.length) return `<div class="sp-empty">${SPI('truck',30)}<b>Henüz sipariş yok</b><span>Teklifin kabul edilince siparişler burada görünür.</span></div>`;
-  return SPS.orders.map(o=>{const s=SP_OST[o.status]||[o.status,'mut']; const live=o.status==='gonderildi'||o.status==='onaylandi'; const R=spRes();
-    return `<div class="sp-card"><div class="sp-ch"><b>${tl(o.total)}</b><span class="sp-b ${s[1]}">${s[0]}</span></div><p class="sp-d">${esc(SPS.biz.name)} · ${new Date(o.created_at).toLocaleDateString('tr-TR')}</p>
+  return spRouteHTML()+SPS.orders.map(o=>{const s=SP_OST[o.status]||[o.status,'mut']; const live=o.status==='gonderildi'||o.status==='onaylandi'; const R=spRes();
+    return `<div class="sp-card"><div class="sp-ch"><b>${tl(o.total)}</b><span class="sp-b ${s[1]}">${s[0]}</span></div><p class="sp-d">${esc(bizName(o.business_id))} · ${new Date(o.created_at).toLocaleDateString('tr-TR')}</p>
     ${o.recv&&o.recv.short>0?`<div class="sp-tip warn"><p><b>Eksik teslim bildirildi:</b> ${tl(o.recv.short)} düşüldü. ${esc(o.recv.note||'')}</p></div>`:''}${o.lines.map(l=>{const p=lineMatch(l.name); let chip=''; if(live&&p){const st=spStk(p,R); chip=st.avail>=0?'<span class="sp-b ok">Stok yeterli</span>':'<span class="sp-b bad">'+fmt2(-st.avail)+' '+esc(l.unit)+' eksik</span>';} else if(live&&!p) chip='<span class="sp-b mut">Katalogda yok</span>'; return `<div class="sp-ol"><span>${esc(l.name)} ${chip}</span><span>${esc(l.qty)} ${esc(l.unit)} × ${tl(l.price)}</span></div>`;}).join('')}
-    ${o.status==='gonderildi'?`<button class="sp-pri" style="margin-top:10px" data-sp="ook" data-id="${o.id}">Siparişi onayla</button>`:''}${o.status==='onaylandi'?`<button class="sp-pri" style="margin-top:10px" data-sp="otes" data-id="${o.id}">Teslim edildi, stoktan düş</button>`:''}</div>`;}).join('');
+    ${live?spEconHTML(o):''}${o.status==='gonderildi'?`<button class="sp-pri" style="margin-top:10px" data-sp="ook" data-id="${o.id}">Siparişi onayla</button>`:''}${o.status==='onaylandi'?`<button class="sp-pri" style="margin-top:10px" data-sp="otes" data-id="${o.id}">Teslim edildi, stoktan düş</button>`:''}</div>`;}).join('');
 };
 /* ---- özet: stok uyarıları ---- */
 const _spOzet1=spOzet;
@@ -803,12 +809,57 @@ Object.assign(SPA,{
   mv:(el)=>{SPS.sheet={t:'mv',id:el.dataset.id,k:el.dataset.v};spRender(true);},
   mvgo:async(el)=>{const q=nz($v('mv-q')); const k=el.dataset.k; if(k!=='sayim'&&!(q>0)) return spErr('Miktarı yaz.'); if(k==='sayim'&&$v('mv-q')==='') return spErr('Sayım sonucunu yaz.'); try{await spMove(el.dataset.id,k,q,$v('mv-w'),$v('mv-n'));}catch(e){return spErr(e.message);} SPS.sheet=null; spRender(true); spToast('Stok güncellendi.');},
   otes:async(el)=>{const o=SPS.orders.find(x=>x.id===el.dataset.id); if(!o) return; if(!confirm('Teslim edildi olarak işaretlensin ve stoktan düşülsün mü?')) return; const r=await sb.from('orders').update({status:'teslim'}).eq('id',o.id); if(spDb(r)) return spToast(/check|policy|violates/i.test(spDb(r))?'Teslim durumu için kaispilot_toptanci.sql çalıştırılmalı.':spDb(r),1);
-    let n=0; for(const l of o.lines){const p=lineMatch(l.name); if(p){try{await spMove(p.id,'cikis',l.qty,SPS.biz.name,'Sipariş teslimi');n++;}catch(e){}}} o.status='teslim'; spNotify(o,'teslim'); spToast('Teslim edildi. '+n+' üründe stok düşüldü.'); spRender(true);},
+    let n=0; for(const l of o.lines){const p=lineMatch(l.name); if(p){try{await spMove(p.id,'cikis',l.qty,bizName(o.business_id),'Sipariş teslimi');n++;}catch(e){}}} o.status='teslim'; spNotify(o,'teslim'); spToast('Teslim edildi. '+n+' üründe stok düşüldü.'); spRender(true);},
   stokgit:()=>{SPS.tab='urun';SPS.sub='stok';spRender();window.scrollTo(0,0);}
 });
 const _spGo0=SPA.go; SPA.go=(el)=>{ if(el.dataset.v==='stokgit') return SPA.stokgit(); return _spGo0(el); };
 document.addEventListener('input',(e)=>{ if(e.target.id==='sp-sq'){SPS.sq=e.target.value; const pos=e.target.selectionStart; spRender(true); const n=document.getElementById('sp-sq'); if(n){n.focus(); try{n.setSelectionRange(pos,pos);}catch(x){}}} });
 
 sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT') loginView(); });
+/* ---- Teslimat maliyeti ve kârlılık ---- */
+const spHav=(a,b,c,d)=>{const R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2; return 2*R*Math.asin(Math.sqrt(h));};
+const bizName=(id)=>((SPS.bizs||{})[id]||SPS.biz||{}).name||'İşletme';
+const supIdFor=(bid)=>{const r=(SPS.sups||[]).find(x=>x.business_id===bid); return r?r.id:SUP.id;};
+function spBizLabel(){const n=(SPS.sups||[]).length; return n>1?n+' işletme için çalışıyorsun':esc(SPS.biz.name)+' için çalışıyorsun';}
+function spVeh(){const v=(SPS.prof&&SPS.prof.vehicle)||{}; return {name:v.name||'',fuel:v.fuel||'dizel',l100:Number(v.l100)||0,fp:Number(v.fp)||0,drv:Number(v.drv)||0,wear:Number(v.wear)||0,spd:Number(v.spd)||40,minD:Number(v.minD)||0};}
+const spKmCost=(v)=>v.l100/100*v.fp+v.wear;
+const spVehOK=(v)=>v.l100>0&&v.fp>0;
+function spPt(bid){const f=SPS.prof||{}, b=(SPS.bizs||{})[bid]; if(f.lat==null||!b||b.lat==null) return null; return {a:Number(f.lat),b:Number(f.lng),c:Number(b.lat),d:Number(b.lng)};}
+function spKm(bid){const p=spPt(bid); return p?Math.round(spHav(p.a,p.b,p.c,p.d)*1.3*10)/10:null;}
+function spDeliv(bid){const v=spVeh(), km=spKm(bid); if(km==null||!spVehOK(v)) return null; const rt=km*2, hrs=rt/v.spd+0.25; return {km,rt,hrs,fuel:rt*v.l100/100*v.fp,wear:rt*v.wear,drv:hrs*v.drv,cost:rt*spKmCost(v)+hrs*v.drv};}
+function spMargin(){const L=SPS.prods.filter(p=>p.active!==false&&p.cost>0&&p.price>0); if(!L.length) return null; return L.reduce((a,p)=>a+(1-p.cost/p.price),0)/L.length;}
+function spOrderEcon(o){const d=spDeliv(o.business_id), v=spVeh(), rev=Number(o.total)||0, f=SPS.prof||{}; let cost=0,miss=0; (o.lines||[]).forEach(l=>{const p=lineMatch(l.name); if(p&&p.cost>0) cost+=p.cost*l.qty; else miss++;}); const fee=(f.delivery_fee>0&&!(f.free_over>0&&rev>=f.free_over))?Number(f.delivery_fee):0;
+  if(!d) return null; const net=rev+fee-cost-d.cost; const all=miss===(o.lines||[]).length; const lvl=all?'mut':net<0?'bad':net<0.05*rev?'warn':'ok'; const m=spMargin(); const sugMin=m&&m>0.06?Math.ceil(d.cost/(m-0.05)/10)*10:null; return {d,rev,cost,miss,fee,net,lvl,all,below:v.minD>0&&rev<v.minD,minD:v.minD,sugMin};}
+function spEconHTML(o){const e=spOrderEcon(o); if(!e){const v=spVeh(); return !spVehOK(v)?`<div class="sp-ec mut"><span>Teslimat maliyeti için profilinde araç ve yakıt bilgisini gir.</span></div>`:(spPt(o.business_id)?'':`<div class="sp-ec mut"><span>Mesafe için ${esc(bizName(o.business_id))} konumunu kaydetmeli, sen de profilinde konum eklemelisin.</span></div>`);}
+  const tag={ok:'Kârlı',warn:'Düşük kâr',bad:'Zararına',mut:'Maliyet yok'}[e.lvl];
+  return `<div class="sp-ec ${e.lvl}"><div class="sp-ech"><b>${tag}</b><span>${fmt1(e.d.km)} km · ~${Math.round(e.d.hrs*60)} dk gidiş-dönüş</span></div>
+  <div class="sp-ecl"><span>Satış</span><span>${tl(e.rev)}${e.fee?' + '+tl(e.fee)+' teslimat':''}</span></div>${e.all?'':`<div class="sp-ecl"><span>Ürün maliyeti</span><span>${tl(e.cost)}${e.miss?' (eksik: '+e.miss+')':''}</span></div>`}<div class="sp-ecl"><span>Teslimat maliyeti</span><span>${tl(e.d.cost)}</span></div>
+  ${e.all?'':`<div class="sp-ecl tot"><span>Tahmini net</span><span>${tl(e.net)}</span></div>`}
+  ${e.below?`<p class="sp-ecn bad">Minimum teslimat tutarının (${tl(e.minD)}) altında.</p>`:''}${e.lvl==='bad'&&e.sugMin?`<p class="sp-ecn">Bu mesafe için en az ${tl(e.sugMin)} sipariş mantıklı olur.</p>`:''}</div>`;}
+const fmt1=(n)=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:1});
+/* rota: en yakın komşu */
+function spRoute(){const live=SPS.orders.filter(o=>['gonderildi','onaylandi'].includes(o.status)); const f=SPS.prof||{}; const v=spVeh(); if(!live.length||f.lat==null||!spVehOK(v)) return null;
+  const byB={}; live.forEach(o=>{const b=(SPS.bizs||{})[o.business_id]; if(!b||b.lat==null) return; (byB[o.business_id]=byB[o.business_id]||{id:o.business_id,b,orders:[],rev:0,sub:0}); const x=byB[o.business_id]; x.orders.push(o); const e=spOrderEcon(o); x.rev+=Number(o.total)||0; x.sub+=e?(e.rev+e.fee-e.cost):0; x.hasAll=(x.hasAll||0)+(e&&e.all?1:0);});
+  let rest=Object.values(byB); if(!rest.length) return null; const stops=[]; let cur={a:Number(f.lat),b:Number(f.lng)}, km=0;
+  while(rest.length){let bi=0,bd=1e9; rest.forEach((s,i)=>{const d=spHav(cur.a,cur.b,Number(s.b.lat),Number(s.b.lng)); if(d<bd){bd=d;bi=i;}}); const s=rest.splice(bi,1)[0]; km+=bd*1.3; stops.push(s); cur={a:Number(s.b.lat),b:Number(s.b.lng)};}
+  km+=spHav(cur.a,cur.b,Number(f.lat),Number(f.lng))*1.3; km=Math.round(km*10)/10; const hrs=km/v.spd+0.25*stops.length; const cost=km*spKmCost(v)+hrs*v.drv;
+  const sep=stops.reduce((a,s)=>{const d=spDeliv(s.id); return a+(d?d.cost:0);},0); const sub=stops.reduce((a,s)=>a+s.sub,0); return {stops,km,hrs,cost,sep,save:Math.max(0,sep-cost),net:sub-cost,rev:stops.reduce((a,s)=>a+s.rev,0)};}
+function spRouteHTML(){const r=spRoute(); if(!r) return ''; const lvl=r.net<0?'bad':'ok';
+  return `<div class="sp-card sp-rt"><div class="sp-ch"><b>Teslimat rotası</b><span class="sp-b ${lvl==='ok'?'ok':'bad'}">${lvl==='ok'?'Kârlı':'Zararına'}</span></div>
+  <p class="sp-d">${r.stops.length} durak · ${fmt1(r.km)} km · ~${Math.round(r.hrs*60)} dk</p><div class="sp-rs"><i>Depo</i>${r.stops.map(s=>`<i>${esc(s.b.name||'İşletme')}</i>`).join('')}<i>Depo</i></div>
+  <div class="sp-ecl"><span>Satış</span><span>${tl(r.rev)}</span></div><div class="sp-ecl"><span>Rota maliyeti</span><span>${tl(r.cost)}</span></div><div class="sp-ecl tot"><span>Tahmini net</span><span>${tl(r.net)}</span></div>
+  ${r.stops.length>1&&r.save>1?`<p class="sp-ecn ok">Siparişleri tek rotada götürürsen ayrı ayrı gitmeye göre yaklaşık ${tl(r.save)} tasarruf edersin.</p>`:''}</div>`;}
+function spVehCard(){const v=spVeh(); const kc=spKmCost(v); const m=spMargin();
+  return `<div class="sp-sec-h"><h2>Araç ve teslimat maliyeti</h2></div><div class="sp-card"><p class="sp-d">Siparişin teslimata değip değmediğini hesaplamak için. Bu bilgi sadece sende kalır, işletme görmez.</p>
+  <label>Araç</label><input id="vh-name" value="${esc(v.name)}" placeholder="Örn: Renault Master"><div class="sp-two2"><div><label>Yakıt</label><select id="vh-fuel">${[['dizel','Dizel'],['benzin','Benzin'],['lpg','LPG'],['hibrit','Hibrit'],['elektrik','Elektrik']].map(o=>`<option value="${o[0]}" ${v.fuel===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div><div><label>Tüketim (L/100 km)</label><input id="vh-l" inputmode="decimal" value="${v.l100||''}" placeholder="9,5"></div></div>
+  <div class="sp-two2"><div><label>Yakıt fiyatı (₺/L)</label><input id="vh-fp" inputmode="decimal" value="${v.fp||''}" placeholder="Pompa fiyatı"></div><div><label>Aşınma (₺/km)</label><input id="vh-wear" inputmode="decimal" value="${v.wear||''}" placeholder="Bakım, lastik"></div></div>
+  <div class="sp-two2"><div><label>Sürücü (₺/saat)</label><input id="vh-drv" inputmode="decimal" value="${v.drv||''}" placeholder="0"></div><div><label>Ortalama hız (km/s)</label><input id="vh-spd" inputmode="decimal" value="${v.spd||40}"></div></div>
+  <label>Minimum teslimat tutarı (₺)</label><input id="vh-min" inputmode="decimal" value="${v.minD||''}" placeholder="Bunun altında teslimat yapmam"><p class="sp-d" id="vh-pv">${spVehPrev(v,m)}</p><p class="err" id="vh-err"></p><button class="sp-pri sp-wide" data-sp="vsave">Araç bilgisini kaydet</button></div>`;}
+function spVehPrev(v,m){const kc=spKmCost(v); if(!spVehOK(v)) return 'Tüketim ve yakıt fiyatını yazınca km maliyetin burada görünür.'; return 'Km başına maliyetin: <b>'+tl(kc)+'</b>'+(v.drv>0?' + saatte '+tl(v.drv)+' sürücü':'')+'. 20 km uzağa gidiş-dönüş yakıt ve aşınma: <b>'+tl(40*kc)+'</b>.';}
+function spVehRead(){const n=(id)=>nz($v(id)); return {name:$v('vh-name')||'',fuel:$v('vh-fuel')||'dizel',l100:n('vh-l'),fp:n('vh-fp'),wear:n('vh-wear'),drv:n('vh-drv'),spd:n('vh-spd')||40,minD:n('vh-min')};}
+document.addEventListener('input',e=>{const t=e.target; if(t&&/^vh-/.test(t.id||'')){const o=document.getElementById('vh-pv'); if(o) o.innerHTML=spVehPrev(spVehRead(),spMargin());}});
+SPA.vsave=async(el)=>{if(SPS.busy) return; const veh=spVehRead(); const e=document.getElementById('vh-err'); if(veh.spd<5||veh.spd>130){if(e) e.textContent='Ortalama hız 5 ile 130 arasında olmalı.'; return;} SPS.busy=true; el.disabled=true; const r=await sb.from('supplier_profiles').upsert({supplier_id:SUP.id,vehicle:veh,updated_at:new Date().toISOString()},{onConflict:'supplier_id'}); SPS.busy=false; el.disabled=false;
+  if(spDb(r)){if(e) e.textContent=/vehicle|schema cache/i.test(spDb(r))?'Kurulum eksik. kaispilot_teslimat.sql dosyasını çalıştır.':spDb(r); return;} SPS.prof=Object.assign({},SPS.prof,{vehicle:veh}); spToast('Araç bilgisi kaydedildi.'); spRender(true);};
+
 if(DEMO){ME={id:'demo'};SUP={id:'s1',business_id:'b1',name:'Anadolu Un (deneme)'};MODE='sup';supView();}else boot();
 </script></body></html>
