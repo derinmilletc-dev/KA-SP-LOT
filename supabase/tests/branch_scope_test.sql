@@ -12,7 +12,8 @@ insert into members(business_id, user_id, role, app_uid)
   where not exists (select 1 from members where role = 'patron' and business_id = '11111111-1111-1111-1111-111111111111');
 insert into app_state(business_id, scope, state, version) values
   ('11111111-1111-1111-1111-111111111111', 'muh', '{"BRANCHES":[{"id":"b1","name":"A"},{"id":"b2","name":"B"}],"LEDGER":[{"id":"l1","br":"b1","total":10,"rc":"f1"},{"id":"l2","br":"b2","total":20,"rc":"f2"},{"id":"l3","br":"","total":30},{"id":"l4","br":"b1","total":40}],"INV":[{"id":"i1","br":"b1"},{"id":"i2","br":"b2"}],"DEBTS":[{"id":"d1"}],"NOTES":{"x":1}}', 1),
-  ('11111111-1111-1111-1111-111111111111', 'ekip', '{"ROLES":{"u2":"muhasebeci"},"RECEIPTS":[{"id":"f1"},{"id":"f2"},{"id":"f9"}],"SETTINGS":{"perm":{"a":1},"rec":[{"x":1}],"cashStart":5,"shop":3}}', 1);
+  ('11111111-1111-1111-1111-111111111111', 'ekip', '{"ROLES":{"u2":"muhasebeci"},"RECEIPTS":[{"id":"f1"},{"id":"f2"},{"id":"f9"}],"SETTINGS":{"perm":{"a":1},"rec":[{"x":1}],"cashStart":5,"shop":3}}', 1),
+  ('11111111-1111-1111-1111-111111111111', 'maas_u5', '{"PROFILES":{"u5":{"salary":1000}}}', 1);
 grant select, insert, update, delete on all tables in schema public to authenticated;
 
 do $$
@@ -29,7 +30,9 @@ begin
 
   -- kısıtlı muhasebeci
   perform set_config('request.jwt.claim.sub', u2, true); execute 'set local role authenticated';
-  select count(*) into n from app_state where scope in ('muh', 'ekip'); assert n = 0, 'doğrudan okuma açık: ' || n;
+  select count(*) into n from app_state where scope in ('muh', 'ekip') or scope like 'maas\_%'; assert n = 0, 'doğrudan okuma açık: ' || n;
+  assert not exists (select 1 from st_get(biz) where scope like 'maas\_%'), 'maaş st_get ile sızdı';
+  assert not exists (select 1 from st_versions(biz) where scope like 'maas\_%'), 'maaş sürümü sızdı';
   with u as (update app_state set state = '{}' where scope = 'muh' returning 1) select count(*) into n from u; assert n = 0, 'doğrudan yazma açık';
   begin perform br_set(biz, 'u2', null); assert false, 'br_set kısıtlıya açık'; exception when others then if sqlerrm like 'br_set%' or sqlerrm = 'br_set kısıtlıya açık' then raise; end if; end;
 
@@ -64,6 +67,7 @@ begin
   -- kısıtsız muhasebeci
   perform set_config('request.jwt.claim.sub', u3, true); execute 'set local role authenticated';
   select count(*) into n from app_state where scope in ('muh', 'ekip'); assert n = 2, 'kısıtsız muhasebeci okuyamıyor';
+  select count(*) into n from app_state where scope = 'maas_u5'; assert n = 1, 'kısıtsız muhasebeci maaşı okuyamıyor';
   begin perform st_put(biz, 'muh', '{}', 2); assert false, 'kısıtsız st_put kabul edildi'; exception when others then if sqlerrm = 'kısıtsız st_put kabul edildi' then raise; end if; end;
   execute 'reset role';
 

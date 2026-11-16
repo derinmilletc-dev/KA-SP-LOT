@@ -5250,7 +5250,7 @@ function mergeP(list) {
   const m = {}; list.forEach((p) => Object.keys(p).forEach((k) => { if (k === 'PROFILES') { m.PROFILES = m.PROFILES || {}; Object.keys(p.PROFILES).forEach((id) => { m.PROFILES[id] = Object.assign(m.PROFILES[id] || {}, p.PROFILES[id]); }); } else m[k] = p[k]; })); return JSON.stringify(m);
 }
 const roleOf = () => ID.active && ID.active.role; const uidOf = () => ID.active && ID.active.app_uid;
-function canR(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return r === 'muhasebeci' || (r === 'calisan' && sc === 'maas_' + uidOf()); if (r === 'mudur') return sc === 'stok' || sc === 'ekip'; if (r === 'muhasebeci') return sc === 'muh' || sc === 'ekip'; if (r === 'calisan') return sc === 'stok' || sc === 'ekip'; return false; }
+function canR(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return (r === 'muhasebeci' && !CL.rule) || (r === 'calisan' && sc === 'maas_' + uidOf()); if (r === 'mudur') return sc === 'stok' || sc === 'ekip'; if (r === 'muhasebeci') return sc === 'muh' || sc === 'ekip'; if (r === 'calisan') return sc === 'stok' || sc === 'ekip'; return false; }
 function canW(sc) { const r = roleOf(); if (r === 'patron') return true; if (sc.startsWith('maas_')) return false; if (r === 'calisan' && sc === 'stok') return false; return canR(sc); }
 function hideUnreadable() {
   const keys = P_ARR.map((x) => x[0]);

@@ -29,7 +29,7 @@ language sql immutable set search_path = public as $$
 $$;
 
 -- 'muh' paketinin kısıtlı görünümü: yalnızca izinli şubelerin defter/fatura/şube kayıtları.
--- Şubesiz veriler (borç, taslak, not, e-belge, mail, denetim...) gizlenir.
+-- Şubesiz veriler (borç, taslak, not, e-belge, mail, denetim, maaş...) gizlenir.
 create or replace function public.br_filter_muh(st jsonb, rule jsonb) returns jsonb
 language sql immutable set search_path = public as $$
   select jsonb_build_object(
@@ -70,7 +70,7 @@ begin
   return res;
 end $$;
 
--- Erişim kuralı: kısıtlı muhasebeci 'muh' ve 'ekip' paketlerine doğrudan ulaşamaz.
+-- Erişim kuralı: kısıtlı muhasebeci 'muh', 'ekip' ve maaş (maas_*) paketlerine doğrudan ulaşamaz.
 create or replace function public.scope_ok(bid uuid, sc text, w boolean) returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (
@@ -78,7 +78,7 @@ language sql stable security definer set search_path = public as $$
     where m.business_id = bid and m.user_id = auth.uid() and (
       m.role = 'patron'
       or (m.role = 'mudur' and sc in ('stok', 'ekip'))
-      or (m.role = 'muhasebeci' and ((sc in ('muh', 'ekip') and public.br_rule(bid) is null) or (not w and left(sc, 5) = 'maas_')))
+      or (m.role = 'muhasebeci' and public.br_rule(bid) is null and (sc in ('muh', 'ekip') or (not w and left(sc, 5) = 'maas_')))
       or (m.role = 'calisan' and (sc = 'ekip' or (not w and sc = 'stok') or (not w and sc = 'maas_' || m.app_uid)))
     )
   )
