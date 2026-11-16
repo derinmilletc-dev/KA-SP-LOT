@@ -21,6 +21,12 @@ jobs:
               while((m=re.exec(h)))fs.writeFileSync('/tmp/chk/'+'$f'.replace(/\//g,'_')+'_'+(i++)+'.js',m[1]);"
           done
           for j in /tmp/chk/*.js; do echo "check $j"; node --check "$j"; done
+      - name: Uygulama dosyalari (js/app-*.js) sozdizimi, ozet ve mukerrer kontrolu
+        run: |
+          for f in js/app-*.js; do echo "check $f"; node --check "$f"; done
+          python3 tools/stamp.py --check
+          npm i --no-save acorn@8 >/dev/null 2>&1
+          node tools/check_dups.js
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
