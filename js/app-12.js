@@ -378,3 +378,69 @@ if (typeof document !== 'undefined') document.addEventListener('click', (e) => {
   S.lgCreate = false; S.sg = null; S.loginErr = ''; S.lgTab = 'own'; render(); try { window.scrollTo(0, 0); } catch (x) {}
 });
 if (typeof document !== 'undefined') { const css = document.createElement('style'); css.textContent = '.top .mark,.side .brand,.lx-brand,.login .brand{cursor:pointer}'; document.head.appendChild(css); }
+
+/* v171: bilgisayar için bölünmüş modern giriş ekranı + akıllı küçük dokunuşlar */
+{
+  const css = document.createElement('style'); css.id = 'lx3-css';
+  css.textContent = `
+.lx3 .lp,.lx3 .lp-ft{display:none}
+@media(min-width:1000px){
+.login.lx.lx2.lx3{display:grid!important;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:stretch!important;justify-content:stretch!important;padding:0!important;min-height:100vh!important;background:#F4F7FC!important}
+.lx3 .lx-hero{grid-column:1;grid-row:1;max-width:none!important;width:auto!important;padding:44px 60px 36px!important;position:relative!important;overflow:hidden!important;color:#fff;display:flex!important;flex-direction:column!important;gap:26px;background:linear-gradient(150deg,#0C4F9E 0%,#0A3A70 52%,#072B55 100%)!important}
+.lx3 .lx-hero::before{display:block!important;content:""!important;position:absolute!important;width:520px!important;height:520px!important;right:-160px!important;top:-140px!important;border-radius:50%;background:radial-gradient(circle,rgba(70,160,255,.38),rgba(70,160,255,0) 68%)!important;pointer-events:none}
+.lx3 .lx-hero::after{display:block!important;content:""!important;position:absolute!important;width:420px!important;height:420px!important;left:-120px!important;bottom:-150px!important;border-radius:50%;background:radial-gradient(circle,rgba(46,211,154,.22),rgba(46,211,154,0) 70%)!important;pointer-events:none}
+.lx3 .lx-hero>*{position:relative!important;z-index:1}
+.lx3 .lx-brand{color:#fff!important;font-size:22px!important}
+.lx3 .lx-brand svg{background:rgba(255,255,255,.16)!important;box-shadow:none!important;border:1px solid rgba(255,255,255,.28)}
+.lx3 .lx-art,.lx3 .lx2-tag{display:none!important}
+.lx3 .lx-copy{display:block!important;margin-top:auto}
+.lx3 .lx-copy h2{font-size:clamp(34px,3.3vw,46px)!important;line-height:1.1!important;letter-spacing:-1px;color:#fff!important;max-width:560px;font-weight:700}
+.lx3 .lx-copy p{font-size:17px!important;color:rgba(255,255,255,.78)!important;max-width:500px;margin-top:12px!important}
+.lx3 .lp{display:flex!important;flex-direction:column;gap:12px;max-width:520px}
+.lx3 .lp-f{display:flex;gap:14px;align-items:flex-start}
+.lx3 .lp-i{flex:none;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff}
+.lx3 .lp-i{display:grid!important;place-items:center}.lx3 .lp-i svg{width:20px!important;height:20px!important;margin:0!important;display:block!important;position:static!important}
+.lx3 .lp-f b{display:block;font-size:15.5px;font-weight:600;color:#fff}
+.lx3 .lp-f span{display:block;font-size:13.5px;color:rgba(255,255,255,.7);margin-top:1px}
+.lx3 .lp-pv{margin-top:6px;max-width:470px;border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.lx3 .lp-ph{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.65);margin-bottom:10px}
+.lx3 .lp-k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lx3 .lp-k div{background:rgba(255,255,255,.1);border-radius:12px;padding:9px 11px}
+.lx3 .lp-k small{display:block;font-size:11px;color:rgba(255,255,255,.65)}.lx3 .lp-k b{display:block;font-size:16px;color:#fff;margin-top:2px;font-variant-numeric:tabular-nums}
+.lx3 .lp-k b.up{color:#7BF1C4}
+.lx3 .lp-ai{display:flex;gap:9px;align-items:flex-start;margin-top:10px;font-size:13px;line-height:1.4;color:#fff;background:rgba(255,255,255,.12);border-radius:12px;padding:9px 11px}
+.lx3 .lp-ai i{flex:none;width:22px;height:22px;border-radius:7px;background:#2ED39A;color:#06361f;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px}
+.lx3 .lp-ft{display:block!important;font-size:12.5px;color:rgba(255,255,255,.55)}
+.lx3 .lx-card{grid-column:2;grid-row:1;align-self:center!important;justify-self:center!important;max-width:460px!important;width:calc(100% - 64px)!important;margin:40px 32px!important;padding:34px 32px 28px!important}
+.lx3 .lx-card h1{font-size:30px!important}
+.lx3 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}
+.lx3 .lx-caps.on{display:block}
+}
+@media(min-width:1000px) and (max-height:780px){.lx3 .lp-pv{display:none}}
+@media(min-width:1000px) and (max-height:640px){.lx3 .lp{display:none}}
+.lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}.lx-caps.on{display:block}
+`;
+  document.head.appendChild(css);
+  const FE = {
+    own: { h: 'İşletmenizi tek yerden yönetin.', p: 'Fiş, ekip, stok ve tedarik süreçleriniz tek ekranda.', f: [['receipt', 'Fişi fotoğrafla, Kais okusun', 'Tutar, KDV ve kategori kendiliğinden gelir.'], ['users', 'Ekip, vardiya ve izin', 'Plan, talep ve onaylar tek yerde.'], ['box', 'Stok ve tedarik', 'Azalan ürün için sipariş önerisi hazır.'], ['sparkle', 'Kais AI', 'Sorunu yaz, işlemi senin onayına hazırlasın.']] },
+    emp: { h: 'Ekibe hoş geldin.', p: 'Vardiyanı, iznini ve görevlerini tek yerden takip et.', f: [['calendar', 'Vardiya planın', 'Hangi gün kaçta, hep elinin altında.'], ['clock', 'İzin ve talepler', 'İzin iste, durumunu anında gör.'], ['check', 'Görevler', 'Bugünün işleri ve tamamladıkların.']] },
+  };
+  const _out = loginHTML;
+  loginHTML = function () {
+    let h = _out.apply(this, arguments); if (S.user || h.indexOf('class="login lx') < 0) return h;
+    const k = (S.lgTab === 'emp' && !S.lgCreate) ? 'emp' : 'own'; const d = FE[k];
+    const feats = `<div class="lp">${d.f.map((x) => `<div class="lp-f"><span class="lp-i">${ic(x[0], 20)}</span><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join('')}</div>`;
+    const pv = k === 'own' ? `<div class="lp lp-pvw"><div class="lp-pv"><div class="lp-ph"><span>Bugün</span><span>Örnek ekran</span></div><div class="lp-k"><div><small>Bu ay gelir</small><b>₺248.600</b></div><div><small>Gider</small><b>₺161.200</b></div><div><small>Onay bekleyen fiş</small><b class="up">3</b></div></div><div class="lp-ai"><i>K</i><span>Süt stoğu azalıyor. Tedarikçiye sipariş hazırlayayım mı?</span></div></div></div>` : '';
+    h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><h2>${d.h}</h2><p>${d.p}</p></div>`);
+    h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">© KaisPilot</div></section>`);
+    h = h.replace(/<div class="login lx([^"]*)"/, '<div class="login lx$1 lx3"');
+    h = h.replace(/(<div class="lx-in">(?:(?!<\/div>)[\s\S])*?id="(?:id|sg)-pw"[\s\S]*?<\/div>)/, '$1<div class="lx-caps" role="status">Caps Lock açık</div>');
+    return h;
+  };
+  const _tab = H.lgtab; H.lgtab = function (el) { try { localStorage.setItem('kp_tab', el.dataset.v === 'emp' ? 'emp' : 'own'); } catch (e) {} return _tab.apply(this, arguments); };
+  const _in = H.idin; H.idin = function () { try { const e = (document.getElementById('id-em') || {}).value; if (e && /^\S+@\S+$/.test(e.trim())) localStorage.setItem('kp_em', e.trim()); } catch (x) {} return _in.apply(this, arguments); };
+  try { if (!S.lgEm) S.lgEm = localStorage.getItem('kp_em') || ''; if (!S.lgTab && localStorage.getItem('kp_tab') === 'emp' && !/[?&]kod=/.test(location.search)) S.lgTab = 'emp'; } catch (e) {}
+  const _rn = render;
+  render = function () { _rn.apply(this, arguments); try { if (!S.user && window.matchMedia && matchMedia('(min-width:1000px)').matches && !S.lgCreate && !(document.activeElement && document.activeElement.tagName === 'INPUT')) setTimeout(() => { const em = document.getElementById('id-em'); const pw = document.getElementById('id-pw'); const t = em && em.value ? pw : em; if (t && !(document.activeElement && document.activeElement.tagName === 'INPUT')) t.focus(); }, 40); } catch (e) {} };
+  document.addEventListener('keydown', (e) => { const t = e.target; if (!t || !t.id || !/^(id|sg)-pw$/.test(t.id) || !e.getModifierState) return; const c = t.closest('.lx-f, .lx-in'); const box = c && (c.parentElement || c).querySelector('.lx-caps'); if (box) box.classList.toggle('on', e.getModifierState('CapsLock')); });
+}
