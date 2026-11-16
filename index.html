@@ -12974,6 +12974,68 @@ NEWM.fatura_list = (m) => { const tab = m.tab || 'fat'; const t = (k, l, n) => `
 { const _ta = tabloHTML; tabloHTML = function () { let h = _ta.apply(this, arguments); const n = fiLateN() + fiDueRec().length; return h.replace(/(data-a="finlist">Faturalarım(?: \(\d+\))?)/, `$1${n ? ' <span class="pill p-bad" style="margin-left:4px">' + n + '</span>' : ''}`); }; }
 function kaInvStatus() { if (!fiOk()) return { content: 'Bu bilgi patron, müdür ve muhasebeci için.' }; const bek = INV.filter((v) => v.st !== 'odendi'); if (!bek.length) return { content: INV.length ? 'Kestiğin tüm faturalar tahsil edilmiş.' : 'Henüz fatura kesmedin.' }; const late = bek.filter(fiLate); const tot = bek.reduce((a, v) => a + v.tot, 0); return { content: `${bek.length} faturadan ${fmt(tot)} tahsil bekliyor.${late.length ? ' Vadesi geçenler: ' + late.map((v) => v.cust + ' (' + fmt(v.tot) + ')').join(', ') + '.' : ' Vadesi geçen yok.'}` }; }
 { const _k2 = kaIntent; kaIntent = function (text) { const f = kaFold(text); if (f.length < 160 && /\bfatura/.test(f) && /\b(vade|tahsil|odenmemis|odemedi|bekleyen|alacak|geciken)/.test(f)) return kaInvStatus(); return _k2.apply(this, arguments); }; }
+
+/* ===== v138: ekstre↔fatura eşleştirme, KDV özeti, haklarım şeridi, çevrimdışı, yedek ===== */
+/* -- Ekstre ↔ fatura -- */
+const fxFold = (x) => String(x || '').toLocaleLowerCase('tr-TR').replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u');
+function fxMatches() {
+  const used = new Set(INV.filter((v) => v.bank).map((v) => v.bank)); const out = [];
+  INV.filter((v) => v.st !== 'odendi').forEach((v) => {
+    const w = fxFold(v.cust).split(/\s+/).filter((x) => x.length >= 3);
+    const c = ROWS.filter((r) => r.amt > 0 && !used.has(r.id) && Math.abs(r.amt - v.tot) < 0.01).map((r) => { const d = fxFold(r.desc); return { r, hit: w.some((x) => d.includes(x)) }; }).sort((a, b) => b.hit - a.hit)[0];
+    if (c) { used.add(c.r.id); out.push({ v, r: c.r, sure: c.hit }); }
+  });
+  return out;
+}
+function fxUnbilled() { const linked = new Set(INV.map((v) => v.bank).filter(Boolean)); const pos = new Set(fxMatches().map((m) => m.r.id)); return ROWS.filter((r) => r.amt > 0 && !linked.has(r.id) && !pos.has(r.id) && !/POS|TAHS[İI]LAT/i.test(r.desc)).slice(0, 4); }
+H.fxok = (el) => { const v = INV.find((x) => x.id === el.dataset.id); const r = ROWS.find((x) => x.id === el.dataset.b); if (!v || !r) return; v.st = 'odendi'; v.paidAt = fiIso(); v.bank = r.id; try { auditAdd({ txt: v.no + ' ekstreyle eşleşti, tahsil edildi' }); pSched(); } catch (e) {} toast(v.cust + ' faturası tahsil edildi.', 'ok'); render(); };
+H.fxall = () => { const sure = fxMatches().filter((m) => m.sure); sure.forEach((m) => { m.v.st = 'odendi'; m.v.paidAt = fiIso(); m.v.bank = m.r.id; }); try { pSched(); } catch (e) {} toast(sure.length + ' fatura tahsil edildi.', 'ok'); render(); };
+H.fxbill = (el) => { const r = ROWS.find((x) => x.id === el.dataset.b); if (!r) return; const rate = Number(FTPL.rate) || 20; fiOpen({ cust: '', lines: [{ d: '', q: 1, p: Math.round(r.amt / (1 + rate / 100) * 100) / 100, r: rate }], note: 'Ekstre: ' + r.desc }); };
+function fxCard() {
+  if (!fiOk() || !INV.length && !fxUnbilled().length) return ''; const ms = fxMatches(); const un = fxUnbilled(); if (!ms.length && !un.length) return '';
+  const sure = ms.filter((m) => m.sure).length;
+  return `<div class="card stack fxc"><div><h3>Tahsilat eşleşmeleri</h3><p class="muted small" style="margin-top:2px">Ekstrede gelen para, kestiğin faturalarla karşılaştırıldı.</p></div>
+  ${ms.map((m) => `<div class="cb-my"><span>${esc(m.v.cust)} · ${fmt0(m.v.tot)}<br><small class="muted">${esc(m.r.date)} · ${esc(m.r.desc)} · ${m.sure ? 'Ad ve tutar tuttu' : 'Yalnız tutar tuttu'}</small></span><button type="button" class="btn sm" data-a="fxok" data-id="${m.v.id}" data-b="${m.r.id}" style="width:auto;height:auto;background:#0F3F7A;color:#fff;padding:8px 12px;font:600 13px system-ui">Onayla</button></div>`).join('')}
+  ${sure > 1 ? `<button class="btn sm sec" data-a="fxall">Kesin ${sure} eşleşmeyi onayla</button>` : ''}
+  ${un.length ? `<p class="lbl" style="margin-top:6px">Faturası olmayan gelenler</p>${un.map((r) => `<div class="cb-my"><span>${esc(r.desc)} · ${fmt0(r.amt)}<br><small class="muted">${esc(r.date)}</small></span><button type="button" class="btn sm sec" data-a="fxbill" data-b="${r.id}" style="width:auto;height:auto;background:#EAF1FB;color:#0F3F7A;padding:8px 12px;font:600 13px system-ui">Fatura kes</button></div>`).join('')}` : ''}</div>`;
+}
+{ const _e = ekstreHTML; ekstreHTML = function () { const h = _e.apply(this, arguments); const c = fxCard(); return c ? c + h : h; }; }
+/* -- KDV özeti -- */
+function kdvData(per) {
+  const rows = LEDGER.filter((r) => lper(r) === per); const by = {}; let hes = 0, ind = 0, hm = 0, im = 0;
+  rows.forEach((r) => { const k = Number(r.rate) || 0; const v = kdv(r), net = r.total - v; by[k] = by[k] || { h: 0, i: 0, hm: 0, im: 0 }; if (dirOf(r) === 'gelir') { by[k].h += v; by[k].hm += net; hes += v; hm += net; } else { by[k].i += v; by[k].im += net; ind += v; im += net; } });
+  return { by, hes, ind, hm, im, pay: Math.max(0, hes - ind), carry: Math.max(0, ind - hes), n: rows.length, free: ROWS.filter((r) => r.kind === 'gider' && !r.fid).length };
+}
+H.kdvp = (el) => { S.kdvp = el.dataset.p; render(); };
+function kdvCsv(per) { const d = kdvData(per); const l = [['KDV oranı', 'Gelir matrahı', 'Hesaplanan KDV', 'Gider matrahı', 'İndirilecek KDV']]; Object.keys(d.by).sort((a, b) => a - b).forEach((k) => l.push(['%' + k, d.by[k].hm.toFixed(2), d.by[k].h.toFixed(2), d.by[k].im.toFixed(2), d.by[k].i.toFixed(2)])); l.push(['Toplam', d.hm.toFixed(2), d.hes.toFixed(2), d.im.toFixed(2), d.ind.toFixed(2)]); l.push([], ['Ödenecek KDV', d.pay.toFixed(2)], ['Devreden KDV', d.carry.toFixed(2)]); return '﻿' + l.map((r) => r.join(';')).join('\n'); }
+H.kdvcsv = () => { const per = S.kdvp === 'cur' ? CURM : PREVM; saveBlob('KDV-ozeti-' + per.replace(/\s+/g, '-') + '.csv', new Blob([kdvCsv(per)], { type: 'text/csv;charset=utf-8' })); toast('KDV özeti indirildi.', 'ok'); };
+kdvCard = function () {
+  const cur = S.kdvp === 'cur'; const per = cur ? CURM : PREVM; const d = kdvData(per); const ks = Object.keys(d.by).sort((a, b) => a - b);
+  const seg = `<div class="cb-chips" style="margin:0"><button type="button" class="${cur ? '' : 'on'}" data-a="kdvp" data-p="prev">${PREVM}</button><button type="button" class="${cur ? 'on' : ''}" data-a="kdvp" data-p="cur">${CURM}${cur ? '' : ''}</button></div>`;
+  return `<div class="card stack"><div><h3>KDV özeti</h3><p class="muted small" style="margin-top:2px">Tahmini veri özeti, vergi tavsiyesi değildir. Beyanı muhasebeci hazırlar ve teyit eder.</p></div>${seg}
+  <div class="kpis"><div class="kpi"><div class="l">Hesaplanan</div><div class="v num">${fmt0(d.hes)}</div></div><div class="kpi"><div class="l">İndirilecek</div><div class="v num">${fmt0(d.ind)}</div></div><div class="kpi"><div class="l">${d.carry > 0 ? 'Devreden' : 'Ödenecek'}</div><div class="v num">${fmt0(d.carry > 0 ? d.carry : d.pay)}</div></div></div>
+  ${ks.length ? `<div class="stack" style="gap:0">${ks.map((k) => `<div class="row between small" style="padding:8px 0;border-top:1px solid #EEF2F8"><b>%${k} KDV</b><span class="muted">Hesaplanan ${fmt0(d.by[k].h)} · İndirilecek ${fmt0(d.by[k].i)}</span></div>`).join('')}</div>` : '<p class="small muted">Bu dönemde satır yok.</p>'}
+  <p class="small muted">Hesaplanan KDV gelir tablosundan, indirilecek KDV gider tablosundan (${d.n} satır) hesaplandı. ${countStatus('eksik')} belgesiz işlem hesaba girmedi.</p>
+  <button class="btn sm sec" data-a="kdvcsv">KDV özetini indir (Excel'de açılır)</button></div>`;
+};
+{ const _k3 = kaIntent; kaIntent = function (text) { const f = kaFold(text); if (f.length < 120 && /\bkdv\b/.test(f) && /(ne kadar|kac|tahmin|odenecek|ozet|durum)/.test(f)) { if (!fiOk()) return { content: 'KDV özeti patron, müdür ve muhasebeci için.' }; const d = kdvData(PREVM); return { content: `${PREVM} için hesaplanan KDV ${fmt0(d.hes)}, indirilecek KDV ${fmt0(d.ind)}. ${d.carry > 0 ? 'Fark ' + fmt0(d.carry) + ' devreden KDV olarak görünüyor.' : 'Tahmini ödenecek KDV ' + fmt0(d.pay) + '.'} Bu bir tahmindir, beyanı muhasebeci teyit eder.` }; } return _k3.apply(this, arguments); }; }
+/* -- Çalışan: haklarım şeridi -- */
+{ const _tb = viewTalebim; viewTalebim = function () { let h = _tb.apply(this, arguments); try { const me = S.user.id; const p = PROFILES[me]; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(me); const used = LEAVES.filter((x) => x.uid === me && x.type === 'yillik').reduce((a, x) => a + x.days, 0); const ym = REF_ISO.slice(0, 7); const av = REQS.filter((x) => x.uid === me && x.kind === 'avans' && x.st === 'onay' && String(x.date0 || '').slice(0, 7) === ym).reduce((a, x) => a + x.amt, 0); const pend = LVREQ.filter((x) => x.uid === me && ['bekliyor', 'yanit', 'karsi'].includes(x.status)).length + REQS.filter((x) => x.uid === me && x.st === 'bekliyor').length;
+  const strip = `<div class="kpis hk"><div class="kpi"><div class="l">Kalan izin</div><div class="v num">${Math.max(0, ent - used)} gün</div></div><div class="kpi"><div class="l">Bu ay avans</div><div class="v num">${fmt0(av)}</div></div><div class="kpi"><div class="l">Bekleyen</div><div class="v num">${pend}</div></div></div>`; h = h.replace('<div class="op-tg">', strip + '<div class="op-tg">'); } catch (e) {} return h; }; }
+/* -- Çevrimdışı -- */
+(function () { try {
+  window.addEventListener('online', () => { try { PS.last = ''; pSched(); if (typeof xlSync === 'function') xlSync(); } catch (e) {} });
+  setInterval(() => { try { if (PS.state === 'error' && navigator.onLine !== false) { PS.last = ''; pSched(); } } catch (e) {} }, 30000);
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('/sw.js').catch(() => {}); } catch (e) {} })();
+/* -- Yedek -- */
+H.bkopen = () => { S.modal = { type: 'yedek' }; renderModal(); };
+NEWM.yedek = (m) => sheet('Yedek', `<p class="muted small">Tüm verin tek dosyada. Şifreler ve oturum bilgileri yedeğe girmez. Dosyayı güvenli bir yerde sakla.</p>
+  <button class="btn block" data-a="bkdl">${ic('file')} Yedeği indir</button>
+  ${S.user && S.user.role === 'patron' ? `<div class="card" style="margin-top:14px;padding:12px"><b>Yedekten geri yükle</b><p class="small muted" style="margin:4px 0 10px">Şu anki verilerin yedekteki verilerle değişir. Önce yedeğini indirmeni öneririz.</p>${m.fn ? `<div class="callout warn">${ic('alert')}<div><b>${esc(m.fn)}</b> dosyasıyla değiştirilecek.</div></div><button class="btn block" style="margin-top:8px;background:#C0392B" data-a="bkgo">Evet, geri yükle</button>` : `<label class="btn sec block" style="text-align:center;cursor:pointer">Dosya seç<input type="file" accept=".json,application/json" data-ch="bkfile" hidden></label>`}</div>` : ''}`);
+H.bkdl = () => { try { const o = JSON.parse(pSnap()); delete o.AUTH; const d = new Date().toISOString().slice(0, 10); saveBlob('kaispilot-yedek-' + d + '.json', new Blob([JSON.stringify(o)], { type: 'application/json' })); toast('Yedek indirildi.', 'ok'); } catch (e) { toast('Yedek alınamadı.', 'warn'); } };
+H.bkgo = () => { const m = S.modal; if (!m || !m.txt) return; try { const o = JSON.parse(m.txt); delete o.AUTH; if (!pApply(JSON.stringify(o))) throw 0; try { PS.last = ''; pSched(); } catch (e) {} S.modal = null; toast('Yedekten geri yüklendi.', 'ok'); render(); } catch (e) { toast('Yedek dosyası geçersiz.', 'warn'); } };
+document.addEventListener('change', (e) => { const t = e.target; if (!t.dataset || t.dataset.ch !== 'bkfile' || !t.files || !t.files[0]) return; const f = t.files[0]; const rd = new FileReader(); rd.onload = () => { try { const o = JSON.parse(String(rd.result)); if (!o || typeof o !== 'object' || !('LEDGER' in o || 'RECEIPTS' in o)) throw 0; S.modal = { type: 'yedek', fn: f.name, txt: String(rd.result) }; renderModal(); } catch (x) { toast('Bu bir KaisPilot yedeği değil.', 'warn'); } }; rd.readAsText(f); });
+{ const _rm = renderModal; renderModal = function () { const r = _rm.apply(this, arguments); try { const m = S.modal; if (m && m.type === 'menu' && S.user && ['patron', 'muhasebeci'].includes(S.user.role)) { const ft = document.querySelector('#modal-root .mn-ft'); if (ft && !ft.querySelector('[data-a="bkopen"]')) { const b = document.createElement('button'); b.type = 'button'; b.dataset.a = 'bkopen'; b.innerHTML = ic('file', 18) + 'Yedek'; ft.insertBefore(b, ft.firstChild); } } } catch (e) {} return r; }; }
 </script>
 </body>
 </html>
