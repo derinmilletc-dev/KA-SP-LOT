@@ -1412,7 +1412,7 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 <div id="app"></div>
 <div id="toasts" aria-live="polite"></div>
 <div id="modal-root"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="vendor/supabase-2.119.0.js"></script>
 <script>(function(){ if (typeof claude !== 'undefined') return;
   let LS = null; try { localStorage.setItem('kp:t','1'); localStorage.removeItem('kp:t'); LS = localStorage; } catch (e) { LS = null; }
   const mem = {};
@@ -5727,14 +5727,15 @@ function ocrParse(text, conf) {
   const bank = total != null ? (ROWS.find((r) => r.kind === 'gider' && Math.abs(Math.abs(r.amt) - total) < 0.01) || {}).id || null : null;
   return { seller: seller || 'Satıcı okunamadı', date: date || String(new Date().getDate()).padStart(2, '0') + ' ' + MON[new Date().getMonth()], total, rate, cat, bank, conf: Math.max(0.3, Math.min(0.97, c0 * (0.55 + 0.15 * found))), ocr: true, rateGuess: !rk, dateGuess: !date };
 }
-const TJS_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+const TJS_URL = 'vendor/tesseract/tesseract.min.js';
+const TJS_DIR = () => new URL('vendor/tesseract/', document.baseURI).href;
 function loadTJS() { return new Promise((res, rej) => { if (typeof window !== 'undefined' && window.Tesseract) return res(window.Tesseract); const s = document.createElement('script'); s.src = TJS_URL; s.onload = () => (window.Tesseract ? res(window.Tesseract) : rej(new Error('ocr_load'))); s.onerror = () => rej(new Error('ocr_load')); document.head.appendChild(s); }); }
 async function prepImage(file) {
   const img = await new Promise((res, rej) => { const u = URL.createObjectURL(file); const i = new Image(); i.onload = () => { URL.revokeObjectURL(u); res(i); }; i.onerror = () => rej(new Error('img')); i.src = u; });
   const k = Math.min(1, 1800 / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
   const x = c.getContext('2d'); x.filter = 'grayscale(1) contrast(1.35)'; x.drawImage(img, 0, 0, c.width, c.height); return new Promise((res) => c.toBlob((b) => res(b || file), 'image/png'));
 }
-async function ocrFile(file, onProg) { const T = await loadTJS(); let blob = file; try { blob = await prepImage(file); } catch (e) {} const r = await T.recognize(blob, 'tur', { logger: (m) => { if (m && m.status === 'recognizing text' && onProg) onProg(m.progress); } }); return { text: r.data.text, conf: r.data.confidence }; }
+async function ocrFile(file, onProg) { const T = await loadTJS(); let blob = file; try { blob = await prepImage(file); } catch (e) {} const r = await T.recognize(blob, 'tur', { workerPath: TJS_DIR() + 'worker.min.js', corePath: TJS_DIR(), langPath: TJS_DIR(), logger: (m) => { if (m && m.status === 'recognizing text' && onProg) onProg(m.progress); } }); return { text: r.data.text, conf: r.data.confidence }; }
 const _och26 = onChange;
 onChange = function (e) {
   const el = e.target; const ch = el.dataset && el.dataset.ch;
@@ -12507,7 +12508,7 @@ function trErr(m) {
 `; document.head.appendChild(st); } catch (e) {} })();
 
 /* ===== v133: Akıllı Excel: Özet sayfası, tablolar, formüller, açılır listeler; arka planda buluta kaydedilir ===== */
-const XL = { lib: null, hash: '', busy: false, off: false, at: '', err: '', url: 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js' };
+const XL = { lib: null, hash: '', busy: false, off: false, at: '', err: '', url: 'vendor/exceljs-4.4.0/exceljs.min.js' };
 function xlLoad() {
   if (typeof ExcelJS !== 'undefined') return Promise.resolve(ExcelJS);
   if (XL.lib) return XL.lib;
@@ -12741,8 +12742,8 @@ const fiLateN = () => INV.filter(fiLate).length;
 const fiDueRec = () => FREC.filter((r) => r.on !== false && r.next <= fiIso());
 function fiLoad(src) { return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error('yüklenemedi')); document.head.appendChild(sc); }); }
 async function fiPdf(v) {
-  if (!window.html2canvas) await fiLoad('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
-  if (!(window.jspdf && window.jspdf.jsPDF)) await fiLoad('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+  if (!window.html2canvas) await fiLoad('vendor/html2canvas-1.4.1.min.js');
+  if (!(window.jspdf && window.jspdf.jsPDF)) await fiLoad('vendor/jspdf-2.5.1.umd.min.js');
   const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff'; host.innerHTML = fiHTML(v); document.body.appendChild(host);
   try { const cv = await window.html2canvas(host, { scale: 2, backgroundColor: '#fff' }); const pdf = new window.jspdf.jsPDF({ unit: 'pt', format: 'a4' }); const W = 595.28, H = 841.89; let w = W, h = cv.height * W / cv.width; if (h > H) { w = W * H / h; h = H; } pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', (W - w) / 2, 0, w, h); return pdf.output('blob'); } finally { host.remove(); }
 }

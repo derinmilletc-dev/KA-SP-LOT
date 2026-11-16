@@ -32,6 +32,8 @@ jobs:
         run: python3 tests/smoke.py
       - name: Sube kisiti (istemci)
         run: python3 tests/branch_client.py
+      - name: Yerel kutuphaneler + CSP (Excel, PDF, OCR)
+        run: python3 tests/vendor_csp.py
   sql:
     runs-on: ubuntu-latest
     services:
