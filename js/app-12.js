@@ -167,3 +167,131 @@ function mhKdvParts(r) {
   const o = H[n]; if (typeof o !== 'function') return;
   H[n] = function () { try { if (PLAN.ro) { toast('Aboneliğin sona erdiği için kayıt yapılamıyor.', 'warn'); return; } } catch (e) {} return o.apply(this, arguments); };
 });
+
+/* v167: patron kaydı (3 adım), Google ile giriş, Google sonrası hızlı kurulum soruları */
+(() => {
+  const css = document.createElement('style'); css.id = 'sg-css';
+  css.textContent = `.sg-pg{display:flex;gap:6px;margin:2px 0 14px}.sg-pg i{flex:1;height:5px;border-radius:3px;background:#DCE5F1}.sg-pg i.on{background:var(--cini,#0D56A6)}
+.sg-st{font-size:12px;font-weight:700;color:var(--cini,#0D56A6);letter-spacing:.3px;text-transform:uppercase;margin-bottom:4px}
+.sg-g{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;border:1.5px solid #CBD7E6;background:#fff;border-radius:14px;font:inherit;font-weight:600;font-size:16px;color:#1B2B41;cursor:pointer}
+.sg-g:active{transform:scale(.99)}.sg-g svg{flex:none}.sg-or{display:flex;align-items:center;gap:10px;color:#74839A;font-size:13px;margin:12px 0}.sg-or:before,.sg-or:after{content:"";flex:1;height:1px;background:#DCE5F1}
+.sg-hi{display:flex;align-items:center;gap:10px;background:#EEF4FC;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px;color:#1B2B41}.sg-hi b{display:block}
+.sg-ok{font-size:13px;color:#74839A;margin-top:6px}.sg-ok.y{color:#1B8A5A}
+.sg-sm{font-size:13px;color:#4C5E78;margin:2px 0 8px}.sg-row{display:flex;gap:10px;margin-top:6px}.sg-row .lx-alt{flex:0 0 auto;min-width:92px}`;
+  document.head.appendChild(css);
+})();
+const SG_G = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+const sgGoogleBtn = (label) => `<button type="button" class="sg-g" data-a="sggoogle">${SG_G}<span>${label || 'Google ile devam et'}</span></button>`;
+const sgNameOf = () => { const u = SBS.user; const m = (u && u.user_metadata) || {}; return String(m.full_name || m.name || '').trim(); };
+S.sg = S.sg || null;
+function sgInit() { S.sg = { step: SBS.user ? 2 : 1, name: sgNameOf(), em: S.lgEm || '', pw: '', biz: '', tur: '', il: '', cal: '', mods: [], muh: '' }; }
+function sgSnap() {
+  if (!S.sg) return; const g = (id) => { const e = document.getElementById(id); return e ? e.value : undefined; };
+  const set = (k, v) => { if (v !== undefined) S.sg[k] = String(v).trim(); };
+  set('name', g('sg-name')); set('em', g('sg-em')); if (g('sg-pw') !== undefined) S.sg.pw = g('sg-pw'); set('biz', g('sg-biz')); set('il', g('sg-il'));
+  if (document.getElementById('id-tur')) S.sg.tur = g('id-tur') || '';
+  if (document.querySelector('[data-grp="cal"]')) S.sg.cal = pfOn('cal')[0] || ''; if (document.querySelector('[data-grp="muh"]')) S.sg.muh = pfOn('muh')[0] || '';
+  if (document.querySelector('[data-grp="mods"]')) S.sg.mods = pfOn('mods');
+}
+const sgErr = (t) => { S.loginErr = t; const e = document.getElementById('sg-err'); if (e) e.textContent = t; };
+lxCreate = function () {
+  if (!S.sg) sgInit(); const s = S.sg, st = s.step, g = !!SBS.user, nm = esc(s.name.split(' ')[0] || '');
+  const fld = (lab, id, ico, inner) => `<div class="lx-f"><label for="${id}">${lab}</label><div class="lx-in">${ico}${inner}</div></div>`;
+  const pg = `<div class="sg-pg" aria-label="Adım ${st} / 3">${[1, 2, 3].map((i) => `<i class="${i <= st ? 'on' : ''}"></i>`).join('')}</div>`;
+  const titles = { 1: ['Hesabını oluştur', 'Başlamak 1 dakikanı almaz.'], 2: [g && nm ? 'Merhaba ' + nm + ', işletmeni tanıyalım' : 'İşletmeni tanıyalım', 'Sana uygun kurulumu hazırlayacağız.'], 3: ['Son dokunuş', 'Sektörüne göre bir başlangıç seçtik, değiştirebilirsin.'] };
+  let body = '';
+  if (st === 1) body = `${sgGoogleBtn()}<div class="sg-or"><span>veya e-posta ile</span></div>${fld('Ad soyad', 'sg-name', pfIc('user'), `<input id="sg-name" type="text" autocomplete="name" placeholder="Adınız ve soyadınız" value="${esc(s.name)}">`)}
+    ${fld('E-posta', 'sg-em', LXI.mail, `<input id="sg-em" type="email" autocomplete="username" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com" value="${esc(s.em)}">`)}
+    ${fld('Şifre', 'sg-pw', LXI.lock, `<input id="sg-pw" type="password" autocomplete="new-password" placeholder="En az 8 karakter" value="${esc(s.pw)}"><button type="button" class="lx-eye" data-a="pwtog" aria-label="Şifreyi göster veya gizle">${LXI.eye}</button>`)}<div class="sg-ok${s.pw.length >= 8 ? ' y' : ''}" id="sg-pwh">${s.pw.length >= 8 ? 'Şifre uygun.' : 'En az 8 karakter.'}</div>`;
+  else if (st === 2) body = `${g ? `<div class="sg-hi">${LXI.mail}<div><b>${esc(SBS.user.email || 'Hesabın')}</b><span class="small muted">ile giriş yapıldı</span></div></div>` : ''}
+    ${fld('İşletme adı', 'sg-biz', pfIc('store'), `<input id="sg-biz" type="text" autocomplete="organization" placeholder="İşletme adınızı yazın" value="${esc(s.biz)}">`)}
+    <div class="lx-f"><label>Hangi sektördesin?</label>${ddHTML(s.tur, 'İşletme türünüzü seçin')}</div>
+    ${fld('Şehir <span class="lx-opt">isteğe bağlı</span>', 'sg-il', pfIc('store'), `<input id="sg-il" list="sg-ill" autocomplete="off" placeholder="Yazmaya başla" value="${esc(s.il)}"><datalist id="sg-ill">${PF_IL.map((x) => `<option value="${x}">`).join('')}</datalist>`)}`;
+  else body = `<div class="lx-f"><label>Kaç kişi çalışıyor?</label>${pfChips('cal', PF_CAL, s.cal, false)}</div>
+    <div class="lx-f"><label>Hangi bölümleri kullanacaksın?</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Birden fazla seçebilirsin. Sonradan Ayarlar'dan değiştirirsin.</p></div>
+    <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>
+    <p class="lx-crb" style="text-align:left;margin:6px 0 0;font-size:13px;color:#4C5E78">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p>`;
+  const back = st > (g ? 2 : 1) ? `<button type="button" class="lx-alt" data-a="sgback"><b>Geri</b></button>` : '';
+  const nextLbl = st === 3 ? 'İşletmeyi oluştur' : 'Devam';
+  const foot = st === 1 ? `<p class="lx-crb">Zaten hesabın var mı? <button type="button" class="lx-link" data-a="sgexit">Giriş yap</button></p>` : g ? `<p class="lx-crb">Davet koduyla mı katılacaksın? <button type="button" class="lx-link" data-a="sgjoin">Kodu gir</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p>` : '';
+  return `<div class="login lx"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>İşletmenizi tek yerden yönetin.</h2><p>Fiş, ekip, stok ve tedarik süreçlerinizi tek ekrandan kontrol edin.</p></div>${lxArt()}</section>
+  <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form lx-cr" novalidate>${pg}<div class="sg-st">Adım ${st} / 3</div><h1>${titles[st][0]}</h1><p class="lx-sub" style="margin-bottom:12px">${titles[st][1]}</p>
+  ${body}<div class="err" id="sg-err" role="alert">${esc(S.loginErr)}</div>
+  <div class="sg-row">${back}<button class="lx-go" type="button" data-a="sgnext" style="flex:1"><span>${nextLbl}</span>${LXI.arrow}</button></div>${foot}</form></div></section></div>`;
+};
+H.lgcreate = () => { S.lgEm = (document.getElementById('id-em') || {}).value || S.lgEm || ''; S.lgCreate = !S.lgCreate; S.loginErr = ''; if (S.lgCreate) sgInit(); render(); };
+H.sgexit = () => { S.lgCreate = false; S.loginErr = ''; render(); };
+H.sgback = () => { sgSnap(); S.loginErr = ''; if (S.sg.step > (SBS.user ? 2 : 1)) S.sg.step--; render(); };
+H.sgnext = () => {
+  sgSnap(); const s = S.sg;
+  if (s.step === 1) {
+    if (!s.name) return sgErr('Adını ve soyadını yaz.');
+    if (!/^\S+@\S+\.\S{2,}$/.test(s.em)) return sgErr('Geçerli bir e-posta adresi yaz.');
+    if (s.pw.length < 8) return sgErr('Şifre en az 8 karakter olmalı.');
+  } else if (s.step === 2) { if (!s.biz) return sgErr('İşletmenin adını yaz.'); if (!s.tur) return sgErr('Sektörünü seç.'); if (!s.mods.length && PF_SUG[s.tur]) s.mods = PF_SUG[s.tur].slice(); }
+  else return sgFinish();
+  S.loginErr = ''; s.step++; render(); try { window.scrollTo(0, 0); } catch (e) {}
+};
+async function sgFinish() {
+  const s = S.sg; const c = sbClient(); if (!c) return sgErr('Bulut bağlantısı kullanılamıyor.'); if (ID.busy) return; ID.busy = true; S.loginErr = '';
+  try {
+    if (!SBS.user) {
+      let r = await c.auth.signUp({ email: s.em, password: s.pw, options: { data: { full_name: s.name } } });
+      if (r.error && /already registered/i.test(r.error.message || '')) { r = await c.auth.signInWithPassword({ email: s.em, password: s.pw }); if (r.error) throw new Error('Bu e-posta zaten kayıtlı. Giriş yap ekranından şifrenle gir ya da "Şifremi unuttum?" kullan.'); }
+      else if (r.error) throw r.error;
+      if (!r.data.session) { ID.busy = false; return sgErr('Hesap açıldı. E-postana gelen onay bağlantısına tıkla, sonra giriş yap.'); }
+      SBS.user = r.data.session.user;
+    }
+    await sbLoadBiz();
+    if (!ID.mems.length) {
+      const i = await c.from('businesses').insert({ name: s.biz, owner_id: SBS.user.id }); if (i.error) throw i.error;
+      NAMES.u1 = { name: s.name || sgNameOf() || 'Patron', title: 'Patron' }; BIZ = s.biz; wipeData(); PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, mods: s.mods.slice() }; applyNames(); await sbLoadBiz();
+    }
+    ID.busy = false; S.sg = null; S.lgCreate = false; try { sessionStorage.removeItem('kp_lg'); } catch (e) {}
+    if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); try { profPend(); } catch (e) {} render();
+  } catch (e) { ID.busy = false; sgErr(idMsg(e)); }
+}
+profPend = function () {
+  const p = PEND.prof; if (p) { if (!PROF.tur) Object.assign(PROF, { tur: p.tur || '', il: p.il || '', cal: p.cal || '', muh: p.muh || '', mods: p.mods || [] }); PEND.prof = null; pSched(); }
+  if (PEND.tur && !PROF.tur) { PROF.tur = PEND.tur; pSched(); } PEND.tur = '';
+};
+/* Google */
+H.sggoogle = async () => {
+  const c = sbClient(); if (!c) return sgErr('Bulut bağlantısı kullanılamıyor.');
+  try { sessionStorage.setItem('kp_lg', S.lgTab === 'emp' ? 'emp' : 'own'); } catch (e) {}
+  try { const r = await c.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } }); if (r.error) throw r.error; }
+  catch (e) { const m = String((e && e.message) || e); const t = /provider.*not enabled|Unsupported provider/i.test(m) ? 'Google ile giriş henüz açılmamış.' : idMsg(e); S.loginErr = t; const x = document.getElementById('sg-err') || document.getElementById('id-err'); if (x) x.textContent = t; }
+};
+/* Google ile gelen ama işletmesi olmayan hesap */
+H.sgjoin = () => { S.lgTab = 'emp'; S.lgCreate = false; S.loginErr = ''; render(); };
+H.sgclaim = async () => {
+  const code = ((document.getElementById('sg-code') || {}).value || '').trim().toUpperCase(); if (!code) return sgErr('Davet kodunu yaz.');
+  const c = sbClient(); if (!c || !SBS.user) return;
+  try { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; if (x.data && x.data.error) throw new Error(x.data.error); await sbLoadBiz(); if (!ID.mems.length) return sgErr('Kod kabul edildi ama işletme bulunamadı. İşverenle konuş.'); if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); }
+  catch (e) { sgErr(idMsg(e)); }
+};
+H.sgown = () => { S.lgTab = 'own'; S.loginErr = ''; S.lgCreate = true; sgInit(); render(); };
+{
+  const prev = loginHTML;
+  loginHTML = function () {
+    if (!sbOK()) return prev();
+    const noBiz = SBS.user && !S.user && !ID.active && ID.mems.length === 0;
+    if (noBiz && S.lgTab === 'emp') {
+      return `<div class="login lx lx-emp"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>Ekibe hoş geldin.</h2><p>İşvereninin verdiği davet koduyla katıl.</p></div>${lxArt()}</section>
+      <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form" novalidate><h1>Davet koduyla katıl</h1><p class="lx-sub" style="margin-bottom:12px">${esc(SBS.user.email || '')} olarak giriş yapıldı.</p>
+      <div class="lx-f"><label for="sg-code">Davet kodu</label><div class="lx-in">${LXI.lock}<input id="sg-code" type="text" autocapitalize="characters" maxlength="8" placeholder="Örn. K7M2QX" style="text-transform:uppercase;letter-spacing:.5px"></div></div>
+      <div class="err" id="sg-err" role="alert">${esc(S.loginErr)}</div><button class="lx-go" type="button" data-a="sgclaim"><span>Katıl</span>${LXI.arrow}</button>
+      <p class="lx-crb">İşletme sahibi misin? <button type="button" class="lx-link" data-a="sgown">İşletmeni kur</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p></form></div></section></div>`;
+    }
+    if (noBiz && !S.lgCreate) { S.lgTab = 'own'; S.lgCreate = true; sgInit(); }
+    let h = prev();
+    if (!SBS.user && !S.lgCreate && (S.lgTab || 'own') !== 'sup') h = h.replace(/(<form id="idform" class="lx-form" novalidate>)/, `$1${sgGoogleBtn()}<div class="sg-or"><span>veya e-posta ile</span></div>`);
+    return h;
+  };
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'sgform') { e.preventDefault(); (S.sg && S.lgCreate ? H.sgnext : H.sgclaim)(); } });
+  document.addEventListener('keydown', (e) => { if (e.key !== 'Enter') return; const t = e.target; if (!t || t.tagName !== 'INPUT' || !t.closest || !t.closest('#sgform')) return; e.preventDefault(); if (document.getElementById('sg-code')) H.sgclaim(); else H.sgnext(); });
+  document.addEventListener('input', (e) => { const t = e.target; if (t && t.id === 'sg-pw') { const h = document.getElementById('sg-pwh'); if (h) { const ok = t.value.length >= 8; h.textContent = ok ? 'Şifre uygun.' : 'En az 8 karakter.'; h.className = 'sg-ok' + (ok ? ' y' : ''); } } });
+  try { if (sessionStorage.getItem('kp_lg') === 'emp') S.lgTab = 'emp'; } catch (e) {}
+}
