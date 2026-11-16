@@ -3332,7 +3332,7 @@ const daysTo = (iso) => { const a = iso.split('-').map(Number); return Math.roun
 function allDebts() {
   const sal = EMP_IDS.reduce((a, id) => a + Math.max(0, dueOf(id).left), 0);
   const kd = LEDGER.filter((r) => dirOf(r) === 'gelir' && lper(r) === PREVM).reduce((a, r) => a + kdv(r), 0) - gp().reduce((a, r) => a + kdv(r), 0);
-  return DEBTS.map((d) => (d.auto === 'maas' ? Object.assign({}, d, { amt: sal }) : d.auto === 'kdv' ? Object.assign({}, d, { amt: Math.max(0, Math.round(kd)) }) : d)).filter((d) => d.amt > 0 || d.paid).sort((a, b) => (a.due < b.due ? -1 : 1));
+  return DEBTS.map((d) => (d.auto === 'maas' ? Object.assign({}, d, { amt: sal }) : d.auto === 'kdv' ? Object.assign({}, d, { amt: Math.max(0, Math.round(kd)) }) : d)).map(dbRem).filter((d) => d.amt > 0 || d.paid).sort((a, b) => (a.due < b.due ? -1 : 1));
 }
 const debtSoon = () => allDebts().filter((d) => !d.paid && d.on && daysTo(d.due) <= d.rem);
 function dueTxt(d) { const n = daysTo(d.due); return n < 0 ? `<span class="pill p-bad">${-n} gün gecikmiş</span>` : n === 0 ? '<span class="pill p-bad">Bugün</span>' : `<span class="pill ${n <= d.rem ? 'p-warn' : 'p-mute'}">${n} gün kaldı</span>`; }
@@ -12752,7 +12752,7 @@ const fiText = (v) => `${BIZ} · Satış belgesi ${v.no}\nMüşteri: ${v.cust}\n
 H.fiwa = (el) => { const v = INV.find((x) => x.id === el.dataset.id); if (v) window.open('https://wa.me/?text=' + encodeURIComponent(fiText(v)), '_blank'); };
 H.fimail = (el) => { const v = INV.find((x) => x.id === el.dataset.id); if (!v) return; const c = FCUST.find((x) => x.name === v.cust); location.href = 'mailto:' + encodeURIComponent((c && c.eposta) || '') + '?subject=' + encodeURIComponent(BIZ + ' · ' + v.no) + '&body=' + encodeURIComponent(fiText(v) + '\n\nBelgeyi PDF olarak ayrıca ekleyebilirsin.'); };
 H.fipaid = (el) => { const v = INV.find((x) => x.id === el.dataset.id); if (!v) return; v.st = v.st === 'odendi' ? 'bekliyor' : 'odendi'; v.paidAt = v.st === 'odendi' ? fiIso() : ''; try { pSched(); } catch (e) {} toast(v.st === 'odendi' ? 'Tahsil edildi olarak işaretlendi.' : 'Tekrar bekliyor yapıldı.', 'ok'); renderModal(); render(); };
-const fiPill = (v) => v.st === 'odendi' ? '<span class="pill p-ok">Ödendi</span>' : fiLate(v) ? '<span class="pill p-bad">Vadesi geçti</span>' : '<span class="pill p-warn">Bekliyor</span>';
+const fiPill = (v) => v.st === 'odendi' ? '<span class="pill p-ok">Ödendi</span>' : (v.pays && v.pays.length && ivPaidAmt(v) > 0) ? (fiLate(v) ? '<span class="pill p-bad">Vadesi geçti · kalan ' + fmt0(ivOpen(v)) + '</span>' : '<span class="pill p-warn">Kısmi · kalan ' + fmt0(ivOpen(v)) + '</span>') : fiLate(v) ? '<span class="pill p-bad">Vadesi geçti</span>' : '<span class="pill p-warn">Bekliyor</span>';
 H.fisave = () => { const m = S.modal; if (!m.cust.trim()) { toast('Müşteri adını yaz.', 'warn'); return; } const ls = m.lines.filter((l) => (Number(l.p) || 0) > 0); if (!ls.length) { toast('En az bir kalemin fiyatı olmalı.', 'warn'); return; } ls.forEach((l) => { if (!l.d.trim()) l.d = 'Hizmet'; });
   const c = fiCalc(ls); const iso = fiIso(); const v = { id: 'iv' + (++seq), no: fiNo(), date: m.date || fiToday(), iso, due: FTPL.vade ? addDays(iso, Number(FTPL.vade)) : iso, st: 'bekliyor', cust: m.cust.trim(), vkn: m.vkn, adr: m.adr, lines: ls.map((l) => Object.assign({}, l)), net: c.net, tot: c.tot, by: S.user.id, note: m.note || '' };
   INV.push(v); if (m.tolg) LEDGER.push({ id: 'g' + (++seq), date: v.date, desc: 'Fatura ' + v.no + ' · ' + v.cust, acc: 'Diğer gelir', doc: 'Fatura', rate: Math.max.apply(null, ls.map((l) => Number(l.r) || 0)), total: c.tot, dir: 'gelir', src: 'Kais' });
@@ -12788,13 +12788,13 @@ H.fxdel = (el) => { const i = FITEMS.findIndex((x) => x.id === el.dataset.id); i
 NEWM.fatura_list = (m) => { const tab = m.tab || 'fat'; const t = (k, l, n) => `<button type="button" class="${tab === k ? 'on' : ''}" data-a="fitab" data-t="${k}">${l}${n ? ' ' + n : ''}</button>`; const dueN = fiDueRec().length;
   const tabs = `<div class="cb-chips" style="margin:0 0 12px">${t('fat', 'Faturalar', INV.length ? '(' + INV.length + ')' : '')}${t('tekrar', 'Tekrarlayan', dueN ? '(' + dueN + ' hazır)' : FREC.length ? '(' + FREC.length + ')' : '')}${t('musteri', 'Müşteriler', FCUST.length ? '(' + FCUST.length + ')' : '')}${t('urun', 'Ürün/hizmet', FITEMS.length ? '(' + FITEMS.length + ')' : '')}</div>`;
   const row = (a, b, c) => `<div class="cb-my"><span>${a}<br><small class="muted">${b}</small></span>${c}</div>`; let body = '';
-  if (tab === 'fat') { const bek = INV.filter((v) => v.st !== 'odendi').reduce((a, v) => a + v.tot, 0); body = (INV.length ? `<div class="card" style="padding:12px;margin-bottom:10px"><div class="row between"><span class="muted small">Tahsil bekleyen</span><b>${fmt(bek)}</b></div>${fiLateN() ? `<div class="small" style="color:#C0392B;margin-top:4px">${fiLateN()} faturanın vadesi geçti</div>` : ''}</div>` : '') + (INV.length ? INV.slice().reverse().map((v) => `<button class="card" data-a="fiopen" data-id="${v.id}" style="width:100%;text-align:left;margin-bottom:8px;padding:12px;display:flex;justify-content:space-between;gap:8px;align-items:center"><span><b>${esc(v.cust)}</b><br><small class="muted">${esc(v.no)} · ${esc(v.date)}</small></span><span style="text-align:right"><b>${fmt(v.tot)}</b><br>${fiPill(v)}</span></button>`).join('') : '<p class="muted">Henüz fatura kesmedin.</p>'); }
+  if (tab === 'fat') { const bek = INV.filter((v) => v.st !== 'odendi').reduce((a, v) => a + ivOpen(v), 0); body = (INV.length ? `<div class="card" style="padding:12px;margin-bottom:10px"><div class="row between"><span class="muted small">Tahsil bekleyen</span><b>${fmt(bek)}</b></div>${fiLateN() ? `<div class="small" style="color:#C0392B;margin-top:4px">${fiLateN()} faturanın vadesi geçti</div>` : ''}</div>` : '') + (INV.length ? INV.slice().reverse().map((v) => `<button class="card" data-a="fiopen" data-id="${v.id}" style="width:100%;text-align:left;margin-bottom:8px;padding:12px;display:flex;justify-content:space-between;gap:8px;align-items:center"><span><b>${esc(v.cust)}</b><br><small class="muted">${esc(v.no)} · ${esc(v.date)}</small></span><span style="text-align:right"><b>${fmt(v.tot)}</b><br>${fiPill(v)}</span></button>`).join('') : '<p class="muted">Henüz fatura kesmedin.</p>'); }
   if (tab === 'tekrar') body = FREC.length ? FREC.map((r) => { const due = r.next <= fiIso(); return row(esc(r.cust), 'Her ay · sıradaki ' + r.next.split('-').reverse().join('.') + ' · ' + fmt(fiCalc(r.lines).tot), `${due ? `<button class="btn sm" data-a="frkes" data-id="${r.id}" style="width:auto;height:auto;background:#0F3F7A;color:#fff;padding:8px 14px;font:600 13px system-ui">Kes</button>` : ''}<button type="button" data-a="frdel" data-id="${r.id}" aria-label="Sil">×</button>`); }).join('') : '<p class="muted small">Fatura keserken "Her ay tekrarla"yı işaretle; her ay hatırlatılır.</p>';
   if (tab === 'musteri') body = FCUST.length ? FCUST.map((u) => row(esc(u.name), esc([u.vkn, u.eposta].filter(Boolean).join(' · ') || 'Bilgi yok'), `<button type="button" data-a="fcdel" data-id="${u.id}" aria-label="Sil">×</button>`)).join('') : '<p class="muted small">Fatura kestikçe müşteriler burada birikir.</p>';
   if (tab === 'urun') body = FITEMS.length ? FITEMS.map((x) => row(esc(x.d), fmt(x.p) + ' + %' + x.r + ' KDV', `<button type="button" data-a="fxdel" data-id="${x.id}" aria-label="Sil">×</button>`)).join('') : '<p class="muted small">Faturaya yazdığın ürün ve hizmetler burada birikir, sonra tek dokunuşla eklenir.</p>';
   return sheet('Faturalar', tabs + body); };
 { const _ta = tabloHTML; tabloHTML = function () { let h = _ta.apply(this, arguments); const n = fiLateN() + fiDueRec().length; return h.replace(/(data-a="finlist">Faturalarım(?: \(\d+\))?)/, `$1${n ? ' <span class="pill p-bad" style="margin-left:4px">' + n + '</span>' : ''}`); }; }
-function kaInvStatus() { if (!fiOk()) return { content: 'Bu bilgi patron, müdür ve muhasebeci için.' }; const bek = INV.filter((v) => v.st !== 'odendi'); if (!bek.length) return { content: INV.length ? 'Kestiğin tüm faturalar tahsil edilmiş.' : 'Henüz fatura kesmedin.' }; const late = bek.filter(fiLate); const tot = bek.reduce((a, v) => a + v.tot, 0); return { content: `${bek.length} faturadan ${fmt(tot)} tahsil bekliyor.${late.length ? ' Vadesi geçenler: ' + late.map((v) => v.cust + ' (' + fmt(v.tot) + ')').join(', ') + '.' : ' Vadesi geçen yok.'}` }; }
+function kaInvStatus() { if (!fiOk()) return { content: 'Bu bilgi patron, müdür ve muhasebeci için.' }; const bek = INV.filter((v) => v.st !== 'odendi'); if (!bek.length) return { content: INV.length ? 'Kestiğin tüm faturalar tahsil edilmiş.' : 'Henüz fatura kesmedin.' }; const late = bek.filter(fiLate); const tot = bek.reduce((a, v) => a + ivOpen(v), 0); return { content: `${bek.length} faturadan ${fmt(tot)} tahsil bekliyor.${late.length ? ' Vadesi geçenler: ' + late.map((v) => v.cust + ' (' + fmt(ivOpen(v)) + ')').join(', ') + '.' : ' Vadesi geçen yok.'}` }; }
 { const _k2 = kaIntent; kaIntent = function (text) { const f = kaFold(text); if (f.length < 160 && /\bfatura/.test(f) && /\b(vade|tahsil|odenmemis|odemedi|bekleyen|alacak|geciken)/.test(f)) return kaInvStatus(); return _k2.apply(this, arguments); }; }
 
 /* ===== v138: ekstre↔fatura eşleştirme, KDV özeti, haklarım şeridi, çevrimdışı, yedek ===== */
@@ -12804,7 +12804,7 @@ function fxMatches() {
   const used = new Set(INV.filter((v) => v.bank).map((v) => v.bank)); const out = [];
   INV.filter((v) => v.st !== 'odendi').forEach((v) => {
     const w = fxFold(v.cust).split(/\s+/).filter((x) => x.length >= 3);
-    const c = ROWS.filter((r) => r.amt > 0 && !used.has(r.id) && Math.abs(r.amt - v.tot) < 0.01).map((r) => { const d = fxFold(r.desc); return { r, hit: w.some((x) => d.includes(x)) }; }).sort((a, b) => b.hit - a.hit)[0];
+    const c = ROWS.filter((r) => r.amt > 0 && !used.has(r.id) && Math.abs(r.amt - ivOpen(v)) < 0.01).map((r) => { const d = fxFold(r.desc); return { r, hit: w.some((x) => d.includes(x)) }; }).sort((a, b) => b.hit - a.hit)[0];
     if (c) { used.add(c.r.id); out.push({ v, r: c.r, sure: c.hit }); }
   });
   return out;
@@ -12987,7 +12987,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v156';
+const APP_VER = 'v157';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13098,12 +13098,12 @@ const tkAuto = (d) => (d <= 7 ? 'nazik' : d <= 21 ? 'net' : 'son');
 const tkTone = { nazik: 'Nazik', net: 'Net', son: 'Son uyarı' };
 function tkGroups() {
   const m = {}; INV.filter((v) => fiLate(v)).forEach((v) => { const k = String(v.cust || '—').trim().toLocaleLowerCase('tr'); (m[k] || (m[k] = { key: k, name: v.cust || '—', inv: [] })).inv.push(v); });
-  return Object.values(m).map((g) => { g.inv.sort((a, b) => (a.due < b.due ? -1 : 1)); g.total = g.inv.reduce((t, v) => t + (Number(v.tot) || 0), 0); g.days = Math.max.apply(null, g.inv.map(tkDays)); g.last = Math.max.apply(null, g.inv.map((v) => (v.rem && v.rem.length ? v.rem[v.rem.length - 1].t : 0)).concat([0])); return g; }).sort((a, b) => b.days - a.days || b.total - a.total);
+  return Object.values(m).map((g) => { g.inv.sort((a, b) => (a.due < b.due ? -1 : 1)); g.total = g.inv.reduce((t, v) => t + ivOpen(v), 0); g.days = Math.max.apply(null, g.inv.map(tkDays)); g.last = Math.max.apply(null, g.inv.map((v) => (v.rem && v.rem.length ? v.rem[v.rem.length - 1].t : 0)).concat([0])); return g; }).sort((a, b) => b.days - a.days || b.total - a.total);
 }
 function tkPhone(g) { const f = FCUST.find((x) => String(x.name).trim().toLocaleLowerCase('tr') === g.key); const c = (typeof CUSTOMERS !== 'undefined' ? CUSTOMERS : []).find((x) => String(x.name).trim().toLocaleLowerCase('tr') === g.key); return (f && (f.tel || f.phone)) || (c && (c.phone || c.tel)) || ''; }
 function tkText(g, tone) {
   const dd = (iso) => iso.split('-').reverse().join('.'); const iban = (EDOC && EDOC.iban) || ''; const ad = String(g.name).split(/\s+/)[0];
-  const one = g.inv.length === 1; const lines = g.inv.map((v) => `• ${v.no} · ${fmt0(v.tot)} · vade ${dd(v.due)} (${tkDays(v)} gün)`).join('\n');
+  const one = g.inv.length === 1; const lines = g.inv.map((v) => `• ${v.no} · ${fmt0(ivOpen(v))} · vade ${dd(v.due)} (${tkDays(v)} gün)`).join('\n');
   const head = `Merhaba ${ad},`;
   const body = tone === 'nazik' ? (one ? `${BIZ} olarak ${g.inv[0].no} numaralı faturamızın (${fmt0(g.total)}) vadesi ${dd(g.inv[0].due)} tarihinde doldu. Gözden kaçmış olabilir diye hatırlatmak istedik. Ödemeyi yaptıysanız lütfen dikkate almayın.` : `${BIZ} olarak aşağıdaki faturalarımızın vadesi doldu. Gözden kaçmış olabilir diye hatırlatmak istedik. Ödemeyi yaptıysanız lütfen dikkate almayın.\n${lines}\nToplam: ${fmt0(g.total)}`)
     : tone === 'net' ? `${BIZ} olarak aşağıdaki ${one ? 'faturanın' : 'faturaların'} ödemesi ${g.days} gündür bekliyor.\n${lines}${one ? '' : '\nToplam: ' + fmt0(g.total)}\nÖdemeyi bu hafta içinde yapabilir misiniz? Uygun değilse ödeme tarihini bildirmenizi rica ederiz.`
@@ -13112,7 +13112,7 @@ function tkText(g, tone) {
 }
 const tkAgo = (t) => { if (!t) return 'Hiç hatırlatılmadı'; const d = Math.floor((Date.now() - t) / 864e5); return d <= 0 ? 'Bugün hatırlatıldı' : d + ' gün önce hatırlatıldı'; };
 NEWM.tahsilat = () => {
-  const G = tkGroups(); const open = INV.filter((v) => v.st !== 'odendi').reduce((t, v) => t + (Number(v.tot) || 0), 0); const late = G.reduce((t, g) => t + g.total, 0);
+  const G = tkGroups(); const open = INV.filter((v) => v.st !== 'odendi').reduce((t, v) => t + ivOpen(v), 0); const late = G.reduce((t, g) => t + g.total, 0);
   if (!G.length) return sheet('Tahsilat', `<div class="callout">${ic('check')}<div><b>Vadesi geçen fatura yok</b><p style="margin-top:2px">Açık faturalarının toplamı ${fmt0(open)}.</p></div></div>`);
   const top = G[0];
   const cards = G.map((g) => { const tone = TK.tone[g.key] || tkAuto(g.days); const msg = TK.msg[g.key + '|' + tone] != null ? TK.msg[g.key + '|' + tone] : tkText(g, tone); const ph = tkPhone(g); const recent = g.last && Date.now() - g.last < 3 * 864e5;
@@ -13389,7 +13389,7 @@ function mxForecast(days) {
   INV.filter((v) => v.st !== 'odendi' && v.due).forEach((v) => {
     const late = mxDiff(today, v.due); let d = v.due, p = 1, tag = 'fatura';
     if (late > 0) { d = addDays(today, late > 30 ? 14 : 7); p = late > 30 ? 0.5 : 1; tag = 'gecikmiş fatura'; }
-    ev.push({ d, amt: mxN(v.tot) * p, who: v.cust, tag, full: mxN(v.tot) });
+    ev.push({ d, amt: ivOpen(v) * p, who: v.cust, tag, full: ivOpen(v) });
   });
   allDebts().filter((x) => !x.paid && x.due).forEach((x) => { const d = x.due < today ? addDays(today, 1) : x.due; ev.push({ d, amt: -mxN(x.amt), who: x.who, tag: 'borç', full: mxN(x.amt) }); });
   mxRecs().filter((r) => !r.off && mxN(r.total)).forEach((r) => {
@@ -13438,7 +13438,7 @@ function mxAgeBlock(title, rows, tone) {
   return `<div class="card stack" style="margin-top:10px"><div class="row between"><h3>${title}</h3><b class="num">${fmt0(tot)}</b></div>${rows.map((r, i) => { const top = Object.keys(r.who).sort((a, b) => r.who[b] - r.who[a]).slice(0, 2).join(', '); return `<div><div class="row between small"><span>${r.n} <span class="muted">· ${r.c}</span></span><b class="num">${fmt0(r.t)}</b></div><div style="height:8px;border-radius:5px;background:var(--bg2,#eef1f5);margin-top:3px;overflow:hidden"><div style="height:100%;width:${(r.t / mx * 100).toFixed(1)}%;background:${cols[i]};border-radius:5px"></div></div>${top && i > 1 ? `<div class="small muted" style="margin-top:2px">${esc(top)}</div>` : ''}</div>`; }).join('')}</div>`;
 }
 NEWM.mxyas = () => {
-  const al = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: mxN(v.tot), due: v.due, who: v.cust || '—' }))); const bo = mxAge(allDebts().filter((d) => !d.paid).map((d) => ({ amt: mxN(d.amt), due: d.due, who: d.who })));
+  const al = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: ivOpen(v), due: v.due, who: v.cust || '—' }))); const bo = mxAge(allDebts().filter((d) => !d.paid).map((d) => ({ amt: mxN(d.amt), due: d.due, who: d.who })));
   const over = al.slice(1).reduce((t, r) => t + r.t, 0); const old = al[3].t + al[4].t;
   return sheet('Alacak ve borç yaşlandırma', `<div class="callout ${old > 0 ? 'warn' : ''}">${ic(old > 0 ? 'alert' : 'check')}<div><b>Kais yorumu</b><p style="margin-top:2px">${over ? `Vadesi geçen alacağın ${fmt0(over)}.${old > 0 ? ` Bunun ${fmt0(old)} kadarı 60 günü aşmış, tahsili zorlaşıyor. Önce onlara dön.` : ' Hepsi 60 günün altında, hatırlatmayla toparlanır.'}` : 'Vadesi geçmiş alacak yok.'}</p></div></div>${mxAgeBlock('Alacaklar', al)}${mxAgeBlock('Borçlar', bo)}${over ? '<button class="btn block" style="margin-top:12px" data-a="tahsilat">Hatırlatma mesajlarına geç</button>' : ''}`);
 };
@@ -13530,10 +13530,10 @@ function mxMatch(txs) {
     if (todayDup.has(t.key)) { r.kind = 'dup'; return r; }
     const score = (name) => mxWords(name).filter((x) => w.some((y) => y.includes(x) || x.includes(y))).length;
     if (t.amt > 0) {
-      const c = INV.filter((v) => v.st !== 'odendi' && Math.abs(mxN(v.tot) - a) < 0.015 && !used.has('i' + v.id)).sort((x, y) => score(y.cust) - score(x.cust) || Math.abs(mxDiff(x.due || t.iso, t.iso)) - Math.abs(mxDiff(y.due || t.iso, t.iso)))[0];
+      const c = INV.filter((v) => v.st !== 'odendi' && Math.abs(ivOpen(v) - a) < 0.015 && !used.has('i' + v.id)).sort((x, y) => score(y.cust) - score(x.cust) || Math.abs(mxDiff(x.due || t.iso, t.iso)) - Math.abs(mxDiff(y.due || t.iso, t.iso)))[0];
       if (c) { used.add('i' + c.id); r.kind = 'inv'; r.ref = c; return r; }
     } else {
-      const c = DEBTS.filter((d) => !d.paid && Math.abs(mxN(d.amt) - a) < 0.015 && !used.has('d' + d.id)).sort((x, y) => score(y.who) - score(x.who))[0];
+      const c = DEBTS.filter((d) => !d.paid && Math.abs(dbOpen(d) - a) < 0.015 && !used.has('d' + d.id)).sort((x, y) => score(y.who) - score(x.who))[0];
       if (c) { used.add('d' + c.id); r.kind = 'debt'; r.ref = c; return r; }
     }
     const dir = t.amt > 0 ? 'gelir' : 'gider';
@@ -13550,9 +13550,9 @@ NEWM.mxekstre = () => {
   <div class="field" style="margin:8px 0 0"><label for="mx-txt">Ya da buraya yapıştır</label><textarea id="mx-txt" rows="4" style="${inp}" placeholder="16.11.2026;Havale ABC Ltd;12.500,00;98.200,00">${esc(MX.txt)}</textarea></div>
   <label class="row" style="gap:8px;margin:8px 0;align-items:center"><input id="mx-flip" type="checkbox" ${MX.flip ? 'checked' : ''} style="width:20px;height:20px"><span class="small">Giden para artı görünüyorsa işareti ters çevir</span></label><button class="btn block" data-a="mxmatch">Eşleştir</button>`;
   if (!MX.res) return sheet('Banka ekstresi', head);
-  const R = MX.res; const sel = (i) => MX.sel[i] !== false && R[i].kind !== 'dup' && !(R[i].kind === 'led' && MX.sel[i] !== true); const n = R.filter((_, i) => sel(i)).length;
+  const R = MX.res; const sel = (i) => MX.sel[i] !== false && R[i].kind !== 'dup' && !(mxOptK(R[i].kind) && MX.sel[i] !== true); const n = R.filter((_, i) => sel(i)).length;
   const sum = (k) => R.filter((r) => r.kind === k).length;
-  const list = R.map((r, i) => { const t = r.t; const k = mxKind[r.kind]; const who = r.kind === 'inv' ? r.ref.cust + ' · ' + r.ref.no : r.kind === 'debt' ? r.ref.who : r.kind === 'led' ? r.ref.desc : t.desc;
+  const list = R.map((r, i) => { const t = r.t; const k = mxKind[r.kind]; const who = r.alloc ? r.alloc[0].v.cust + ' · ' + r.alloc.map((x) => x.v.no + ' ' + fmt0(x.amt)).join(', ') : r.kind === 'inv' ? r.ref.cust + ' · ' + r.ref.no : r.kind === 'debt' ? r.ref.who : r.kind === 'led' ? r.ref.desc : t.desc;
     return `<label class="row" style="gap:10px;padding:10px 0;border-top:1px solid var(--line,#e5e8ee);align-items:flex-start"><input type="checkbox" data-mxsel="${i}" ${sel(i) ? 'checked' : ''} ${r.kind === 'dup' ? 'disabled' : ''} style="width:20px;height:20px;margin-top:2px;flex:none"><div class="grow" style="min-width:0"><b style="font-weight:600">${esc(who)}</b><div class="small muted">${mxDM(t.iso)} · ${esc(t.desc)}</div><span class="pill ${k[1]}" style="margin-top:4px">${k[0]}</span></div><b class="num" style="color:${t.amt >= 0 ? '#15803d' : '#b42318'};flex:none">${mxSign(t.amt)}</b></label>`; }).join('');
   return sheet('Banka ekstresi', `<div class="kpis"><div class="kpi"><div class="l">Eşleşen</div><div class="v num">${sum('inv') + sum('debt')}</div></div><div class="kpi"><div class="l">Yeni kayıt</div><div class="v num">${sum('new')}</div></div><div class="kpi"><div class="l">Zaten var</div><div class="v num">${sum('led') + sum('dup')}</div></div></div>
   <div class="callout" style="margin-top:10px">${ic('sparkle')}<div><p>Fatura ve borç eşleşmeleri ödendi olarak işaretlenir. Yeni kayıtlar tabloya eklenir, hesabı benzer kayıtlardan tahmin ederim. Seçimi değiştirebilirsin.</p></div></div>
@@ -13582,8 +13582,9 @@ H.mxapply = () => {
   if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return; if (!MX.res) return;
   let a = 0, b = 0, c = 0;
   MX.res.forEach((r, i) => {
-    if (MX.sel[i] === false || r.kind === 'dup' || (r.kind === 'led' && MX.sel[i] !== true)) return; const t = r.t;
-    if (r.kind === 'inv') { r.ref.st = 'odendi'; r.ref.paidAt = t.iso; a++; return; }
+    if (MX.sel[i] === false || r.kind === 'dup' || (mxOptK(r.kind) && MX.sel[i] !== true)) return; const t = r.t;
+    if (r.alloc) { r.alloc.forEach((x) => ivPay(x.v, x.amt, t.iso, 'Banka', t.desc)); a++; return; }
+    if (r.kind === 'inv') { ivPay(r.ref, ivOpen(r.ref), t.iso, 'Banka', t.desc); r.ref.st = 'odendi'; r.ref.paidAt = t.iso; a++; return; }
     if (r.kind === 'debt') { r.ref.paid = true; r.ref.paidAt = t.iso; b++; return; }
     if (r.kind === 'led') { r.ref.bk = t.key; c++; return; }
     const dir = t.amt > 0 ? 'gelir' : 'gider'; const g = r.guess;
@@ -13596,10 +13597,10 @@ H.mxapply = () => {
 /* --- giriş kartı --- */
 function mxCard() {
   if (!mxCan()) return '';
-  let F, A, C; try { F = mxForecast(30); A = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: mxN(v.tot), due: v.due, who: v.cust }))); C = mxClose(); } catch (e) { return ''; }
+  let F, A, C; try { F = mxForecast(30); A = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: ivOpen(v), due: v.due, who: v.cust }))); C = mxClose(); } catch (e) { return ''; }
   const old = A.slice(2).reduce((t, r) => t + r.t, 0); const nr = mxRecs().filter((r) => !r.off).length;
   const tile = (a, i, t, s, w) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px;${w ? 'border-color:#E5484D;' : ''}"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`;
-  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxkdv', 'table', 'KDV hazırlığı', 'Oran bazlı özet, Excel')}${tile('mxpaket', 'send', 'Aylık paket', 'Muhasebeciye gönder')}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${tile('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${tile('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div></div>`;
+  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxkdv', 'table', 'KDV hazırlığı', 'Oran bazlı özet, Excel')}${tile('mxpaket', 'send', 'Excel dönem dosyası', 'Tek dosyada özet, defter, KDV')}${tile('ivdagit', 'wallet', 'Ödeme dağıt', 'Bir ödemeyi birden çok faturaya')}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${tile('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${tile('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div></div>`;
 }
 { const _v = viewHTML; viewHTML = function () { const h = _v.apply(this, arguments); const u = S.user; if (!u || S.modal) return h; if (!((u.role === 'patron' && S.view === 'muhasebe') || (u.role === 'muhasebeci' && S.view === 'borc'))) return h; const c = mxCard(); if (!c) return h; return /^<div[^>]*>/.test(h) ? h.replace(/^(<div[^>]*>)/, (m) => m + c) : c + h; }; }
 
@@ -14031,7 +14032,7 @@ function mxPkData(ym) {
   const K = mxKdv(ym); const rows = K.rows.slice().sort((a, b) => (a.iso < b.iso ? -1 : 1)); const gel = rows.filter((r) => dirOf(r) === 'gelir').reduce((t, r) => t + mxN(r.total), 0), gid = rows.filter((r) => dirOf(r) !== 'gelir').reduce((t, r) => t + mxN(r.total), 0);
   const inv = INV.filter((v) => (v.iso && v.iso.slice(0, 7) === ym) || v.st !== 'odendi'); const openInv = INV.filter((v) => v.st !== 'odendi'); const late = INV.filter((v) => fiLate(v));
   const debts = allDebts().filter((d) => !d.paid); const pend = RECEIPTS.filter((f) => f.status === 'musavirde').length;
-  return { K, rows, gel: r2(gel), gid: r2(gid), net: r2(gel - gid), inv, openInv, late, debts, pend, openAmt: r2(openInv.reduce((t, v) => t + mxN(v.tot), 0)), lateAmt: r2(late.reduce((t, v) => t + mxN(v.tot), 0)), debtAmt: r2(debts.reduce((t, d) => t + mxN(d.amt), 0)) };
+  return { K, rows, gel: r2(gel), gid: r2(gid), net: r2(gel - gid), inv, openInv, late, debts, pend, openAmt: r2(openInv.reduce((t, v) => t + ivOpen(v), 0)), lateAmt: r2(late.reduce((t, v) => t + ivOpen(v), 0)), debtAmt: r2(debts.reduce((t, d) => t + mxN(d.amt), 0)) };
 }
 function mxPkText(ym, D) {
   const NL = String.fromCharCode(10); return [BIZ + ' · ' + ym + ' dönemi muhasebe paketi', 'Gelir: ' + fmt0(D.gel), 'Gider: ' + fmt0(D.gid), 'Net: ' + fmt0(D.net), (D.K.net >= 0 ? 'Ödenecek KDV: ' : 'Devreden KDV: ') + fmt0(Math.abs(D.K.net)), 'Açık alacak: ' + fmt0(D.openAmt) + (D.late.length ? ' (' + D.late.length + ' fatura gecikmiş)' : ''), 'Ödenecek borç: ' + fmt0(D.debtAmt), D.K.nodoc ? D.K.nodoc + ' belgesiz gider var (' + fmt0(D.K.nodocAmt) + ')' : '', D.pend ? D.pend + ' belge onay bekliyor' : '', 'Detaylar ekteki Excel dosyasında.'].filter(Boolean).join(NL);
@@ -14053,7 +14054,7 @@ async function mxPkBuild(ym, D) {
 NEWM.mxpaket = () => {
   const ym = mxYm(); const D = mxPkData(ym); const inp = 'width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit';
   const row = (l, v, w) => `<div class="row between" style="padding:9px 14px;border-top:1px solid var(--line,#e5e8ee)"><span>${l}</span><b class="num"${w ? ' style="color:#b42318"' : ''}>${v}</b></div>`;
-  return sheet('Aylık paket', `<p class="muted small">Muhasebecine göndereceğin dönem paketi tek Excel dosyasında: özet, defter, faturalar, borçlar ve KDV.</p><div class="field" style="margin:8px 0 0"><label for="mk-m">Dönem</label><input id="mk-m" type="month" value="${esc(ym)}" style="${inp}"></div>
+  return sheet('Excel dönem dosyası', `<p class="muted small">Muhasebecine göndereceğin dönem dosyası tek Excel dosyasında: özet, defter, faturalar, borçlar ve KDV.</p><div class="field" style="margin:8px 0 0"><label for="mk-m">Dönem</label><input id="mk-m" type="month" value="${esc(ym)}" style="${inp}"></div>
   <div class="card flush" style="margin-top:10px">${row('Gelir', fmt0(D.gel))}${row('Gider', fmt0(D.gid))}${row('Net', fmt0(D.net))}${row(D.K.net >= 0 ? 'Ödenecek KDV' : 'Devreden KDV', fmt0(Math.abs(D.K.net)))}${row('Açık alacak', fmt0(D.openAmt))}${row('Ödenecek borç', fmt0(D.debtAmt))}${D.late.length ? row('Vadesi geçmiş fatura', D.late.length + ' · ' + fmt0(D.lateAmt), 1) : ''}${D.K.nodoc ? row('Belgesiz gider', D.K.nodoc + ' · ' + fmt0(D.K.nodocAmt), 1) : ''}${D.pend ? row('Onay bekleyen belge', String(D.pend), 1) : ''}</div>
   ${D.K.nodoc || D.pend || D.late.length ? `<div class="callout warn" style="margin-top:10px">${ic('alert')}<div><p>Pakette eksikler var. Göndermeden önce Ay sonu kontrolünden bakabilirsin.</p></div></div>` : ''}
   <div class="row wrap" style="margin-top:12px;gap:8px"><button class="btn grow" data-a="mxpkshare">Paketi paylaş</button><button class="btn sec" data-a="mxpkdl">Excel indir</button></div><p class="small muted" style="margin-top:8px">Paylaş, telefonunda WhatsApp ya da e-posta seçeneklerini açar. Desteklenmiyorsa dosya iner ve özet mesaj hazırlanır.</p>`);
@@ -14084,6 +14085,137 @@ async function brSync(au) {
     if (CL.on && roleOf() === 'patron') { const l = await sbClient().rpc('br_list', { bid: SBS.biz.id }); if (!l.error && l.data && typeof l.data === 'object') { S.settings.brs = l.data; render(); } }
   } catch (x) {}
   return r;
+}; }
+
+/* ===== v157: kısmi tahsilat ve ödeme, çoklu ödeme eşleştirme ===== */
+const ivR = (n) => Math.round(n * 100) / 100;
+function ivPaidAmt(v) { if (v.st === 'odendi') return mxN(v.tot); return Math.min(mxN(v.tot), ivR((v.pays || []).reduce((t, p) => t + mxN(p.amt), 0))); }
+function ivOpen(v) { return v.st === 'odendi' ? 0 : Math.max(0, ivR(mxN(v.tot) - ivPaidAmt(v))); }
+function ivPay(v, amt, iso, src, note) {
+  const a = Math.min(ivR(mxN(amt)), ivOpen(v)); if (!(a > 0)) return 0;
+  (v.pays || (v.pays = [])).push({ id: 'p' + ++seq, iso: iso || fiIso(), amt: a, src: src || 'Elle', note: String(note || '').slice(0, 80) });
+  if (ivOpen(v) <= 0.005) { v.st = 'odendi'; v.paidAt = iso || fiIso(); } return a;
+}
+function dbPaidAmt(d) { return ivR((d.pays || []).reduce((t, p) => t + mxN(p.amt), 0)); }
+function dbRem(d) {
+  if (d.auto || !(d.pays && d.pays.length)) return d; const rest = Math.max(0, ivR(mxN(d.amt) - dbPaidAmt(d)));
+  if (rest <= 0.005) return Object.assign({}, d, { paid: true });
+  return Object.assign({}, d, { orig: d.amt, amt: rest, note: String(d.note || '') + ' · ' + fmt0(dbPaidAmt(d)) + ' ödendi' });
+}
+const dbOpen = (d) => (d.paid ? 0 : dbRem(d).amt);
+function dbPay(d, amt, iso, note) {
+  const a = Math.min(ivR(mxN(amt)), dbOpen(d)); if (!(a > 0)) return 0;
+  (d.pays || (d.pays = [])).push({ id: 'p' + ++seq, iso: iso || fiIso(), amt: a, note: String(note || '').slice(0, 80) });
+  if (dbOpen(d) <= 0.005) { d.paid = true; d.paidAt = iso || fiIso(); } return a;
+}
+const mxOptK = (k) => k === 'led' || k === 'invpart' || k === 'invmulti';
+const ivInp = 'width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit';
+const ivNum = (n) => String(ivR(n)).replace('.', ',');
+
+/* fatura ayrıntısı: ödeme geçmişi + kısmi tahsilat */
+{ const _fo = NEWM.fatura_ok; NEWM.fatura_ok = function (m) {
+  const h = _fo.apply(this, arguments); const v = INV.find((x) => x.id === m.id); if (!v) return h;
+  const pays = v.pays || [];
+  const hist = pays.length ? `<div class="card" style="padding:12px;margin-top:10px"><div class="row between"><b>Tahsilatlar</b><span class="small muted">Kalan ${fmt(ivOpen(v))}</span></div>${pays.map((p) => `<div class="row between small" style="gap:8px;padding:6px 0;border-top:1px solid var(--line,#e5e8ee)"><span>${esc(mxDmy(p.iso))}${p.src ? ' · ' + esc(p.src) : ''}${p.note ? ' · ' + esc(p.note) : ''}</span><b class="num">${fmt(p.amt)}</b></div>`).join('')}</div>` : '';
+  const btn = v.st !== 'odendi' ? `<button class="btn sec block" style="margin-top:8px" data-a="ivpart" data-id="${v.id}">Kısmi tahsilat ekle</button>` : '';
+  return h.replace(/(<button class="btn block[^"]*" style="margin-top:8px" data-a="fipaid")/, hist + btn + '$1');
+}; }
+NEWM.ivpay = (m) => {
+  const v = INV.find((x) => x.id === m.id); if (!v) return sheet('Tahsilat', '<p>Fatura bulunamadı.</p>');
+  return sheet('Kısmi tahsilat · ' + esc(v.no), `<p class="muted small">${esc(v.cust)} · toplam ${fmt(v.tot)} · tahsil edilen ${fmt(ivPaidAmt(v))} · kalan <b>${fmt(ivOpen(v))}</b></p>
+  <div class="field"><label for="iv-amt">Tutar</label><input id="iv-amt" inputmode="decimal" style="${ivInp}" value="${ivNum(ivOpen(v))}"></div>
+  <div class="field"><label for="iv-date">Tarih</label><input id="iv-date" type="date" value="${fiIso()}" style="${ivInp}"></div>
+  <div class="field"><label for="iv-note">Not (isteğe bağlı)</label><input id="iv-note" style="${ivInp}" placeholder="Havale, nakit, çek"></div>
+  <div class="err" id="iv-err" role="alert"></div><button class="btn block" data-a="ivpaysave" data-id="${v.id}">Kaydet</button>`);
+};
+H.ivpart = (el) => { S.modal = { type: 'ivpay', id: el.dataset.id }; renderModal(); };
+H.ivpaysave = (el) => {
+  if (locked()) return; const v = INV.find((x) => x.id === el.dataset.id); if (!v) return; const e = $('#iv-err');
+  const amt = trNum($('#iv-amt').value), iso = $('#iv-date').value || fiIso();
+  if (!(amt > 0)) { if (e) e.textContent = 'Tutarı yaz.'; return; }
+  if (amt > ivOpen(v) + 0.005) { if (e) e.textContent = 'Tutar kalandan fazla (' + fmt(ivOpen(v)) + '). Fazlayı "Ödeme dağıt" ile başka faturaya yazabilirsin.'; return; }
+  ivPay(v, amt, iso, 'Elle', $('#iv-note').value); try { pSched(); } catch (x) {}
+  S.modal = { type: 'fatura_ok', id: v.id }; render(); toast(ivOpen(v) <= 0 ? 'Fatura tamamen tahsil edildi.' : fmt(amt) + ' tahsil edildi, kalan ' + fmt(ivOpen(v)) + '.', 'ok');
+};
+/* tam tahsilat da geçmişe yazılsın; geri alınca ödemeler temizlensin */
+H.fipaid = (el) => {
+  const v = INV.find((x) => x.id === el.dataset.id); if (!v) return;
+  if (v.st === 'odendi') { v.st = 'bekliyor'; v.paidAt = ''; v.pays = []; }
+  else { const iso = fiIso(); ivPay(v, ivOpen(v), iso, 'Elle', ''); v.st = 'odendi'; v.paidAt = iso; }
+  try { pSched(); } catch (e) {} toast(v.st === 'odendi' ? 'Tahsil edildi olarak işaretlendi.' : 'Tekrar bekliyor yapıldı.', 'ok'); renderModal(); render();
+};
+
+/* borç: Ödendi → tutar sor (kısmi ödeme) */
+{ const _dp = H.debtpaid; H.debtpaid = function (el) { const d = DEBTS.find((x) => x.id === el.dataset.id); if (!d || d.auto) return _dp.apply(this, arguments); S.modal = { type: 'dbpay', id: d.id }; renderModal(); }; }
+NEWM.dbpay = (m) => {
+  const d = DEBTS.find((x) => x.id === m.id); if (!d) return sheet('Ödeme', '<p>Borç bulunamadı.</p>'); const rest = dbOpen(d); const pays = d.pays || [];
+  return sheet('Ödeme · ' + esc(d.who), `<p class="muted small">${esc(String(d.note || ''))} · toplam ${fmt(d.amt)} · ödenen ${fmt(dbPaidAmt(d))} · kalan <b>${fmt(rest)}</b></p>
+  <div class="field"><label for="db-amt">Ödenen tutar</label><input id="db-amt" inputmode="decimal" style="${ivInp}" value="${ivNum(rest)}"></div>
+  <div class="field"><label for="db-date">Tarih</label><input id="db-date" type="date" value="${fiIso()}" style="${ivInp}"></div>
+  <p class="small muted" style="margin:4px 0 8px">Tutarı azaltırsan kısmi ödeme olarak kaydedilir, borç kalan tutarla açık kalır.</p>
+  ${pays.length ? `<div class="card" style="padding:10px;margin-bottom:10px">${pays.map((p) => `<div class="row between small" style="padding:4px 0"><span>${esc(mxDmy(p.iso))}</span><b class="num">${fmt(p.amt)}</b></div>`).join('')}</div>` : ''}
+  <div class="err" id="db-err2" role="alert"></div><button class="btn block" data-a="dbpaysave" data-id="${d.id}">Ödendi olarak kaydet</button>`);
+};
+H.dbpaysave = (el) => {
+  if (locked()) return; const d = DEBTS.find((x) => x.id === el.dataset.id); if (!d) return; const e = $('#db-err2'); const amt = trNum($('#db-amt').value), iso = $('#db-date').value || fiIso();
+  if (!(amt > 0)) { if (e) e.textContent = 'Tutarı yaz.'; return; } if (amt > dbOpen(d) + 0.005) { if (e) e.textContent = 'Tutar kalandan fazla (' + fmt(dbOpen(d)) + ').'; return; }
+  dbPay(d, amt, iso, ''); try { pSched(); } catch (x) {} S.modal = null; render(); toast(d.paid ? 'Borç tamamen ödendi.' : fmt(amt) + ' ödendi, kalan ' + fmt(dbOpen(d)) + '.', 'ok');
+};
+
+/* çoklu ödeme: bir ödemeyi müşterinin birden çok faturasına dağıt */
+const IVD = { key: '', amt: '', date: '', al: {}, manual: false };
+function ivdCusts() { const m = {}; INV.filter((v) => v.st !== 'odendi' && ivOpen(v) > 0).forEach((v) => { const k = mxKey(v.cust); (m[k] || (m[k] = { key: k, name: v.cust || '—', inv: [] })).inv.push(v); }); return Object.values(m).sort((a, b) => (a.name < b.name ? -1 : 1)); }
+function ivdInvs() { const g = ivdCusts().find((x) => x.key === IVD.key); return g ? g.inv.slice().sort((a, b) => ((a.due || a.iso || '') < (b.due || b.iso || '') ? -1 : 1)) : []; }
+function ivdAuto() { let left = ivR(trNum(IVD.amt) || 0); IVD.al = {}; ivdInvs().forEach((v) => { const x = Math.min(left, ivOpen(v)); if (x > 0.004) { IVD.al[v.id] = ivR(x); left = ivR(left - x); } }); IVD.manual = false; }
+NEWM.ivdagit = () => {
+  const cs = ivdCusts(); if (!cs.length) return sheet('Ödeme dağıt', '<p class="muted">Açık fatura yok.</p>');
+  const invs = ivdInvs(); const amt = trNum(IVD.amt) || 0; const used = ivR(invs.reduce((t, v) => t + (IVD.al[v.id] || 0), 0)); const left = ivR(amt - used);
+  const rows = invs.map((v) => `<div class="row between" style="gap:8px;padding:8px 0;border-top:1px solid var(--line,#e5e8ee);align-items:center"><div class="grow" style="min-width:0"><b>${esc(v.no)}</b><div class="small muted">vade ${esc(mxDmy(v.due))} · kalan ${fmt(ivOpen(v))}</div></div><input data-ivd="a:${v.id}" inputmode="decimal" style="${ivInp};width:110px;padding:8px 10px" value="${IVD.al[v.id] != null ? ivNum(IVD.al[v.id]) : ''}" placeholder="0" aria-label="${esc(v.no)} tutarı"></div>`).join('');
+  return sheet('Ödeme dağıt', `<p class="muted small">Müşteriden gelen tek ödemeyi, en eski vadeden başlayarak faturalara dağıtır. Tutarları istediğin gibi değiştirebilirsin.</p>
+  <div class="field"><label for="ivd-c">Müşteri</label><select id="ivd-c" data-ivd="cust" style="${ivInp}"><option value="">Seç</option>${cs.map((g) => `<option value="${esc(g.key)}" ${g.key === IVD.key ? 'selected' : ''}>${esc(g.name)} · ${fmt0(g.inv.reduce((t, v) => t + ivOpen(v), 0))}</option>`).join('')}</select></div>
+  <div class="row" style="gap:8px"><div class="field grow" style="margin:0"><label for="ivd-a">Gelen tutar</label><input id="ivd-a" data-ivd="amt" inputmode="decimal" style="${ivInp}" value="${esc(IVD.amt)}" placeholder="0,00"></div><div class="field grow" style="margin:0"><label for="ivd-d">Tarih</label><input id="ivd-d" data-ivd="date" type="date" style="${ivInp}" value="${esc(IVD.date || fiIso())}"></div></div>
+  ${IVD.key ? `<div style="margin-top:10px">${rows}</div><div class="card" style="padding:12px;margin-top:10px"><div class="row between"><span class="muted small">Dağıtılan</span><b>${fmt(used)}</b></div><div class="row between"><span class="muted small">Dağıtılmayan</span><b style="${left < -0.005 ? 'color:#E5484D' : ''}">${fmt(left)}</b></div></div>
+  ${left > 0.005 ? '<p class="small muted" style="margin-top:6px">Dağıtılmayan tutar kayda alınmaz. Fazla ödeme (avans) için ayrıca not al.</p>' : ''}${left < -0.005 ? '<p class="small" style="margin-top:6px;color:#E5484D">Faturalara yazılan toplam, gelen tutardan fazla.</p>' : ''}
+  <div class="err" id="ivd-err" role="alert"></div><button class="btn block" style="margin-top:8px" data-a="ivdsave" ${used > 0.004 && left > -0.005 ? '' : 'disabled'}>Faturalara işle</button>` : ''}`);
+};
+H.ivdagit = () => { IVD.key = ''; IVD.amt = ''; IVD.date = ''; IVD.al = {}; IVD.manual = false; S.modal = { type: 'ivdagit' }; renderModal(); };
+document.addEventListener('change', (e) => {
+  const t = e.target; if (!t || !t.dataset || t.dataset.ivd == null || !S.modal || S.modal.type !== 'ivdagit') return; const k = t.dataset.ivd;
+  if (k === 'cust') { IVD.key = t.value; ivdAuto(); } else if (k === 'amt') { IVD.amt = t.value; ivdAuto(); } else if (k === 'date') IVD.date = t.value;
+  else if (k.indexOf('a:') === 0) { const n = trNum(t.value); const id = k.slice(2); if (n > 0) IVD.al[id] = ivR(n); else delete IVD.al[id]; IVD.manual = true; }
+  renderModal();
+});
+H.ivdsave = () => {
+  if (locked()) return; const invs = ivdInvs(); const amt = trNum(IVD.amt) || 0; const iso = IVD.date || fiIso(); let used = 0, n = 0;
+  invs.forEach((v) => { const a = IVD.al[v.id] || 0; if (a > ivOpen(v) + 0.005) used = NaN; else used += a; }); if (!(used >= 0) || used > amt + 0.005) return toast('Tutarları kontrol et.', 'warn');
+  invs.forEach((v) => { const a = IVD.al[v.id] || 0; if (a > 0 && ivPay(v, a, iso, 'Elle', 'Toplu tahsilat')) n++; });
+  try { pSched(); } catch (x) {} S.modal = null; render(); toast(n + ' faturaya ' + fmt(used) + ' işlendi.', 'ok');
+};
+
+/* banka ekstresi: tek ödeme birden çok faturaya ya da kısmi tahsilata denk gelirse öner (varsayılan kapalı) */
+mxKind.invmulti = ['Birden çok fatura', 'p-info']; mxKind.invpart = ['Kısmi tahsilat', 'p-warn'];
+{ const _mm = mxMatch; mxMatch = function (txs) {
+  const res = _mm.apply(this, arguments); const claimed = new Set(res.filter((r) => r.kind === 'inv' && r.ref).map((r) => r.ref.id));
+  res.forEach((r) => {
+    if (r.kind !== 'new' || !(r.t.amt > 0)) return; const a = Math.abs(r.t.amt); const w = mxWords(r.t.desc); if (!w.length) return;
+    const score = (name) => mxWords(name).filter((x) => w.some((y) => y.includes(x) || x.includes(y))).length;
+    const by = {}; INV.filter((v) => v.st !== 'odendi' && ivOpen(v) > 0 && !claimed.has(v.id)).forEach((v) => { const k = mxKey(v.cust); (by[k] = by[k] || []).push(v); });
+    let best = null, bs = 0, tie = false; Object.keys(by).forEach((k) => { const s = score(by[k][0].cust); if (s > bs) { best = by[k]; bs = s; tie = false; } else if (s === bs && s > 0) tie = true; });
+    if (!best || tie || bs < 1) return; best.sort((x, y) => ((x.due || '') < (y.due || '') ? -1 : 1));
+    const tot = ivR(best.reduce((t, v) => t + ivOpen(v), 0)); const n = Math.min(best.length, 12); let hit = null;
+    const rec = (i, left, pick) => { if (hit) return; if (Math.abs(left) < 0.015 && pick.length) { hit = pick.slice(); return; } if (i >= n || pick.length >= 4 || left < -0.015) return; pick.push(best[i]); rec(i + 1, left - ivOpen(best[i]), pick); pick.pop(); rec(i + 1, left, pick); };
+    rec(0, a, []);
+    if (hit && hit.length > 1) { r.kind = 'invmulti'; r.alloc = hit.map((v) => ({ v, amt: ivOpen(v) })); hit.forEach((v) => claimed.add(v.id)); return; }
+    if (a < tot - 0.015) { let left = a; const al = []; best.forEach((v) => { if (left <= 0.005) return; const x = Math.min(left, ivOpen(v)); al.push({ v, amt: ivR(x) }); left = ivR(left - x); }); r.kind = 'invpart'; r.alloc = al; al.forEach((x) => claimed.add(x.v.id)); }
+  });
+  return res;
+}; }
+
+/* borç/alacak ekstre kapsamı: kısmi tutarlar */
+{ const _cr = mxCariRows; mxCariRows = function (kind, name) {
+  const k = mxKey(name); const rows = _cr.apply(this, arguments);
+  if (kind === 'musteri') return rows.map((r) => { const v = INV.find((x) => x.no === r.no && mxKey(x.cust) === k); return v && r.open && ivPaidAmt(v) > 0 ? Object.assign({}, r, { tot: ivOpen(v), note: 'Kısmi tahsilat (fatura ' + fmt0(v.tot) + ')' }) : r; });
+  return rows.map((r) => { const d = DEBTS.find((x) => mxKey(x.who) === k && (x.note || 'Borç') === r.no); return d && r.open && dbPaidAmt(d) > 0 ? Object.assign({}, r, { tot: dbOpen(d), note: 'Kısmi ödeme' }) : r; });
 }; }
 </script>
 </body>

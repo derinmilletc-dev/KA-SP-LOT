@@ -66,7 +66,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.evaluate("()=>{H.mxpaket()}")
     t = pg.evaluate("()=>document.getElementById('modal-root').innerText")
-    check('Aylik paket penceresi acilir', 'Aylık paket' in t and not errs, errs)
+    check('Excel donem dosyasi penceresi acilir', 'Excel dönem dosyası' in t and not errs, errs)
     pg.close()
     b.close()
 
