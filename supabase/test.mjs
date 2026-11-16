@@ -29,6 +29,20 @@ eq(L.nowIn('Europe/Istanbul',new Date('2026-11-15T13:30:00Z')),{date:'2026-11-15
  eq(L.planErrors(mk('p','a',3).concat(mk('q','b',3),mk('r','c',3),mk('s','d',3)),t)[0].key.startsWith('errs:'),true,'alarm: toplam 12 -> genel alarm');
  eq(L.planErrors(mk('x','a',5),t)[0].key===L.planErrors(mk('x','a',5),new Date('2026-11-16T12:40:00Z'))[0].key,true,'alarm: ayni saatte ayni anahtar');
  eq(L.planErrors(mk('x','a',5),t)[0].key===L.planErrors(mk('x','a',5),new Date('2026-11-16T13:10:00Z'))[0].key,false,'alarm: yeni saat yeni anahtar');}
+{const st={rec:[{id:'r1',desc:'Kira',day:5,total:1000,dir:'gider',acc:'Kira'},{id:'r2',desc:'Gelecek',day:20,total:50},{id:'r3',desc:'Kapali',day:1,total:9,off:true},{id:'r4',desc:'Sonra',day:1,total:9,from:'2026-12'},{id:'r5',desc:'Var',day:1,total:7}]};
+ const a=L.planRec(st,[{id:'gr_r5_2026-11'}],now);
+ eq(a.map(x=>x.id),['gr_r1_2026-11'],'rec: sadece gunu gelen, kapali/gelecek/var atlanir');
+ eq(a[0].iso,'2026-11-05','rec: tarih');
+ eq(L.planRec(st,[...a,{id:'gr_r5_2026-11'}],now),[],'rec: ikinci calisma cift yazmaz');
+ eq(L.planRec({rec:[{id:'z',day:31,total:5}]},[],now),[],'rec: gunu gelmeyen atlanir');
+ eq(L.planRec({rec:[{id:'z',day:31,total:5}]},[],{date:'2026-11-30',min:600}).map(x=>x.iso),['2026-11-30'],'rec: gun 31 ayin son gunu');
+ eq(L.planRec(null,[],now),[],'rec: ayar yok');
+ const inv=[{cust:'A',tot:1000,due:'2026-11-10',st:'bekliyor',pays:[{amt:400}]},{cust:'B',tot:300,due:'2026-11-20',st:'bekliyor'},{cust:'C',tot:50,due:'2026-11-01',st:'odendi'}];
+ eq(L.invOpen(inv[0]),600,'inv: kismi kalan');
+ const t10={date:'2026-11-15',min:10*60+5};
+ const o=L.planOverdue(inv,t10); eq(o&&o.key,'overdue:2026-11-15','overdue: anahtar'); console.log(o&&o.body);
+ eq(L.planOverdue(inv,{date:'2026-11-15',min:9*60}),null,'overdue: erken');
+ eq(L.planOverdue([inv[1],inv[2]],t10),null,'overdue: vadesi gelmemis/odenmis');}
 console.log(bad?'FAILED':'ALL OK');
 {const d=L.planDaily({MAINT:[{st:'acik',pri:'acil'},{st:'bitti'}],REQS:[{st:'bekliyor'}],LVREQ:[{status:'bekliyor'}],MPLAN:[{every:30,last:'2026-10-01'}],RESV:[{date:'2026-11-15',st:'onay',n:4}]},{date:'2026-11-15',min:9*60+5});
 console.log(d&&d.body, L.planDaily({}, {date:'2026-11-15',min:9*60+5}), L.planDaily({MAINT:[{st:'acik'}]},{date:'2026-11-15',min:12*60}));}

@@ -3,7 +3,7 @@
 // 2) Geç kalan çalışan ve sabah özeti için yöneticilere push
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
-import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, planClose, planErrors, lateTxt, validEmail } from './logic.ts';
+import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, planClose, planErrors, planRec, planOverdue, lateTxt, validEmail } from './logic.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
@@ -88,6 +88,20 @@ async function flag(bid: string, marks: { id: string; f: 'cs' | 'rs' }[]) {
   }
 }
 
+// Tekrarlayan kayıtlar: muh bölümüne sürüm kontrollü yazar (istemciyle çakışırsa yeniden dener).
+async function runRec(bid: string, ekip: any, now: { date: string; min: number }) {
+  if (!ekip.SETTINGS || !Array.isArray(ekip.SETTINGS.rec) || !ekip.SETTINGS.rec.length) return;
+  for (let i = 0; i < 3; i++) {
+    const r = await sb.from('app_state').select('state,version').eq('business_id', bid).eq('scope', 'muh').limit(1);
+    const row = r.data && r.data[0]; if (!row) return;
+    const st = JSON.parse(row.state); if (!Array.isArray(st.LEDGER)) st.LEDGER = [];
+    const add = planRec(ekip.SETTINGS, st.LEDGER, now); if (!add.length) return;
+    st.LEDGER.push(...add);
+    const u = await sb.from('app_state').update({ state: JSON.stringify(st), version: row.version + 1, updated_at: new Date().toISOString() }).eq('business_id', bid).eq('scope', 'muh').eq('version', row.version).select('version');
+    if (!u.error && u.data && u.data.length) return;
+  }
+}
+
 // Hata alarmı: son 15 dakikadaki istemci hataları eşiği aşarsa platform yöneticilerine push (aynı hata saatte bir kez).
 const NIL = '00000000-0000-0000-0000-000000000000';
 async function alarmErrors(): Promise<number> {
@@ -132,7 +146,9 @@ Deno.serve(async (req) => {
       }
       // 2) geç kalanlar ve sabah özeti (yöneticilere push)
       const vdRows = await sb.from('app_state').select('state').eq('business_id', bid).in('scope', ['ekip', 'muh', 'stok']); const vd: any = {}; const stok: any = {}; const led: any = {};
-      (vdRows.data || []).forEach((x: any) => { try { const s = JSON.parse(x.state); if (s.VD_F) vd.VD_F = s.VD_F; if (s.VD_T) vd.VD_T = s.VD_T; if (s.STOCK) stok.STOCK = s.STOCK; if (s.SALES) stok.SALES = s.SALES; if (s.LOTS) stok.LOTS = s.LOTS; if (s.ORDERS) stok.ORDERS = s.ORDERS; if (s.LEDGER) led.LEDGER = s.LEDGER; } catch (_) { /* yoksay */ } });
+      (vdRows.data || []).forEach((x: any) => { try { const s = JSON.parse(x.state); if (s.VD_F) vd.VD_F = s.VD_F; if (s.VD_T) vd.VD_T = s.VD_T; if (s.STOCK) stok.STOCK = s.STOCK; if (s.SALES) stok.SALES = s.SALES; if (s.LOTS) stok.LOTS = s.LOTS; if (s.ORDERS) stok.ORDERS = s.ORDERS; if (s.LEDGER) led.LEDGER = s.LEDGER; if (s.INV) led.INV = s.INV; } catch (_) { /* yoksay */ } });
+      try { await runRec(bid, ekip, now); } catch (e) { out.errors.push('rec ' + bid + ': ' + String((e as Error).message)); }
+      const od = planOverdue(led.INV || [], now); if (od && (await claim(bid, od.key, 'overdue'))) out.pushes += await pushManagers(bid, od.title, od.body, od.key);
       const names = ekip.NAMES || {};
       for (const l of planLate(ekip, vd, now)) {
         if (!(await claim(bid, l.key, 'late'))) continue;

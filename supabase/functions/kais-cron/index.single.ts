@@ -225,6 +225,41 @@ function planErrors(rows: ErrRow[], now: Date = new Date()): { key: string; titl
   return out.slice(0, 3);
 }
 
+// Tekrarlayan kayıtlar: ayın günü gelince bir kez, sabit kimlikle (istemci mxRecRun ile aynı kimlik, çift kayıt olmaz).
+function planRec(settings: any, ledger: any[], now: { date: string; min: number }): any[] {
+  const recs: any[] = settings && Array.isArray(settings.rec) ? settings.rec : []; if (!recs.length) return [];
+  const have = new Set((Array.isArray(ledger) ? ledger : []).map((x: any) => x && x.id));
+  const mk = now.date.slice(0, 7); const dd = parseInt(now.date.slice(8), 10); const out: any[] = [];
+  const dim = new Date(Date.UTC(Number(mk.slice(0, 4)), Number(mk.slice(5, 7)), 0)).getUTCDate();
+  recs.forEach((r) => {
+    const total = Number(r.total) || 0;
+    if (r.off || !total || dd < Math.min(r.day || 1, dim) || (r.from && mk < r.from)) return;
+    const id = 'gr_' + r.id + '_' + mk; if (have.has(id)) return;
+    const iso = mk + '-' + String(Math.min(r.day || 1, dd)).padStart(2, '0');
+    const row: any = { id, date: parseInt(iso.slice(8), 10) + ' ' + MONTHS[parseInt(iso.slice(5, 7), 10) - 1], iso, desc: r.desc, acc: r.acc || 'Diğer', doc: r.dir === 'gelir' ? 'Fatura' : '—', rate: Number(r.rate) || 0, total, dir: r.dir === 'gelir' ? 'gelir' : 'gider', src: 'Tekrarlayan', rk: r.id + '|' + mk };
+    if (r.br) row.br = r.br;
+    out.push(row);
+  });
+  return out;
+}
+
+// Faturada kalan tutar (kısmi tahsilat dahil).
+function invOpen(v: any): number {
+  if (!v || v.st === 'odendi') return 0; const tot = Number(v.tot) || 0;
+  const paid = Math.min(tot, (Array.isArray(v.pays) ? v.pays : []).reduce((t: number, p: any) => t + (Number(p.amt) || 0), 0));
+  return Math.max(0, Math.round((tot - paid) * 100) / 100);
+}
+
+// Vadesi geçmiş faturalar: yöneticilere günde bir kez (10:00-12:00 arası).
+function planOverdue(inv: any[], now: { date: string; min: number }): { key: string; title: string; body: string } | null {
+  if (now.min < 10 * 60 || now.min >= 12 * 60 || !Array.isArray(inv)) return null;
+  const late = inv.filter((v) => v && v.due && v.due < now.date && invOpen(v) > 0.005); if (!late.length) return null;
+  const sum = late.reduce((t, v) => t + invOpen(v), 0);
+  const top = late.slice().sort((a, b) => invOpen(b) - invOpen(a))[0];
+  const tl = (n: number) => Math.round(n).toLocaleString('tr-TR') + ' ₺';
+  return { key: 'overdue:' + now.date, title: 'Vadesi geçen alacak', body: late.length + ' fatura, toplam ' + tl(sum) + ' tahsilat bekliyor. En büyüğü: ' + (top.cust || '—') + ' ' + tl(invOpen(top)) + '.' };
+}
+
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const AMODEL = Deno.env.get('KAIS_CRON_MODEL') || 'claude-haiku-5-5';
@@ -308,6 +343,20 @@ async function flag(bid: string, marks: { id: string; f: 'cs' | 'rs' }[]) {
   }
 }
 
+// Tekrarlayan kayıtlar: muh bölümüne sürüm kontrollü yazar (istemciyle çakışırsa yeniden dener).
+async function runRec(bid: string, ekip: any, now: { date: string; min: number }) {
+  if (!ekip.SETTINGS || !Array.isArray(ekip.SETTINGS.rec) || !ekip.SETTINGS.rec.length) return;
+  for (let i = 0; i < 3; i++) {
+    const r = await sb.from('app_state').select('state,version').eq('business_id', bid).eq('scope', 'muh').limit(1);
+    const row = r.data && r.data[0]; if (!row) return;
+    const st = JSON.parse(row.state); if (!Array.isArray(st.LEDGER)) st.LEDGER = [];
+    const add = planRec(ekip.SETTINGS, st.LEDGER, now); if (!add.length) return;
+    st.LEDGER.push(...add);
+    const u = await sb.from('app_state').update({ state: JSON.stringify(st), version: row.version + 1, updated_at: new Date().toISOString() }).eq('business_id', bid).eq('scope', 'muh').eq('version', row.version).select('version');
+    if (!u.error && u.data && u.data.length) return;
+  }
+}
+
 // Hata alarmı: son 15 dakikadaki istemci hataları eşiği aşarsa platform yöneticilerine push (aynı hata saatte bir kez).
 const NIL = '00000000-0000-0000-0000-000000000000';
 async function alarmErrors(): Promise<number> {
@@ -352,7 +401,9 @@ Deno.serve(async (req) => {
       }
       // 2) geç kalanlar ve sabah özeti (yöneticilere push)
       const vdRows = await sb.from('app_state').select('state').eq('business_id', bid).in('scope', ['ekip', 'muh', 'stok']); const vd: any = {}; const stok: any = {}; const led: any = {};
-      (vdRows.data || []).forEach((x: any) => { try { const s = JSON.parse(x.state); if (s.VD_F) vd.VD_F = s.VD_F; if (s.VD_T) vd.VD_T = s.VD_T; if (s.STOCK) stok.STOCK = s.STOCK; if (s.SALES) stok.SALES = s.SALES; if (s.LOTS) stok.LOTS = s.LOTS; if (s.ORDERS) stok.ORDERS = s.ORDERS; if (s.LEDGER) led.LEDGER = s.LEDGER; } catch (_) { /* yoksay */ } });
+      (vdRows.data || []).forEach((x: any) => { try { const s = JSON.parse(x.state); if (s.VD_F) vd.VD_F = s.VD_F; if (s.VD_T) vd.VD_T = s.VD_T; if (s.STOCK) stok.STOCK = s.STOCK; if (s.SALES) stok.SALES = s.SALES; if (s.LOTS) stok.LOTS = s.LOTS; if (s.ORDERS) stok.ORDERS = s.ORDERS; if (s.LEDGER) led.LEDGER = s.LEDGER; if (s.INV) led.INV = s.INV; } catch (_) { /* yoksay */ } });
+      try { await runRec(bid, ekip, now); } catch (e) { out.errors.push('rec ' + bid + ': ' + String((e as Error).message)); }
+      const od = planOverdue(led.INV || [], now); if (od && (await claim(bid, od.key, 'overdue'))) out.pushes += await pushManagers(bid, od.title, od.body, od.key);
       const names = ekip.NAMES || {};
       for (const l of planLate(ekip, vd, now)) {
         if (!(await claim(bid, l.key, 'late'))) continue;

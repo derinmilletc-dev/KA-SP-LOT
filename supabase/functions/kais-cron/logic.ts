@@ -219,3 +219,38 @@ export function planErrors(rows: ErrRow[], now: Date = new Date()): { key: strin
   if (!out.length && total >= 10) out.push({ key: 'errs:' + hour, title: 'Hata alarmı', body: 'Son 15 dakikada ' + total + ' hata geldi (' + Object.keys(g).length + ' farklı türde).' });
   return out.slice(0, 3);
 }
+
+// Tekrarlayan kayıtlar: ayın günü gelince bir kez, sabit kimlikle (istemci mxRecRun ile aynı kimlik, çift kayıt olmaz).
+export function planRec(settings: any, ledger: any[], now: { date: string; min: number }): any[] {
+  const recs: any[] = settings && Array.isArray(settings.rec) ? settings.rec : []; if (!recs.length) return [];
+  const have = new Set((Array.isArray(ledger) ? ledger : []).map((x: any) => x && x.id));
+  const mk = now.date.slice(0, 7); const dd = parseInt(now.date.slice(8), 10); const out: any[] = [];
+  const dim = new Date(Date.UTC(Number(mk.slice(0, 4)), Number(mk.slice(5, 7)), 0)).getUTCDate();
+  recs.forEach((r) => {
+    const total = Number(r.total) || 0;
+    if (r.off || !total || dd < Math.min(r.day || 1, dim) || (r.from && mk < r.from)) return;
+    const id = 'gr_' + r.id + '_' + mk; if (have.has(id)) return;
+    const iso = mk + '-' + String(Math.min(r.day || 1, dd)).padStart(2, '0');
+    const row: any = { id, date: parseInt(iso.slice(8), 10) + ' ' + MONTHS[parseInt(iso.slice(5, 7), 10) - 1], iso, desc: r.desc, acc: r.acc || 'Diğer', doc: r.dir === 'gelir' ? 'Fatura' : '—', rate: Number(r.rate) || 0, total, dir: r.dir === 'gelir' ? 'gelir' : 'gider', src: 'Tekrarlayan', rk: r.id + '|' + mk };
+    if (r.br) row.br = r.br;
+    out.push(row);
+  });
+  return out;
+}
+
+// Faturada kalan tutar (kısmi tahsilat dahil).
+export function invOpen(v: any): number {
+  if (!v || v.st === 'odendi') return 0; const tot = Number(v.tot) || 0;
+  const paid = Math.min(tot, (Array.isArray(v.pays) ? v.pays : []).reduce((t: number, p: any) => t + (Number(p.amt) || 0), 0));
+  return Math.max(0, Math.round((tot - paid) * 100) / 100);
+}
+
+// Vadesi geçmiş faturalar: yöneticilere günde bir kez (10:00-12:00 arası).
+export function planOverdue(inv: any[], now: { date: string; min: number }): { key: string; title: string; body: string } | null {
+  if (now.min < 10 * 60 || now.min >= 12 * 60 || !Array.isArray(inv)) return null;
+  const late = inv.filter((v) => v && v.due && v.due < now.date && invOpen(v) > 0.005); if (!late.length) return null;
+  const sum = late.reduce((t, v) => t + invOpen(v), 0);
+  const top = late.slice().sort((a, b) => invOpen(b) - invOpen(a))[0];
+  const tl = (n: number) => Math.round(n).toLocaleString('tr-TR') + ' ₺';
+  return { key: 'overdue:' + now.date, title: 'Vadesi geçen alacak', body: late.length + ' fatura, toplam ' + tl(sum) + ' tahsilat bekliyor. En büyüğü: ' + (top.cust || '—') + ' ' + tl(invOpen(top)) + '.' };
+}
