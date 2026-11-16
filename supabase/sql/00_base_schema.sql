@@ -2,9 +2,13 @@
 -- Sira: tablolar, kisitlar, indeksler, fonksiyonlar, tetikleyiciler, RLS, politikalar.
 -- Not: otomatik dokum; diger supabase/sql/*.sql dosyalari artimli degisiklik gecmisidir.
 
+create sequence if not exists public.backups_id_seq;
+create sequence if not exists public.booking_requests_id_seq;
+create sequence if not exists public.sales_inbox_id_seq;
+
 -- TABLO account_feedback
 create table if not exists public.account_feedback (
-  id bigint not null,
+  id bigint generated always as identity not null,
   created_at timestamp with time zone not null default now(),
   reason text,
   note text,
@@ -27,7 +31,7 @@ create table if not exists public.admin_announcements (
 
 -- TABLO admin_audit
 create table if not exists public.admin_audit (
-  id bigint not null,
+  id bigint generated always as identity not null,
   at timestamp with time zone not null default now(),
   admin_id uuid,
   email text,
@@ -76,7 +80,7 @@ create table if not exists public.ai_usage (
 
 -- TABLO app_errors
 create table if not exists public.app_errors (
-  id bigint not null,
+  id bigint generated always as identity not null,
   created_at timestamp with time zone not null default now(),
   business_id uuid,
   user_id uuid,
@@ -90,7 +94,7 @@ create table if not exists public.app_errors (
 
 -- TABLO app_events
 create table if not exists public.app_events (
-  id bigint not null,
+  id bigint generated always as identity not null,
   created_at timestamp with time zone not null default now(),
   business_id uuid,
   user_id uuid,
@@ -111,7 +115,7 @@ create table if not exists public.app_state (
 
 -- TABLO audit_log
 create table if not exists public.audit_log (
-  id bigint not null,
+  id bigint generated always as identity not null,
   business_id uuid not null,
   user_id uuid not null default auth.uid(),
   role text,
@@ -122,7 +126,7 @@ create table if not exists public.audit_log (
 
 -- TABLO backups
 create table if not exists public.backups (
-  id bigint not null default nextval('backups_id_seq'::regclass),
+  id bigint not null default nextval('public.backups_id_seq'::regclass),
   business_id uuid not null,
   created_at timestamp with time zone default now(),
   kind text not null default 'gunluk'::text,
@@ -130,6 +134,7 @@ create table if not exists public.backups (
   size integer,
   snap text not null
 );
+alter sequence public.backups_id_seq owned by public.backups.id;
 
 -- TABLO booking_config
 create table if not exists public.booking_config (
@@ -147,7 +152,7 @@ create table if not exists public.booking_config (
 
 -- TABLO booking_requests
 create table if not exists public.booking_requests (
-  id bigint not null default nextval('booking_requests_id_seq'::regclass),
+  id bigint not null default nextval('public.booking_requests_id_seq'::regclass),
   business_id uuid not null,
   name text not null,
   phone text not null,
@@ -158,6 +163,7 @@ create table if not exists public.booking_requests (
   status text not null default 'bekliyor'::text,
   created_at timestamp with time zone default now()
 );
+alter sequence public.booking_requests_id_seq owned by public.booking_requests.id;
 
 -- TABLO business_notes
 create table if not exists public.business_notes (
@@ -258,7 +264,7 @@ create table if not exists public.mail_log (
 
 -- TABLO market_events
 create table if not exists public.market_events (
-  id bigint not null,
+  id bigint generated always as identity not null,
   kind text not null,
   need_id uuid,
   offer_id uuid,
@@ -482,12 +488,13 @@ create table if not exists public.rfqs (
 
 -- TABLO sales_inbox
 create table if not exists public.sales_inbox (
-  id bigint not null default nextval('sales_inbox_id_seq'::regclass),
+  id bigint not null default nextval('public.sales_inbox_id_seq'::regclass),
   business_id uuid not null,
   payload jsonb not null,
   created_at timestamp with time zone default now(),
   imported boolean default false
 );
+alter sequence public.sales_inbox_id_seq owned by public.sales_inbox.id;
 
 -- TABLO supplier_books
 create table if not exists public.supplier_books (
@@ -1122,7 +1129,7 @@ CREATE OR REPLACE FUNCTION public.booking_submit(p_slug text, p_name text, p_pho
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare c booking_config; ph text := regexp_replace(coalesce(p_phone,''), '\\D', '', 'g'); h int; ts timestamp;
+declare c booking_config; ph text := regexp_replace(coalesce(p_phone,''), '\D', '', 'g'); h int; ts timestamp;
 begin
   select * into c from booking_config where slug = p_slug and enabled;
   if not found then return 'kapali'; end if;
@@ -1199,7 +1206,7 @@ begin
   for b in select id from public.businesses where owner_id = v and deleted_at is null loop
     foreach t in array array['app_state','backups','invites','members','onboard_config','onboard_docs','onboard_sub',
                              'pos_tokens','booking_requests','booking_config','push_subs','push_log','sales_inbox','audit_log','kais_memory','mail_log'] loop
-      if to_regclass('public.' \|\| t) is not null then
+      if to_regclass('public.' || t) is not null then
         execute format('delete from public.%I where business_id = $1', t) using b;
       end if;
     end loop;
@@ -1235,7 +1242,7 @@ AS $function$
   from public.suppliers s
   join public.supplier_profiles p on p.supplier_id = s.id
   where s.user_id is not null and auth.uid() is not null
-    and (length(coalesce(q,'')) < 2 or s.name ilike '%'\|\|q\|\|'%' or p.city ilike '%'\|\|q\|\|'%' or p.district ilike '%'\|\|q\|\|'%')
+    and (length(coalesce(q,'')) < 2 or s.name ilike '%'||q||'%' or p.city ilike '%'||q||'%' or p.district ilike '%'||q||'%')
   order by s.user_id, s.created_at
   limit 30;
 $function$
@@ -1403,7 +1410,7 @@ CREATE OR REPLACE FUNCTION public.market_ev_order()
 AS $function$
 begin
   if tg_op = 'INSERT' then insert into public.market_events (kind, order_id) values ('order_onaylandi', new.id);
-  elsif new.status is distinct from old.status then insert into public.market_events (kind, order_id) values ('order_' \|\| new.status, new.id); end if;
+  elsif new.status is distinct from old.status then insert into public.market_events (kind, order_id) values ('order_' || new.status, new.id); end if;
   return new;
 end $function$
 ;
@@ -1607,8 +1614,8 @@ begin
       select name into v_biz from public.businesses where id = n.business_id;
       return query
         select x.user_id, null::uuid, null::text[], 'Yakınında yeni ilan',
-               coalesce(v_biz, 'Bir işletme') \|\| ' ' \|\| trim(trailing '.' from to_char(n.qty, 'FM999999990.99')) \|\| ' ' \|\| n.unit \|\| ' ' \|\| n.product \|\| ' arıyor (' \|\| round(x.km)::text \|\| ' km).',
-               'mkneed' \|\| n.id::text, '/tedarikci/'
+               coalesce(v_biz, 'Bir işletme') || ' ' || trim(trailing '.' from to_char(n.qty, 'FM999999990.99')) || ' ' || n.unit || ' ' || n.product || ' arıyor (' || round(x.km)::text || ' km).',
+               'mkneed' || n.id::text, '/tedarikci/'
           from (select s.user_id, min(public.market_km(p.lat, p.lng, n.lat, n.lng)) as km
                   from public.suppliers s join public.supplier_profiles p on p.supplier_id = s.id
                  where s.user_id is not null and p.lat is not null and n.lat is not null
@@ -1618,24 +1625,24 @@ begin
       select * into v_off from public.market_offers where id = e.offer_id; select * into n from public.market_needs where id = e.need_id;
       if v_off.id is null or n.id is null then continue; end if;
       return query select null::uuid, n.business_id, array['patron','mudur'], 'Yeni teklif geldi',
-        v_off.supplier_name \|\| ' ' \|\| n.product \|\| ' için ' \|\| replace(trim(trailing '.' from trim(trailing '0' from round(v_off.price, 2)::text)), '.', ',') \|\| ' ₺ / ' \|\| n.unit \|\| ' teklif verdi.', 'mkoffer' \|\| v_off.id::text, '/';
+        v_off.supplier_name || ' ' || n.product || ' için ' || replace(trim(trailing '.' from trim(trailing '0' from round(v_off.price, 2)::text)), '.', ',') || ' ₺ / ' || n.unit || ' teklif verdi.', 'mkoffer' || v_off.id::text, '/';
     elsif e.kind like 'order_%' then
       select * into o from public.market_orders where id = e.order_id; if not found then continue; end if;
       select name into v_biz from public.businesses where id = o.business_id;
       if e.kind = 'order_onaylandi' then
-        return query select o.user_id, null::uuid, null::text[], 'Teklifin kabul edildi', coalesce(v_biz, 'İşletme') \|\| ' ' \|\| o.product \|\| ' için teklifini seçti. Teslimat için seni arayacak.', 'mkord' \|\| o.id::text, '/tedarikci/';
+        return query select o.user_id, null::uuid, null::text[], 'Teklifin kabul edildi', coalesce(v_biz, 'İşletme') || ' ' || o.product || ' için teklifini seçti. Teslimat için seni arayacak.', 'mkord' || o.id::text, '/tedarikci/';
       elsif e.kind = 'order_teslim_edildi' then
-        return query select null::uuid, o.business_id, array['patron','mudur'], 'Teslimat bildirildi', o.supplier_name \|\| ' ' \|\| o.product \|\| ' teslimatını yaptığını bildirdi. Teslim aldıysan onayla.', 'mkord' \|\| o.id::text, '/';
+        return query select null::uuid, o.business_id, array['patron','mudur'], 'Teslimat bildirildi', o.supplier_name || ' ' || o.product || ' teslimatını yaptığını bildirdi. Teslim aldıysan onayla.', 'mkord' || o.id::text, '/';
       elsif e.kind = 'order_alindi' then
-        return query select o.user_id, null::uuid, null::text[], 'Teslim onaylandı', coalesce(v_biz, 'İşletme') \|\| ' ' \|\| o.product \|\| ' teslimatını onayladı. Ödeme bekleniyor.', 'mkord' \|\| o.id::text, '/tedarikci/';
-        return query select null::uuid, o.business_id, array['patron','mudur','muhasebeci'], 'Üretici ödemesi bekleniyor', o.supplier_name \|\| ' için ' \|\| public.market_tl(o.total) \|\| ' ödeme yapılacak.', 'mkpay' \|\| o.id::text, '/';
+        return query select o.user_id, null::uuid, null::text[], 'Teslim onaylandı', coalesce(v_biz, 'İşletme') || ' ' || o.product || ' teslimatını onayladı. Ödeme bekleniyor.', 'mkord' || o.id::text, '/tedarikci/';
+        return query select null::uuid, o.business_id, array['patron','mudur','muhasebeci'], 'Üretici ödemesi bekleniyor', o.supplier_name || ' için ' || public.market_tl(o.total) || ' ödeme yapılacak.', 'mkpay' || o.id::text, '/';
       elsif e.kind = 'order_odendi' then
-        return query select o.user_id, null::uuid, null::text[], 'Ödeme bildirildi', coalesce(v_biz, 'İşletme') \|\| ' ' \|\| public.market_tl(coalesce(o.pay_amount, o.total)) \|\| ' ödemeyi bildirdi. Hesabına geçince onayla.', 'mkord' \|\| o.id::text, '/tedarikci/';
+        return query select o.user_id, null::uuid, null::text[], 'Ödeme bildirildi', coalesce(v_biz, 'İşletme') || ' ' || public.market_tl(coalesce(o.pay_amount, o.total)) || ' ödemeyi bildirdi. Hesabına geçince onayla.', 'mkord' || o.id::text, '/tedarikci/';
       elsif e.kind = 'order_sorun' then
         if o.issue_by = 'uretici' then
-          return query select null::uuid, o.business_id, array['patron','mudur'], 'Üretici sorun bildirdi', o.supplier_name \|\| ' ' \|\| o.product \|\| ': ' \|\| left(coalesce(o.issue, ''), 100), 'mkord' \|\| o.id::text, '/';
+          return query select null::uuid, o.business_id, array['patron','mudur'], 'Üretici sorun bildirdi', o.supplier_name || ' ' || o.product || ': ' || left(coalesce(o.issue, ''), 100), 'mkord' || o.id::text, '/';
         else
-          return query select o.user_id, null::uuid, null::text[], 'İşletme sorun bildirdi', coalesce(v_biz, 'İşletme') \|\| ' ' \|\| o.product \|\| ': ' \|\| left(coalesce(o.issue, ''), 100), 'mkord' \|\| o.id::text, '/tedarikci/';
+          return query select o.user_id, null::uuid, null::text[], 'İşletme sorun bildirdi', coalesce(v_biz, 'İşletme') || ' ' || o.product || ': ' || left(coalesce(o.issue, ''), 100), 'mkord' || o.id::text, '/tedarikci/';
         end if;
       end if;
     end if;
@@ -1669,7 +1676,7 @@ CREATE OR REPLACE FUNCTION public.market_tl(x numeric)
  LANGUAGE sql
  IMMUTABLE
 AS $function$
-  select replace(to_char(round(x), 'FM999G999G999'), ',', '.') \|\| ' ₺' $function$
+  select replace(to_char(round(x), 'FM999G999G999'), ',', '.') || ' ₺' $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.my_flags()
@@ -1761,7 +1768,7 @@ AS $function$
       m.role = 'patron'
       or (m.role = 'mudur' and sc in ('stok', 'ekip'))
       or (m.role = 'muhasebeci' and (sc in ('muh', 'ekip') or (not w and left(sc, 5) = 'maas_')))
-      or (m.role = 'calisan' and (sc = 'ekip' or (not w and sc = 'stok') or (not w and sc = 'maas_' \|\| m.app_uid)))
+      or (m.role = 'calisan' and (sc = 'ekip' or (not w and sc = 'stok') or (not w and sc = 'maas_' || m.app_uid)))
     )
   )
 $function$
@@ -1775,7 +1782,7 @@ CREATE OR REPLACE FUNCTION public.staff_create(p_name text, p_role text)
 AS $function$
 declare c text; begin
   if not exists (select 1 from public.suppliers where user_id = auth.uid()) then raise exception 'toptancı değilsin'; end if;
-  c := upper(substr(md5(random()::text \|\| clock_timestamp()::text), 1, 6));
+  c := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
   insert into public.supplier_staff (owner_user, name, role, code) values (auth.uid(), left(p_name, 60), coalesce(p_role, 'surucu'), c);
   return c; end $function$
 ;
@@ -1849,7 +1856,7 @@ declare nm text; rl text; begin
   if rl = 'depocu' and p_state <> 'hazirlaniyor' then raise exception 'depocu yalnızca hazırlanıyor işaretler'; end if;
   if rl = 'surucu' and p_state = 'hazirlaniyor' then raise exception 'sürücü yola çıkış ve teslim işaretler'; end if;
   update public.orders set delivery = p_state, delivery_at = now(), delivery_by = nm,
-    proof = case when p_state = 'teslim_edildi' and p_proof is not null then p_proof \|\| jsonb_build_object('by', nm, 'at', now()) else proof end
+    proof = case when p_state = 'teslim_edildi' and p_proof is not null then p_proof || jsonb_build_object('by', nm, 'at', now()) else proof end
   where id = p_order; end $function$
 ;
 
@@ -1906,7 +1913,7 @@ begin
   select * into n from public.members where id = p_member and business_id = p_business and role = 'mudur';
   if not found then raise exception 'target_must_be_mudur'; end if;
 
-  update public.members set app_uid = '_tmp_' \|\| id::text where id = o.id;
+  update public.members set app_uid = '_tmp_' || id::text where id = o.id;
   update public.members set app_uid = o.app_uid, role = 'patron', display_name = o.display_name where id = n.id;
   update public.members set app_uid = n.app_uid, role = 'mudur', display_name = n.display_name where id = o.id;
   update public.businesses set owner_id = n.user_id where id = p_business;

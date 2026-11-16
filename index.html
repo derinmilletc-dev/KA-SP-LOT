@@ -5259,8 +5259,17 @@ function hideUnreadable() {
 }
 CL.vers = {}; CL.sent = {};
 const isDup = (e) => /duplicate|23505/i.test(String((e && e.message) || '') + String((e && e.code) || ''));
+/* Şube kısıtlı muhasebeci: 'muh' ve 'ekip' paketleri sunucuda süzülür (st_get / st_put). Fonksiyonlar yoksa (SQL uygulanmamış) eski yol. */
+CL.rule = null; CL.ruleKnown = false;
+async function stRule(c) {
+  CL.rule = null; CL.ruleKnown = false; if (roleOf() !== 'muhasebeci') return;
+  const r = await c.rpc('br_rule', { bid: SBS.biz.id });
+  if (!r.error) { CL.ruleKnown = true; CL.rule = r.data || null; }
+}
+const stRows = (c, bid) => (CL.rule ? c.rpc('st_get', { bid }) : c.from('app_state').select('scope,state,version').eq('business_id', bid));
 cloudConflict = async function (sc) {
-  const c = sbClient(); const r = await c.from('app_state').select('scope,state,version').eq('business_id', SBS.biz.id).eq('scope', sc).limit(1);
+  const c = sbClient(); const r = CL.rule ? await c.rpc('st_get', { bid: SBS.biz.id }) : await c.from('app_state').select('scope,state,version').eq('business_id', SBS.biz.id).eq('scope', sc).limit(1);
+  if (CL.rule && r.data) r.data = r.data.filter((x) => x.scope === sc);
   if (r.error || !r.data || !r.data[0]) throw (r.error || new Error('Bulut kaydı okunamadı.'));
   CL.vers[sc] = r.data[0].version; const prev = PS.remote ? [JSON.parse(PS.remote)] : []; PS.remote = mergeP(prev.concat([JSON.parse(r.data[0].state)])); PS.state = 'saved';
   toast('Başka cihazda değişiklik olmuş, güncellendi. Son işlemini kontrol et.', 'warn'); setTimeout(() => { render(); }, 60);
@@ -5270,6 +5279,10 @@ cloudSet = async function (d) {
   for (const sc of Object.keys(sp)) {
     if (!canW(sc)) continue; const str = JSON.stringify(sp[sc]); if (CL.sent[sc] === str) continue; const v = CL.vers[sc] || 0;
     if (v === 0 && roleOf() !== 'patron') continue;
+    if (CL.rule && (sc === 'muh' || sc === 'ekip')) {
+      const u = await c.rpc('st_put', { bid, sc, st: str, ver: v }); if (u.error) throw u.error;
+      if (u.data == null) { await cloudConflict(sc); continue; } CL.vers[sc] = u.data; CL.sent[sc] = str; continue;
+    }
     if (v === 0) { const i = await c.from('app_state').insert({ business_id: bid, scope: sc, state: str, version: 1, updated_by: SBS.user.id }); if (i.error) { if (isDup(i.error)) { await cloudConflict(sc); continue; } throw i.error; } CL.vers[sc] = 1; CL.sent[sc] = str; continue; }
     const u = await c.from('app_state').update({ state: str, version: v + 1, updated_at: new Date().toISOString(), updated_by: SBS.user.id }).eq('business_id', bid).eq('scope', sc).eq('version', v).select('version');
     if (u.error) throw u.error; if (!u.data || !u.data.length) { await cloudConflict(sc); continue; }
@@ -5280,10 +5293,11 @@ cloudSet = async function (d) {
 cloudPoll = async function () {
   if (!CL.on || PS.busy || CL.busy || !SBS.biz) return; CL.busy = true;
   try {
-    const c = sbClient(); const bid = SBS.biz.id; const v = await c.from('app_state').select('scope,version').eq('business_id', bid); if (v.error || !v.data) { CL.busy = false; return; }
+    const c = sbClient(); const bid = SBS.biz.id; const v = CL.rule ? await c.rpc('st_versions', { bid }) : await c.from('app_state').select('scope,version').eq('business_id', bid); if (v.error || !v.data) { CL.busy = false; return; }
     const ch = v.data.filter((x) => x.scope !== 'all' && x.version > (CL.vers[x.scope] || 0));
     if (ch.length) {
-      const res = await Promise.all(ch.map((x) => c.from('app_state').select('scope,state,version').eq('business_id', bid).eq('scope', x.scope).limit(1))); const pl = PS.remote ? [JSON.parse(PS.remote)] : []; let any = false;
+      let res; if (CL.rule) { const all = await c.rpc('st_get', { bid }); const rows = all.data || []; res = ch.map((x) => ({ data: rows.filter((y) => y.scope === x.scope).slice(0, 1) })); }
+      else res = await Promise.all(ch.map((x) => c.from('app_state').select('scope,state,version').eq('business_id', bid).eq('scope', x.scope).limit(1))); const pl = PS.remote ? [JSON.parse(PS.remote)] : []; let any = false;
       res.forEach((r) => { const row = r.data && r.data[0]; if (row) { CL.vers[row.scope] = row.version; pl.push(JSON.parse(row.state)); any = true; } });
       if (any) { CL.at = clTime(); PS.remote = mergeP(pl); render(); }
     }
@@ -5291,7 +5305,8 @@ cloudPoll = async function () {
 };
 cloudAttach = async function () {
   const c = sbClient(); if (!c || !SBS.biz || CL.on) return;
-  const r = await c.from('app_state').select('scope,state,version').eq('business_id', SBS.biz.id);
+  await stRule(c);
+  const r = await stRows(c, SBS.biz.id);
   if (r.error) { CL.err = /scope|app_state/.test(r.error.message || '') ? 'Bulut tablosu güncel değil. kaispilot_roller.sql dosyasını Supabase\'de çalıştır.' : sbMsg(r.error); return; }
   CL.err = ''; const rows = r.data || []; const legacy = rows.find((x) => x.scope === 'all'); const scoped = rows.filter((x) => x.scope !== 'all'); const bid = SBS.biz.id;
   if (!PS.localDb) PS.localDb = PS.db; PS.cloudOn = true; CL.on = true; CL.vers = {}; CL.sent = {};
@@ -5310,7 +5325,7 @@ cloudAttach = async function () {
   if (!scoped.length && !legacy && roleOf() === 'patron') { PS.last = ''; PS.state = 'saving'; pSched(); }
   clearInterval(CL.timer); CL.timer = setInterval(cloudPoll, 8000);
 };
-cloudOff = function () { clearInterval(CL.timer); CL.on = false; CL.vers = {}; CL.sent = {}; PS.cloudOn = false; PS.db = PS.localDb || null; PS.state = 'local'; };
+cloudOff = function () { clearInterval(CL.timer); CL.on = false; CL.rule = null; CL.ruleKnown = false; CL.vers = {}; CL.sent = {}; PS.cloudOn = false; PS.db = PS.localDb || null; PS.state = 'local'; };
 
 /* v21: muhasebeci müşteri listesi (birden çok işletme) */
 const prefGet = () => { try { return localStorage.getItem('kp_biz'); } catch (e) { return null; } };
@@ -12971,7 +12986,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v155';
+const APP_VER = 'v156';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13276,8 +13291,8 @@ function k8EveCard() {
 
 /* --- 2) Şube bazlı yetki (muhasebeci kendi şubelerini görür) --- */
 function brRule() {
-  const u = S.user; if (!u || u.role !== 'muhasebeci' || !BRANCHES.length) return null;
-  const m = (S.settings.brs || {})[u.id]; if (!m || (!(m.b || []).length && !m.none)) return null;
+  const u = S.user; if (!u || u.role !== 'muhasebeci' || (!BRANCHES.length && !(CL.ruleKnown && CL.rule))) return null;
+  const m = CL.ruleKnown ? CL.rule : (S.settings.brs || {})[u.id]; if (!m || (!(m.b || []).length && !m.none)) return null;
   const set = new Set((m.b || []).filter((id) => BRANCHES.some((b) => b.id === id)));
   if (!set.size && !m.none) return null;
   return { set, none: !!m.none, ok: (br) => (br ? set.has(br) : !!m.none) };
@@ -13315,7 +13330,7 @@ function k8BrCard() {
   const m = S.settings.brs || {};
   return `<div class="card stack"><div><h3>Şube yetkisi</h3><p class="muted small" style="margin-top:2px">Muhasebeciler hangi şubelerin kayıtlarını görsün? Hiçbiri seçili değilse tüm şubeleri görür. Seçince diğer şubelerin satır, fatura ve belgeleri onun ekranında gizlenir.</p></div>
   ${acc.map((u) => { const e = m[u.id] || { b: [], none: false }; const all = !e.b.length && !e.none; return `<div class="stack" style="gap:8px"><div class="row between"><b style="font-weight:600">${esc(u.name)}</b><span class="pill ${all ? 'p-info' : 'p-warn'}">${all ? 'Tüm şubeler' : (e.b.length + (e.none ? 1 : 0)) + ' alan'}</span></div><div class="cb-chips" style="margin:0">${BRANCHES.map((b) => `<button type="button" class="${e.b.indexOf(b.id) >= 0 ? 'on' : ''}" data-a="brperm" data-u="${esc(u.id)}" data-b="${esc(b.id)}">${esc(b.name)}</button>`).join('')}<button type="button" class="${e.none ? 'on' : ''}" data-a="brperm" data-u="${esc(u.id)}" data-b="_none">Şubesiz kayıtlar</button></div></div>`; }).join('')}
-  <p class="muted small" style="margin:0">Bu görünüm uygulama içi bir kısıtlamadır. Kısıtlı hesapta Kais AI ve tüm veri yedeği kapalıdır.</p></div>`;
+  <p class="muted small" style="margin:0">Kısıt sunucuda uygulanır: kısıtlı muhasebeci diğer şubelerin verisini hiç almaz. Borç, taslak, not gibi şubesiz kayıtlar da ona gösterilmez. Kısıtlı hesapta Kais AI ve tüm veri yedeği kapalıdır.</p></div>`;
 }
 { const _v = viewRaporX; viewRaporX = function () { const h = _v.apply(this, arguments); const c = k8BrCard(); if (!c) return h; const i = h.lastIndexOf('</div>'); return i > 0 ? h.slice(0, i) + c + h.slice(i) : h + c; }; }
 { const _v = viewAyarlar; viewAyarlar = function () { const h = _v.apply(this, arguments); const c = k8EveCard() + k8TourCard(); return c ? c + h : h; }; }
@@ -14052,6 +14067,23 @@ H.mxpkshare = async () => {
     saveBlob(name, blob); toast('Dosya indirildi. Mesajına ekleyip gönder.', 'ok'); window.open(waLink('', text), '_blank', 'noopener');
   } catch (e) { toast('Paket hazırlanamadı. İnternet bağlantını kontrol et.', 'warn'); }
 };
+
+/* v156: Şube yetkisi sunucuda (supabase/sql/branch_scope.sql). Patron kuralı br_set ile yazar, açılışta br_list ile okur. */
+async function brSync(au) {
+  try {
+    const c = sbClient(); if (!c || !SBS.biz || !CL.on) return;
+    const e = (S.settings.brs || {})[au] || null; const r = await c.rpc('br_set', { bid: SBS.biz.id, au, rule: e });
+    if (r.error && !/function|schema cache|does not exist/i.test(String(r.error.message || ''))) toast('Şube yetkisi sunucuya yazılamadı. Tekrar dene.', 'bad');
+  } catch (x) {}
+}
+{ const _bp = H.brperm; H.brperm = function (el) { const au = el && el.dataset && el.dataset.u; const r = _bp.apply(this, arguments); if (au) brSync(au); return r; }; }
+{ const _ca = cloudAttach; cloudAttach = async function () {
+  const r = await _ca.apply(this, arguments);
+  try {
+    if (CL.on && roleOf() === 'patron') { const l = await sbClient().rpc('br_list', { bid: SBS.biz.id }); if (!l.error && l.data && typeof l.data === 'object') { S.settings.brs = l.data; render(); } }
+  } catch (x) {}
+  return r;
+}; }
 </script>
 </body>
 </html>

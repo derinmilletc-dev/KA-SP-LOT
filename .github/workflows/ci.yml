@@ -30,3 +30,27 @@ jobs:
           playwright install --with-deps chromium
       - name: Duman testi
         run: python3 tests/smoke.py
+      - name: Sube kisiti (istemci)
+        run: python3 tests/branch_client.py
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pg
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: pg
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sema + sube yetkisi testi
+        run: |
+          createdb kt
+          for f in supabase/tests/stub.sql supabase/sql/00_base_schema.sql supabase/sql/branch_scope.sql supabase/tests/branch_scope_test.sql; do
+            echo "== $f"; psql -v ON_ERROR_STOP=1 -q kt -f "$f"
+          done
