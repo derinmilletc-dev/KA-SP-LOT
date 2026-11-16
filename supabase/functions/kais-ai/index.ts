@@ -16,6 +16,7 @@ const MODEL = Deno.env.get('KAIS_AI_MODEL') || 'claude-sonnet-5-5';
 const SB_URL = Deno.env.get('SUPABASE_URL') || '';
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 
+const NL = String.fromCharCode(10);
 const CATS = 'Hammadde, İş yemeği, Akaryakıt, Elektrik, Doğalgaz, Su, Telefon / internet, Kira, Temizlik, Ulaşım, Diğer';
 
 const BASE = `Sen Kais AI'sın: Türkiye'deki küçük işletmeler (kafe, restoran, market) için çalışan bir yönetim ve muhasebe yardımcısı.
@@ -45,6 +46,7 @@ const ROLE_ACTIONS: Record<string, string[]> = {
   calisan: ['stok_guncelle', 'hafiza_kaydet'],
 };
 
+const SAYIM = 'Kip: raf fotoğrafıyla sayım. Fotoğrafta net gördüğün ürünleri say; net görmediğini sayma ve söyle. Sonucu stok_guncelle eylemine tur say olarak koy; stok_id değerini context.stok içinden eşleştir.' + NL;
 const JSON_MODES: Record<string, string> = {
   fis: `Ekteki fiş, fatura ya da makbuzu oku. Yalnızca geçerli JSON döndür:
 {"satici":"","tarih":"YYYY-MM-DD","toplam":0,"kdv_orani":0,"kategori":"","guven":"yuksek|orta|dusuk"}
@@ -125,14 +127,14 @@ export async function handle(req: Request): Promise<Response> {
     // 1) Yapılandırılmış okuma kipleri: yalnızca JSON
     if (JSON_MODES[mode]) {
       if (mode === 'fis' && !atts.length) return ERR('Okunacak fotoğraf ya da PDF bulunamadı.');
-      const t = await claude(BASE + '\n\n' + JSON_MODES[mode], [{ role: 'user', content: contentBlocks(last, atts) }], 700);
+      const t = await claude(BASE + NL + NL + JSON_MODES[mode], [{ role: 'user', content: contentBlocks(last, atts) }], 700);
       const d = parseJson(t);
       if (!d) return ERR('Belge okunamadı. Daha net bir fotoğraf dene.', 422);
       return J({ data: d });
     }
     // 2) Kampanya şablonları: reply içinde JSON dizi
     if (mode === 'kampanya') {
-      const sys = BASE + `\n\nİşletme için müşteriye gidecek e-posta şablonları yaz. Yalnızca geçerli bir JSON dizi döndür: [{"n":"kısa ad","subj":"konu","body":"metin"}]. 5 şablon yaz. Metinde {ad} ve {isletme} yer tutucularını kullan. Abartılı vaat verme, ticari ileti kurallarına uygun, kısa ve samimi ol. Üyelikten çıkma bilgisi ekleme, uygulama ekler.`;
+      const sys = [BASE, '', 'İşletme için müşteriye gidecek e-posta şablonları yaz.', 'Yalnızca geçerli bir JSON dizi döndür, şu biçimde: [ {n, subj, body} ]. n kısa ad, subj konu, body metin; anahtarlar çift tırnaklı olsun.', '5 şablon yaz. Metinde yer tutucu olarak {ad} ve {isletme} kullan.', 'Abartılı vaat verme, ticari ileti kurallarına uygun, kısa ve samimi ol.'].join(NL);
       const t = await claude(sys, [{ role: 'user', content: last }], 2200);
       return J({ reply: t });
     }
@@ -141,7 +143,7 @@ export async function handle(req: Request): Promise<Response> {
     const sys = `${BASE}
 
 Kullanıcının rolü: ${role}. İşletme: ${biz.data.name}.
-${mode === 'sayim' ? 'Kip: raf fotoğrafıyla sayım. Fotoğrafta net gördüğün ürünleri say; net görmediğini sayma ve söyle. Sonucu "stok_guncelle" eylemine tur "say" olarak koy; stok_id context.stok içinden eşleştir.\n' : ''}
+${mode === 'sayim' ? SAYIM : ''}
 ${ACTIONS_DOC}
 Bu rolün kullanabileceği eylemler: ${allowed.join(', ')}. Dışındakini önerme.
 
