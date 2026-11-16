@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v150';
+const APP_VER = 'v151';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13583,7 +13583,7 @@ function mxCard() {
   let F, A, C; try { F = mxForecast(30); A = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: mxN(v.tot), due: v.due, who: v.cust }))); C = mxClose(); } catch (e) { return ''; }
   const old = A.slice(2).reduce((t, r) => t + r.t, 0); const nr = mxRecs().filter((r) => !r.off).length;
   const tile = (a, i, t, s, w) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px;${w ? 'border-color:#E5484D;' : ''}"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`;
-  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}</div><button class="btn sec sm" data-a="mxrec">${ic('plus', 16)} Tekrarlayan kayıtlar${nr ? ' (' + nr + ')' : ''}</button></div>`;
+  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${tile('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${tile('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div></div>`;
 }
 { const _v = viewHTML; viewHTML = function () { const h = _v.apply(this, arguments); const u = S.user; if (!u || S.modal) return h; if (!((u.role === 'patron' && S.view === 'muhasebe') || (u.role === 'muhasebeci' && S.view === 'borc'))) return h; const c = mxCard(); if (!c) return h; return /^<div[^>]*>/.test(h) ? h.replace(/^(<div[^>]*>)/, (m) => m + c) : c + h; }; }
 
@@ -13684,6 +13684,151 @@ H.mxcpdf = () => {
   const html = `<!doctype html><meta charset="utf-8"><title>Cari ekstre</title><style>body{font:14px system-ui;padding:28px;color:#111}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border-bottom:1px solid #ddd;padding:7px 4px;text-align:left}h2{margin:0}.s{margin-top:28px;display:flex;gap:40px}.s div{flex:1;border-top:1px solid #999;padding-top:6px;font-size:12px;color:#555}</style><h2>Cari hesap ekstresi</h2><p>${e(BIZ)}<br>${e(MXC.name)} · ${mxDmy(fiIso())} tarihi itibarıyla</p><table><tr><th>Tarih</th><th>Belge</th><th>Vade</th><th>Durum</th><th>Tutar</th></tr>${tr}</table><p style="margin-top:14px;font-size:16px">Açık bakiye: <b>${fmt(bal)}</b></p><div class="s"><div>${e(BIZ)} kaşe / imza</div><div>${e(MXC.name)} mutabıkız, kaşe / imza</div></div><script>setTimeout(function(){window.print()},300)<\/script>`;
   try { const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); return; } } catch (x) {}
   saveBlob('cari-ekstre.html', new Blob([html], { type: 'text/html;charset=utf-8' })); toast('Dosya indirildi. Açıp yazdır.', 'ok');
+};
+
+/* =====================================================================
+   v151: mevcut Excel / CSV takip dosyasını Kais'e aktarma (akıllı sütun eşleme, önizleme, geri alma)
+   ===================================================================== */
+const MXI = { step: 'pick', sheets: [], si: 0, type: 'defter', map: {}, defDir: 'gider', defRate: 20, fn: '', err: '', done: null };
+const IX_F = {
+  defter: [['date', 'Tarih', /tarih|date|^gün$/, 1], ['desc', 'Açıklama', /açıklama|aciklama|detay|ürün|urun|hizmet|konu|isim|ad[ıi]|ünvan|unvan|başlık|baslik|not/, 0], ['total', 'Tutar', /tutar|toplam|miktar|bedel|fiyat|amount|genel/, 1], ['gelir', 'Gelir sütunu', /^gelir|giren|tahsilat|alacak|satış|satis/, 0], ['gider', 'Gider sütunu', /^gider|çıkan|cikan|ödeme|odeme|alış|alis|borç|borc/, 0], ['dir', 'Tür (gelir/gider)', /tür|tur|tip|yön|yon|işlem|islem/, 0], ['rate', 'KDV oranı', /kdv|oran|vergi/, 0], ['acc', 'Hesap / kategori', /hesap|kategori|grup|kalem|cins/, 0], ['doc', 'Belge türü', /belge|fatura|fiş|fis/, 0]],
+  fatura: [['cust', 'Müşteri', /müşteri|musteri|cari|ünvan|unvan|firma|alıcı|alici|ad[ıi]|isim/, 1], ['no', 'Fatura no', /fatura\s*n|belge\s*n|^no$|numara|seri/, 0], ['date', 'Fatura tarihi', /tarih|date/, 0], ['due', 'Vade', /vade|son\s*öde|son\s*ode/, 0], ['tot', 'Tutar', /tutar|toplam|bakiye|alacak|bedel|genel/, 1], ['st', 'Durum (ödendi mi)', /durum|öden|oden|tahsil|kapan/, 0]],
+  borc: [['who', 'Tedarikçi / kime', /tedarik|kime|alacaklı|alacakli|firma|cari|ünvan|unvan|ad[ıi]|isim/, 1], ['note', 'Açıklama', /açıklama|aciklama|not|detay|konu/, 0], ['amt', 'Tutar', /tutar|toplam|borç|borc|bakiye|bedel|genel/, 1], ['due', 'Vade', /vade|son\s*öde|son\s*ode|tarih/, 0], ['st', 'Durum (ödendi mi)', /durum|öden|oden|kapan/, 0]],
+};
+const IX_T = { defter: 'Gelir gider hareketleri', fatura: 'Faturalar, alacaklar', borc: 'Borçlar, ödenecekler' };
+const ixN = (v) => (typeof v === 'number' ? v : mxNum(v));
+const ixTxt = (v) => String(v == null ? '' : v).trim();
+const ixNorm = (s) => ixTxt(s).toLocaleLowerCase('tr').replace(/\s+/g, ' ');
+const IX_MON = { oca: 1, şub: 2, sub: 2, mar: 3, nis: 4, may: 5, haz: 6, tem: 7, ağu: 8, agu: 8, eyl: 9, eki: 10, kas: 11, ara: 12 };
+function ixDate(v) {
+  if (v == null || v === '') return null; if (typeof v === 'number') { if (v > 30000 && v < 80000) return new Date(Math.round((v - 25569) * 864e5)).toISOString().slice(0, 10); return null; }
+  let s = ixTxt(v); const m0 = s.match(/^(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]{3,})\.?\s+(\d{4})/); if (m0) { const mo = IX_MON[m0[2].toLocaleLowerCase('tr').slice(0, 3)]; if (mo) return m0[3] + '-' + String(mo).padStart(2, '0') + '-' + m0[1].padStart(2, '0'); }
+  const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/); if (m) { let y = +m[3]; if (y < 100) y += 2000; if (+m[2] > 12 || +m[1] > 31) return null; return y + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0'); }
+  return mxDate(s);
+}
+function ixPrep(sh) {
+  const rows = sh.rows; let hi = 0, best = -1;
+  rows.slice(0, 15).forEach((r, i) => { const t = r.filter((c) => { const x = ixTxt(c); return x && ixN(c) === null && !ixDate(c); }).length; if (t > best && t >= 2) { best = t; hi = i; } });
+  const heads = (rows[hi] || []).map((c, i) => ixTxt(c) || 'Sütun ' + (i + 1)); const data = rows.slice(hi + 1).filter((r) => r.some((c) => ixTxt(c)));
+  return { heads, data };
+}
+function ixAuto(type, P) {
+  const map = {}; const used = new Set(); const hn = P.heads.map(ixNorm);
+  IX_F[type].forEach((f) => { const i = hn.findIndex((h, j) => !used.has(j) && f[2].test(h)); if (i >= 0) { map[f[0]] = i; used.add(i); } });
+  const col = (i) => P.data.slice(0, 40).map((r) => r[i]);
+  const frac = (i, fn) => { const c = col(i).filter((x) => ixTxt(x)); return c.length ? c.filter(fn).length / c.length : 0; };
+  const need = (k, fn) => { if (map[k] != null) return; let b = -1, bs = 0.6; P.heads.forEach((_, i) => { if (used.has(i)) return; const s = frac(i, fn); if (s > bs) { bs = s; b = i; } }); if (b >= 0) { map[k] = b; used.add(b); } };
+  const dk = type === 'defter' ? 'date' : type === 'fatura' ? 'date' : 'due'; need(dk, (x) => !!ixDate(x));
+  const ak = type === 'defter' ? 'total' : type === 'fatura' ? 'tot' : 'amt'; if (!(type === 'defter' && (map.gelir != null || map.gider != null))) need(ak, (x) => ixN(x) !== null && !ixDate(x));
+  const tk = type === 'defter' ? 'desc' : type === 'fatura' ? 'cust' : 'who'; need(tk, (x) => ixN(x) === null && ixTxt(x).length > 2);
+  return map;
+}
+function ixDetect(sh) {
+  const P = ixPrep(sh); const nm = ixNorm(sh.name); let best = 'defter', bs = -1;
+  ['defter', 'fatura', 'borc'].forEach((t) => { const m = ixAuto(t, P); const req = IX_F[t].filter((f) => f[3] === 1 || false); let sc = IX_F[t].filter((f) => m[f[0]] != null).length; if (t === 'defter' && (m.gelir != null || m.gider != null) && m.date != null) sc += 2;
+    if (t === 'fatura' && /fatura|alacak|cari|müşteri|musteri/.test(nm)) sc += 3; if (t === 'borc' && /borç|borc|tedarik|ödeme|odeme/.test(nm)) sc += 3; if (t === 'defter' && /gelir|gider|defter|kasa|hareket|muhasebe/.test(nm)) sc += 3;
+    if (t === 'fatura' && m.due == null && m.no == null) sc -= 2; if (t === 'borc' && m.who == null) sc -= 2; if (sc > bs) { bs = sc; best = t; } });
+  return best;
+}
+function ixBuild(type, map, P) {
+  const out = []; let bad = 0, dup = 0; const today = fiIso(); const g = (r, k) => (map[k] != null && map[k] >= 0 ? r[map[k]] : undefined);
+  P.data.forEach((r) => {
+    if (type === 'defter') {
+      const iso = ixDate(g(r, 'date')); if (!iso) { bad++; return; } let tot = null, dir = MXI.defDir;
+      if (map.gelir != null || map.gider != null) { const a = ixN(g(r, 'gelir')) || 0, b = ixN(g(r, 'gider')) || 0; if (a > 0) { tot = a; dir = 'gelir'; } else if (b > 0) { tot = b; dir = 'gider'; } }
+      else { const n = ixN(g(r, 'total')); if (n === null || !n) { bad++; return; } tot = Math.abs(n); const dt = ixNorm(g(r, 'dir')); if (/gelir|satış|satis|tahsilat|giren|alacak/.test(dt)) dir = 'gelir'; else if (/gider|alış|alis|ödeme|odeme|çıkan|cikan|borç|borc/.test(dt)) dir = 'gider'; else if (n < 0) dir = 'gider'; }
+      if (!tot) { bad++; return; } const desc = ixTxt(g(r, 'desc')) || ixTxt(g(r, 'acc')) || 'Aktarılan kayıt'; const rt = ixN(g(r, 'rate')); const rate = rt != null && [0, 1, 8, 10, 18, 20].includes(rt) ? rt : (rt != null && rt > 0 && rt < 1 ? Math.round(rt * 100) : MXI.defRate);
+      const key = iso + '|' + tot.toFixed(2) + '|' + desc.slice(0, 20); if (LEDGER.some((x) => x.ixk === key)) { dup++; return; }
+      out.push({ iso, desc: desc.slice(0, 80), total: Math.round(tot * 100) / 100, dir, rate, acc: ixTxt(g(r, 'acc')) || (dir === 'gelir' ? INCATS[2] : 'Diğer'), doc: ixTxt(g(r, 'doc')).slice(0, 20) || '—', key });
+    } else if (type === 'fatura') {
+      const cust = ixTxt(g(r, 'cust')); const tot = ixN(g(r, 'tot')); if (!cust || !tot || tot <= 0) { bad++; return; }
+      const iso = ixDate(g(r, 'date')) || today; const due = ixDate(g(r, 'due')) || addDays(iso, 30); const st = /öden|oden|tahsil|kapal|evet|^x$|✓|ok/.test(ixNorm(g(r, 'st'))) && !/ödenme|odenme|bekl|açık|acik|hayır|hayir/.test(ixNorm(g(r, 'st'))) ? 'odendi' : 'bekliyor';
+      const no = ixTxt(g(r, 'no')); if (no && INV.some((v) => v.no === no && mxKey(v.cust) === mxKey(cust))) { dup++; return; }
+      out.push({ iso, cust: cust.slice(0, 60), tot: Math.round(tot * 100) / 100, due, st, no });
+    } else {
+      const who = ixTxt(g(r, 'who')); const amt = ixN(g(r, 'amt')); if (!who || !amt || amt <= 0) { bad++; return; }
+      const due = ixDate(g(r, 'due')) || addDays(today, 14); const st = ixNorm(g(r, 'st')); const paid = /öden|oden|kapal|evet|^x$|✓/.test(st) && !/ödenme|odenme|bekl|açık|acik|hayır|hayir/.test(st);
+      const note = ixTxt(g(r, 'note')).slice(0, 60) || 'Borç'; if (DEBTS.some((d) => mxKey(d.who) === mxKey(who) && Math.abs(mxN(d.amt) - amt) < 0.01 && d.due === due)) { dup++; return; }
+      out.push({ who: who.slice(0, 60), note, amt: Math.round(amt * 100) / 100, due, paid });
+    }
+  });
+  return { out, bad, dup };
+}
+const ixCur = () => { const sh = MXI.sheets[MXI.si]; if (!sh) return null; if (!sh._p) sh._p = ixPrep(sh); return sh; };
+function ixSetSheet(i) { MXI.si = i; const sh = ixCur(); if (!sh) return; MXI.type = ixDetect(sh); MXI.map = ixAuto(MXI.type, sh._p); }
+NEWM.mximp = () => {
+  if (MXI.step === 'busy') return sheet('Excel aktar', '<div class="callout">' + ic('clock') + '<div><b>Dosya okunuyor</b><p style="margin-top:2px">Birkaç saniye sürer…</p></div></div>');
+  if (MXI.step === 'done' && MXI.done) { const d = MXI.done; return sheet('Aktarım tamam', `<div class="callout">${ic('check')}<div><b>${d.n} kayıt eklendi</b><p style="margin-top:2px">${esc(d.txt)}${d.dup ? ' ' + d.dup + ' kayıt zaten vardı, atlandı.' : ''}${d.bad ? ' ' + d.bad + ' satır eksik bilgi yüzünden atlandı.' : ''}</p></div></div><div class="row wrap" style="margin-top:12px;gap:8px"><button class="btn grow" data-a="ixclose">Tamam</button><button class="btn sec" data-a="ixundo">Geri al</button><button class="btn sec" data-a="mximp">Başka sayfa</button></div>`); }
+  const sh = MXI.step === 'map' ? ixCur() : null;
+  if (!sh) {
+    const xl = S.settings && S.settings.xlast;
+    return sheet('Excel aktar', `<p class="muted small">Şimdiye kadar Excel'de tuttuğun kayıtları Kais'e taşı. Dosyayı yükle, Kais sütunları kendisi tanır ve eşler. Sen önizlemeyi kontrol edip onaylarsın. Dosya cihazından çıkmaz.</p>
+    ${MXI.err ? `<div class="callout warn" style="margin:8px 0">${ic('alert')}<div><p>${esc(MXI.err)}</p></div></div>` : ''}
+    <label class="btn block" style="cursor:pointer;margin-top:10px">${ic('file', 18)} Excel ya da CSV seç<input id="ix-file" type="file" accept=".xlsx,.csv,.txt" style="display:none"></label>
+    <div class="field" style="margin:10px 0 0"><label for="ix-txt">Ya da tabloyu kopyalayıp yapıştır</label><textarea id="ix-txt" rows="4" style="${mxInp}" placeholder="Tarih;Açıklama;Tutar"></textarea></div><button class="btn sec block" style="margin-top:8px" data-a="ixpaste">Yapıştırılanı oku</button>
+    <p class="small muted" style="margin-top:10px">Gelir gider hareketleri, faturalar (alacaklar) ve borçlar aktarılabilir. Birden çok sayfa varsa her biri ayrı seçilir. Eski .xls dosyasını .xlsx olarak kaydet.</p>
+    ${xl ? `<div class="card" style="margin-top:12px;padding:10px 12px"><div class="small muted">Son aktarım: ${xl.n} kayıt · ${mxDM(xl.t)}</div><button class="btn sm sec" style="margin-top:6px" data-a="ixundo">Son aktarımı geri al</button></div>` : ''}`);
+  }
+  const P = sh._p; const fields = IX_F[MXI.type]; const R = ixBuild(MXI.type, MXI.map, P); const nm = fields.filter((f) => MXI.map[f[0]] != null).length;
+  const miss = fields.filter((f) => f[3] === 1 && MXI.map[f[0]] == null && !(MXI.type === 'defter' && f[0] === 'total' && (MXI.map.gelir != null || MXI.map.gider != null)));
+  const opt = (cur) => `<option value="">— yok —</option>${P.heads.map((h, i) => `<option value="${i}" ${cur === i ? 'selected' : ''}>${esc(h.slice(0, 30))}</option>`).join('')}`;
+  const sel = (f) => `<div class="row" style="gap:8px;align-items:center;padding:4px 0"><span class="small" style="flex:0 0 42%">${f[1]}${f[3] === 1 && !(MXI.type === 'defter' && f[0] === 'total' && (MXI.map.gelir != null || MXI.map.gider != null)) ? ' *' : ''}</span><select data-ixm="${f[0]}" style="${mxInp};padding:9px 10px;flex:1">${opt(MXI.map[f[0]])}</select></div>`;
+  const pv = R.out.slice(0, 5).map((o) => MXI.type === 'defter' ? `<div class="row between small" style="gap:8px;padding:6px 0;border-top:1px solid var(--line,#e5e8ee)"><span style="min-width:0">${mxDmy(o.iso)} · ${esc(o.desc)}</span><b class="num" style="color:${o.dir === 'gelir' ? '#15803d' : '#b42318'}">${o.dir === 'gelir' ? '+' : '−'}${fmt0(o.total)}</b></div>` : MXI.type === 'fatura' ? `<div class="row between small" style="gap:8px;padding:6px 0;border-top:1px solid var(--line,#e5e8ee)"><span style="min-width:0">${esc(o.cust)} · vade ${mxDmy(o.due)}</span><b class="num">${fmt0(o.tot)} ${o.st === 'odendi' ? '✓' : ''}</b></div>` : `<div class="row between small" style="gap:8px;padding:6px 0;border-top:1px solid var(--line,#e5e8ee)"><span style="min-width:0">${esc(o.who)} · vade ${mxDmy(o.due)}</span><b class="num">${fmt0(o.amt)} ${o.paid ? '✓' : ''}</b></div>`).join('');
+  return sheet('Excel aktar', `<div class="callout">${ic('sparkle')}<div><b>Kais ${nm} alanı otomatik eşledi</b><p style="margin-top:2px">${esc(MXI.fn || 'Yapıştırılan tablo')} · ${P.data.length} satır. Yanlış eşleşme varsa aşağıdan düzelt.</p></div></div>
+  ${MXI.sheets.length > 1 ? `<div class="field" style="margin:10px 0 0"><label for="ix-s">Sayfa</label><select id="ix-s" style="${mxInp}">${MXI.sheets.map((s, i) => `<option value="${i}" ${i === MXI.si ? 'selected' : ''}>${esc(s.name)} (${s.rows.length})</option>`).join('')}</select></div>` : ''}
+  <div class="field" style="margin:10px 0 0"><label for="ix-t">Bu sayfa ne içeriyor?</label><select id="ix-t" style="${mxInp}">${Object.keys(IX_T).map((k) => `<option value="${k}" ${k === MXI.type ? 'selected' : ''}>${IX_T[k]}</option>`).join('')}</select></div>
+  <div class="card" style="margin-top:10px;padding:8px 12px">${fields.map(sel).join('')}</div>
+  ${MXI.type === 'defter' ? `<div class="row" style="gap:8px;margin-top:8px"><div class="field" style="margin:0;flex:1"><label for="ix-d">Tür belli değilse</label><select id="ix-d" style="${mxInp}"><option value="gider" ${MXI.defDir === 'gider' ? 'selected' : ''}>Gider say</option><option value="gelir" ${MXI.defDir === 'gelir' ? 'selected' : ''}>Gelir say</option></select></div><div class="field" style="margin:0;flex:1"><label for="ix-r">KDV belli değilse</label><select id="ix-r" style="${mxInp}">${[0, 1, 10, 20].map((x) => `<option ${x === MXI.defRate ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>` : ''}
+  <h3 style="margin-top:14px">Önizleme</h3><div class="row wrap" style="gap:6px;margin-bottom:4px"><span class="pill p-ok">${R.out.length} aktarılacak</span>${R.dup ? `<span class="pill p-info">${R.dup} zaten var</span>` : ''}${R.bad ? `<span class="pill p-warn">${R.bad} eksik satır</span>` : ''}</div>${pv || '<p class="muted small">Eşleşen satır yok. Sütunları kontrol et.</p>'}
+  ${miss.length ? `<div class="callout warn" style="margin-top:8px">${ic('alert')}<div><p>Şu alanı seçmen gerekiyor: ${miss.map((f) => f[1]).join(', ')}</p></div></div>` : ''}
+  <div class="row wrap" style="margin-top:12px;gap:8px"><button class="btn grow" data-a="iximport" ${R.out.length && !miss.length ? '' : 'disabled'}>${R.out.length} kaydı aktar</button><button class="btn sec" data-a="ixreset">Vazgeç</button></div>`);
+};
+H.mximp = () => { MXI.step = 'pick'; MXI.sheets = []; MXI.err = ''; MXI.done = null; MXI.fn = ''; S.modal = { type: 'mximp' }; renderModal(); };
+H.ixreset = () => { MXI.step = 'pick'; MXI.sheets = []; MXI.err = ''; renderModal(); };
+H.ixclose = () => { S.modal = null; render(); };
+function ixLoadSheets(sheets, fn) {
+  sheets = sheets.map((s) => ({ name: s.name, rows: s.rows.slice(0, 5000) })).filter((s) => s.rows.length > 1);
+  if (!sheets.length) { MXI.step = 'pick'; MXI.err = 'Dosyada okunabilir satır bulamadım.'; renderModal(); return; }
+  MXI.sheets = sheets; MXI.fn = fn; MXI.err = ''; MXI.step = 'map'; ixSetSheet(0); renderModal();
+}
+H.ixpaste = () => { const t = ($('#ix-txt') || {}).value || ''; if (t.trim().length < 5) return toast('Tabloyu yapıştır.', 'warn'); ixLoadSheets([{ name: 'Yapıştırılan', rows: mxCsv(t) }], ''); };
+document.addEventListener('change', async (e) => {
+  const t = e.target; if (!t || !S.modal || S.modal.type !== 'mximp') return;
+  if (t.id === 'ix-file' && t.files && t.files[0]) {
+    const f = t.files[0]; MXI.step = 'busy'; renderModal();
+    try {
+      if (/\.xlsx$/i.test(f.name)) {
+        const X = await xlLoad(); const wb = new X.Workbook(); await wb.xlsx.load(await f.arrayBuffer()); const sheets = [];
+        wb.worksheets.forEach((ws) => { const rows = []; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else v = ''; } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows }); });
+        ixLoadSheets(sheets, f.name);
+      } else if (/\.xls$/i.test(f.name)) { MXI.step = 'pick'; MXI.err = 'Eski .xls dosyası okunamıyor. Excel\'de "Farklı kaydet" ile .xlsx yapıp yükle.'; renderModal(); }
+      else { ixLoadSheets([{ name: f.name, rows: mxCsv(await f.text()) }], f.name); }
+    } catch (x) { MXI.step = 'pick'; MXI.err = 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
+    return;
+  }
+  if (MXI.step !== 'map') return;
+  if (t.id === 'ix-s') { ixSetSheet(+t.value); renderModal(); }
+  else if (t.id === 'ix-t') { MXI.type = t.value; MXI.map = ixAuto(MXI.type, ixCur()._p); renderModal(); }
+  else if (t.id === 'ix-d') { MXI.defDir = t.value; renderModal(); }
+  else if (t.id === 'ix-r') { MXI.defRate = +t.value; renderModal(); }
+  else if (t.dataset && t.dataset.ixm) { if (t.value === '') delete MXI.map[t.dataset.ixm]; else MXI.map[t.dataset.ixm] = +t.value; renderModal(); }
+});
+H.iximport = () => {
+  if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return; const sh = ixCur(); if (!sh) return;
+  const R = ixBuild(MXI.type, MXI.map, sh._p); if (!R.out.length) return; const b = 'x' + Date.now().toString(36); let paid = 0;
+  R.out.forEach((o) => {
+    if (MXI.type === 'defter') LEDGER.push({ id: 'g' + ++seq, date: mxDM(o.iso), iso: o.iso, desc: o.desc, acc: o.acc, doc: o.doc, rate: o.rate, total: o.total, dir: o.dir, src: 'Excel', ixk: o.key, xb: b });
+    else if (MXI.type === 'fatura') { INV.push({ id: 'iv' + ++seq, no: o.no || 'X-' + seq, date: mxDM(o.iso), iso: o.iso, cust: o.cust, tot: o.tot, due: o.due, st: o.st, lines: [], xb: b }); if (o.st === 'odendi') paid++; }
+    else { DEBTS.push({ id: 'd' + ++seq, who: o.who, note: o.note, amt: o.amt, due: o.due, rem: 3, on: true, paid: o.paid, xb: b }); if (o.paid) paid++; }
+  });
+  if (!S.settings) S.settings = {}; S.settings.xlast = { b, n: R.out.length, t: fiIso() }; try { pSched(); } catch (e) {}
+  const lab = { defter: 'hareket tabloya', fatura: 'fatura Faturalar ve tahsilata', borc: 'borç Borçlar ekranına' }[MXI.type];
+  MXI.done = { n: R.out.length, dup: R.dup, bad: R.bad, txt: R.out.length + ' ' + lab + ' işlendi' + (paid ? ', ' + paid + ' tanesi ödenmiş olarak.' : '.') }; MXI.step = 'done'; render(); S.modal = { type: 'mximp' }; renderModal();
+};
+H.ixundo = () => {
+  const xl = S.settings && S.settings.xlast; if (!xl) return; if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return;
+  const rm = (a) => { for (let i = a.length - 1; i >= 0; i--) if (a[i].xb === xl.b) a.splice(i, 1); }; rm(LEDGER); rm(INV); rm(DEBTS); delete S.settings.xlast; try { pSched(); } catch (e) {}
+  MXI.step = 'pick'; MXI.done = null; toast('Son aktarım geri alındı.', 'ok'); render(); S.modal = { type: 'mximp' }; renderModal();
 };
 </script>
 </body>
