@@ -136,7 +136,21 @@ export async function handle(req: Request): Promise<Response> {
     const q = await sb.from('ai_quota').select('day,kind,n').eq('business_id', bid).gte('day', new Date(Date.now() - 32 * 864e5).toISOString().slice(0, 10));
     const tr = new Date(Date.now() + 3 * 36e5).toISOString().slice(0, 10); const out: any = { chat: { day: 0, month: 0 }, read: { day: 0, month: 0 }, limits: LIM };
     (q.data || []).forEach((x: any) => { if (!out[x.kind]) return; if (x.day === tr) out[x.kind].day += x.n; if (String(x.day).slice(0, 7) === tr.slice(0, 7)) out[x.kind].month += x.n; });
-    try { if (SB_SRV) { const ov: any = (await createClient(SB_URL, SB_SRV, { auth: { persistSession: false } }).from('ai_limits').select('chat_day,chat_month,read_day,read_month').eq('business_id', bid).maybeSingle()).data; if (ov) { const L2: any = { chat: { ...LIM.chat }, read: { ...LIM.read } }; (['chat', 'read'] as const).forEach((k) => { if (Number(ov[k + '_day']) > 0) L2[k].day = Number(ov[k + '_day']); if (Number(ov[k + '_month']) > 0) L2[k].month = Number(ov[k + '_month']); }); out.limits = L2; } } } catch (_) { /* yoksay */ }
+    try {
+      if (SB_SRV) {
+        const srv0 = createClient(SB_URL, SB_SRV, { auth: { persistSession: false } });
+        const ov0 = await srv0.from('ai_limits').select('chat_day,chat_month,read_day,read_month').eq('business_id', bid).maybeSingle();
+        const ov: any = ov0.data;
+        if (ov) {
+          const L2: any = { chat: { day: LIM.chat.day, month: LIM.chat.month }, read: { day: LIM.read.day, month: LIM.read.month } };
+          for (const k of ['chat', 'read']) {
+            if (Number(ov[k + '_day']) > 0) L2[k].day = Number(ov[k + '_day']);
+            if (Number(ov[k + '_month']) > 0) L2[k].month = Number(ov[k + '_month']);
+          }
+          out.limits = L2;
+        }
+      }
+    } catch (e0) { QERR = 'usage:' + String((e0 as Error)?.message || e0).slice(0, 120); }
     out.diag = { srv: !!SB_SRV, err: QERR };
     return J({ usage: out });
   }
