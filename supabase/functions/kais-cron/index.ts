@@ -3,7 +3,7 @@
 // 2) Geç kalan çalışan ve sabah özeti için yöneticilere push
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
-import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, planClose, lateTxt, validEmail } from './logic.ts';
+import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, planClose, planErrors, lateTxt, validEmail } from './logic.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
@@ -88,6 +88,28 @@ async function flag(bid: string, marks: { id: string; f: 'cs' | 'rs' }[]) {
   }
 }
 
+// Hata alarmı: son 15 dakikadaki istemci hataları eşiği aşarsa platform yöneticilerine push (aynı hata saatte bir kez).
+const NIL = '00000000-0000-0000-0000-000000000000';
+async function alarmErrors(): Promise<number> {
+  if (!VPUB || !VPRIV) return 0;
+  const since = new Date(Date.now() - 15 * 60000).toISOString();
+  const r = await sb.from('app_errors').select('msg,view,ver,user_id,business_id,created_at').gte('created_at', since).limit(500);
+  if (r.error) { if (/app_errors|schema cache|does not exist/i.test(r.error.message || '')) return 0; throw r.error; }
+  const plans = planErrors((r.data || []) as any[]); if (!plans.length) return 0;
+  const adm = await sb.from('admin_users').select('user_id').eq('active', true);
+  const ids = (adm.data || []).map((x: any) => x.user_id).filter(Boolean); if (!ids.length) return 0;
+  const s = await sb.from('push_subs').select('endpoint,p256dh,auth').in('user_id', ids); const subs = s.data || []; if (!subs.length) return 0;
+  let n = 0;
+  for (const p of plans) {
+    if (!(await claim(NIL, p.key, 'errs'))) continue;
+    for (const x of subs) {
+      try { await webpush.sendNotification({ endpoint: x.endpoint, keys: { p256dh: x.p256dh, auth: x.auth } }, JSON.stringify({ title: p.title, body: p.body, tag: 'kp-err', url: '/admin' })); n++; }
+      catch (e) { const c = (e as any).statusCode; if (c === 404 || c === 410) await sb.from('push_subs').delete().eq('endpoint', x.endpoint); }
+    }
+  }
+  return n;
+}
+
 Deno.serve(async (req) => {
   if (!Deno.env.get('CRON_SECRET') || req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) return new Response('forbidden', { status: 403 });
   const out = { business: 0, mails: 0, pushes: 0, errors: [] as string[] };
@@ -127,5 +149,6 @@ Deno.serve(async (req) => {
     } catch (e) { out.errors.push(bid + ': ' + String((e as Error).message)); }
   }
   try { out.pushes += await pushMarket(); } catch (e) { out.errors.push('market: ' + String((e as Error).message)); }
+  try { out.pushes += await alarmErrors(); } catch (e) { out.errors.push('alarm: ' + String((e as Error).message)); }
   return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json' } });
 });

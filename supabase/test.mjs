@@ -18,6 +18,17 @@ const ek2={CLOCK:[{uid:'u5',date:'2026-11-15'}],LEAVES:[{uid:'u8',txt:'14–16 K
 eq(L.planLate(ek2,vd,{date:'2026-11-15',min:15*60+30}).map(x=>x.uid),['u4','u6'],'late: u5 giriş var, u8 izinde');
 eq(L.planLate(ek2,vd,{date:'2026-11-15',min:15*60+5}).map(x=>x.uid),['u4'],'late: u6 5dk geç, henüz değil');
 eq(L.nowIn('Europe/Istanbul',new Date('2026-11-15T13:30:00Z')),{date:'2026-11-15',min:16*60+30},'tz');
+
+{const mk=(m,u,n)=>Array.from({length:n},(_,i)=>({msg:m,view:'muhasebe',ver:'v156',user_id:u||('u'+i)}));
+ const t=new Date('2026-11-16T12:00:00Z');
+ eq(L.planErrors([],t),[], 'alarm: hata yok');
+ eq(L.planErrors(mk('x is not defined','a',3),t),[], 'alarm: tek kisi 3 hata esik alti');
+ eq(L.planErrors(mk('x is not defined','a',5),t).length,1,'alarm: 5 hata alarm');
+ eq(L.planErrors([...mk('Boom 12','a',1),...mk('Boom 99','b',1)],t).length,1,'alarm: 2 kisi ayni hata (sayilar ayni imza)');
+ eq(L.planErrors([...mk('e1','a',4),...mk('e2','b',4),...mk('e3','c',4)],t).length,1,'alarm: tur basi esik alti ama toplam 12 -> tek genel alarm');
+ eq(L.planErrors(mk('p','a',3).concat(mk('q','b',3),mk('r','c',3),mk('s','d',3)),t)[0].key.startsWith('errs:'),true,'alarm: toplam 12 -> genel alarm');
+ eq(L.planErrors(mk('x','a',5),t)[0].key===L.planErrors(mk('x','a',5),new Date('2026-11-16T12:40:00Z'))[0].key,true,'alarm: ayni saatte ayni anahtar');
+ eq(L.planErrors(mk('x','a',5),t)[0].key===L.planErrors(mk('x','a',5),new Date('2026-11-16T13:10:00Z'))[0].key,false,'alarm: yeni saat yeni anahtar');}
 console.log(bad?'FAILED':'ALL OK');
 {const d=L.planDaily({MAINT:[{st:'acik',pri:'acil'},{st:'bitti'}],REQS:[{st:'bekliyor'}],LVREQ:[{status:'bekliyor'}],MPLAN:[{every:30,last:'2026-10-01'}],RESV:[{date:'2026-11-15',st:'onay',n:4}]},{date:'2026-11-15',min:9*60+5});
 console.log(d&&d.body, L.planDaily({}, {date:'2026-11-15',min:9*60+5}), L.planDaily({MAINT:[{st:'acik'}]},{date:'2026-11-15',min:12*60}));}

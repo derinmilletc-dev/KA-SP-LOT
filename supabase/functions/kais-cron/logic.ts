@@ -198,3 +198,24 @@ export function planClose(stok: any, led: any, now: { date: string; min: number 
   if (!ciro && !gider) return null;
   return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.', facts: f };
 }
+
+// Hata alarmı: son 15 dakikadaki istemci hatalarını imzaya göre grupla; eşik aşılınca platform yöneticilerine push.
+export type ErrRow = { msg: string; view?: string; ver?: string; user_id?: string; business_id?: string; created_at?: string };
+const errSig = (m: string) => String(m || '').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 90);
+const errHash = (s: string) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(16); };
+export function planErrors(rows: ErrRow[], now: Date = new Date()): { key: string; title: string; body: string }[] {
+  const g: Record<string, { n: number; users: Set<string>; view: string; ver: string; msg: string }> = {};
+  (rows || []).forEach((r) => {
+    const s = errSig(r.msg); if (!s) return;
+    const x = g[s] || (g[s] = { n: 0, users: new Set<string>(), view: '', ver: '', msg: String(r.msg || '').slice(0, 80) });
+    x.n++; if (r.user_id) x.users.add(r.user_id); if (r.view) x.view = r.view; if (r.ver) x.ver = r.ver;
+  });
+  const hour = now.toISOString().slice(0, 13); const out: { key: string; title: string; body: string }[] = [];
+  Object.keys(g).sort((a, b) => g[b].n - g[a].n).forEach((s) => {
+    const x = g[s]; if (x.n < 5 && x.users.size < 2) return;
+    out.push({ key: 'err:' + errHash(s) + ':' + hour, title: 'Hata alarmı', body: x.msg + ' · ' + x.n + ' kez, ' + (x.users.size || 1) + ' kişi · ' + (x.view || '?') + ' · ' + (x.ver || '?') });
+  });
+  const total = (rows || []).length;
+  if (!out.length && total >= 10) out.push({ key: 'errs:' + hour, title: 'Hata alarmı', body: 'Son 15 dakikada ' + total + ' hata geldi (' + Object.keys(g).length + ' farklı türde).' });
+  return out.slice(0, 3);
+}
