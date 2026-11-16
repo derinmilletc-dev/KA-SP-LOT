@@ -403,6 +403,7 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 .lx3 .lx-copy p{font-size:clamp(17px,1.35vw,20px)!important;line-height:1.55!important;font-weight:400;color:rgba(255,255,255,.72)!important;max-width:520px;margin-top:20px!important}
 .lx3 .lp{display:grid!important;grid-template-columns:1fr 1fr;gap:14px;max-width:640px;margin-top:38px}
 .lx3 .lp-f{display:flex;flex-direction:column;gap:12px;align-items:flex-start;padding:18px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.lx3 .lp-f:last-child:nth-child(odd){grid-column:1/-1}
 .lx3 .lp-i{flex:none;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:grid!important;place-items:center;color:#fff}
 .lx3 .lp-i svg{width:19px!important;height:19px!important;margin:0!important;display:block!important;position:static!important}
 .lx3 .lp-f b{display:block;font-size:15px;font-weight:600;color:#fff;letter-spacing:-.1px}
@@ -416,7 +417,7 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 .lx3 .lp-k b.up{color:#7BF1C4}
 .lx3 .lp-ai{display:flex;gap:10px;align-items:center;margin-top:12px;font-size:13.5px;line-height:1.4;color:#fff;background:rgba(255,255,255,.1);border-radius:13px;padding:10px 12px}
 .lx3 .lp-ai i{flex:none;width:24px;height:24px;border-radius:8px;background:#2ED39A;color:#06361f;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px}
-.lx3 .lp-ft{display:block!important;font-size:12.5px;color:rgba(255,255,255,.5);margin-top:34px}
+.lx3 .lp-ft{display:block!important;font-size:12.5px;color:rgba(255,255,255,.5);margin-top:auto;padding-top:34px}
 .lx3 .lx-card{grid-column:2;grid-row:1;align-self:center!important;justify-self:center!important;max-width:460px!important;width:calc(100% - 64px)!important;margin:40px 32px!important;padding:34px 32px 28px!important}
 .lx3 .lx-card h1{font-size:30px!important}
 .lx3 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}
