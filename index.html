@@ -13066,7 +13066,9 @@ H.spsend = async () => {
   if (KX.busy) return; const m = ($('#sp-m') || {}).value || ''; const k = ($('#sp-k') || {}).value || 'sorun'; if (m.trim().length < 5) return toast('Mesajı biraz daha ayrıntılı yaz.', 'warn');
   KX.busy = true;
   try {
-    const c = sbClient(); const r = await c.from('support_tickets').insert({ business_id: ID.active.business_id, user_id: SBS.user.id, role: S.user ? S.user.role : null, kind: k, message: m.trim().slice(0, 1500), ver: APP_VER });
+    const c = sbClient(); const row = { business_id: ID.active.business_id, user_id: SBS.user.id, role: S.user ? S.user.role : null, kind: k, message: m.trim().slice(0, 1500), ver: APP_VER };
+    let r = await c.from('support_tickets').insert(row);
+    if (r.error) { await new Promise((ok) => setTimeout(ok, 1500)); r = await c.from('support_tickets').insert(row); }
     if (r.error) throw r.error; toast('Mesajın iletildi.', 'ok'); try { tlmEv('a:support'); } catch (e) {} await kxTickets();
   } catch (e) { toast('Gönderilemedi. Biraz sonra tekrar dene.', 'warn'); }
   KX.busy = false;
@@ -13298,8 +13300,15 @@ function brScope(fn) {
 H.brperm = (el) => {
   if (!S.user || S.user.role !== 'patron') return; const m = S.settings.brs || (S.settings.brs = {}); const u = el.dataset.u; const e = m[u] || (m[u] = { b: [], none: false });
   if (el.dataset.b === '_none') e.none = !e.none; else { const i = e.b.indexOf(el.dataset.b); if (i >= 0) e.b.splice(i, 1); else e.b.push(el.dataset.b); }
-  if (!e.b.length && !e.none) delete m[u]; try { pSched(); } catch (x) {} try { auditAdd({ type: 'yetki', text: 'Şube yetkisi güncellendi' }); } catch (x) {} render();
+  if (!e.b.length && !e.none) delete m[u]; try { pSched(); } catch (x) {} try { auditAdd({ type: 'yetki', text: 'Şube yetkisi güncellendi' }); } catch (x) {} brEnsure(); render();
 };
+/* Aynı anda başka cihaz kaydederse değişiklik kaybolabilir; yetki listesini kaydedilene kadar yeniden uygula */
+let BRX = { want: '', n: 0, t: null };
+function brEnsure() {
+  BRX.want = JSON.stringify(S.settings.brs || {}); BRX.n = 0; clearTimeout(BRX.t);
+  const step = () => { if (!S.user || S.user.role !== 'patron') return; if (JSON.stringify(S.settings.brs || {}) !== BRX.want) { S.settings.brs = JSON.parse(BRX.want); try { pSched(); } catch (x) {} render(); } if (++BRX.n < 4) BRX.t = setTimeout(step, 4000); };
+  BRX.t = setTimeout(step, 4000);
+}
 function k8BrCard() {
   if (!S.user || S.user.role !== 'patron' || !BRANCHES.length) return '';
   const acc = USERS.filter((u) => u.role === 'muhasebeci'); if (!acc.length) return '';
@@ -13310,6 +13319,24 @@ function k8BrCard() {
 }
 { const _v = viewRaporX; viewRaporX = function () { const h = _v.apply(this, arguments); const c = k8BrCard(); if (!c) return h; const i = h.lastIndexOf('</div>'); return i > 0 ? h.slice(0, i) + c + h.slice(i) : h + c; }; }
 { const _v = viewAyarlar; viewAyarlar = function () { const h = _v.apply(this, arguments); const c = k8EveCard() + k8TourCard(); return c ? c + h : h; }; }
+
+/* Uzak veri uygulanınca PS.last yerel durumu "kaydedildi" sayıyordu; gönderilmemiş yerel değişiklik
+   (ör. şube yetkisi) buluta hiç yazılmıyordu. Bulutta kapsam bazında gönderilen ile yerel farklıysa yeniden yaz. */
+function clDirty() {
+  try {
+    if (!CL.on || !SBS.biz) return false; const sp = splitSnap(pSnap());
+    return Object.keys(sp).some((sc) => canW(sc) && CL.sent[sc] !== undefined && CL.sent[sc] !== JSON.stringify(sp[sc]));
+  } catch (e) { return false; }
+}
+pFlush = async function () {
+  if (PS.busy) { pSched(); return; }
+  const s = pSnap(); if (s === PS.last && !clDirty()) return;
+  PS.busy = true; PS.state = 'saving'; paintStatus();
+  try { await PS.db.doc('kais/state').set({ s, at: Date.now() }); PS.last = s; PS.state = 'saved'; }
+  catch (e) { PS.state = e && e.code === 'invalid_argument' ? 'readonly' : 'error'; if (PS.state === 'readonly') PS.canWrite = false; }
+  PS.busy = false; paintStatus();
+  if (PS.state === 'saved' && (pSnap() !== PS.last || clDirty())) pSched();
+};
 </script>
 </body>
 </html>
