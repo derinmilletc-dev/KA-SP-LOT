@@ -18,7 +18,7 @@ const MODEL_FAST = Deno.env.get('KAIS_AI_MODEL_FAST') || 'claude-haiku-5-5';
 const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const num = (k: string, d: number) => { const v = Number(Deno.env.get(k)); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
 // İşletme başına limitler (isteğe bağlı sırlarla değiştirilir)
-const LIM = { chat: { day: num('AI_CHAT_DAY', 60), month: num('AI_CHAT_MONTH', 800) }, read: { day: num('AI_READ_DAY', 60), month: num('AI_READ_MONTH', 600) } };
+const LIM = { chat: { day: num('AI_CHAT_DAY', 40), month: num('AI_CHAT_MONTH', 600) }, read: { day: num('AI_READ_DAY', 40), month: num('AI_READ_MONTH', 600) } };
 const SB_URL = Deno.env.get('SUPABASE_URL') || '';
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 
