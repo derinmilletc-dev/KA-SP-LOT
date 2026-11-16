@@ -42,3 +42,9 @@ Uygulama kapalıyken de çalışır:
    Panelden yüklüyorsan: Edge Functions → fonksiyon → Code sekmesine `index.ts` içeriğini yapıştır → Deploy.
    **JWT doğrulaması açık kalsın** (kais-cron'un aksine `--no-verify-jwt` kullanma).
 3. `kais-push` yalnızca `send` eylemini destekler; `order_notify` ve `report_now` kapalıdır.
+
+## Kais AI limitleri ve model ayrımı (v144)
+- `supabase/sql/ai_usage.sql` dosyasını SQL Editor'de bir kez çalıştır (sayaç tablosu ve `ai_usage_hit`).
+- Varsayılan limitler (işletme başına): sohbet günde 60, ayda 800; fiş ve fiyat okuma günde 60, ayda 600. Değiştirmek için sırlar: `AI_CHAT_DAY`, `AI_CHAT_MONTH`, `AI_READ_DAY`, `AI_READ_MONTH`.
+- Fiş, belge ve fiyat listesi okuma `KAIS_AI_MODEL_FAST` (varsayılan `claude-haiku-5-5`) ile, sohbet ve eylemler `KAIS_AI_MODEL` (varsayılan `claude-sonnet-5-5`) ile çalışır.
+- Tablo kurulu değilse sayaç sessizce atlanır, kullanıcı engellenmez.

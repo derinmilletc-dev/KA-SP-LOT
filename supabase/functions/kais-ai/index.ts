@@ -13,6 +13,12 @@ const ERR = (m: string, status = 400) => J({ error: m }, status);
 
 const KEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const MODEL = Deno.env.get('KAIS_AI_MODEL') || 'claude-sonnet-5-5';
+// Fiş, belge ve fiyat listesi okuma gibi basit işler için ucuz model
+const MODEL_FAST = Deno.env.get('KAIS_AI_MODEL_FAST') || 'claude-haiku-5-5';
+const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const num = (k: string, d: number) => { const v = Number(Deno.env.get(k)); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
+// İşletme başına limitler (isteğe bağlı sırlarla değiştirilir)
+const LIM = { chat: { day: num('AI_CHAT_DAY', 60), month: num('AI_CHAT_MONTH', 800) }, read: { day: num('AI_READ_DAY', 60), month: num('AI_READ_MONTH', 600) } };
 const SB_URL = Deno.env.get('SUPABASE_URL') || '';
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 
@@ -80,11 +86,11 @@ function contentBlocks(text: string, atts: Att[]) {
   return out;
 }
 
-async function claude(system: string, messages: any[], maxTokens = 1800) {
+async function claude(system: string, messages: any[], maxTokens = 1800, model = MODEL) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, system, messages }),
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error('anthropic_' + r.status + ':' + String(j?.error?.message || '').slice(0, 160));
@@ -123,11 +129,28 @@ export async function handle(req: Request): Promise<Response> {
   const ctx = body.context && typeof body.context === 'object' ? JSON.stringify(body.context).slice(0, 48000) : '{}';
   const last = msgs[msgs.length - 1].content;
 
+  // Kullanım özeti (Claude çağrılmaz, sayaç artmaz)
+  if (mode === 'usage') {
+    if (role !== 'patron') return ERR('Kullanımı yalnızca patron görebilir.', 403);
+    const q = await sb.from('ai_usage').select('day,kind,n').eq('business_id', bid).gte('day', new Date(Date.now() - 32 * 864e5).toISOString().slice(0, 10));
+    const tr = new Date(Date.now() + 3 * 36e5).toISOString().slice(0, 10); const out: any = { chat: { day: 0, month: 0 }, read: { day: 0, month: 0 }, limits: LIM };
+    (q.data || []).forEach((x: any) => { if (!out[x.kind]) return; if (x.day === tr) out[x.kind].day += x.n; if (String(x.day).slice(0, 7) === tr.slice(0, 7)) out[x.kind].month += x.n; });
+    return J({ usage: out });
+  }
+  const kind: 'chat' | 'read' = (mode === 'fis' || mode === 'belge' || /"urunler"/.test(last)) ? 'read' : 'chat';
+  if (SB_SRV) {
+    try {
+      const srv = createClient(SB_URL, SB_SRV, { auth: { persistSession: false } });
+      const h = await srv.rpc('ai_usage_hit', { p_biz: bid, p_kind: kind, p_day_max: LIM[kind].day, p_month_max: LIM[kind].month });
+      const row = Array.isArray(h.data) ? h.data[0] : h.data;
+      if (!h.error && row && row.ok === false) return ERR(row.day_n >= LIM[kind].day ? 'Bugünlük Kais AI hakkın doldu. Yarın yeniden dene.' : 'Bu ayki Kais AI hakkın doldu. Yeni ay başında yenilenir.', 429);
+    } catch (_) { /* sayaç tablosu kurulu değilse engelleme */ }
+  }
   try {
     // 1) Yapılandırılmış okuma kipleri: yalnızca JSON
     if (JSON_MODES[mode]) {
       if (mode === 'fis' && !atts.length) return ERR('Okunacak fotoğraf ya da PDF bulunamadı.');
-      const t = await claude(BASE + NL + NL + JSON_MODES[mode], [{ role: 'user', content: contentBlocks(last, atts) }], 700);
+      const t = await claude(BASE + NL + NL + JSON_MODES[mode], [{ role: 'user', content: contentBlocks(last, atts) }], 700, mode === 'sozlesme' ? MODEL : MODEL_FAST);
       const d = parseJson(t);
       if (!d) return ERR('Belge okunamadı. Daha net bir fotoğraf dene.', 422);
       return J({ data: d });
@@ -153,7 +176,7 @@ Kullanıcı açıkça belirli bir biçimde çıktı (ör. JSON) istiyorsa reply 
 Uygulamanın verdiği güncel veri (context, JSON):
 ${ctx}`;
     const turns = msgs.map((m: any, i: number) => i === msgs.length - 1 && atts.length ? { role: 'user', content: contentBlocks(m.content, atts) } : m);
-    const t = await claude(sys, turns, 1800);
+    const t = await claude(sys, turns, 1800, kind === 'read' ? MODEL_FAST : MODEL);
     const j = parseJson(t);
     if (!j || typeof j.reply !== 'string') return J({ reply: strip(t) || 'Yanıt gelmedi.', actions: [] });
     const actions = (Array.isArray(j.actions) ? j.actions : []).filter((a: any) => a && allowed.includes(a.type)).slice(0, 5)

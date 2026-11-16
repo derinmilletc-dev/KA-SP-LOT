@@ -12961,6 +12961,14 @@ H.rxpdf = () => { const d = rxPerData(); const e = esc; const tr = d.rows.slice(
   const html = `<!doctype html><meta charset="utf-8"><title>Rapor</title><style>body{font:14px system-ui;padding:24px;color:#111}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left}h2{margin:0}</style><h2>${e(d.lab)} raporu</h2><p>Gelir <b>${fmt0(d.g)}</b> · Gider <b>${fmt0(d.x)}</b> · Net <b>${fmt0(d.g - d.x)}</b></p><table><tr><th>Tarih</th><th>Yön</th><th>Hesap</th><th>Açıklama</th><th>Tutar</th></tr>${tr}</table><script>setTimeout(function(){window.print()},300)<\/script>`;
   try { const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); return; } } catch (x) {}
   saveBlob('rapor-' + d.k + '.html', new Blob([html], { type: 'text/html;charset=utf-8' })); toast('Rapor dosyası indirildi. Açıp yazdır.', 'ok'); };
+
+/* v144 Kais AI kullanım göstergesi (yalnız patron) */
+const AIU = { d: null, at: 0, busy: false };
+async function aiuLoad() {
+  if (AIU.busy || Date.now() - AIU.at < 60000) return; AIU.busy = true;
+  try { const c = sbClient(); if (!c || !SBS.biz) return; const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode: 'usage', messages: [{ role: 'user', content: 'kullanım' }] } }); if (r.data && r.data.usage) { AIU.d = r.data.usage; AIU.at = Date.now(); if (S.view === 'kaisai') render(); } else AIU.at = Date.now(); } catch (e) { AIU.at = Date.now(); } finally { AIU.busy = false; }
+}
+{ const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 </script>
 </body>
 </html>
