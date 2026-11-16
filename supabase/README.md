@@ -72,3 +72,9 @@ Uygulama kapalıyken de çalışır:
 - Duyurular uygulamada üstte bir şerit olarak görünür. Push bildirimi göndermez.
 - Uygulamada bayrak kullanmak için: `FLAG('anahtar')` true/false döner.
 - Destek görünümü yalnızca ana admine açıktır, veri yapısını ve kayıt sayısını gösterir, içeriği göstermez. Her kullanım denetim kaydına yazılır.
+
+## v149 — Akşam Kais özeti, şube yetkisi, tahsilat, tur, yedek doğrulama
+- `kais-cron` yeniden yüklenmeli (`/tmp/out/kais-cron-single.ts`). Akşam kapanış bildirimine Kais yorumu eklendi. `ANTHROPIC_API_KEY` sırrı gerekir. Haiku kullanır (`KAIS_CRON_MODEL` ile değişir). Kapatmak için `KAIS_EVE_AI=0`. Patron Ayarlar'dan "Akşam özeti"ni kapatabilir.
+- `kais-admin` yeniden yüklenmeli: Sistem sayfasına yedek sağlığı eklendi.
+- Yeni SQL yok.
+- Şube yetkisi uygulama içi bir görünüm kısıtlamasıdır (Raporlar > Şube yetkisi). Veritabanı düzeyinde ayrım değildir.

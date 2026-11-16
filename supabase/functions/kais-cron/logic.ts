@@ -176,11 +176,25 @@ export function planWeekly(stok: any, led: any, now: { date: string; min: number
 }
 
 // Günlük kapanış: akşam 21:00-22:00 arası, yöneticilere günde bir kez.
-export function planClose(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string } | null {
-  if (now.min < 21 * 60 || now.min >= 22 * 60) return null;
+export type CloseFacts = { ciro: number; gider: number; ort7: number; dun: number; top: { prod: string; total: number }[]; giderTop: { acc: string; total: number }[] };
+export function closeFacts(stok: any, led: any, now: { date: string; min: number }): CloseFacts {
   const sales: any[] = stok && Array.isArray(stok.SALES) ? stok.SALES : []; const rows: any[] = led && Array.isArray(led.LEDGER) ? led.LEDGER : [];
-  const ciro = sales.filter((r) => r.date === now.date).reduce((t, r) => t + (Number(r.total) || 0), 0);
-  const gider = rows.filter((r) => r.iso === now.date && (r.dir || 'gider') === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const dayMs = 864e5; const t0 = new Date(now.date + 'T00:00:00Z').getTime();
+  const iso = (k: number) => new Date(t0 - k * dayMs).toISOString().slice(0, 10);
+  const sum = (d: string) => sales.filter((r) => r.date === d).reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const ciro = sum(now.date); let tot7 = 0; let n7 = 0;
+  for (let k = 1; k <= 7; k++) { const v = sum(iso(k)); if (v > 0) { tot7 += v; n7++; } }
+  const gRows = rows.filter((r) => r.iso === now.date && (r.dir || 'gider') === 'gider');
+  const gider = gRows.reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const pm: Record<string, number> = {}; sales.filter((r) => r.date === now.date).forEach((r) => { const k = String(r.prod || '?'); pm[k] = (pm[k] || 0) + (Number(r.total) || 0); });
+  const gm: Record<string, number> = {}; gRows.forEach((r) => { const k = String(r.acc || 'Diğer'); gm[k] = (gm[k] || 0) + (Number(r.total) || 0); });
+  const top = Object.keys(pm).map((k) => ({ prod: k, total: pm[k] })).sort((a, b) => b.total - a.total).slice(0, 3);
+  const giderTop = Object.keys(gm).map((k) => ({ acc: k, total: gm[k] })).sort((a, b) => b.total - a.total).slice(0, 3);
+  return { ciro, gider, ort7: n7 ? tot7 / n7 : 0, dun: sum(iso(1)), top, giderTop };
+}
+export function planClose(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string; facts: CloseFacts } | null {
+  if (now.min < 21 * 60 || now.min >= 22 * 60) return null;
+  const f = closeFacts(stok, led, now); const ciro = f.ciro; const gider = f.gider;
   if (!ciro && !gider) return null;
-  return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.' };
+  return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.', facts: f };
 }

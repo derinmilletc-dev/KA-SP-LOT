@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v147';
+const APP_VER = 'v148';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13071,7 +13071,245 @@ H.spsend = async () => {
   } catch (e) { toast('Gönderilemedi. Biraz sonra tekrar dene.', 'warn'); }
   KX.busy = false;
 };
-{ const _va = viewAyarlar; viewAyarlar = function () { const h = _va.apply(this, arguments); const card = '<div class="card stack"><div><h3>Destek</h3><p class="muted small" style="margin-top:2px">Sorun, öneri ya da sorunun mu var? Bize yaz, buradan cevap veririz.</p></div><button class="btn sec block" data-a="support">Destek ile yaz</button></div>'; return card + h; }; }
+{ const _va = viewAyarlar; viewAyarlar = function () { const h = _va.apply(this, arguments); const card = '<div class="card stack" style="margin-bottom:12px"><div><h3>Destek</h3><p class="muted small" style="margin-top:2px">Sorun, öneri ya da sorunun mu var? Bize yaz, buradan cevap veririz.</p></div><button class="btn sec block" data-a="support">Destek ile yaz</button></div>'; return card + h; }; }
+
+/* --- 3) Tahsilat merkezi: vadesi geçen faturalar için WhatsApp hatırlatma --- */
+const TK = { tone: {}, msg: {}, open: null };
+const tkDays = (v) => { if (!v.due) return 0; return Math.max(0, Math.floor((new Date(fiIso() + 'T00:00:00Z') - new Date(v.due + 'T00:00:00Z')) / 864e5)); };
+const tkAuto = (d) => (d <= 7 ? 'nazik' : d <= 21 ? 'net' : 'son');
+const tkTone = { nazik: 'Nazik', net: 'Net', son: 'Son uyarı' };
+function tkGroups() {
+  const m = {}; INV.filter((v) => fiLate(v)).forEach((v) => { const k = String(v.cust || '—').trim().toLocaleLowerCase('tr'); (m[k] || (m[k] = { key: k, name: v.cust || '—', inv: [] })).inv.push(v); });
+  return Object.values(m).map((g) => { g.inv.sort((a, b) => (a.due < b.due ? -1 : 1)); g.total = g.inv.reduce((t, v) => t + (Number(v.tot) || 0), 0); g.days = Math.max.apply(null, g.inv.map(tkDays)); g.last = Math.max.apply(null, g.inv.map((v) => (v.rem && v.rem.length ? v.rem[v.rem.length - 1].t : 0)).concat([0])); return g; }).sort((a, b) => b.days - a.days || b.total - a.total);
+}
+function tkPhone(g) { const f = FCUST.find((x) => String(x.name).trim().toLocaleLowerCase('tr') === g.key); const c = (typeof CUSTOMERS !== 'undefined' ? CUSTOMERS : []).find((x) => String(x.name).trim().toLocaleLowerCase('tr') === g.key); return (f && (f.tel || f.phone)) || (c && (c.phone || c.tel)) || ''; }
+function tkText(g, tone) {
+  const dd = (iso) => iso.split('-').reverse().join('.'); const iban = (EDOC && EDOC.iban) || ''; const ad = String(g.name).split(/\s+/)[0];
+  const one = g.inv.length === 1; const lines = g.inv.map((v) => `• ${v.no} · ${fmt0(v.tot)} · vade ${dd(v.due)} (${tkDays(v)} gün)`).join('\n');
+  const head = `Merhaba ${ad},`;
+  const body = tone === 'nazik' ? (one ? `${BIZ} olarak ${g.inv[0].no} numaralı faturamızın (${fmt0(g.total)}) vadesi ${dd(g.inv[0].due)} tarihinde doldu. Gözden kaçmış olabilir diye hatırlatmak istedik. Ödemeyi yaptıysanız lütfen dikkate almayın.` : `${BIZ} olarak aşağıdaki faturalarımızın vadesi doldu. Gözden kaçmış olabilir diye hatırlatmak istedik. Ödemeyi yaptıysanız lütfen dikkate almayın.\n${lines}\nToplam: ${fmt0(g.total)}`)
+    : tone === 'net' ? `${BIZ} olarak aşağıdaki ${one ? 'faturanın' : 'faturaların'} ödemesi ${g.days} gündür bekliyor.\n${lines}${one ? '' : '\nToplam: ' + fmt0(g.total)}\nÖdemeyi bu hafta içinde yapabilir misiniz? Uygun değilse ödeme tarihini bildirmenizi rica ederiz.`
+    : `${BIZ} olarak aşağıdaki ${one ? 'faturanın' : 'faturaların'} ödemesi ${g.days} gündür gecikmiş durumda.\n${lines}${one ? '' : '\nToplam: ' + fmt0(g.total)}\nYarın akşama kadar ödeme ya da net ödeme tarihi bilgisi paylaşmanızı rica ederiz. Bir sorun varsa birlikte çözelim.`;
+  return head + '\n' + body + (iban ? '\nÖdeme için IBAN: ' + iban : '') + '\nTeşekkürler.';
+}
+const tkAgo = (t) => { if (!t) return 'Hiç hatırlatılmadı'; const d = Math.floor((Date.now() - t) / 864e5); return d <= 0 ? 'Bugün hatırlatıldı' : d + ' gün önce hatırlatıldı'; };
+NEWM.tahsilat = () => {
+  const G = tkGroups(); const open = INV.filter((v) => v.st !== 'odendi').reduce((t, v) => t + (Number(v.tot) || 0), 0); const late = G.reduce((t, g) => t + g.total, 0);
+  if (!G.length) return sheet('Tahsilat', `<div class="callout">${ic('check')}<div><b>Vadesi geçen fatura yok</b><p style="margin-top:2px">Açık faturalarının toplamı ${fmt0(open)}.</p></div></div>`);
+  const top = G[0];
+  const cards = G.map((g) => { const tone = TK.tone[g.key] || tkAuto(g.days); const msg = TK.msg[g.key + '|' + tone] != null ? TK.msg[g.key + '|' + tone] : tkText(g, tone); const ph = tkPhone(g); const recent = g.last && Date.now() - g.last < 3 * 864e5;
+    return `<div class="card stack" style="margin-top:10px" data-tk="${esc(g.key)}"><div class="row between wrap" style="gap:6px"><div><b style="font-weight:600">${esc(g.name)}</b><div class="small muted">${g.inv.length} fatura · en eski ${g.days} gün</div></div><div style="text-align:right"><b class="num">${fmt0(g.total)}</b><div class="small ${recent ? '' : 'muted'}">${recent ? '<span class="pill p-info">' + tkAgo(g.last) + '</span>' : tkAgo(g.last)}</div></div></div>
+    <div class="cb-chips" style="margin:0">${Object.keys(tkTone).map((k) => `<button type="button" class="${tone === k ? 'on' : ''}" data-a="tktone" data-k="${esc(g.key)}" data-t="${k}">${tkTone[k]}</button>`).join('')}</div>
+    <div class="field" style="margin:0"><label>Telefon (WhatsApp)</label><input type="tel" inputmode="tel" data-tkph="${esc(g.key)}" value="${esc(ph)}" placeholder="05xx xxx xx xx" style="width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit"></div>
+    <div class="field" style="margin:0"><label>Mesaj</label><textarea data-tkm="${esc(g.key)}" data-tone="${tone}" rows="6" style="width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit">${esc(msg)}</textarea></div>
+    <div class="row wrap"><button class="btn sm" data-a="tkwa" data-k="${esc(g.key)}">WhatsApp ile gönder</button><button class="btn sm sec" data-a="tkcopy" data-k="${esc(g.key)}">Kopyala</button><button class="btn sm sec" data-a="tkpaid" data-k="${esc(g.key)}">Tahsil edildi</button></div></div>`; }).join('');
+  return sheet('Tahsilat', `<div class="kpis"><div class="kpi"><div class="l">Vadesi geçen</div><div class="v num">${fmt0(late)}</div></div><div class="kpi"><div class="l">Açık toplam</div><div class="v num">${fmt0(open)}</div></div><div class="kpi"><div class="l">Kişi</div><div class="v num">${G.length}</div></div></div>
+  <div class="callout" style="margin-top:10px">${ic('sparkle')}<div><b>Kais önerisi</b><p style="margin-top:2px">Önce ${esc(top.name)} ile ilgilen: ${top.days} gündür ${fmt0(top.total)} bekliyor. Gecikmeye göre ton otomatik seçildi, istersen değiştir.</p></div></div>${cards}`);
+};
+H.tahsilat = () => { S.modal = { type: 'tahsilat' }; renderModal(); };
+const tkGroup = (k) => tkGroups().find((g) => g.key === k);
+H.tktone = (el) => { TK.tone[el.dataset.k] = el.dataset.t; renderModal(); };
+document.addEventListener('input', (e) => { const t = e.target; if (t.dataset && t.dataset.tkm != null) TK.msg[t.dataset.tkm + '|' + t.dataset.tone] = t.value; });
+document.addEventListener('change', (e) => { const t = e.target; if (!t.dataset || t.dataset.tkph == null) return; const g = tkGroup(t.dataset.tkph); if (!g) return; let f = FCUST.find((x) => String(x.name).trim().toLocaleLowerCase('tr') === g.key); if (!f) { f = { id: 'fc' + (++seq), name: g.name, vkn: '', adr: '', eposta: '' }; FCUST.push(f); } f.tel = t.value.trim(); try { pSched(); } catch (x) {} });
+const tkNote = (g, tone, ch) => { g.inv.forEach((v) => { (v.rem || (v.rem = [])).push({ t: Date.now(), tone, ch }); }); try { pSched(); } catch (e) {} };
+H.tkwa = (el) => {
+  const g = tkGroup(el.dataset.k); if (!g) return; const tone = TK.tone[g.key] || tkAuto(g.days); const ta = document.querySelector('[data-tkm="' + g.key + '"]'); const text = ta ? ta.value : tkText(g, tone);
+  const ph = (document.querySelector('[data-tkph="' + g.key + '"]') || {}).value || tkPhone(g);
+  if (!waPhone(ph)) { toast('Telefon numarası yaz, mesaj numaraya açılsın.', 'warn'); }
+  tkNote(g, tone, 'wa'); window.open(waLink(ph, text), '_blank', 'noopener'); toast('Hatırlatma kaydedildi.', 'ok'); renderModal();
+};
+H.tkcopy = async (el) => { const g = tkGroup(el.dataset.k); if (!g) return; const ta = document.querySelector('[data-tkm="' + g.key + '"]'); try { await navigator.clipboard.writeText(ta ? ta.value : ''); tkNote(g, TK.tone[g.key] || tkAuto(g.days), 'kopya'); toast('Mesaj kopyalandı.', 'ok'); renderModal(); } catch (e) { toast('Kopyalanamadı.', 'warn'); } };
+H.tkpaid = (el) => { const g = tkGroup(el.dataset.k); if (!g) return; g.inv.forEach((v) => { v.st = 'odendi'; v.paidAt = fiIso(); }); try { pSched(); } catch (e) {} toast(g.name + ': ' + g.inv.length + ' fatura tahsil edildi.', 'ok'); render(); renderModal(); };
+function tkCard() {
+  if (!S.user || !['patron', 'muhasebeci'].includes(S.user.role) || typeof fiOk !== 'function' || !fiOk()) return '';
+  const G = tkGroups(); if (!G.length) return '';
+  const tot = G.reduce((t, g) => t + g.total, 0);
+  return `<div class="card" style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><span class="su-bi" style="flex:none">${ic('wallet', 18)}</span><div class="grow"><b style="font-weight:600">${fmt0(tot)} tahsilat bekliyor</b><div class="small muted">${G.length} müşteri · en eski ${G[0].days} gün gecikmiş</div></div><button class="btn sm" data-a="tahsilat">Hatırlat</button></div>`;
+}
+{ const _v = viewHTML; viewHTML = function () { const h = _v.apply(this, arguments); const u = S.user; if (!u || S.modal) return h; if (!((u.role === 'patron' && S.view === 'muhasebe') || (u.role === 'muhasebeci' && S.view === 'borc'))) return h; const c = tkCard(); if (!c) return h; return /^<div[^>]*>/.test(h) ? h.replace(/^(<div[^>]*>)/, (m) => m + c) : c + h; }; }
+
+/* --- 4) Hoş geldin turu (role göre) ve akıllı kurulum --- */
+const TOUR = {
+  patron: [
+    { ico: 'home', t: 'Bugün ekranın', s: 'Günün özeti, bekleyen işler ve Kais\'in önerileri burada. Her sabah buradan başla.', v: 'bugun' },
+    { ico: 'receipt', t: 'Fiş ve faturayı okut', s: 'Fişin fotoğrafını çek, Kais okuyup muhasebeye işlesin. Elle yazmana gerek kalmaz.', v: 'muhasebe' },
+    { ico: 'users', t: 'Ekibini davet et', s: 'Müdür, muhasebeci ve çalışanlar davet koduyla kendi hesabıyla girer. Yetkileri sen belirlersin.', v: 'ekip' },
+    { ico: 'sparkle', t: 'Kais\'e sor', s: '"Bu ay neden zarardayım?" gibi sorular sor. Kais verinden cevap verir.', v: 'kaisai' },
+    { ico: 'trend', t: 'Raporlar ve yedek', s: 'Gelir, gider ve şube karşılaştırması Raporlar\'da. Verin her gün otomatik yedeklenir.', v: 'rapor' },
+  ],
+  mudur: [
+    { ico: 'home', t: 'Bugün ekranın', s: 'Vardiya, bekleyen talepler ve günün işleri burada.', v: 'bugun' },
+    { ico: 'users', t: 'Ekip ve vardiya', s: 'Çalışanların vardiyasını, izin ve mesai taleplerini buradan yönet.', v: 'ekip' },
+    { ico: 'box', t: 'Stok', s: 'Azalan ürünler Kais tarafından takip edilir. Sayım yap, sipariş ver.', v: 'stok' },
+    { ico: 'megaphone', t: 'Duyuru', s: 'Ekibe tek dokunuşla duyuru gönder.', v: 'duyuru' },
+  ],
+  muhasebeci: [
+    { ico: 'home', t: 'Dönem özeti', s: 'Bu ayın gelir, gider ve KDV durumunu tek bakışta gör.', v: 'donem' },
+    { ico: 'receipt', t: 'Belgeler', s: 'Çalışanların yüklediği fişleri onayla ya da müşteri notu ekle.', v: 'belgeler' },
+    { ico: 'table', t: 'Tablo ve Excel', s: 'Defter tablosunu düzenle, Excel olarak indir.', v: 'tablo' },
+    { ico: 'wallet', t: 'Borç ve alacak', s: 'Vadesi geçen faturalar için tek dokunuşla hatırlatma gönder.', v: 'borc' },
+  ],
+  calisan: [
+    { ico: 'home', t: 'Bugün ekranın', s: 'Vardiyan, giriş çıkış ve günün görevleri burada.', v: 'bugun' },
+    { ico: 'receipt', t: 'Masraf', s: 'İşletme için ödediğin bir şeyin fişini fotoğraf çekerek gönder.', v: 'masraf' },
+    { ico: 'trend', t: 'Puanım', s: 'Performans puanını ve geri bildirimlerini buradan gör.', v: 'puanim' },
+    { ico: 'wallet', t: 'Maaşım', s: 'Hak edişini, ödemelerini ve kalan tutarı şeffaf biçimde gör.', v: 'maasim' },
+  ],
+};
+const tourKey = () => 'kp_tour_' + (S.user ? S.user.role : '') + '_' + (SBS && SBS.user ? SBS.user.id : 'x');
+const tourSeen = () => { try { return localStorage.getItem(tourKey()) === '1'; } catch (e) { return true; } };
+const tourDone = () => { try { localStorage.setItem(tourKey(), '1'); } catch (e) {} };
+NEWM.tour = (m) => {
+  const L = TOUR[S.user && S.user.role] || []; const i = Math.min(m.i || 0, L.length - 1); const x = L[i]; if (!x) return sheet('Hoş geldin', '');
+  const last = i === L.length - 1; const nm = ((S.user && S.user.name) || '').split(' ')[0];
+  return sheet(i === 0 && nm ? 'Hoş geldin, ' + nm : 'Hoş geldin', `<div class="stack" style="align-items:center;text-align:center;gap:14px;padding:6px 0 4px"><span class="su-bi" style="width:72px;height:72px;border-radius:22px;display:grid;place-items:center">${ic(x.ico, 34)}</span><div><h2 style="margin:0 0 6px">${esc(x.t)}</h2><p class="muted" style="margin:0;line-height:1.5">${esc(x.s)}</p></div>
+  <div class="row" style="gap:6px;justify-content:center">${L.map((_, j) => `<span style="width:${j === i ? 22 : 8}px;height:8px;border-radius:99px;background:${j === i ? 'var(--acc, #2f6fed)' : 'var(--line, #d9dde3)'};transition:.2s"></span>`).join('')}</div></div>
+  <div class="row" style="gap:8px;margin-top:14px">${i > 0 ? '<button class="btn sec" style="flex:1" data-a="tourprev">Geri</button>' : '<button class="btn sec" style="flex:1" data-a="tourskip">Atla</button>'}<button class="btn" style="flex:2" data-a="${last ? 'tourend' : 'tournext'}">${last ? 'Başla' : 'İleri'}</button></div>${x.v && !last ? `<button class="btn sec block" style="margin-top:8px" data-a="tourgo" data-v="${x.v}">Şimdi göster</button>` : ''}`);
+};
+H.tournext = () => { S.modal.i = (S.modal.i || 0) + 1; renderModal(); };
+H.tourprev = () => { S.modal.i = Math.max(0, (S.modal.i || 0) - 1); renderModal(); };
+H.tourskip = () => { tourDone(); S.modal = null; render(); };
+H.tourend = () => { tourDone(); S.modal = null; render(); };
+H.tourgo = (el) => { tourDone(); S.modal = null; H.nav({ dataset: { v: el.dataset.v } }); };
+H.tourshow = () => { S.modal = { type: 'tour', i: 0 }; renderModal(); };
+function k8TourCard() { if (!S.user) return ''; return `<div class="card stack" style="margin-bottom:12px"><div class="row between wrap" style="gap:8px"><div><h3>Yardım</h3><p class="muted small" style="margin-top:2px">Uygulamanın kısa turunu istediğin zaman yeniden izle.</p></div><button class="btn sm sec" data-a="tourshow">Turu başlat</button></div></div>`; }
+{
+  const _r = render; let tried = false;
+  render = function () {
+    const r = _r.apply(this, arguments);
+    try {
+      if (!tried && S.user && !S.modal && !S.demoMode && SBS && SBS.user && !tourSeen() && TOUR[S.user.role]) {
+        const wiz = S.user.role === 'patron' && !S.settings.setupHide && !suSteps().every((x) => x.done) && (S.suForce || suFresh());
+        if (!wiz) { tried = true; setTimeout(() => { if (!S.modal && S.user) { S.modal = { type: 'tour', i: 0 }; renderModal(); } }, 900); }
+      }
+    } catch (e) {}
+    return r;
+  };
+}
+/* Kurulum adımları: Kais'e ilk soru ve ilk yedek; banner sıradaki adımı söyler */
+{
+  const _s = suSteps; suSteps = function () {
+    const a = _s.apply(this, arguments);
+    a.push({ k: 'ai', ico: 'sparkle', t: 'Kais\'e ilk soruyu sor', s: 'Örn. "Bu ay en çok neye harcadım?" Kais verinden cevaplar.', done: !!S.settings.kaisAsked, a: 'kaisai-go', v: 'kaisai' });
+    a.push({ k: 'bk', ico: 'file', t: 'İlk yedeğini al', s: 'Ayarlar\'da yedek alabilir, bir yedeği test edebilirsin.', done: !!(BK && BK.list && BK.list.length) || !!S.settings.bkDone, a: 'nav', v: 'ayarlar' });
+    return a;
+  };
+}
+{ const _a = H.aisend; if (typeof _a === 'function') H.aisend = function () { if (S.user && S.user.role === 'patron' && !S.settings.kaisAsked) { S.settings.kaisAsked = true; try { pSched(); } catch (e) {} } return _a.apply(this, arguments); }; }
+{ const _b = suBanner; suBanner = function () { let h = _b.apply(this, arguments); if (!h) return h; const nx = suSteps().find((x) => !x.done); if (nx) h = h.replace('<small>Kalan adımlar seni bekliyor</small>', '<small>Sıradaki: ' + esc(nx.t) + '</small>'); return h; }; }
+
+/* --- 5) Yedek doğrulama ve güvenli geri yükleme testi --- */
+const BKV = { res: null, busy: false, sel: '', auto: null };
+const BK_L = { LEDGER: 'Muhasebe satırı', RECEIPTS: 'Fiş ve belge', INV: 'Fatura', STOCK: 'Stok ürünü', SUPPLIERS: 'Tedarikçi', CUSTOMERS: 'Müşteri', SALES: 'Satış', PAYS: 'Ödeme', DEBTS: 'Borç', LEAVES: 'İzin', FCUST: 'Fatura müşterisi', RESV: 'Rezervasyon', ORDERS: 'Sipariş' };
+const bkVerKey = () => 'kp_bkver_' + (SBS && SBS.biz ? SBS.biz.id : 'x');
+const bkVerGet = () => { try { return JSON.parse(localStorage.getItem(bkVerKey()) || 'null'); } catch (e) { return null; } };
+const bkVerSet = (o) => { BKV.auto = o; try { localStorage.setItem(bkVerKey(), JSON.stringify(o)); } catch (e) {} };
+/* Yedek içeriğini şimdiki veriyle karşılaştırır, hiçbir şeyi değiştirmez. */
+function bkInspect(snap) {
+  const out = { ok: true, issues: [], rows: [], size: String(snap || '').length };
+  let o; try { o = JSON.parse(snap); } catch (e) { return { ok: false, issues: ['Yedek dosyası okunamadı (bozuk JSON).'], rows: [], size: out.size }; }
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return { ok: false, issues: ['Yedek biçimi tanınmadı.'], rows: [], size: out.size };
+  const keys = P_ARR.map((x) => x[0]);
+  const present = keys.filter((k) => k in o);
+  if (!present.length) { out.ok = false; out.issues.push('Yedekte hiçbir veri bölümü yok.'); }
+  keys.forEach((k) => {
+    if (!(k in o)) return; const b = o[k]; const now = (P_ARR.find((x) => x[0] === k)[1]() || []);
+    if (!Array.isArray(b)) { out.ok = false; out.issues.push((BK_L[k] || k) + ' bölümü bozuk.'); return; }
+    if ((b.length || now.length) && BK_L[k]) out.rows.push({ k, label: BK_L[k], backup: b.length, now: now.length });
+  });
+  const led = Array.isArray(o.LEDGER) ? o.LEDGER : [];
+  const ids = new Set(); let dup = 0, bad = 0; led.forEach((r) => { if (ids.has(r.id)) dup++; else ids.add(r.id); if (!isFinite(Number(r.total))) bad++; });
+  if (dup) { out.ok = false; out.issues.push(dup + ' muhasebe satırı tekrarlı.'); }
+  if (bad) { out.ok = false; out.issues.push(bad + ' satırın tutarı geçersiz.'); }
+  out.rows.sort((a, b) => Math.abs(b.backup - b.now) - Math.abs(a.backup - a.now) || b.backup - a.backup);
+  const back = out.rows.reduce((t, r) => t + Math.max(0, r.backup - r.now), 0), lose = out.rows.reduce((t, r) => t + Math.max(0, r.now - r.backup), 0);
+  out.back = back; out.lose = lose; return out;
+}
+async function bkFetchSnap(id) { const r = await sbClient().from('backups').select('snap').eq('id', id).eq('business_id', SBS.biz.id).maybeSingle(); if (r.error) throw r.error; if (!r.data) throw new Error('Yedek bulunamadı.'); return r.data.snap; }
+H.bkver = async () => {
+  if (!bkCan() || BKV.busy) return; const id = BKV.sel || (BK.list[0] && BK.list[0].id); if (!id) return toast('Önce bir yedek al.', 'warn');
+  BKV.busy = true; BKV.res = null; render();
+  try { const snap = await bkFetchSnap(id); const r = bkInspect(snap); r.id = id; r.at = Date.now(); r.hash = (await sha256hex(snap)).slice(0, 12); BKV.res = r; if (r.ok) { S.settings.bkDone = true; try { pSched(); } catch (e) {} } }
+  catch (e) { BKV.res = { ok: false, issues: [bkMsg(e)], rows: [], size: 0, id, at: Date.now() }; }
+  BKV.busy = false; render();
+};
+H.bksel = (el) => { BKV.sel = el.value || (el.dataset && el.dataset.id) || ''; BKV.res = null; };
+document.addEventListener('change', (e) => { const t = e.target; if (t.dataset && t.dataset.bksel != null) { BKV.sel = t.value; BKV.res = null; render(); } });
+/* Yedek alınınca veritabanından geri okuyup aynı mı diye doğrula */
+{
+  const _mk = bkMake;
+  bkMake = async function (kind) {
+    const local = pSnap(); await _mk.apply(this, arguments);
+    try { const id = BK.list[0] && BK.list[0].id; if (!id) return; const back = await bkFetchSnap(id); const h1 = await sha256hex(local), h2 = await sha256hex(back); const ins = bkInspect(back); bkVerSet({ at: Date.now(), ok: h1 === h2 && ins.ok, id, same: h1 === h2, n: ins.rows.reduce((t, r) => t + r.backup, 0), kind }); if (!(h1 === h2 && ins.ok)) { BK.err = 'Yedek alındı ama doğrulanamadı. Lütfen "Bilgisayara indir" ile ayrıca yedekle.'; } }
+    catch (e) { bkVerSet({ at: Date.now(), ok: false, err: String((e && e.message) || e) }); }
+  };
+}
+{
+  const _c = bkCard;
+  bkCard = function () {
+    const h = _c.apply(this, arguments); if (!h) return h;
+    const v = BKV.auto || bkVerGet(); const r = BKV.res; const kn = { gunluk: 'Günlük', manuel: 'Elle alındı', 'geri-yukleme-oncesi': 'Geri yüklemeden önce' };
+    const st = v ? (v.ok ? `<span class="pill p-ok">Doğrulandı</span> <span class="small muted">${esc(bkDay(new Date(v.at).toISOString()))}${v.n ? ' · ' + v.n + ' kayıt' : ''}</span>` : `<span class="pill p-bad">Doğrulanamadı</span> <span class="small muted">${esc(v.err || 'Yedek veritabanından aynı okunamadı')}</span>`) : '<span class="small muted">Henüz doğrulama yok. Yeni alınan her yedek otomatik doğrulanır.</span>';
+    const opts = BK.list.slice(0, 10).map((b) => `<option value="${b.id}"${(BKV.sel || (BK.list[0] && BK.list[0].id)) === b.id ? ' selected' : ''}>${esc(bkDay(b.created_at))} · ${esc(kn[b.kind] || b.kind)}</option>`).join('');
+    const diff = r ? `<div class="stack" style="gap:8px;margin-top:6px"><div class="callout ${r.ok ? '' : 'warn'}">${ic(r.ok ? 'check' : 'alert')}<div><b>${r.ok ? 'Yedek sağlam' : 'Yedekte sorun var'}</b><p style="margin-top:2px">${r.ok ? 'Dosya okundu, bölümler ve tutarlar tutarlı. Hiçbir şey değişmedi.' : esc(r.issues.join(' '))}</p>${r.hash ? `<p class="small muted" style="margin-top:2px">İmza ${esc(r.hash)} · ${Math.round(r.size / 1024)} KB</p>` : ''}</div></div>
+      ${r.ok ? `<div class="small">Bu yedeği geri yüklersen: <b>${r.back}</b> kayıt geri gelir, <b>${r.lose}</b> kayıt kaybolur.</div>` : ''}
+      ${r.rows.length ? `<div class="card flush"><table style="width:100%;font-size:13px"><tr><th style="text-align:left;padding:8px 12px">Bölüm</th><th style="text-align:right;padding:8px 12px">Yedekte</th><th style="text-align:right;padding:8px 12px">Şimdi</th></tr>${r.rows.slice(0, 8).map((x) => `<tr><td style="padding:6px 12px">${esc(x.label)}</td><td style="text-align:right;padding:6px 12px">${x.backup}</td><td style="text-align:right;padding:6px 12px;${x.backup !== x.now ? 'font-weight:600' : ''}">${x.now}</td></tr>`).join('')}</table></div>` : ''}</div>` : '';
+    const box = `<div class="card stack" style="border:1px dashed var(--line,#d9dde3)"><div><b style="font-weight:600">Yedek sağlığı</b><div style="margin-top:4px">${st}</div></div><div class="row wrap" style="gap:8px"><select data-bksel="1" style="flex:1;min-width:160px;font-size:16px">${opts}</select><button class="btn sm" data-a="bkver" ${BKV.busy ? 'disabled' : ''}>${BKV.busy ? 'Test ediliyor…' : 'Güvenli test'}</button></div><p class="muted small" style="margin:0">Testte yedek indirilir, okunur ve şimdiki verinle karşılaştırılır. Verin değişmez.</p>${diff}</div>`;
+    const i = h.lastIndexOf('<div class="row wrap"><button class="btn sm" data-a="bkmake"'); return i > 0 ? h.slice(0, i) + box + h.slice(i) : h;
+  };
+}
+{ const _a = bkAuto; bkAuto = async function () { const r = await _a.apply(this, arguments); try { if (BK.list.length && !BKV.auto && !bkVerGet()) { const id = BK.list[0].id; const snap = await bkFetchSnap(id); const ins = bkInspect(snap); bkVerSet({ at: Date.now(), ok: ins.ok, id, n: ins.rows.reduce((t, x) => t + x.backup, 0) }); } } catch (e) {} return r; }; }
+
+/* ===== v148: akşam özeti anahtarı, şube yetkisi, tahsilat merkezi, hoş geldin turu, yedek doğrulama ===== */
+const sha256hex = async (str) => { try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join(''); } catch (e) { return ''; } };
+const k8Sw = (on, act, extra) => `<button class="sw" role="switch" aria-checked="${on}" data-a="${act}"${extra || ''}></button>`;
+
+/* --- 1) Akşam özeti (Kais yorumlu bildirim) --- */
+H.kaiseve = () => { if (!S.user || S.user.role !== 'patron') return; S.settings.kaisEve = S.settings.kaisEve === false; try { pSched(); } catch (e) {} render(); toast(S.settings.kaisEve === false ? 'Akşam özeti kapandı.' : 'Akşam özeti açıldı.', 'ok'); };
+function k8EveCard() {
+  if (!S.user || S.user.role !== 'patron') return '';
+  const on = S.settings.kaisEve !== false;
+  return `<div class="card stack" style="margin-bottom:12px"><div class="toggle"><div><b style="font-weight:600">Akşam özeti</b><div class="small muted">Her akşam 21:00 sularında bugünün cirosu, gideri ve Kais'in kısa yorumu telefonuna gelir. Yalnızca o gün kayıt varsa gönderilir.</div></div>${k8Sw(on, 'kaiseve')}</div></div>`;
+}
+
+/* --- 2) Şube bazlı yetki (muhasebeci kendi şubelerini görür) --- */
+function brRule() {
+  const u = S.user; if (!u || u.role !== 'muhasebeci' || !BRANCHES.length) return null;
+  const m = (S.settings.brs || {})[u.id]; if (!m || (!(m.b || []).length && !m.none)) return null;
+  const set = new Set((m.b || []).filter((id) => BRANCHES.some((b) => b.id === id)));
+  if (!set.size && !m.none) return null;
+  return { set, none: !!m.none, ok: (br) => (br ? set.has(br) : !!m.none) };
+}
+function brScope(fn) {
+  const rule = brRule(); if (!rule) return fn();
+  const LD = LEDGER, BR = BRANCHES, IV = INV, RC = RECEIPTS; const L0 = LD.slice(), B0 = BR.slice(), I0 = IV.slice(), R0 = RC.slice();
+  const hiddenRc = new Set(L0.filter((r) => r.rc && !rule.ok(rxBr(r))).map((r) => r.rc));
+  const L1 = L0.filter((r) => rule.ok(rxBr(r))), B1 = B0.filter((b) => rule.set.has(b.id)), I1 = I0.filter((v) => rule.ok(v.br && BR.some((b) => b.id === v.br) ? v.br : '')), R1 = R0.filter((f) => !hiddenRc.has(f.id));
+  LD.splice(0, LD.length, ...L1); BR.splice(0, BR.length, ...B1); IV.splice(0, IV.length, ...I1); RC.splice(0, RC.length, ...R1);
+  const back = (arr, shown, full, keep) => { const cur = arr.slice(); if (cur.length === shown.length && cur.every((x, i) => x === shown[i])) arr.splice(0, arr.length, ...full); else arr.splice(0, arr.length, ...cur.concat(full.filter((x) => !keep(x)))); };
+  try { return fn(); } finally {
+    back(LD, L1, L0, (r) => rule.ok(rxBr(r))); back(BR, B1, B0, (b) => rule.set.has(b.id)); back(IV, I1, I0, (v) => I1.indexOf(v) >= 0); back(RC, R1, R0, (f) => !hiddenRc.has(f.id));
+  }
+}
+{ const _v = viewHTML; viewHTML = function () { const a = arguments, t = this; return brScope(() => _v.apply(t, a)); }; }
+{ const _m = renderModal; renderModal = function () { const a = arguments, t = this; return brScope(() => _m.apply(t, a)); }; }
+['xlsx', 'rxcsv', 'rxpdf', 'kdvcsv', 'tkwa', 'tkcopy', 'tkpaid', 'tktone'].forEach((n) => { const f = H[n]; if (typeof f !== 'function') return; H[n] = function () { const a = arguments, t = this; return brScope(() => f.apply(t, a)); }; });
+['bkdl', 'bkexp', 'aisend'].forEach((n) => { const f = H[n]; if (typeof f !== 'function') return; H[n] = function () { if (brRule()) return toast('Bu işlem şube kısıtlı hesapta kapalı.', 'warn'); return f.apply(this, arguments); }; });
+H.brperm = (el) => {
+  if (!S.user || S.user.role !== 'patron') return; const m = S.settings.brs || (S.settings.brs = {}); const u = el.dataset.u; const e = m[u] || (m[u] = { b: [], none: false });
+  if (el.dataset.b === '_none') e.none = !e.none; else { const i = e.b.indexOf(el.dataset.b); if (i >= 0) e.b.splice(i, 1); else e.b.push(el.dataset.b); }
+  if (!e.b.length && !e.none) delete m[u]; try { pSched(); } catch (x) {} try { auditAdd({ type: 'yetki', text: 'Şube yetkisi güncellendi' }); } catch (x) {} render();
+};
+function k8BrCard() {
+  if (!S.user || S.user.role !== 'patron' || !BRANCHES.length) return '';
+  const acc = USERS.filter((u) => u.role === 'muhasebeci'); if (!acc.length) return '';
+  const m = S.settings.brs || {};
+  return `<div class="card stack"><div><h3>Şube yetkisi</h3><p class="muted small" style="margin-top:2px">Muhasebeciler hangi şubelerin kayıtlarını görsün? Hiçbiri seçili değilse tüm şubeleri görür. Seçince diğer şubelerin satır, fatura ve belgeleri onun ekranında gizlenir.</p></div>
+  ${acc.map((u) => { const e = m[u.id] || { b: [], none: false }; const all = !e.b.length && !e.none; return `<div class="stack" style="gap:8px"><div class="row between"><b style="font-weight:600">${esc(u.name)}</b><span class="pill ${all ? 'p-info' : 'p-warn'}">${all ? 'Tüm şubeler' : (e.b.length + (e.none ? 1 : 0)) + ' alan'}</span></div><div class="cb-chips" style="margin:0">${BRANCHES.map((b) => `<button type="button" class="${e.b.indexOf(b.id) >= 0 ? 'on' : ''}" data-a="brperm" data-u="${esc(u.id)}" data-b="${esc(b.id)}">${esc(b.name)}</button>`).join('')}<button type="button" class="${e.none ? 'on' : ''}" data-a="brperm" data-u="${esc(u.id)}" data-b="_none">Şubesiz kayıtlar</button></div></div>`; }).join('')}
+  <p class="muted small" style="margin:0">Bu görünüm uygulama içi bir kısıtlamadır. Kısıtlı hesapta Kais AI ve tüm veri yedeği kapalıdır.</p></div>`;
+}
+{ const _v = viewRaporX; viewRaporX = function () { const h = _v.apply(this, arguments); const c = k8BrCard(); if (!c) return h; const i = h.lastIndexOf('</div>'); return i > 0 ? h.slice(0, i) + c + h.slice(i) : h + c; }; }
+{ const _v = viewAyarlar; viewAyarlar = function () { const h = _v.apply(this, arguments); const c = k8EveCard() + k8TourCard(); return c ? c + h : h; }; }
 </script>
 </body>
 </html>

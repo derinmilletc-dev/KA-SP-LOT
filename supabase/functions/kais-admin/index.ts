@@ -311,7 +311,17 @@ export async function handle(req: Request): Promise<Response> {
       const er = ((await srv.from('app_errors').select('created_at,ver').gte('created_at', tsIso(14)).limit(5000)).data || []) as any[];
       const series: Record<string, number> = {}; for (let i = 13; i >= 0; i--) series[dayIso(i)] = 0; const vers: Record<string, number> = {};
       er.forEach((x) => { const k = String(x.created_at).slice(0, 10); if (k in series) series[k]++; if (x.ver && x.created_at >= tsIso(7)) vers[x.ver] = (vers[x.ver] || 0) + 1; });
-      return J({ ok: true, db_ms: dbMs, cron: Object.values(kinds), cron_ok: !ml.error, push_subs: subs.count || 0, ai_days: aiDays, errors: series, vers: Object.entries(vers).sort((a, c) => c[1] - a[1]).slice(0, 8) });
+      let bkh: any = null;
+      try {
+        const bq = await srv.from('backups').select('business_id,created_at').gte('created_at', tsIso(14)).order('created_at', { ascending: false }).limit(5000);
+        if (!bq.error) {
+          const lastBk: Record<string, string> = {}; ((bq.data || []) as any[]).forEach((x) => { if (!lastBk[x.business_id]) lastBk[x.business_id] = x.created_at; });
+          const bzs = (await bizRows()).filter((x) => !x.suspended_at && x.created_at < tsIso(2));
+          const stale = bzs.filter((x) => !lastBk[x.id] || lastBk[x.id] < tsIso(2)).map((x) => ({ id: x.id, name: x.name, last: lastBk[x.id] || null }));
+          bkh = { total: bzs.length, fresh: bzs.length - stale.length, stale: stale.slice(0, 12) };
+        }
+      } catch (e0) { bkh = null; }
+      return J({ ok: true, backups: bkh, db_ms: dbMs, cron: Object.values(kinds), cron_ok: !ml.error, push_subs: subs.count || 0, ai_days: aiDays, errors: series, vers: Object.entries(vers).sort((a, c) => c[1] - a[1]).slice(0, 8) });
     }
 
     if (action === 'ann_list') {

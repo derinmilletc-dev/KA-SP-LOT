@@ -3,8 +3,6 @@
 // 2) Geç kalan çalışan ve sabah özeti için yöneticilere push
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
-
-/* ===== logic.ts (tek dosya için birleştirildi) ===== */
 // Kais zamanlayıcı: saf mantık (test edilebilir). Dışarıya erişmez.
 const TZ = 'Europe/Istanbul';
 
@@ -183,18 +181,32 @@ function planWeekly(stok: any, led: any, now: { date: string; min: number }): { 
 }
 
 // Günlük kapanış: akşam 21:00-22:00 arası, yöneticilere günde bir kez.
-function planClose(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string } | null {
-  if (now.min < 21 * 60 || now.min >= 22 * 60) return null;
+type CloseFacts = { ciro: number; gider: number; ort7: number; dun: number; top: { prod: string; total: number }[]; giderTop: { acc: string; total: number }[] };
+function closeFacts(stok: any, led: any, now: { date: string; min: number }): CloseFacts {
   const sales: any[] = stok && Array.isArray(stok.SALES) ? stok.SALES : []; const rows: any[] = led && Array.isArray(led.LEDGER) ? led.LEDGER : [];
-  const ciro = sales.filter((r) => r.date === now.date).reduce((t, r) => t + (Number(r.total) || 0), 0);
-  const gider = rows.filter((r) => r.iso === now.date && (r.dir || 'gider') === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const dayMs = 864e5; const t0 = new Date(now.date + 'T00:00:00Z').getTime();
+  const iso = (k: number) => new Date(t0 - k * dayMs).toISOString().slice(0, 10);
+  const sum = (d: string) => sales.filter((r) => r.date === d).reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const ciro = sum(now.date); let tot7 = 0; let n7 = 0;
+  for (let k = 1; k <= 7; k++) { const v = sum(iso(k)); if (v > 0) { tot7 += v; n7++; } }
+  const gRows = rows.filter((r) => r.iso === now.date && (r.dir || 'gider') === 'gider');
+  const gider = gRows.reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const pm: Record<string, number> = {}; sales.filter((r) => r.date === now.date).forEach((r) => { const k = String(r.prod || '?'); pm[k] = (pm[k] || 0) + (Number(r.total) || 0); });
+  const gm: Record<string, number> = {}; gRows.forEach((r) => { const k = String(r.acc || 'Diğer'); gm[k] = (gm[k] || 0) + (Number(r.total) || 0); });
+  const top = Object.keys(pm).map((k) => ({ prod: k, total: pm[k] })).sort((a, b) => b.total - a.total).slice(0, 3);
+  const giderTop = Object.keys(gm).map((k) => ({ acc: k, total: gm[k] })).sort((a, b) => b.total - a.total).slice(0, 3);
+  return { ciro, gider, ort7: n7 ? tot7 / n7 : 0, dun: sum(iso(1)), top, giderTop };
+}
+function planClose(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string; facts: CloseFacts } | null {
+  if (now.min < 21 * 60 || now.min >= 22 * 60) return null;
+  const f = closeFacts(stok, led, now); const ciro = f.ciro; const gider = f.gider;
   if (!ciro && !gider) return null;
-  return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.' };
+  return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.', facts: f };
 }
 
-/* ===== index.ts ===== */
-
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
+const AMODEL = Deno.env.get('KAIS_CRON_MODEL') || 'claude-haiku-5-5';
 const sb = createClient(URL_, SRV, { auth: { persistSession: false } });
 const RESEND = Deno.env.get('RESEND_API_KEY') || ''; const FROM = Deno.env.get('RESEND_FROM') || '';
 const VPUB = Deno.env.get('VAPID_PUBLIC_KEY') || ''; const VPRIV = Deno.env.get('VAPID_PRIVATE_KEY') || ''; const VSUB = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@example.com';
@@ -226,6 +238,21 @@ async function pushManagers(bid: string, title: string, body: string, tag: strin
   return n;
 }
 
+
+
+// Akşam özetine Kais yorumu: kısa, samimi, 1 öneri. Hata olursa düz özet gider.
+async function kaisNote(biz: string, f: any, base: string): Promise<string> {
+  if (!AKEY || Deno.env.get('KAIS_EVE_AI') === '0') return base;
+  try {
+    const NL = String.fromCharCode(10);
+    const veri = JSON.stringify({ isletme: biz, bugun_ciro: f.ciro, bugun_gider: f.gider, son7gun_ort_ciro: Math.round(f.ort7), dun_ciro: f.dun, en_cok_satan: f.top, en_cok_gider: f.giderTop });
+    const sys = ["Sen KaisPilot asistanı Kais'sin. Bir işletme sahibine akşam kapanış mesajı yazıyorsun.", 'Yalnızca verilen veriye dayan, rakam uydurma.', 'En fazla 2 kısa cümle yaz. Önce günün durumunu (ortalamaya göre iyi mi kötü mü), sonra tek bir somut öneri ver.', 'Samimi, sade Türkçe. Emoji ve tırnak kullanma. Toplam 200 karakteri geçme.'].join(NL);
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': AKEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: AMODEL, max_tokens: 120, system: sys, messages: [{ role: 'user', content: veri }] }) });
+    if (!r.ok) return base;
+    const j: any = await r.json(); const t = ((j.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join(' ') || '').trim();
+    if (!t) return base; return base + ' ' + t.slice(0, 220);
+  } catch (e0) { return base; }
+}
 
 // İlan ve teslimat bildirimleri (SQL tarafında üretilir: market_outbox_pull)
 async function pushMarket(): Promise<number> {
@@ -290,7 +317,10 @@ Deno.serve(async (req) => {
       }
       for (const a of planAlerts(stok, now).concat(planAlerts2(stok, now))) { if (await claim(bid, a.key, 'alert')) out.pushes += await pushManagers(bid, a.title, a.body, a.key); }
       const wk = planWeekly(stok, led, now); if (wk && (await claim(bid, wk.key, 'weekly'))) out.pushes += await pushManagers(bid, wk.title, wk.body, wk.key);
-      const cl = planClose(stok, led, now); if (cl && (await claim(bid, cl.key, 'close'))) out.pushes += await pushManagers(bid, cl.title, cl.body, cl.key);
+      const cl = planClose(stok, led, now);
+      if (cl && !(ekip.SETTINGS && ekip.SETTINGS.kaisEve === false) && (await claim(bid, cl.key, 'close'))) {
+        const msg = await kaisNote(biz, cl.facts, cl.body); out.pushes += await pushManagers(bid, cl.title, msg, cl.key);
+      }
       const d = planDaily(ekip, now);
       if (d && (await claim(bid, d.key, 'daily'))) out.pushes += await pushManagers(bid, d.title, d.body, d.key);
     } catch (e) { out.errors.push(bid + ': ' + String((e as Error).message)); }
