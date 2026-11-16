@@ -12907,6 +12907,60 @@ DEL.reason = ''; DEL.note = '';
 H.delr = (el) => { DEL.reason = DEL.reason === el.dataset.v ? '' : el.dataset.v; const n = document.getElementById('del-n'); if (n) DEL.note = n.value; renderModal(); };
 document.addEventListener('input', (e) => { if (e.target && e.target.id === 'del-n') DEL.note = e.target.value; });
 { const _g = H.delgo; H.delgo = async function () { const el = document.getElementById('del-c'); if (DEL.busy || !el || kaFold(el.value) !== 'sil') return; try { if (delCloud() && (DEL.reason || DEL.note.trim())) await sbClient().from('account_feedback').insert({ reason: DEL.reason || null, note: DEL.note.trim() || null, role: S.user ? S.user.role : null, was_owner: delOwner() }); } catch (e) {} return _g.apply(this, arguments); }; }
+
+/* v142 Bildirimler: izin talebi ve çalışan fişi yöneticiye anında bildirim gider */
+{
+  const lvNtfMgrs = () => USERS.filter((u) => ['patron', 'mudur'].includes(u.role) && u.id !== (S.user && S.user.id)).map((u) => u.id);
+  const _lr = H.lrsend; H.lrsend = function () {
+    const n0 = LVREQ.length; const r = _lr.apply(this, arguments);
+    try { if (LVREQ.length > n0) { const x = LVREQ[LVREQ.length - 1]; pushSend(lvNtfMgrs(), 'Yeni izin talebi', S.user.name + ': ' + (x.txt || '') + (x.days ? ' (' + x.days + ' gün)' : '')); } } catch (e) {}
+    return r;
+  };
+  const _sr = H.savereceipt; H.savereceipt = function () {
+    const n0 = RECEIPTS.length; const r = _sr.apply(this, arguments);
+    try { if (RECEIPTS.length > n0) { const x = RECEIPTS[RECEIPTS.length - 1]; if (x && x.status === 'bekliyor') pushSend(lvNtfMgrs(), 'Onay bekleyen fiş', S.user.name + ': ' + (x.seller || 'Fiş') + ' · ' + fmt0(x.total || 0)); } } catch (e) {}
+    return r;
+  };
+}
+
+/* v143 Raporlar: dönem seçimi + CSV / PDF çıktı */
+const RXP = [['m0', 'Bu ay'], ['m1', 'Geçen ay'], ['m3', 'Son 3 ay'], ['y', 'Bu yıl']];
+const rxIsoMon = (d, k) => d.getFullYear() * 12 + d.getMonth() + k;
+function rxPerRows(key) {
+  const n = new Date(); const cur = rxIsoMon(n, 0);
+  const want = key === 'm1' ? [cur - 1, cur - 1] : key === 'm3' ? [cur - 2, cur] : key === 'y' ? [n.getFullYear() * 12, cur] : [cur, cur];
+  return rxRows().filter((r) => {
+    let m = null;
+    if (r.iso && /^\d{4}-\d{2}/.test(r.iso)) m = Number(r.iso.slice(0, 4)) * 12 + Number(r.iso.slice(5, 7)) - 1;
+    else { const l = lper(r); m = l === CURM ? cur : l === PREVM ? cur - 1 : null; }
+    return m != null && m >= want[0] && m <= want[1];
+  });
+}
+function rxPerData() {
+  const k = S.rxp || 'm0'; const rows = rxPerRows(k); const lab = (RXP.find((x) => x[0] === k) || RXP[0])[1];
+  const g = rows.filter((r) => dirOf(r) === 'gelir').reduce((a, r) => a + (Number(r.total) || 0), 0), x = rows.filter((r) => dirOf(r) === 'gider').reduce((a, r) => a + (Number(r.total) || 0), 0);
+  const c = {}; rows.filter((r) => dirOf(r) === 'gider').forEach((r) => { c[r.acc || 'Diğer'] = (c[r.acc || 'Diğer'] || 0) + (Number(r.total) || 0); });
+  return { k, rows, lab, g, x, cats: Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 6) };
+}
+function rxPerCard() {
+  const d = rxPerData();
+  return `<div class="card stack"><div><h3>Dönem raporu</h3><p class="muted small" style="margin-top:2px">Dönemi seç, özeti gör, dosya olarak al.</p></div>
+  <div class="cb-chips" style="margin:0">${RXP.map((p) => `<button type="button" class="${d.k === p[0] ? 'on' : ''}" data-a="rxper" data-v="${p[0]}">${p[1]}</button>`).join('')}</div>
+  <div class="rx-m"><div class="row between"><span>Gelir</span><b>${fmt0(d.g)}</b></div><div class="row between"><span>Gider</span><b>${fmt0(d.x)}</b></div><div class="row between"><span>Net</span><b class="${d.g - d.x >= 0 ? 'rx-pos' : 'rx-neg'}">${fmt0(d.g - d.x)}</b></div></div>
+  ${d.cats.length ? rxBars(d.cats, '#eb6834') : '<p class="small muted">Bu dönemde gider kaydı yok.</p>'}
+  <p class="small muted">${d.rows.length} satır</p>
+  <div class="row" style="gap:8px"><button class="btn sec" style="flex:1" data-a="rxcsv">${ic('file')} Excel (CSV)</button><button class="btn sec" style="flex:1" data-a="rxpdf">${ic('file')} PDF / Yazdır</button></div></div>`;
+}
+{ const _v = viewRaporX; viewRaporX = function () { const h = _v.apply(this, arguments); const i = h.indexOf('<div class="card stack"><div><h3>Aylık karşılaştırma</h3>'); return i < 0 ? h : h.slice(0, i) + rxPerCard() + h.slice(i); }; }
+H.rxper = (el) => { S.rxp = el.dataset.v; render(); };
+H.rxcsv = () => { const d = rxPerData(); const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const L = [['Tarih', 'Yön', 'Hesap', 'Açıklama', 'KDV %', 'Tutar'].join(';')].concat(d.rows.map((r) => [q(r.iso || r.date), dirOf(r) === 'gelir' ? 'Gelir' : 'Gider', q(r.acc), q(r.desc), r.rate == null ? '' : r.rate, String(Number(r.total) || 0).replace('.', ',')].join(';')));
+  L.push(['', '', '', 'Gelir', '', String(d.g).replace('.', ',')].join(';'), ['', '', '', 'Gider', '', String(d.x).replace('.', ',')].join(';'), ['', '', '', 'Net', '', String(d.g - d.x).replace('.', ',')].join(';'));
+  saveBlob('rapor-' + d.k + '.csv', new Blob(['﻿' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' })); toast('Rapor indirildi. Excel ile açılır.', 'ok'); };
+H.rxpdf = () => { const d = rxPerData(); const e = esc; const tr = d.rows.slice(0, 400).map((r) => `<tr><td>${e(r.iso || r.date)}</td><td>${dirOf(r) === 'gelir' ? 'Gelir' : 'Gider'}</td><td>${e(r.acc || '')}</td><td>${e(r.desc || '')}</td><td style="text-align:right">${fmt0(Number(r.total) || 0)}</td></tr>`).join('');
+  const html = `<!doctype html><meta charset="utf-8"><title>Rapor</title><style>body{font:14px system-ui;padding:24px;color:#111}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left}h2{margin:0}</style><h2>${e(d.lab)} raporu</h2><p>Gelir <b>${fmt0(d.g)}</b> · Gider <b>${fmt0(d.x)}</b> · Net <b>${fmt0(d.g - d.x)}</b></p><table><tr><th>Tarih</th><th>Yön</th><th>Hesap</th><th>Açıklama</th><th>Tutar</th></tr>${tr}</table><script>setTimeout(function(){window.print()},300)<\/script>`;
+  try { const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); return; } } catch (x) {}
+  saveBlob('rapor-' + d.k + '.html', new Blob([html], { type: 'text/html;charset=utf-8' })); toast('Rapor dosyası indirildi. Açıp yazdır.', 'ok'); };
 </script>
 </body>
 </html>
