@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v151';
+const APP_VER = 'v152';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13830,6 +13830,20 @@ H.ixundo = () => {
   const rm = (a) => { for (let i = a.length - 1; i >= 0; i--) if (a[i].xb === xl.b) a.splice(i, 1); }; rm(LEDGER); rm(INV); rm(DEBTS); delete S.settings.xlast; try { pSched(); } catch (e) {}
   MXI.step = 'pick'; MXI.done = null; toast('Son aktarım geri alındı.', 'ok'); render(); S.modal = { type: 'mximp' }; renderModal();
 };
+
+/* v152: hoş geldin turu ve kurulum sihirbazına "Excel'den aktar" adımı */
+{
+  const pi = TOUR.patron.findIndex((x) => x.v === 'muhasebe'); TOUR.patron.splice(pi >= 0 ? pi + 1 : 1, 0, { ico: 'file', t: 'Excel\'ini taşı', s: 'Şimdiye kadar Excel\'de tuttuğun kayıtları yükle. Kais sütunları kendisi tanır, sen onaylarsın. Akıllı muhasebe kartında.', v: 'muhasebe' });
+  TOUR.muhasebeci.push({ ico: 'file', t: 'Müşterinin Excel\'ini aktar', s: 'Müşterin eski takip dosyasını getirdiyse Excel\'den aktar ile hareket, fatura ve borçları tek seferde yükle.', v: 'borc' });
+  const _s = suSteps; suSteps = function () {
+    const a = _s.apply(this, arguments); const st = S.settings || {}; const done = !!(st.xlast || st.ximpSkip || LEDGER.some((r) => r.src === 'Excel') || INV.some((v) => v.xb));
+    a.splice(1, 0, { k: 'imp', ico: 'file', t: 'Excel\'indeki kayıtları taşı', s: 'Eski takip dosyanı yükle, Kais sütunları tanıyıp doldursun. Excel\'in yoksa atla.', done, a: 'ximpgo' });
+    return a;
+  };
+  H.ximpgo = () => { S.modal = null; S.view = S.user && S.user.role === 'muhasebeci' ? 'borc' : 'muhasebe'; render(); H.mximp(); };
+  H.ximpskip = () => { if (!S.settings) S.settings = {}; S.settings.ximpSkip = true; try { pSched(); } catch (e) {} S.modal = null; render(); };
+  const _n = NEWM.mximp; NEWM.mximp = function () { const h = _n.apply(this, arguments); const st = S.settings || {}; if (MXI.step !== 'pick' || st.ximpSkip || st.xlast) return h; return h.replace(/(<p class="small muted" style="margin-top:10px">Gelir gider hareketleri[\s\S]*?<\/p>)/, '$1<button class="btn sec block" style="margin-top:10px" data-a="ximpskip">Excel\'im yok, bu adımı atla</button>'); };
+}
 </script>
 </body>
 </html>
