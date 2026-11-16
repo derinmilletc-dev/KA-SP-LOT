@@ -1892,15 +1892,7 @@ function empRow(id, canAct) {
   if (a.late) meta.push(`${a.late} dk geç girdi`);
   return `<div class="emp">${S.user.role === 'patron' ? `<button class="empbtn" data-a="empopen" data-id="${id}" aria-label="${esc(u.name)} maaş ve haklar">${avatar(u, 40)}<span class="grow"><b style="font-weight:600;display:block">${esc(u.name)}</b><span class="small muted">${esc(u.title)} · maaş ve haklar</span></span></button>` : `${avatar(u, 40)}<div class="grow"><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">${esc(u.title)}</div></div>`}<span class="pill ${P[0]}">${P[1]}</span><div class="meta">${esc(meta.join(' · '))}${a.state === 'pending' ? ' · ' + esc(a.note) : ''}</div>${a.state === 'pending' && !a.fix && canAct ? `<div class="act"><button class="btn sm" data-a="attok" data-id="${id}">Onayla</button><button class="btn sm sec" data-a="attfix" data-id="${id}">Düzeltme iste</button></div>` : ''}</div>`;
 }
-function viewEkip() {
-  const cur = S.sub.ekip;
-  const canRank = S.user.role === 'patron' || S.settings.mudurRanking;
-  return `<div class="stack-lg">
-  ${seg('ekip', [['bugun', 'Bugün'], ['siralama', 'Aylık sıralama']], cur)}
-  ${cur === 'bugun' ? `<div class="card flush">${EMP_IDS.map((id) => empRow(id, true)).join('')}</div>
-    <div class="callout">${ic('info')}<div>Çalışan da kendi kaydını aynı şekilde görür. Unutulan "döndüm" dokunuşu otomatik kesinti yapmaz, kayıt "onay bekliyor" olur.</div></div>` : canRank ? rankingView() : `<div class="card empty">${ic('lock', 28)}<p style="margin-top:8px">Bireysel sıralamayı yalnızca patron görür. Patron isterse Ayarlar'dan yetki verebilir.</p></div>`}
-  </div>`;
-}
+
 function rankingHTML() {
   const sc = scores();
   return sc.map((s, i) => {
@@ -2040,54 +2032,14 @@ function ekstreHTML(mode) {
   <div class="chips">${FILT.map((x) => `<button class="chip" data-a="filter" data-v="${x[0]}" aria-pressed="${f === x[0]}">${x[1]} ${x[2]}</button>`).join('')}</div>
   <div class="card ledger">${rows.length ? rows.map((r) => ledgerRow(r, mode)).join('') : '<div class="empty">Bu filtrede işlem yok.</div>'}</div></div>`;
 }
-function receiptRow(f, canApprove) {
-  const u = byId(f.by);
-  const P = { onayli: ['p-ok', 'Onaylandı'], bekliyor: ['p-warn', 'Onay bekliyor'], reddedildi: ['p-mute', 'Reddedildi'] }[f.status];
-  return `<div class="rrow"><div><b style="font-weight:600">${esc(f.seller)}</b><div class="small muted">${esc(f.date)} · yükleyen ${esc(u.name.split(' ')[0])} · KDV %${f.rate}${f.rate ? ': ' + fmt(kdv(f)) : ''}</div></div><div class="num" style="font-weight:600">${fmt(f.total)}</div>
-  <div class="rfoot"><span class="pill ${P[0]}">${P[1]}</span>${canApprove ? `<select data-ch="cat" data-id="${f.id}" aria-label="${esc(f.seller)} kategorisi">${CATS.map((c) => `<option ${c === f.cat ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>` : `<span class="small muted">${esc(f.cat)}</span>`}
-  ${canApprove && f.status === 'bekliyor' ? `<button class="btn sm" data-a="approve" data-id="${f.id}">Onayla</button><button class="btn sm sec" data-a="reject" data-id="${f.id}">Reddet</button>` : ''}
-  ${f.bank ? '<span class="small muted">Ekstreyle eşleşti</span>' : ''}</div></div>`;
-}
+
 function fislerHTML(canApprove) {
   return `<div class="stack"><div class="row between wrap"><p class="muted small">Fişi çek, Kais okusun. Emin değilse sorar, cevabını hatırlar.</p>${canApprove ? `<button class="btn" data-a="upload">${ic('camera')} Fiş ekle</button>` : ''}</div>
   <div class="card flush">${RECEIPTS.slice().reverse().map((f) => receiptRow(f, canApprove)).join('')}</div></div>`;
 }
-function csvText() {
-  const head = 'Tarih;Açıklama;Tutar;Kategori;Belge;KDV %;Durum';
-  const lab = { eslesti: 'Eşleşti', eksik: 'Eksik', belgesiz: 'Belgesiz', gelir: 'Gelir', maas: 'Maaş', tekrar: 'Tekrarlayan' };
-  const lines = ROWS.map((r) => {
-    const f = RECEIPTS.find((x) => x.bank === r.id);
-    return [rDateY(r), r.desc, r.amt.toFixed(2).replace('.', ','), (f && f.cat) || r.cat || '', f ? f.id : '', f ? f.rate : '', lab[rowStatus(r)]].join(';');
-  });
-  return [head].concat(lines).join('\n');
-}
-function paketHTML(role) {
-  const miss = countStatus('eksik');
-  const pend = pendingReceipts().length;
-  const ready = miss === 0 && pend === 0;
-  const chk = (ok, title, sub) => `<div class="check"><span class="dot ${ok ? 'tone-ok' : 'tone-bad'}">${ic(ok ? 'check' : 'x', 16)}</span><div><b style="font-weight:600">${esc(title)}</b><div class="small muted">${esc(sub)}</div></div></div>`;
-  const t = totals();
-  return `<div class="stack-lg">
-  <div class="card"><h3>${PERIOD} paketi</h3><p class="muted small">Muhasebeci için hazırlanan aylık çıktı.</p>
-  ${chk(true, 'Tüm fişler okundu', `${RECEIPTS.length} fiş ve fatura kayıtlı`)}
-  ${chk(miss === 0, miss === 0 ? 'Eksik belge yok' : `${miss} işlemin belgesi eksik`, miss === 0 ? 'Tüm harcamalar belgeyle eşleşti' : 'Fiş ekle ya da "fişim yok" olarak işaretle')}
-  ${chk(pend === 0, pend === 0 ? 'Bekleyen masraf onayı yok' : `${pend} masraf fişi onay bekliyor`, 'Çalışanların yüklediği fişler')}
-  ${chk(true, 'Maaş ödemeleri listelendi', 'Maaşlar ekstreden okunur. Bordro hesabı bu üründe yok.')}
-  <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="l">Gelen</div><div class="v num">${fmt0(t.in)}</div></div><div class="kpi"><div class="l">Giden</div><div class="v num">${fmt0(t.out)}</div></div><div class="kpi"><div class="l">Belgesiz</div><div class="v num">${countStatus('belgesiz')}</div></div></div></div>
-  <div class="card stack"><div><h3>Excel / CSV çıktısı</h3><p class="muted small">Noktalı virgülle ayrılmış, Türkçe Excel'de doğrudan açılır.</p></div>
-  <textarea class="csv" readonly aria-label="CSV önizleme" id="csvbox">${esc(csvText())}</textarea>
-  <div class="xrow"><button class="btn sec" data-a="copycsv">Kopyala</button>${xlsxBtn()}
-  ${role === 'patron' ? `<button class="btn" data-a="sendpkg" ${S.sent ? 'disabled' : ''}>${ic('send')} ${S.sent ? 'Muhasebeciye gönderildi' : 'Muhasebeciye gönder'}</button>` : `<button class="btn" data-a="closeperiod" ${!ready || S.closed ? 'disabled' : ''}>${ic('lock')} ${S.closed ? 'Dönem kapalı' : 'Dönemi kapat'}</button>`}</div>
-  ${role !== 'patron' && !ready ? '<p class="small muted">Eksik belge ya da bekleyen onay varken dönem kapatılamaz.</p>' : ''}
-  ${S.sent && role !== 'patron' ? `<p class="small"><span class="pill p-ok">Patron paketi gönderdi</span> ${esc(S.sent)}</p>` : ''}
-  ${S.sent && role === 'patron' ? `<p class="small muted">Gönderildi: ${esc(S.sent)}</p>` : ''}</div></div>`;
-}
-function viewMuhasebe() {
-  const cur = S.sub.muhasebe;
-  const map = { ozet: ozetHTML, eposta: epostaHTML, alacak: alacakHTML, fisler: () => fislerHTML(true), ekstre: () => ekstreHTML('patron'), paket: () => paketHTML('patron') };
-  const tabs = [['ozet', 'Akıllı özet'], ['eposta', 'E-posta'], ['alacak', 'Alacaklar'], ['fisler', 'Fişler'], ['ekstre', 'Ekstre'], ['paket', 'Aylık paket']];
-  return `<div class="stack-lg">${seg('muhasebe', tabs, cur)}${S.closed ? `<div class="callout warn">${ic('lock')}<div>${PERIOD} dönemi muhasebeci tarafından kapatıldı. Değişiklik için muhasebeciye yaz.</div></div>` : ''}${(map[cur] || ozetHTML)()}</div>`;
-}
+
+
+
 function chartHTML() {
   const t = totals();
   const data = MONTHS.concat([{ m: PREVA, in: t.in, out: t.out }]);
@@ -2099,14 +2051,7 @@ function chartHTML() {
   }).join('');
   return `<svg class="ch" viewBox="0 0 320 150" role="img" aria-label="Son üç ayın gelen ve giden toplamları, bin lira"><line x1="8" x2="312" y1="${base}" y2="${base}" stroke="#DCE3EC"/>${bars}</svg><div class="legend"><span><i style="background:var(--cini)"></i>Gelen</span><span><i style="background:var(--turq)"></i>Giden</span><span>Bin ₺, ağustos ve eylül örnek veridir</span></div>`;
 }
-function kdvCard() {
-  const t = totals();
-  const hes = t.in - t.in / 1.1;
-  const ind = RECEIPTS.filter((f) => f.status === 'onayli').reduce((a, f) => a + kdv(f), 0);
-  return `<div class="card stack"><div><h3>KDV hazırlık özeti</h3><p class="muted small">Tahmini veri özeti, vergi tavsiyesi değildir. Beyanı muhasebeci hazırlar ve teyit eder.</p></div>
-  <div class="kpis"><div class="kpi"><div class="l">Hesaplanan</div><div class="v num">${fmt0(hes)}</div></div><div class="kpi"><div class="l">İndirilecek</div><div class="v num">${fmt0(ind)}</div></div><div class="kpi"><div class="l">Fark</div><div class="v num">${fmt0(hes - ind)}</div></div></div>
-  <p class="small muted">Satışların %10 KDV ile yapıldığı varsayıldı. İndirilecek tutar yalnızca onaylı belgelerden hesaplandı. ${countStatus('eksik')} belgesiz işlem hesaba girmedi.</p></div>`;
-}
+
 function ozetV2() {
   const miss = ROWS.filter((r) => rowStatus(r) === 'eksik');
   const missSum = miss.reduce((a, r) => a + -r.amt, 0);
@@ -2171,26 +2116,7 @@ function musteriListe() {
   return `<div class="card flush">${CUSTOMERS.map((c) => `<div class="emp"><span class="avatar" style="background:var(--cini);width:40px;height:40px">${esc(ini(c.name))}</span><div class="grow"><b style="font-weight:600">${esc(c.name)}</b><div class="small muted">${esc(c.email)}</div></div>${iysPill(c.iys)}<div class="meta">${c.visits} ziyaret · son ziyaret ${c.last} gün önce</div></div>`).join('')}</div>
   <div class="callout">${ic('info')}<div>Müşteriler siparişlerden ve kasadan kendiliğinden listeye girer. E-posta izni olmayanlara toplu e-posta gitmez.</div></div>`;
 }
-function kampanyaHTML() {
-  const c = S.camp;
-  const all = segList(c.seg);
-  const ok = all.filter((x) => x.iys === 'onayli');
-  const out = all.length - ok.length;
-  const first = ok[0];
-  const prev = (c.body || '').replace(/\{ad\}/g, first ? first.name.split(' ')[0] : 'Müşterimiz');
-  return `<div class="stack-lg">
-  <div class="card stack"><h3>Yeni kampanya</h3>
-    <div class="field"><span class="lbl">Şablon</span><div class="chips">${TPL.map((t, i) => `<button class="chip" data-a="camptpl" data-i="${i}">${esc(t.n)}</button>`).join('')}</div></div>
-    <div class="field"><span class="lbl">Kime</span><div class="chips">${[['all', 'Tüm müşteriler'], ['recent', 'Son 30 gün gelenler'], ['loyal', 'Sadık müşteriler (8+ ziyaret)']].map((x) => `<button class="chip" data-a="campseg" data-v="${x[0]}" aria-pressed="${c.seg === x[0]}">${x[1]}</button>`).join('')}</div></div>
-    <div class="callout ${out ? 'warn' : ''}">${ic('users')}<div><b>${ok.length} kişiye gidecek</b>${out ? `<p style="margin-top:2px">${out} kişi e-posta izni vermediği ya da listeden çıktığı için hariç tutuldu.</p>` : ''}</div></div>
-    <div class="field"><label for="c-subj">Konu</label><input id="c-subj" type="text" value="${esc(c.subj)}" placeholder="Örnek: Bu hafta sonu %15 indirim"></div>
-    <div class="field"><label for="c-body">Mesaj</label><textarea id="c-body" style="min-height:140px" placeholder="{ad} yazarsan her müşterinin adı otomatik gelir">${esc(c.body)}</textarea></div>
-    <div class="callout">${ic('mail')}<div><b>Önizleme</b><p style="margin-top:4px;white-space:pre-line">${esc(prev) || 'Mesajını yazınca burada görünür.'}</p><p class="small muted" style="margin-top:8px">Bu iletiyi almak istemiyorsanız buradan listeden çıkabilirsiniz.</p></div></div>
-    <div class="row wrap"><button class="btn" data-a="campsend">${ic('send')} ${ok.length} kişiye gönder</button></div>
-    <p class="small muted">Gönderen: ${mailReady() ? esc(S.mail.addr) : 'e-posta bağlı değil'}. Ticari elektronik ileti için alıcı onayı ve çıkış bağlantısı gerekir, kapsamı iş hukukçusuyla doğrula.</p>
-  </div>
-  <div class="card flush"><div style="padding:16px 16px 0"><h3>Gönderilen kampanyalar</h3></div>${CAMPAIGNS.slice().reverse().map((x) => `<div class="msg"><b>${esc(x.subj)}</b><div class="small muted">${esc(x.date)} · ${x.sent} kişiye gitti · açılma ${esc(x.open)}</div></div>`).join('')}</div></div>`;
-}
+
 
 /* Muhasebeci */
 function viewDonemV2() {
@@ -2214,10 +2140,7 @@ function viewDonemV2() {
     ${kdvCard()}` : `<div class="card empty">Bu müşterinin ayrıntıları prototipte yok.</div>`}
   </div>`;
 }
-function viewBelgeler() {
-  const cur = S.sub.belgeler;
-  return `<div class="stack-lg">${seg('belgeler', [['ekstre', 'Ekstre'], ['fisler', 'Fişler']], cur)}${cur === 'ekstre' ? ekstreHTML('muh') : fislerHTML(false)}</div>`;
-}
+
 function viewPaket() { return paketHTML('muhasebeci'); }
 
 /* Çalışan: masraf */
@@ -2485,9 +2408,7 @@ H.mailsave = () => {
   S.modal = null; S.sub.muhasebe = 'eposta'; render(); toast('E-posta bağlandı. Gelen kutusu tarandı.', 'ok');
 };
 H.maildisc = () => { S.mail = { on: false, provider: '', addr: '', send: true }; render(); toast('Bağlantı kaldırıldı.'); };
-function addMailDoc(d) {
-  RECEIPTS.push({ id: 'f' + ++seq, seller: d.from, date: d.date, total: d.total, rate: d.rate, cat: d.cat, status: 'onayli', by: 'u1', bank: d.bank });
-}
+
 H.mailadd = (el) => {
   if (locked()) return;
   const d = MAILDOCS.find((x) => x.id === el.dataset.id);
@@ -2554,15 +2475,7 @@ function onClick(e) {
   const fn = H[el.dataset.a];
   if (fn) fn(el, e);
 }
-function onChange(e) {
-  const el = e.target;
-  const ch = el.dataset && el.dataset.ch;
-  if (!ch) return;
-  if (ch === 'file') { if (el.files && el.files.length) startRead(); }
-  if (ch === 'mcat') S.modal.cat = el.value;
-  if (ch === 'cat') { RECEIPTS.find((f) => f.id === el.dataset.id).cat = el.value; toast('Kategori güncellendi.'); }
-  if (ch === 'role') { byId(el.dataset.id).role = el.value; toast(`${byId(el.dataset.id).name.split(' ')[0]} artık ${ROLE_LABEL[el.value]}.`); }
-}
+
 function onInput(e) {
   const el = e.target;
   if (el.dataset && el.dataset.ch === 'w') {
@@ -2586,13 +2499,7 @@ function onSubmit(e) {
   }
   loginAs(u);
 }
-function onToggle(e) {
-  const d = e.target;
-  if (!d.id || d.id.indexOf('rk-') !== 0) return;
-  const id = d.id.slice(3);
-  S.openRank = S.openRank.filter((x) => x !== id);
-  if (d.open) S.openRank.push(id);
-}
+
 function tick() {
   if (!S.user || !ATT[S.user.id]) return;
   const a = ATT[S.user.id];
@@ -2724,20 +2631,7 @@ function receiptRow(f, role) {
 }
 
 /* ---------- patron: Belgeler ---------- */
-function belgelerPatron() {
-  const wait = RECEIPTS.filter((f) => f.status === 'bekliyor').reverse();
-  const rest = RECEIPTS.filter((f) => f.status !== 'bekliyor').reverse();
-  const nNew = MAILDOCS.filter((d) => mailStatus(d) === 'yeni').length;
-  const mailSub = !S.mail.on ? 'Bağlı değil. Bağlayınca faturalar kendiliğinden gelir.' : nNew ? nNew + ' yeni fatura bulundu' : 'Tüm faturalar işlendi';
-  return `<div class="stack-lg">
-  <div class="card stack"><div><h3>Alışverişten çıktın mı?</h3><p class="muted small" style="margin-top:4px">Fişin fotoğrafını çek. Muhasebecine anında bildirim gider, kalemleri ve KDV'yi kontrol edip onaylar, gider tabloya kendiliğinden yazılır.</p></div>
-    <div class="flow"><span><i>1</i>Fişi çek</span><span><i>2</i>Muhasebeci inceler</span><span><i>3</i>Tabloya yazılır</span></div>
-    <button class="btn" style="align-self:flex-start" data-a="upload">${ic('camera')} Fiş ekle</button></div>
-  ${wait.length ? `<div class="card flush"><div style="padding:16px 16px 0"><h3>Senin onayını bekleyen masraflar</h3><p class="muted small">Çalışanların yüklediği fişler. Onaylarsan muhasebeciye gider.</p></div>${wait.map((f) => receiptRow(f, 'patron')).join('')}</div>` : ''}
-  <div class="card flush"><div style="padding:16px 16px 0"><h3>Tüm belgeler</h3><p class="muted small">Her fişin nerede olduğunu buradan görürsün.</p></div>${rest.map((f) => receiptRow(f, 'patron')).join('')}</div>
-  <details class="chk card" id="ck-mail" ${S.openChk.includes('mail') ? 'open' : ''}><summary class="check"><span class="dot tone-info">${ic('mail', 16)}</span><div class="grow"><b style="font-weight:600">E-posta ile gelen faturalar</b><div class="small muted">${esc(mailSub)}</div></div><span class="chev">${ic('chevron', 18)}</span></summary><div class="cbody">${epostaHTML()}</div></details>
-  </div>`;
-}
+
 
 /* ---------- muhasebeci: gelen kutusu ---------- */
 function inboxHTML() {
@@ -2786,51 +2680,11 @@ function viewTablo() { return tabloHTML('muh'); }
 /* ---------- gider tablosu ---------- */
 const srcPill = (r) => (r.edited ? '<span class="pill p-warn">Düzenlendi</span>' : r.src === 'Kais' ? '<span class="pill p-info">Kais yazdı</span>' : r.src === 'Ekstre' ? '<span class="pill p-mute">Ekstreden</span>' : '<span class="pill p-mute">Elle</span>');
 const CELL_LAB = { date: 'tarih', desc: 'açıklama', doc: 'belge', total: 'toplam' };
-function ledgerTr(r, dis) {
-  const inp = (k, v, w, num) => `<input class="cell ${num ? 'r' : ''}" ${num ? 'type="number" step="0.01" inputmode="decimal"' : 'type="text"'} value="${esc(v)}" style="width:${w}px" data-ch="cell" data-id="${r.id}" data-k="${k}" aria-label="${esc(r.desc)} ${CELL_LAB[k]}" ${dis}>`;
-  return `<tr class="${r.fresh ? 'fresh' : ''} ${mismatch(r) ? 'mis' : ''}" id="lr-${r.id}"><td>${inp('date', r.date, 70)}</td><td>${inp('desc', r.desc, 190)}</td>
-  <td><select class="cell" data-ch="cell" data-id="${r.id}" data-k="acc" aria-label="${esc(r.desc)} hesap" ${dis}>${CATS.map((c) => `<option ${c === r.acc ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></td>
-  <td>${inp('doc', r.doc, 74)}</td>
-  <td><select class="cell" data-ch="cell" data-id="${r.id}" data-k="rate" aria-label="${esc(r.desc)} KDV oranı" ${dis}>${[0, 1, 10, 20].map((x) => `<option value="${x}" ${x === Number(r.rate) ? 'selected' : ''}>%${x}</option>`).join('')}</select></td>
-  <td class="num rt" id="lk-${r.id}">${fmt(kdv(r))}</td><td>${inp('total', r.total, 104, true)}</td><td id="ls-${r.id}">${srcCell(r)}</td>
-  <td><button class="xbtn sm" data-a="ldel" data-id="${r.id}" aria-label="${esc(r.desc)} satırını sil" ${dis}>${ic('trash', 16)}</button></td></tr>`;
-}
-function tabloHTML(role) {
-  const dis = S.closed ? 'disabled' : '';
-  const sumT = LEDGER.reduce((a, r) => a + (Number(r.total) || 0), 0);
-  const sumK = LEDGER.reduce((a, r) => a + kdv(r), 0);
-  const nf = LEDGER.filter((r) => r.fresh).length;
-  const html = `<div class="stack-lg">
-  <div class="row between wrap"><div><h2>Gider tablosu</h2><p class="muted small" style="margin-top:4px">Muhasebeci bir fişi onaylayınca satır buraya kendiliğinden yazılır. Hücreye dokunup elle düzeltebilirsin.</p></div><div class="row wrap"><button class="btn sec sm" data-a="copycsv">CSV kopyala</button>${xlsxBtn()}<button class="btn sm" data-a="ladd" ${dis}>${ic('plus', 16)} Satır ekle</button></div></div>
-  ${nf ? `<div class="callout">${ic('sparkle')}<div><b>${nf} yeni gider yazıldı</b><p style="margin-top:2px">Yeşil satırları Kais onaylanan fişlerden yazdı.</p></div></div>` : ''}
-  ${S.closed ? `<div class="callout warn">${ic('lock')}<div>${PERIOD} dönemi kapalı, tablo düzenlenemez.</div></div>` : ''}
-  <div class="xl"><table class="xt"><thead><tr><th>Tarih</th><th>Açıklama</th><th>Hesap</th><th>Belge</th><th>KDV %</th><th class="r">KDV</th><th class="r">Toplam</th><th>Kaynak</th><th><span class="sr">Sil</span></th></tr></thead>
-  <tbody id="xt-body">${LEDGER.map((r) => ledgerTr(r, dis)).join('')}</tbody>
-  <tfoot><tr><td colspan="5">${LEDGER.length} satır</td><td class="num rt" id="lf-kdv">${fmt(sumK)}</td><td class="num rt" id="lf-tot">${fmt(sumT)}</td><td colspan="2"></td></tr></tfoot></table></div>
-  <p class="small muted">Yana kaydırarak tüm sütunları görürsün. Oran ya da toplam değişince KDV kendiliğinden hesaplanır. Elle değiştirilen satır "Düzenlendi" olarak işaretlenir.</p></div>`;
-  if (role === 'patron') { LEDGER.forEach((r) => { r.fresh = false; }); RECEIPTS.forEach((f) => { f.fresh = false; }); }
-  return html;
-}
-function ledgerRefresh(r) {
-  const set = (id, v, html) => { const el = document.getElementById(id); if (!el) return; if (html) el.innerHTML = v; else el.textContent = v; };
-  set('lk-' + r.id, fmt(kdv(r)));
-  set('ls-' + r.id, srcCell(r), true);
-  set('lf-kdv', fmt(LEDGER.reduce((a, x) => a + kdv(x), 0)));
-  set('lf-tot', fmt(LEDGER.reduce((a, x) => a + (Number(x.total) || 0), 0)));
-}
-function csvText() {
-  const n = (x) => Number(x).toFixed(2).replace('.', ',');
-  const head = 'Tarih;Açıklama;Hesap;Belge;KDV %;KDV;Toplam;Kaynak';
-  return [head].concat(LEDGER.map((r) => [rDateY(r), String(r.desc).replace(/;/g, ','), r.acc, r.doc, r.rate, n(kdv(r)), n(r.total), r.edited ? 'Düzenlendi' : r.src].join(';'))).join('\n');
-}
-function kdvCard() {
-  const t = totals();
-  const hes = t.in - t.in / 1.1;
-  const ind = LEDGER.reduce((a, r) => a + kdv(r), 0);
-  return `<div class="card stack"><div><h3>KDV hazırlık özeti</h3><p class="muted small">Tahmini veri özeti, vergi tavsiyesi değildir. Beyanı muhasebeci hazırlar ve teyit eder.</p></div>
-  <div class="kpis"><div class="kpi"><div class="l">Hesaplanan</div><div class="v num">${fmt0(hes)}</div></div><div class="kpi"><div class="l">İndirilecek</div><div class="v num">${fmt0(ind)}</div></div><div class="kpi"><div class="l">Fark</div><div class="v num">${fmt0(hes - ind)}</div></div></div>
-  <p class="small muted">Satışların %10 KDV ile yapıldığı varsayıldı. İndirilecek tutar gider tablosundaki ${LEDGER.length} satırdan hesaplandı. ${countStatus('eksik')} belgesiz işlem hesaba girmedi.</p></div>`;
-}
+
+
+
+
+
 
 /* ---------- aylık paket: açılır liste ---------- */
 function paketHTML(role) {
@@ -2862,9 +2716,7 @@ function paketHTML(role) {
 }
 
 /* ---------- patron: muhasebe sekmeleri ---------- */
-function ozetHTML() {
-  return `<div class="stack-lg"><div class="stack"><div><h3>Alacaklar</h3><p class="muted small" style="margin-top:2px">Vadesi gelen ya da geçen alacaklar ve hatırlatma e-postaları.</p></div>${alacakHTML()}</div>${ozetV2()}</div>`;
-}
+
 function viewMuhasebe() {
   const L = { eposta: 'belgeler', fisler: 'belgeler', alacak: 'ozet', paket: 'tablo' };
   let cur = S.sub.muhasebe;
@@ -3293,15 +3145,7 @@ function talepHTML() {
   ${!wait.length && !ctr.length && !done.length ? '<div class="card empty">Henüz izin talebi yok.</div>' : ''}</div>`;
 }
 const lappSum = (m) => { const r = LVREQ.find((x) => x.id === m.id); const d = lrEff(r).days; return m.kind === 'ucretsiz' ? (m.ded ? `${d} gün × ${fmt(m.perDay)} = maaştan ${fmt(Math.round(m.perDay * d))} kesilecek` : `${d} gün ücretsiz, maaştan kesinti yapılmayacak`) : `${d} gün ücretli, maaştan kesinti yapılmaz`; };
-function lvreqModal() {
-  const p = PROFILES[S.user.id]; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(S.user.id);
-  const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
-  return sheet('İzin talebi', `<div class="callout">${ic('info')}<div>Yıllık iznin: ${ent} gün hak, ${used} gün kullanıldı, ${Math.max(0, ent - used)} gün kaldı.</div></div>
-  <div class="field"><label for="lq-type">İzin türü</label><select id="lq-type"><option value="yillik">Ücretli yıllık izin</option><option value="ucretsiz">Ücretsiz izin</option></select></div>
-  <div class="row"><div class="field grow"><label for="lq-txt">Hangi tarihler?</label><input id="lq-txt" type="text" placeholder="Örnek: 20–24 Kas"></div><div class="field grow"><label for="lq-days">Kaç gün?</label><input id="lq-days" type="number" min="1" step="1" value="1"></div></div>
-  <div class="field"><label for="lq-why">Neden izin istiyorsun?</label><textarea id="lq-why" placeholder="Örnek: Kardeşimin düğünü var."></textarea></div>
-  <div class="err" id="lq-err" role="alert"></div><button class="btn block" data-a="lrsend">${ic('send')} Yöneticiye gönder</button><p class="small muted">Talep patrona ve müdüre gider. Onaylanınca izin kaydedilir.</p>`);
-}
+
 function lvctrModal(m) {
   const r = LVREQ.find((x) => x.id === m.id);
   return sheet('Karşı teklif', `<div class="callout">${ic('clock')}<div><b>${esc(byId(r.uid).name)}</b><p style="margin-top:2px">İstediği: ${esc(r.txt)} · ${r.days} gün</p></div></div>
@@ -4233,7 +4077,7 @@ H.rcpsave = () => {
 H.rcpdel = () => { delete RECIPES[S.modal.k]; S.modal = null; render(); toast('Reçete silindi.'); };
 
 /* ---- e-belge hazırlığı ---- */
-function vknOk(v) { if (!/^\d{10}$/.test(v)) return false; const d = v.split('').map(Number); let sum = 0; for (let i = 0; i < 9; i++) { const t = (d[i] + 9 - i) % 10; let p = (t * Math.pow(2, 9 - i)) % 9; if (t !== 0 && p === 0) p = 9; sum += p; } return (10 - (sum % 10)) % 10 === d[9]; }
+
 function ebChecks() {
   const unk = [...new Set(SALES.filter((s) => !RECIPES[prodKey(s.prod)]).map((s) => s.prod))];
   return [
@@ -5474,11 +5318,7 @@ const prefSet = (v) => { try { if (v) localStorage.setItem('kp_biz', v); else lo
 const sbLoadBizV20 = sbLoadBiz; sbLoadBiz = async function () { if (!ID.pref) ID.pref = prefGet(); return sbLoadBizV20(); };
 const _idpick21 = H.idpick; H.idpick = async (el) => { prefSet(el.dataset.id); return _idpick21(el); };
 const idSignOutV20 = idSignOut; idSignOut = async function () { prefSet(null); return idSignOutV20(); };
-async function cinfoLoad() {
-  const c = sbClient(); if (!c || ID.cinfoBusy) return; ID.cinfoBusy = true; ID.cinfo = {};
-  try { const r = await c.from('app_state').select('business_id,updated_at').eq('scope', 'muh'); (r.data || []).forEach((x) => { ID.cinfo[x.business_id] = x.updated_at; }); } catch (e) {}
-  ID.cinfoBusy = false; render();
-}
+
 function clientsCard() {
   if (!ID.active || ID.active.role !== 'muhasebeci') return '';
   if (!ID.cinfo && !ID.cinfoBusy) cinfoLoad();
@@ -5990,18 +5830,7 @@ function aiContext() {
   if (money) c.defter = t(() => ({ kayit_sayisi: LEDGER.length, toplam: Math.round(LEDGER.reduce((a, x) => a + (x.total || 0), 0)), son: LEDGER.slice(-25).map((x) => ({ tarih: x.date, aciklama: x.desc, hesap: x.acc, tutar: x.total })) }));
   return c;
 }
-async function aiAsk(text) {
-  const c = sbClient(); AIC.err = '';
-  AIC.msgs.push({ role: 'user', content: text }); AIC.busy = true; render();
-  try {
-    if (!c || !SBS.user || !SBS.biz) throw new Error('Kais AI için bulut hesabına giriş yapmalısın.');
-    const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, messages: AIC.msgs.slice(-12), context: aiContext() } });
-    if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch/i.test(String(r.error.message)) ? 'Kais AI sunucusu kurulmamış. Kurulum adımlarını uygula.' : 'Kais AI şu an yanıt vermedi.')); }
-    if (r.data && r.data.error) throw new Error(r.data.error);
-    AIC.msgs.push({ role: 'assistant', content: (r.data && r.data.reply) || 'Yanıt gelmedi.' });
-  } catch (e) { AIC.err = e.message || 'Hata'; AIC.msgs.pop(); AIC.draft = text; }
-  AIC.busy = false; render(); const el = document.getElementById('ai-end'); if (el && el.scrollIntoView) el.scrollIntoView();
-}
+
 const AI_Q = { patron: ['Bu hafta neye dikkat etmeliyim?', 'Kârlılığı en düşük ürünler hangileri?', 'Bugün hangi stokları sipariş etmeliyim?'], mudur: ['Bugün hangi stokları sipariş etmeliyim?', 'Yakında bozulacak ürün var mı?', 'Bugünkü rezervasyonları özetle'], muhasebeci: ['Son kayıtlarda dikkat çeken bir şey var mı?', 'Gider dağılımını özetle', 'Bu ayki brüt kâr nasıl?'], calisan: ['Hangi ürünler azaldı?', 'Bugün rezervasyon var mı?', 'Yakında bozulacak ürün var mı?'] };
 function viewKaisAI() {
   const r = S.user.role; const ok = sbOK() && SBS.user && SBS.biz;
@@ -6365,12 +6194,7 @@ clientsCard = function () {
 const BR = { text: '', busy: false, err: '', key: '', tried: '' };
 const brKey = () => 'kp_brief_' + (SBS.biz ? SBS.biz.id : 'x') + '_' + (S.user ? S.user.id : 'x') + '_' + new Date().toISOString().slice(0, 10);
 const brStore = (v) => { try { if (v == null) return localStorage.getItem(brKey()); localStorage.setItem(brKey(), v); } catch (e) {} return null; };
-async function brLoad(force) {
-  if (BR.busy || !aiReady() || !S.user || (!force && BR.text && BR.key === brKey())) return; BR.busy = true; BR.err = ''; render();
-  try { const d = await aiCall('ozet', 'Bugün için özet yaz.', [], aiContext()); const t = (d && d.reply) || ''; BR.text = t; BR.key = brKey(); if (t) brStore(t); }
-  catch (e) { BR.err = e && e.kind === 'user' ? e.message : (e && e.kind === 'nofn' ? 'Kais AI sunucusu güncel değil.' : 'Özet şu an alınamadı.'); }
-  BR.busy = false; render();
-}
+
 function brCard() {
   if (!S.user || !['patron', 'mudur'].includes(S.user.role) || !aiReady()) return '';
   const k = brKey(); if (BR.key !== k) { const c = brStore(); if (c) { BR.text = c; BR.key = k; } else { BR.text = ''; } }
@@ -6960,9 +6784,7 @@ ICONS.cal = '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M
 ICONS.copy = '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>';
 const CODE_RX = /<div class="card stack"><div><h3>Giriş kodu<\/h3>[\s\S]*?id="code-left">\d+<\/span> sn<\/p><\/div>/;
 const bugunMudurV47 = bugunMudur; bugunMudur = function () { return bugunMudurV47().replace(CODE_RX, ''); };
-function codeCardEkip() {
-  return `<div class="card kc"><div class="kc-h"><span class="kc-i">${ic('lock', 20)}</span><div class="grow"><h3>Giriş kodu</h3><p class="muted small">Çalışanların işe girişinde kullanacağı kod</p></div></div><div class="kc-n num" id="shop-code">${shopCode()}</div><div class="kc-f"><span class="small muted">Yenilenmesine <b id="code-left">${60 - new Date().getSeconds()}</b> sn</span><button type="button" class="kc-b" data-a="codecopy">${ic('copy', 16)}<span>Kopyala</span></button></div></div>`;
-}
+
 const viewEkipV47 = viewEkip; viewEkip = function () { const h = viewEkipV47(); if (!S.user || !['patron', 'mudur'].includes(S.user.role) || S.sub.ekip !== 'bugun') return h; const t = '<div class="stack-lg">'; const i = h.indexOf(t); return i < 0 ? codeCardEkip() + h : h.slice(0, i + t.length) + codeCardEkip() + h.slice(i + t.length); };
 const bugunPatronV47 = bugunPatron;
 bugunPatron = function () {
@@ -9727,7 +9549,7 @@ KP.bizReport = function (D) {
 const rpPref = () => { const s = S.settings; s.reports = s.reports || {}; return s.reports; };
 const rpOn = (k) => rpPref()[k] !== false;
 function rpDl(name, bytes) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
-function rpData(kind) { return { P: KP.period(kind, KP.isoOf(Date.now())), role: S.user.role, name: BIZ, now: Date.now(), ledger: LEDGER, debts: DEBTS, recv: RECV, stock: STOCK }; }
+
 function rpWhy(j) { const w = String((j && (j.why || j.error)) || ''); if (/RESEND/i.test(w)) return 'E-posta servisi henüz kurulmamış. Kurulumu yapan kişiye ilet.'; if (/yetki/i.test(w)) return 'Bu raporu e-postayla alma yetkin yok.'; if (/veri yok|okunamad/i.test(w)) return 'İşletme verisi henüz buluta kaydedilmemiş. Biraz sonra tekrar dene.'; return w || 'Gönderilemedi.'; }
 function reportCard() { const u = S.user; if (!u || !['patron', 'muhasebeci'].includes(u.role)) return '';
   const row = (k, t, d) => `<div class="toggle"><div><b style="font-weight:600">${t}</b><div class="small muted">${d}</div></div><button class="sw" data-a="rptog" data-v="${k}" role="switch" aria-checked="${rpOn(k)}" aria-label="${t}"></button></div>`;
@@ -10332,23 +10154,7 @@ opTab = () => { const t = S.sub.ops; return ['ozet', 'liste', 'gorev', 'ariza', 
   const h = mine.length || dn.length ? `<section class="cb-s op-ce"><section class="op-c"><div class="op-ch"><div><h3>Görevlerim</h3><span>${mine.length} açık${mine.some(tkLate) ? ' · gecikmiş var' : ''}</span></div></div><div class="op-ck">${mine.concat(dn).map((t) => tkRow(t, false)).join('')}</div></section></section>` : ''; return h + _oe(); }; }
 /* çalışan: Vardiyam */
 S.vmO = 0; H.vmo = (el) => { S.vmO = el.dataset.v === '0' ? 0 : (S.vmO || 0) + Number(el.dataset.v); render(); };
-function viewVardiyam() {
-  const me = S.user.id; const n = new Date(); const b = new Date(n.getFullYear(), n.getMonth() + (S.vmO || 0), 1); const y = b.getFullYear(), m = b.getMonth(); const dim = new Date(y, m + 1, 0).getDate(); const ym = y + '-' + vdP(m + 1);
-  const pub = !!(VD_M[ym] && VD_M[ym].pub); const off0 = vdMon0(y, m); const isCur = (S.vmO || 0) === 0;
-  const cells = []; for (let i = 0; i < off0; i++) cells.push('<div class="vm-c e"></div>'); let hrs = 0, days = 0;
-  for (let d = 1; d <= dim; d++) { const s = pub ? vdState(y, m, d, me) : { k: 'none' }; const today = isCur && d === n.getDate(); let inner = '';
-    if (s.k === 'shift') { hrs += vdHours(s.t); days++; inner = `<i style="background:${s.t.c || '#3F86DD'}"></i><b>${esc(s.t.s)}</b><small>${esc(s.t.e)}</small>`; } else if (s.k === 'off') inner = '<small>İzin</small>'; else if (s.k === 'leave') inner = '<small class="l">İzinli</small>'; else if (s.k === 'hol') inner = '<small>Tatil</small>';
-    cells.push(`<div class="vm-c${today ? ' t' : ''}${s.k === 'shift' ? ' s' : ''}"><span>${d}</span>${inner}</div>`); }
-  const up = []; if (pub || isCur) for (let k = 0; k < 14; k++) { const dt = new Date(n.getFullYear(), n.getMonth(), n.getDate() + k); const ymk = dt.getFullYear() + '-' + vdP(dt.getMonth() + 1); if (!(VD_M[ymk] && VD_M[ymk].pub)) continue; const s = vdState(dt.getFullYear(), dt.getMonth(), dt.getDate(), me); if (s.k === 'shift') up.push({ dt, s, k }); }
-  const wk = up.filter((x) => x.k < 7).reduce((a, x) => a + vdHours(x.s.t), 0); const nx = up[0];
-  const hdr = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((x) => `<div class="vm-h">${x}</div>`).join('');
-  return `<div class="stack-lg op"><div><h2>Vardiyam</h2><p class="muted" style="margin-top:4px">Çalışma günlerin ve saatlerin</p></div>
-  <div class="dz-sts"><div class="dz-st i"><span>${ic('clock', 20)}</span><div><b>${nx ? (nx.k === 0 ? 'Bugün' : DOWN[nx.dt.getDay()].slice(0, 3)) + ' ' + nx.s.t.s : '—'}</b><small>Sıradaki vardiya</small></div></div><div class="dz-st"><span>${ic('list', 20)}</span><div><b>${Math.round(wk * 10) / 10} sa</b><small>Önümüzdeki 7 gün</small></div></div><div class="dz-st"><span>${ic('users', 20)}</span><div><b>${days} gün</b><small>${VD_MON[m]} çalışma</small></div></div><div class="dz-st g"><span>${ic('check', 20)}</span><div><b>${Math.round(hrs)} sa</b><small>${VD_MON[m]} toplam</small></div></div></div>
-  <div class="op-two"><div class="op-l"><section class="op-c"><div class="iz-nv"><button type="button" data-a="vmo" data-v="-1" aria-label="Önceki ay">${ic('back', 18)}</button><div style="text-align:center"><h3 style="margin:0">${VD_MON[m]} ${y}</h3></div><button type="button" data-a="vmo" data-v="1" aria-label="Sonraki ay">${ic('chevron', 18)}</button></div>
-  ${pub ? `<div class="vm-g">${hdr}${cells.join('')}</div>` : '<p class="op-em" style="padding:14px 0">Bu ay için vardiya planı henüz yayınlanmadı. Müdür yayınlayınca burada görünür.</p>'}</section></div>
-  <div class="op-r"><section class="op-c"><div class="op-ch"><div><h3>Yaklaşan vardiyalar</h3><span>14 gün</span></div></div><div class="op-ls op-hs">${up.length ? up.map((x) => `<div class="op-kr"><div><b>${x.k === 0 ? 'Bugün' : x.k === 1 ? 'Yarın' : DOWN[x.dt.getDay()] + ' ' + x.dt.getDate() + ' ' + VD_MON[x.dt.getMonth()].slice(0, 3)}</b><span>${esc(x.s.t.n)} vardiyası</span></div><span class="pill p-info">${esc(x.s.t.s)}–${esc(x.s.t.e)}</span></div>`).join('') : '<p class="op-em">Yaklaşan vardiya görünmüyor.</p>'}</div>
-  <button class="btn block sec" style="margin-top:12px" data-a="rqnew" data-k="takas">${ic('users', 16)} Vardiya değişimi iste</button></section></div></div></div>`;
-}
+
 { const _vv = viewHTML; viewHTML = function () { if (S.view === 'vardiyam' && S.user && S.user.role === 'calisan') return viewVardiyam(); return _vv(); }; }
 NAV.calisan.forEach((n) => { if (n[0] === 'masraf' && !n[3]) n[3] = 'more'; }); NAV.calisan.splice(2, 0, ['vardiyam', 'Vardiyam', 'clock']); TITLES.vardiyam = 'Vardiyam';
 /* takas onayında vardiyaları değiştir + karar tarihi */
