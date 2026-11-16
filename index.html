@@ -5309,13 +5309,13 @@ cloudAttach = async function () {
   const r = await stRows(c, SBS.biz.id);
   if (r.error) { CL.err = /scope|app_state/.test(r.error.message || '') ? 'Bulut tablosu güncel değil. kaispilot_roller.sql dosyasını Supabase\'de çalıştır.' : sbMsg(r.error); return; }
   CL.err = ''; const rows = r.data || []; const legacy = rows.find((x) => x.scope === 'all'); const scoped = rows.filter((x) => x.scope !== 'all'); const bid = SBS.biz.id;
-  if (!PS.localDb) PS.localDb = PS.db; PS.cloudOn = true; CL.on = true; CL.vers = {}; CL.sent = {};
+  if (!PS.localDb) PS.localDb = PS.db; PS.cloudOn = true; CL.on = true; CL.vers = {}; CL.sent = {}; CL.base = {}; CL.pend = {};
   PS.db = { doc: () => ({ set: cloudSet, onSnapshot() {} }) }; PS.canWrite = true; PS.loaded = true;
   if (legacy && roleOf() === 'patron') pApply(legacy.state);
-  scoped.forEach((x) => { pApply(x.state); CL.vers[x.scope] = x.version; });
+  scoped.forEach((x) => { pApply(x.state); CL.vers[x.scope] = x.version; CL.base[x.scope] = x.state; });
   if (legacy && roleOf() === 'patron') {
     const sp = splitSnap(pSnap());
-    for (const sc of Object.keys(sp)) { if (CL.vers[sc]) continue; const str = JSON.stringify(sp[sc]); const i = await c.from('app_state').insert({ business_id: bid, scope: sc, state: str, version: 1, updated_by: SBS.user.id }); if (i.error && !isDup(i.error)) throw i.error; if (!i.error) { CL.vers[sc] = 1; CL.sent[sc] = str; } }
+    for (const sc of Object.keys(sp)) { if (CL.vers[sc]) continue; const str = JSON.stringify(sp[sc]); const i = await c.from('app_state').insert({ business_id: bid, scope: sc, state: str, version: 1, updated_by: SBS.user.id }); if (i.error && !isDup(i.error)) throw i.error; if (!i.error) { CL.vers[sc] = 1; CL.sent[sc] = str; CL.base[sc] = str; } }
     await c.from('app_state').delete().eq('business_id', bid).eq('scope', 'all'); toast('Veriler bölümlere ayrıldı.', 'ok');
   }
   hideUnreadable();
@@ -12987,7 +12987,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v157';
+const APP_VER = 'v158';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -14217,6 +14217,123 @@ mxKind.invmulti = ['Birden çok fatura', 'p-info']; mxKind.invpart = ['Kısmi ta
   if (kind === 'musteri') return rows.map((r) => { const v = INV.find((x) => x.no === r.no && mxKey(x.cust) === k); return v && r.open && ivPaidAmt(v) > 0 ? Object.assign({}, r, { tot: ivOpen(v), note: 'Kısmi tahsilat (fatura ' + fmt0(v.tot) + ')' }) : r; });
   return rows.map((r) => { const d = DEBTS.find((x) => mxKey(x.who) === k && (x.note || 'Borç') === r.no); return d && r.open && dbPaidAmt(d) > 0 ? Object.assign({}, r, { tot: dbOpen(d), note: 'Kısmi ödeme' }) : r; });
 }; }
+
+/* ===== v158: çevrimdışı yazma kuyruğu + 3 yollu birleştirme =====
+   - Her bulut yazımından önce yerel durum cihazda (IndexedDB) saklanır; yazım başarılı olunca silinir.
+   - Başka cihaz aynı bölümü değiştirmişse (sürüm çakışması / yoklama) ezmek yerine, son eşitlenen duruma göre 3 yollu birleştirilir.
+   - Uygulama yeniden açılınca bekleyen yerel değişiklikler buluttaki güncel veriyle birleştirilip gönderilir. */
+const kqS = (x) => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((o, key) => { o[key] = v[key]; return o; }, {}) : v));
+const kqEq = (a, b) => kqS(a) === kqS(b);
+const kqObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+const kqIdArr = (a) => Array.isArray(a) && a.every((x) => kqObj(x) && x.id != null);
+function kqMerge(b, l, r, st) {
+  if (kqEq(l, b)) return r; if (kqEq(r, b)) return l; if (kqEq(l, r)) return l;
+  if (kqObj(l) && kqObj(r) && (kqObj(b) || b === undefined)) {
+    const bb = b || {}; const o = {}; const keys = new Set(Object.keys(l).concat(Object.keys(r), Object.keys(bb)));
+    keys.forEach((k) => {
+      const inL = k in l, inR = k in r, inB = k in bb;
+      if (inL && inR) { o[k] = (k === 'seq' && typeof l[k] === 'number' && typeof r[k] === 'number') ? Math.max(l[k], r[k]) : kqMerge(bb[k], l[k], r[k], st); }
+      else if (inL) { if (!inB) o[k] = l[k]; else if (!kqEq(l[k], bb[k])) { o[k] = l[k]; st.n++; } }
+      else if (inR) { if (!inB) o[k] = r[k]; else if (!kqEq(r[k], bb[k])) { o[k] = r[k]; st.n++; } }
+    });
+    return o;
+  }
+  if (kqIdArr(l) && kqIdArr(r) && (b === undefined || kqIdArr(b))) {
+    const bm = new Map((b || []).map((x) => [x.id, x])), lm = new Map(l.map((x) => [x.id, x])), rm = new Map(r.map((x) => [x.id, x])); const out = [];
+    r.forEach((ri) => {
+      const li = lm.get(ri.id), bi = bm.get(ri.id);
+      if (!li) { if (bi && kqEq(ri, bi)) return; if (bi) st.n++; out.push(ri); return; }
+      out.push(kqMerge(bi, li, ri, st));
+    });
+    l.forEach((li) => { if (rm.has(li.id)) return; const bi = bm.get(li.id); if (bi && kqEq(li, bi)) return; if (bi) st.n++; out.push(li); });
+    return out;
+  }
+  st.n++; return l;
+}
+function kqScopeApply(o) { try { pApply(JSON.stringify(o)); } catch (e) {} }
+
+/* cihaz deposu */
+let KQDB = null;
+function kqOpen() { if (KQDB) return KQDB; KQDB = new Promise((res) => { try { const q = indexedDB.open('kaispilot', 1); q.onupgradeneeded = () => { q.result.createObjectStore('q'); }; q.onsuccess = () => res(q.result); q.onerror = () => res(null); q.onblocked = () => res(null); } catch (e) { res(null); } }); return KQDB; }
+async function kqIdb(mode, fn) { const db = await kqOpen(); if (!db) return null; return new Promise((res) => { try { const tx = db.transaction('q', mode); const r = fn(tx.objectStore('q')); tx.oncomplete = () => res(mode === 'readonly' ? (r && r.result !== undefined ? r.result : null) : true); tx.onerror = () => res(null); tx.onabort = () => res(null); } catch (e) { res(null); } }); }
+const kqGet = (k) => kqIdb('readonly', (s) => s.get(k));
+const kqSet = (k, v) => kqIdb('readwrite', (s) => s.put(v, k));
+const kqDel = (k) => kqIdb('readwrite', (s) => s.delete(k));
+const kqKey = () => 'q:' + ((SBS.user && SBS.user.id) || '') + ':' + ((SBS.biz && SBS.biz.id) || '');
+const kqOn = () => !!(CL.on && SBS.biz && SBS.user && !CL.rule && typeof indexedDB !== 'undefined');
+function kqCur() { const sp = splitSnap(pSnap()); const cur = {}; Object.keys(sp).forEach((sc) => { if (canW(sc)) cur[sc] = JSON.stringify(sp[sc]); }); return cur; }
+async function kqPersist() { if (!kqOn()) return; try { await kqSet(kqKey(), { v: 1, at: Date.now(), base: Object.assign({}, CL.base), cur: kqCur() }); PS.queued = true; } catch (e) {} }
+
+CL.base = CL.base || {}; CL.pend = CL.pend || {};
+/* bulut yazımı: önce cihaza yaz (write-ahead), başarılıysa sil */
+{ const _cs = cloudSet; cloudSet = async function (d) {
+  if (kqOn()) await kqPersist();
+  const before = Object.assign({}, CL.sent);
+  await _cs.apply(this, arguments);
+  Object.keys(CL.sent).forEach((sc) => { if (CL.sent[sc] !== before[sc] && CL.sent[sc] !== '__dirty__') CL.base[sc] = CL.sent[sc]; });
+  try { if (kqOn() && !clDirty() && !Object.keys(CL.pend).length) { await kqDel(kqKey()); PS.queued = false; } } catch (e) {}
+}; }
+
+/* uzaktan gelen bölümleri yerel değişikliklerle birleştirip uygula (açık pencere yoksa) */
+function kqApplyPend() {
+  if (!CL.on || CL.rule || S.modal || PS.busy) return false; const scs = Object.keys(CL.pend); if (!scs.length) return false;
+  const loc = splitSnap(pSnap()); let conf = 0, dirty = false;
+  scs.forEach((sc) => {
+    const P = CL.pend[sc]; let remote; try { remote = JSON.parse(P.state); } catch (e) { return; }
+    const local = loc[sc]; let merged = remote;
+    if (local && canW(sc)) { const base = CL.base[sc] ? JSON.parse(CL.base[sc]) : undefined; const st = { n: 0 }; merged = base === undefined ? kqMerge({}, local, remote, st) : kqMerge(base, local, remote, st); conf += st.n; }
+    kqScopeApply(merged); CL.base[sc] = P.state; CL.vers[sc] = P.version;
+    const same = kqEq(merged, remote); if (same) { const sp2 = splitSnap(pSnap()); CL.sent[sc] = JSON.stringify(sp2[sc]); } else { CL.sent[sc] = '__dirty__'; dirty = true; }
+  });
+  CL.pend = {}; CL.at = clTime(); PS.last = pSnap(); if (conf) toast('Başka cihazdaki değişikliklerle birleştirildi. ' + conf + ' çakışmada senin değişikliğin korundu.', 'warn');
+  if (dirty) setTimeout(() => { try { pSched(); } catch (e) {} }, 50); return true;
+}
+{ const _r = render; render = function () { const r = _r.apply(this, arguments); try { if (Object.keys(CL.pend).length && kqApplyPend()) { _r.apply(this, arguments); } } catch (e) {} return r; }; }
+
+/* çakışma: ezme, birleştir */
+{ const _cc = cloudConflict; cloudConflict = async function (sc) {
+  if (CL.rule) return _cc.apply(this, arguments);
+  const c = sbClient(); const r = await c.from('app_state').select('scope,state,version').eq('business_id', SBS.biz.id).eq('scope', sc).limit(1);
+  if (r.error || !r.data || !r.data[0]) throw (r.error || new Error('Bulut kaydı okunamadı.'));
+  CL.pend[sc] = { state: r.data[0].state, version: r.data[0].version };
+  if (!kqApplyPend()) { PS.state = 'saving'; setTimeout(render, 60); return; }
+  PS.state = 'saved'; setTimeout(() => { render(); }, 60);
+}; }
+
+/* yoklama: değişen bölümleri bekletmeli al, sürümü uygulanana kadar ilerletme */
+{ const _cp = cloudPoll; cloudPoll = async function () {
+  if (CL.rule) return _cp.apply(this, arguments);
+  if (!CL.on || PS.busy || CL.busy || !SBS.biz) return; CL.busy = true;
+  try {
+    const c = sbClient(); const bid = SBS.biz.id; const v = await c.from('app_state').select('scope,version').eq('business_id', bid); if (v.error || !v.data) { CL.busy = false; return; }
+    const ch = v.data.filter((x) => x.scope !== 'all' && x.version > (CL.vers[x.scope] || 0) && !(CL.pend[x.scope] && CL.pend[x.scope].version >= x.version));
+    if (ch.length) {
+      const res = await Promise.all(ch.map((x) => c.from('app_state').select('scope,state,version').eq('business_id', bid).eq('scope', x.scope).limit(1))); let any = false;
+      res.forEach((r) => { const row = r.data && r.data[0]; if (row) { CL.pend[row.scope] = { state: row.state, version: row.version }; any = true; } });
+      if (any) { if (kqApplyPend()) render(); }
+    }
+  } catch (e) {} CL.busy = false;
+}; }
+
+/* açılışta: bekleyen çevrimdışı değişiklikleri buluttaki güncel veriyle birleştir */
+async function kqRecover() {
+  if (!kqOn()) return; let e = null; try { e = await kqGet(kqKey()); } catch (x) { e = null; } if (!e || !e.cur) return;
+  let conf = 0, n = 0;
+  Object.keys(e.cur).forEach((sc) => {
+    if (!canW(sc) || CL.base[sc] === undefined) return; let local, base, remote; try { local = JSON.parse(e.cur[sc]); remote = JSON.parse(CL.base[sc]); base = e.base && e.base[sc] ? JSON.parse(e.base[sc]) : undefined; } catch (x) { return; }
+    if (base !== undefined && kqEq(local, base)) return; if (kqEq(local, remote)) return;
+    const st = { n: 0 }; const merged = base === undefined ? kqMerge({}, local, remote, st) : kqMerge(base, local, remote, st); conf += st.n;
+    if (kqEq(merged, remote)) return; kqScopeApply(merged); CL.sent[sc] = '__dirty__'; n++;
+  });
+  if (n) { PS.last = pSnap(); try { render(); } catch (x) {} toast('Çevrimdışıyken yaptığın değişiklikler gönderiliyor.' + (conf ? ' ' + conf + ' çakışmada senin değişikliğin korundu.' : ''), 'ok'); setTimeout(() => { try { pSched(); } catch (x) {} }, 100); }
+  else { try { await kqDel(kqKey()); } catch (x) {} }
+}
+{ const _ca2 = cloudAttach; cloudAttach = async function () { const r = await _ca2.apply(this, arguments); try { await kqRecover(); } catch (e) {} return r; }; }
+
+/* görünür durum + çıkış + sekme gizlenirken */
+{ const _ps = paintStatus; paintStatus = function () { _ps.apply(this, arguments); try { const e = document.getElementById('ps-chip'); if (e && PS.state === 'error' && (PS.queued || navigator.onLine === false)) e.textContent = 'Cihazda saklı, bağlanınca gider'; } catch (x) {} }; }
+{ const _so = idSignOut; idSignOut = async function () { let k = null, dirty = false; try { k = kqKey(); dirty = clDirty(); } catch (e) {} const r = await _so.apply(this, arguments); try { if (k && !dirty) await kqDel(k); } catch (e) {} return r; }; }
+document.addEventListener('visibilitychange', () => { try { if (document.visibilityState === 'hidden' && kqOn() && clDirty()) kqPersist(); } catch (e) {} });
 </script>
 </body>
 </html>
