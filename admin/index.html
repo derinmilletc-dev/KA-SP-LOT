@@ -433,6 +433,16 @@ Object.assign(PAGES, {
       ${x.reply ? `<div class="al"><div><b>Cevabın</b><span style="white-space:pre-wrap">${esc(x.reply)}</span></div></div>` : ''}<textarea placeholder="Cevap yaz…" ${x.status === 'solved' && x.reply ? 'style="display:none"' : ''}></textarea><div class="row wrap"><button class="btn sm" data-a="tkreply" data-id="${esc(x.id)}" data-st="solved">Cevapla ve çöz</button><button class="btn sec sm" data-a="tkreply" data-id="${esc(x.id)}" data-st="open">Cevapla</button>${x.business_id ? `<button class="btn sec sm" data-a="biz" data-id="${esc(x.business_id)}">İşletme</button>` : ''}</div></div>`).join('') : emptyBox('Talep yok', f === 'open' ? 'Açık talep kalmadı.' : '')}</div>`;
   }
 });
+function drawerPlan(r, sup) {
+  const pl = r.plan; if (!pl) return ''; const row = pl.row || {}, st = pl.state || {}; const day = (v) => (v ? String(v).slice(0, 10) : '');
+  const eff = { ok: ['ok', 'Aktif'], grace: ['warn', 'Ek süre'], readonly: ['bad', 'Salt okunur'] }[st.effective] || ['gray', '—']; const id = r.business.id;
+  const opt = (list, cur) => list.map((x) => `<option value="${x[0]}"${x[0] === cur ? ' selected' : ''}>${x[1]}</option>`).join('');
+  return `<div class="card stack" id="plbox"><div class="row between"><h3>Plan ve abonelik</h3><span class="pill ${eff[0]}">${eff[1]}</span></div>
+  <div class="mut sm">${esc(st.plan_name || st.plan || '—')} · ${st.members != null ? st.members : '?'} üye${st.max_members ? ' / ' + st.max_members : ''}${st.days_left != null ? ' · ' + (st.days_left >= 0 ? st.days_left + ' gün kaldı' : -st.days_left + ' gün önce bitti') : ''}</div>
+  ${sup ? `<div class="grid g2 keep" style="gap:8px"><div><label>Plan</label><select data-pl="plan">${opt([['deneme', 'Deneme'], ['baslangic', 'Başlangıç'], ['pro', 'Pro'], ['kurumsal', 'Kurumsal']], row.plan)}</select></div><div><label>Durum</label><select data-pl="status">${opt([['trial', 'Deneme'], ['active', 'Aktif'], ['past_due', 'Ödeme gecikti'], ['canceled', 'İptal']], row.status)}</select></div>
+  <div><label>Deneme bitişi</label><input type="date" data-pl="trial_ends" value="${day(row.trial_ends)}"></div><div><label>Dönem bitişi</label><input type="date" data-pl="period_end" value="${day(row.period_end)}"></div></div>
+  <div><label>Not</label><input data-pl="note" maxlength="200" value="${esc(row.note || '')}"></div><button class="btn sm" data-a="plansave" data-id="${id}">Planı kaydet</button><p class="mut sm" style="margin:0">Süre bitince ${row.grace_days || 7} gün ek süre, sonra yalnızca okuma. Veri silinmez.</p>` : ''}</div>`;
+}
 function drawerNotes(r) {
   const sup = S.admin.role === 'super'; const n = r.note || {}; const sv = S.drawer && S.drawer.sv;
   const svh = sv ? `<div class="mut sm">${esc(sv.note)}</div>${sv.scopes.map((x) => `<div class="card" style="padding:10px 12px;margin-top:8px"><div class="row between"><b>${esc(x.scope)}</b><span class="mut sm">${Math.round(x.bytes / 1024)} KB · v${x.version} · ${ago(x.updated_at)}</span></div><div>${x.keys.map((k) => `<span class="tag">${esc(k.k)}${k.n != null ? ' · ' + k.n : ''}</span>`).join('')}</div></div>`).join('') || '<div class="mut sm">Kayıt yok.</div>'}` : '';
@@ -447,6 +457,7 @@ function drawerHtml() {
   <div class="row between"><div><h2>${esc(b.name)}</h2><div class="mut sm">${esc(b.owner || '—')} · ${dstr(b.created_at)}</div></div><button class="btn sec sm" data-a="close">Kapat</button></div>
   <div class="row wrap">${b.suspended_at ? '<span class="pill bad">Askıda</span>' : '<span class="pill ok">Aktif</span>'}${Object.keys(b.roles).map((k) => `<span class="pill gray">${esc(k)}: ${b.roles[k]}</span>`).join('')}</div>
   ${drawerInfo(r)}
+  ${p.businesses ? drawerPlan(r, sup) : ''}
   ${p.businesses ? drawerNotes(r) : ''}
   ${r.ai ? `<div class="card"><h3>AI isteği</h3><div class="mut sm" style="margin:2px 0 10px">Son 14 gün</div>${bars(r.ai.series)}</div>` : ''}
   ${r.ai && p.limits ? `<div class="card stack" id="lim"><h3>AI limiti</h3><p class="mut sm" style="margin:0">Boş bırakılan alan varsayılan limiti kullanır (günlük 40, aylık 600).</p><div class="grid g2 keep" style="gap:8px"><div><label>Sohbet / gün</label><input type="number" data-l="chat_day" value="${L.chat_day || ''}"></div><div><label>Sohbet / ay</label><input type="number" data-l="chat_month" value="${L.chat_month || ''}"></div><div><label>Okuma / gün</label><input type="number" data-l="read_day" value="${L.read_day || ''}"></div><div><label>Okuma / ay</label><input type="number" data-l="read_month" value="${L.read_month || ''}"></div></div><input type="text" data-l="note" placeholder="Not (isteğe bağlı)" value="${esc(L.note || '')}"><div class="row"><button class="btn sm" data-a="limsave" data-id="${esc(b.id)}">Kaydet</button><button class="btn sec sm" data-a="limclear" data-id="${esc(b.id)}">Varsayılana dön</button></div></div>` : ''}
@@ -495,6 +506,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'evd') { S.evDays = Number(t.dataset.d); return loadPage(); }
   if (a === 'limsave') { const o = { business_id: t.dataset.id }; document.querySelectorAll('#lim [data-l]').forEach((i) => { o[i.dataset.l] = i.value; }); const r = await api('set_limit', o); toast(r.ok ? 'Limit kaydedildi.' : r.error); if (r.ok) openBiz(t.dataset.id); return; }
   if (a === 'limclear') { const r = await api('set_limit', { business_id: t.dataset.id, clear: true }); toast(r.ok ? 'Varsayılana döndü.' : r.error); if (r.ok) openBiz(t.dataset.id); return; }
+  if (a === 'plansave') { const o = { business_id: t.dataset.id }; document.querySelectorAll('#plbox [data-pl]').forEach((i) => { o[i.dataset.pl] = i.value; }); const r = await api('plan_set', o); toast(r.ok ? 'Plan kaydedildi.' : r.error); if (r.ok) openBiz(t.dataset.id); return; }
   if (a === 'sus') { const r = await api('suspend', { business_id: t.dataset.id, note: ($('#susn') || {}).value || '' }); toast(r.ok ? 'İşletme askıya alındı.' : r.error); if (r.ok) { openBiz(t.dataset.id); loadPage(); } return; }
   if (a === 'unsus') { const r = await api('unsuspend', { business_id: t.dataset.id }); toast(r.ok ? 'Askıdan çıkarıldı.' : r.error); if (r.ok) { openBiz(t.dataset.id); loadPage(); } return; }
   if (a === 'modadd') { const root = $('#modnew'); const r = await api('mod_add', { email: $('#mn-em').value, perms: readPerms(root) }); toast(r.ok ? 'Moderatör eklendi.' : r.error); if (r.ok) loadPage(); return; }

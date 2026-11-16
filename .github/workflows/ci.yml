@@ -38,6 +38,8 @@ jobs:
         run: python3 tests/offline.py
       - name: Hesap plani, mizan, bilanco
         run: python3 tests/accounting.py
+      - name: Plan bandi ve salt okunur mod
+        run: python3 tests/plan_client.py
       - name: Yerel kutuphaneler + CSP (Excel, PDF, OCR)
         run: python3 tests/vendor_csp.py
   sql:
@@ -61,4 +63,8 @@ jobs:
           createdb kt
           for f in supabase/tests/stub.sql supabase/sql/00_base_schema.sql supabase/sql/branch_scope.sql supabase/tests/branch_scope_test.sql; do
             echo "== $f"; psql -v ON_ERROR_STOP=1 -q kt -f "$f"
+          done
+          createdb kt2
+          for f in supabase/tests/stub.sql supabase/sql/00_base_schema.sql supabase/sql/plans.sql supabase/tests/plans_test.sql; do
+            echo "== $f"; psql -v ON_ERROR_STOP=1 -q kt2 -f "$f"
           done

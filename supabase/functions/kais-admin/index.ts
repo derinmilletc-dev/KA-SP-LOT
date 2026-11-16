@@ -116,6 +116,7 @@ export async function handle(req: Request): Promise<Response> {
       const em = await emails(); const mem = ((await srv.from('members').select('role,created_at,user_id').eq('business_id', id)).data || []) as any[];
       const roles: Record<string, number> = {}; mem.forEach((m) => { roles[m.role] = (roles[m.role] || 0) + 1; });
       const out: any = { ok: true, business: { id, name: x.name, created_at: x.created_at, owner: em[x.owner_id] || '', roles, suspended_at: x.suspended_at || null, suspended_note: x.suspended_note || '' } };
+      try { const pr = await srv.from('business_plans').select('plan,status,trial_ends,period_end,grace_days,note').eq('business_id', id).maybeSingle(); const ps = await srv.rpc('plan_state', { bid: id }); out.plan = { row: pr.data || null, state: ps.data || null }; } catch (e0) { /* plans.sql yoksa yoksay */ }
       try { const nt = await srv.from('business_notes').select('note,tags,updated_by,updated_at').eq('business_id', id).maybeSingle(); out.note = nt.data || null; } catch (e0) { /* yoksay */ }
       out.members = mem.map((m) => ({ email: em[m.user_id] || '', role: m.role, since: m.created_at })).sort((p1, p2) => String(p1.since).localeCompare(String(p2.since)));
       const full = await srv.from('businesses').select('*').eq('id', id).maybeSingle();
@@ -399,6 +400,19 @@ export async function handle(req: Request): Promise<Response> {
       const r = await srv.from('businesses').update({ suspended_at: on ? new Date().toISOString() : null, suspended_note: on ? note : null }).eq('id', id);
       if (r.error) return ERR('Güncellenemedi. admin.sql çalıştırıldı mı?', 500);
       await audit(on ? 'askiya_al' : 'askidan_cikar', id, { note }); return J({ ok: true });
+    }
+
+    if (action === 'plan_set') {
+      if (!isSuper) return ERR('Bu işlemi yalnızca ana admin yapabilir.', 403);
+      const id = String(b.business_id || ''); if (!/^[0-9a-f-]{36}$/i.test(id)) return ERR('İşletme yok.');
+      const plan = String(b.plan || ''); const status = String(b.status || '');
+      if (!['deneme', 'baslangic', 'pro', 'kurumsal'].includes(plan)) return ERR('Plan geçersiz.');
+      if (!['trial', 'active', 'past_due', 'canceled'].includes(status)) return ERR('Durum geçersiz.');
+      const dt = (v: any) => { if (!v) return null; const t = new Date(String(v) + 'T23:59:59+03:00'); return isNaN(t.getTime()) ? undefined : t.toISOString(); };
+      const pe = dt(b.period_end), te = dt(b.trial_ends); if (pe === undefined || te === undefined) return ERR('Tarih geçersiz.');
+      const r = await srv.rpc('plan_set', { bid: id, p_plan: plan, p_status: status, p_period_end: pe, p_trial_ends: te, p_note: String(b.note || '').slice(0, 200) });
+      if (r.error) return ERR('Kaydedilemedi. plans.sql çalıştırıldı mı?', 500);
+      await audit('plan_ayarla', id, { plan, status, period_end: pe, trial_ends: te }); return J({ ok: true, state: r.data });
     }
 
     if (action === 'mods_list') {

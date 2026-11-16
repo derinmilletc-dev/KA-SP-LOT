@@ -1638,6 +1638,7 @@ const S = {
 };
 const H = {};
 const locked = () => {
+  try { if (PLAN.ro) { toast('Aboneliğin sona erdiği için kayıt yapılamıyor.', 'warn'); return true; } } catch (e) {}
   if (S.closed) {
     toast(`${PERIOD} dönemi kapalı. Değişiklik için muhasebeciyle konuş.`, 'warn');
     return true;
@@ -5065,7 +5066,7 @@ const NAMES = {}; P_OBJ.push(['NAMES', () => NAMES]);
 const ID = { mems: [], active: null, team: null, teamBusy: false, pref: null, busy: false };
 function applyNames() { Object.keys(NAMES).forEach((uid) => { const u = byId(uid); if (u && NAMES[uid]) { if (NAMES[uid].name) u.name = NAMES[uid].name; if (NAMES[uid].title) u.title = NAMES[uid].title; } }); }
 const pApplyV17 = pApply; pApply = function (s) { const ok = pApplyV17(s); if (ok) applyNames(); return ok; };
-const idMsg = (e) => { const m = String((e && e.message) || e || ''); return /relation .*(members|invites)|claim_invite.*(exist|find)|schema cache/i.test(m) ? 'Giriş tabloları kurulmamış. kaispilot_giris.sql dosyasını Supabase\'de çalıştır.' : /too_many_attempts/.test(m) ? 'Çok fazla yanlış deneme. 15 dakika sonra tekrar dene.' : /invalid_code/.test(m) ? 'Davet kodu geçersiz ya da süresi dolmuş.' : /already_member/.test(m) ? 'Bu hesap zaten bu işletmede.' : /seat_taken/.test(m) ? 'Bu davetin yeri daha önce doldurulmuş. İşverenden yeni kod iste.' : /duplicate key/.test(m) ? 'Bu kayıt zaten var.' : sbMsg(e); };
+const idMsg = (e) => { const m = String((e && e.message) || e || ''); return /relation .*(members|invites)|claim_invite.*(exist|find)|schema cache/i.test(m) ? 'Giriş tabloları kurulmamış. kaispilot_giris.sql dosyasını Supabase\'de çalıştır.' : /too_many_attempts/.test(m) ? 'Çok fazla yanlış deneme. 15 dakika sonra tekrar dene.' : /invalid_code/.test(m) ? 'Davet kodu geçersiz ya da süresi dolmuş.' : /already_member/.test(m) ? 'Bu hesap zaten bu işletmede.' : /plan_limit_members/.test(m) ? 'İşletmenin planındaki üye sınırına ulaşıldı. Planı yükseltmek için bizimle iletişime geç.' : /seat_taken/.test(m) ? 'Bu davetin yeri daha önce doldurulmuş. İşverenden yeni kod iste.' : /duplicate key/.test(m) ? 'Bu kayıt zaten var.' : sbMsg(e); };
 const canSup = () => !ID.active || ['patron', 'mudur'].includes(ID.active.role);
 sbLoadBiz = async function () {
   const c = sbClient(); if (!c || !SBS.user) return;
@@ -12987,7 +12988,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v160';
+const APP_VER = 'v161';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -14457,6 +14458,42 @@ H.mhsave = (el) => {
 };
 /* giriş kartına iki kısayol */
 { const _mc = mxCard; mxCard = function () { let h = _mc.apply(this, arguments); if (!h) return h; const tile = (a, i, t, s) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`; const add = tile('mhrap', 'table', 'Mizan ve bilanço', 'Gelir tablosu, Tek Düzen') + tile('mhrows', 'list', 'Kayıt ayrıntısı', 'Tevkifat, ÖTV, stopaj, döviz'); const i = h.lastIndexOf('</div></div>'); return i < 0 ? h : h.slice(0, i) + add + h.slice(i); }; }
+/* =====================================================================
+   v161 Abonelik ve plan: sunucudaki plan durumunu okur (plan_get), süre bitimine yaklaşınca uyarır,
+   süre ve ek süre bitince yalnızca okuma moduna alır (sunucu 'plan_expired' ile de korur).
+   Plan ve durum admin panelinden ayarlanır. plans.sql çalıştırılmamışsa sessizce kapalı kalır.
+   ===================================================================== */
+const PLAN = { st: null, ro: false, at: 0 };
+async function planLoad() {
+  try {
+    if (!SBS.biz || (typeof DEMO !== 'undefined' && DEMO)) return; const c = sbClient(); if (!c) return;
+    const r = await c.rpc('plan_get', { bid: SBS.biz }); if (r.error || !r.data) return;
+    PLAN.st = r.data; PLAN.ro = r.data.effective === 'readonly'; PLAN.at = Date.now(); planPaint();
+    if (PLAN.ro) { PS.state = 'readonly'; try { paintStatus(); } catch (e) {} }
+  } catch (e) {}
+}
+function planMsg() {
+  const s = PLAN.st; if (!s) return null; const isP = S.user && S.user.role === 'patron'; const d = s.days_left; const nm = s.plan_name || 'Plan';
+  if (s.effective === 'readonly') return ['bad', isP ? 'Aboneliğin sona erdi. Veriler duruyor ama yeni kayıt yapılamıyor. Devam etmek için bizimle iletişime geç.' : 'İşletmenin aboneliği sona erdi. Şimdilik yalnızca görüntüleyebilirsin.'];
+  if (!isP) return null;
+  if (s.effective === 'grace') return ['warn', (s.status === 'past_due' ? 'Ödemen gecikti. ' : 'Aboneliğin bitti. ') + 'Kısa bir ek süre var, sonra uygulama yalnızca okuma moduna geçer.'];
+  if (d != null && d >= 0 && d <= 7 && ['trial', 'active'].includes(s.status)) return ['info', (s.status === 'trial' ? 'Deneme süren ' : nm + ' aboneliğin ') + (d === 0 ? 'bugün' : d + ' gün sonra') + ' bitiyor.'];
+  return null;
+}
+function planPaint() {
+  try {
+    let el = document.getElementById('plan-bar'); const m = PLAN.st ? planMsg() : null;
+    if (!m) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.id = 'plan-bar'; document.body.appendChild(el); }
+    const col = { bad: '#E5484D', warn: '#F5A524', info: '#3E63DD' }[m[0]];
+    el.setAttribute('style', 'position:fixed;left:8px;right:8px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:50;padding:10px 12px;border-radius:12px;background:var(--card,#fff);color:inherit;border:1px solid ' + col + ';box-shadow:0 4px 18px rgba(0,0,0,.18);font-size:13px;line-height:1.35');
+    el.textContent = m[1];
+  } catch (e) {}
+}
+{ const _pf = pFlush; pFlush = async function () { if (PLAN.ro) { PS.state = 'readonly'; try { paintStatus(); } catch (e) {} return; } return _pf.apply(this, arguments); }; }
+{ const _ca = cloudAttach; cloudAttach = async function () { const r = await _ca.apply(this, arguments); try { await planLoad(); } catch (e) {} return r; }; }
+{ const _cp = cloudPoll; cloudPoll = async function () { const r = await _cp.apply(this, arguments); try { if (Date.now() - PLAN.at > 10 * 60000) planLoad(); } catch (e) {} return r; }; }
+{ const _rn = render; render = function () { const r = _rn.apply(this, arguments); try { planPaint(); } catch (e) {} return r; }; }
 </script>
 </body>
 </html>
