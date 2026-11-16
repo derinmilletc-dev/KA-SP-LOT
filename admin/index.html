@@ -42,6 +42,21 @@ code.sec{display:block;word-break:break-all;background:var(--bg);padding:8px 10p
 .chk{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer}.chk input{width:18px;height:18px;accent-color:var(--acc)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:40}
 .tabs{display:none}
+
+.box.wide{max-width:760px}
+.steps{display:flex;flex-direction:column;gap:12px}
+.st{display:flex;gap:12px}.st .no{flex:none;width:26px;height:26px;border-radius:50%;background:var(--acc2);color:var(--acc);font-weight:700;font-size:13px;display:grid;place-items:center;margin-top:1px}
+.st h4{margin:0 0 2px;font-size:14px}.st p{margin:0;color:var(--mut);font-size:12.5px}
+.key{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px;margin-top:8px}
+.key code{flex:1;font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;line-height:1.6}.key code i{font-style:normal;display:inline-block;margin-right:8px}a.btn{display:block}
+.otp{position:relative;margin:4px 0}.otp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;z-index:2;cursor:text}
+.cells{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.cells span{height:54px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;font:600 24px ui-monospace,Menlo,monospace}
+.cells span.on{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc2)}.cells.bad span{border-color:var(--bad)}
+.enr{display:grid;grid-template-columns:1fr;gap:18px}
+.qrbox{display:grid;place-items:center;gap:8px;text-align:center}.qrbox img{width:180px;height:180px;background:#fff;padding:8px;border-radius:14px;border:1px solid var(--line)}
+.sec2{font-size:12.5px;color:var(--mut);cursor:pointer;text-align:center;padding:4px}
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+@media(min-width:820px){.enr.two{grid-template-columns:200px 1fr;align-items:start}}
 @media(max-width:820px){.g2.keep{grid-template-columns:1fr 1fr}
  .app{grid-template-columns:1fr}.side{display:none}.main{padding:14px 14px 90px}.g4{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}
  .tabs{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));overflow-x:auto;gap:2px;z-index:10}
@@ -106,25 +121,43 @@ async function doAuth(signup) {
   if (signup && !r.data.session) { const s2 = await sb.auth.signInWithPassword({ email: em, password: pw }); if (s2.error) { S.err = 'Hesap oluşturuldu. Şimdi giriş yap.'; return viewLogin(false); } }
   boot();
 }
+const isPhone = () => (window.matchMedia && matchMedia('(max-width: 820px)').matches) || /iPhone|Android|Mobile/i.test(navigator.userAgent || '');
+const otpBox = () => `<div class="otp"><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="6 haneli kod"><div class="cells" id="cells">${'<span></span>'.repeat(6)}</div></div>`;
+function otpPaint() { const i = $('#code'); const c = $('#cells'); if (!i || !c) return; const v = i.value.replace(/\D/g, '').slice(0, 6); if (i.value !== v) i.value = v; [...c.children].forEach((x, n) => { x.textContent = v[n] || ''; x.className = n === v.length || (v.length === 6 && n === 5) ? 'on' : ''; }); c.classList.remove('bad'); }
+let otpT = null;
+document.addEventListener('input', (e) => { if (e.target.id !== 'code') return; otpPaint(); const e0 = $('.err'); if (e0) e0.remove(); if (e.target.value.replace(/\D/g, '').length === 6 && !S.busy) { clearTimeout(otpT); otpT = setTimeout(mfaVerify, 180); } });
+document.addEventListener('focusin', (e) => { if (e.target.id === 'code') otpPaint(); });
 async function viewMfaChallenge() {
   const f = await sb.auth.mfa.listFactors(); const fa = (f.data && f.data.totp || []).find((x) => x.status === 'verified');
   if (!fa) return viewMfaEnroll();
   S.mfa = { id: fa.id };
-  shell(`<div class="card stack"><div><h3>İki adımlı doğrulama</h3><p class="mut sm" style="margin:4px 0 0">Authenticator uygulamandaki 6 haneli kodu yaz.</p></div><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="font-size:22px;letter-spacing:6px;text-align:center">${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn block" data-a="mfaverify">Doğrula</button><button class="btn sec block" data-a="logout">Çıkış</button></div>`);
-  const i = $('#code'); if (i) i.focus();
+  shell(`<div class="card stack"><div><span class="lock">${ICO.moon.replace('<svg', '<svg width="14" height="14"')} İki adımlı doğrulama</span><h3 style="margin-top:6px">Kodu gir</h3><p class="mut sm" style="margin:4px 0 0">Authenticator uygulamandaki 6 haneli kodu yaz. Kod otomatik doğrulanır.</p></div>${otpBox()}${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn sec block" data-a="logout">Çıkış</button></div>`);
+  const i = $('#code'); if (i) { i.focus(); otpPaint(); }
 }
 async function viewMfaEnroll() {
   const f = await sb.auth.mfa.listFactors(); for (const x of (f.data && f.data.all || [])) { if (x.status === 'unverified') await sb.auth.mfa.unenroll({ factorId: x.id }); }
   const r = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'KaisPilot Admin ' + Date.now() });
   if (r.error) { S.err = 'İki adımlı doğrulama kurulamadı: ' + r.error.message; return shell(`<div class="card stack"><div class="err">${esc(S.err)}</div><button class="btn sec block" data-a="logout">Çıkış</button></div>`); }
-  S.mfa = { id: r.data.id };
-  shell(`<div class="card stack"><div><h3>İki adımlı doğrulamayı kur</h3><p class="mut sm" style="margin:4px 0 0">Admin girişi için zorunlu. Google Authenticator, Microsoft Authenticator ya da benzeri bir uygulamayla QR kodu okut.</p></div><div class="qr"><img alt="QR" src="${esc(r.data.totp.qr_code)}"></div><div><div class="mut sm">Telefondan giriyorsan QR okutamazsın. Anahtarı kopyalayıp Authenticator uygulamasına "anahtar gir" ile yapıştır:</div><div class="row" style="margin-top:6px"><code class="sec grow" id="mfa-sec">${esc(r.data.totp.secret)}</code><button class="btn sm" data-a="copysec">Kopyala</button></div>${r.data.totp.uri ? `<a class="btn sec sm block" style="margin-top:12px;text-align:center;text-decoration:none" href="${esc(r.data.totp.uri)}">Authenticator uygulamasında aç</a>` : ''}</div><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 haneli kod" style="text-align:center;letter-spacing:4px">${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn block" data-a="mfaverify">Kur ve gir</button><button class="btn sec block" data-a="logout">Çıkış</button></div>`);
+  S.mfa = { id: r.data.id }; const t = r.data.totp, ph = isPhone(); const grp = String(t.secret).match(/.{1,4}/g).map((g) => `<i>${esc(g)}</i>`).join('');
+  const key = `<div class="key"><code id="mfa-sec" data-raw="${esc(t.secret)}">${grp}</code><button class="btn sm" data-a="copysec">Kopyala</button></div>`;
+  const qr = `<div class="qrbox"><img alt="QR kod" src="${esc(t.qr_code)}"><div class="mut sm">QR kodu okut</div></div>`;
+  const steps = ph ? `<div class="steps">
+    <div class="st"><span class="no">1</span><div class="grow"><h4>Anahtarı kopyala</h4><p>Bu telefonda QR okutamazsın, anahtarı kullan.</p>${key}</div></div>
+    <div class="st"><span class="no">2</span><div class="grow"><h4>Authenticator'a ekle</h4><p>Uygulamada "Hesap ekle" → "Kurulum anahtarı gir" → yapıştır.</p>${t.uri ? `<a class="btn block" style="margin-top:8px;text-align:center;text-decoration:none" href="${esc(t.uri)}">Authenticator'ı aç</a>` : ''}<details style="margin-top:8px"><summary class="sec2">QR kodu göster (başka cihazdan okutmak için)</summary>${qr}</details></div></div>
+    <div class="st"><span class="no">3</span><div class="grow"><h4>Kodu yaz</h4><p>Uygulamadaki 6 haneli kod. Yazınca kendiliğinden doğrulanır.</p><div style="margin-top:8px">${otpBox()}</div></div></div></div>`
+    : `<div class="enr two">${qr}<div class="steps">
+    <div class="st"><span class="no">1</span><div class="grow"><h4>QR kodu okut</h4><p>Google Authenticator, Microsoft Authenticator ya da 1Password ile. Okutamazsan anahtarı kopyala:</p>${key}</div></div>
+    <div class="st"><span class="no">2</span><div class="grow"><h4>Kodu yaz</h4><p>Uygulamadaki 6 haneli kod. Yazınca kendiliğinden doğrulanır.</p><div style="margin-top:8px">${otpBox()}</div></div></div></div></div>`;
+  $('#root').innerHTML = `<div class="center"><div class="box ${ph ? '' : 'wide'} stack"><div class="row" style="gap:10px"><span class="logo">K</span><div><h2>KaisPilot Admin</h2><div class="mut sm">Yetkili kişiler için</div></div></div><div class="card stack"><div><span class="lock">${ICO.moon.replace('<svg', '<svg width="14" height="14"')} Güvenlik adımı · bir kez</span><h3 style="margin-top:6px">İki adımlı doğrulamayı kur</h3><p class="mut sm" style="margin:4px 0 0">Admin girişi için zorunlu. Sonraki girişlerde sadece uygulamadaki kodu yazacaksın.</p></div>${steps}${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn sec block" data-a="logout">Çıkış</button></div></div></div>`;
+  otpPaint();
 }
 async function mfaVerify() {
-  const code = ($('#code').value || '').replace(/\D/g, ''); S.err = '';
-  if (code.length !== 6) { const e0 = $('.err'); if (e0) e0.textContent = '6 haneli kodu yaz.'; else $('#code').insertAdjacentHTML('afterend', '<div class="err">6 haneli kodu yaz.</div>'); return; }
+  const i = $('#code'); if (!i || S.busy) return; const code = (i.value || '').replace(/\D/g, ''); S.err = '';
+  if (code.length !== 6) return;
+  S.busy = true; const c = $('#cells'); if (c) c.style.opacity = '.6';
   const r = await sb.auth.mfa.challengeAndVerify({ factorId: S.mfa.id, code });
-  if (r.error) { S.err = 'Kod hatalı ya da süresi doldu. Yeni kodu dene.'; const el = $('#code'); const e = $('.err'); if (e) e.textContent = S.err; else el.insertAdjacentHTML('afterend', `<div class="err">${esc(S.err)}</div>`); el.value = ''; return; }
+  S.busy = false; if (c) c.style.opacity = '';
+  if (r.error) { if (c) c.classList.add('bad'); const e = $('.err'); const msg = 'Kod hatalı ya da süresi doldu. Yeni kodu dene.'; if (e) e.textContent = msg; else (c ? c.parentElement : i).insertAdjacentHTML('afterend', `<div class="err">${msg}</div>`); i.value = ''; i.focus(); setTimeout(otpPaint, 700); return; }
   boot();
 }
 async function boot() {
@@ -225,7 +258,7 @@ document.addEventListener('click', async (e) => {
   const t = e.target.closest('[data-a]'); if (!t) return; const a = t.dataset.a; if (a === 'close' && e.target.closest('.dr') && !e.target.closest('button[data-a=close]')) return;
   if (a === 'login') return doAuth(false); if (a === 'signup') return doAuth(true); if (a === 'tosignup') { S.err = ''; return viewLogin(true); } if (a === 'tologin') { S.err = ''; return viewLogin(false); }
   if (a === 'mfaverify') return mfaVerify();
-  if (a === 'copysec') { const v = ($('#mfa-sec') || {}).textContent || ''; let ok = false; try { await navigator.clipboard.writeText(v); ok = true; } catch (x) { try { const ta = document.createElement('textarea'); ta.value = v; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove(); } catch (y) {} } t.textContent = ok ? 'Kopyalandı' : 'Kopyalanamadı'; toast(ok ? 'Anahtar kopyalandı.' : 'Anahtarı elle seç ve kopyala.'); setTimeout(() => { t.textContent = 'Kopyala'; }, 2000); return; }
+  if (a === 'copysec') { const v = ($('#mfa-sec') || { dataset: {} }).dataset.raw || ''; let ok = false; try { await navigator.clipboard.writeText(v); ok = true; } catch (x) { try { const ta = document.createElement('textarea'); ta.value = v; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove(); } catch (y) {} } t.textContent = ok ? 'Kopyalandı' : 'Kopyalanamadı'; toast(ok ? 'Anahtar kopyalandı.' : 'Anahtarı elle seç ve kopyala.'); setTimeout(() => { t.textContent = 'Kopyala'; }, 2000); return; }
   if (a === 'logout') { await sb.auth.signOut(); S.admin = null; S.err = ''; S.drawer = null; return viewLogin(false); }
   if (a === 'theme') return toggleTheme();
   if (a === 'go') { S.view = t.dataset.v; S.drawer = null; return render(); }
