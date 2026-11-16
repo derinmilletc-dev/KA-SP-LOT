@@ -113,9 +113,23 @@ export async function handle(req: Request): Promise<Response> {
       const em = await emails(); const mem = ((await srv.from('members').select('role,created_at').eq('business_id', id)).data || []) as any[];
       const roles: Record<string, number> = {}; mem.forEach((m) => { roles[m.role] = (roles[m.role] || 0) + 1; });
       const out: any = { ok: true, business: { id, name: x.name, created_at: x.created_at, owner: em[x.owner_id] || '', roles, suspended_at: x.suspended_at || null, suspended_note: x.suspended_note || '' } };
-      if (can('ai')) { const q = await quota(31); const mine = q.filter((y) => y.business_id === id); const series: Record<string, number> = {}; for (let i = 13; i >= 0; i--) series[dayIso(i)] = 0; mine.forEach((y) => { if (y.day in series) series[y.day] += y.n; }); out.ai = { series }; const lm = await srv.from('ai_limits').select('*').eq('business_id', id).maybeSingle(); out.limits = lm.data || null; }
+      if (can('ai')) {
+        const q = await quota(31);
+        const mine = q.filter((y) => y.business_id === id);
+        const series: Record<string, number> = {};
+        for (let i = 13; i >= 0; i--) series[dayIso(i)] = 0;
+        mine.forEach((y) => { if (y.day in series) series[y.day] += y.n; });
+        out.ai = { series };
+        const lm = await srv.from('ai_limits').select('*').eq('business_id', id).maybeSingle();
+        out.limits = lm.data || null;
+      }
       if (can('errors')) out.errors = ((await srv.from('app_errors').select('created_at,view,msg,ver').eq('business_id', id).order('created_at', { ascending: false }).limit(10)).data || []);
-      if (can('events')) { const ev = ((await srv.from('app_events').select('ev,n').eq('business_id', id).gte('created_at', tsIso(30)).limit(5000)).data || []) as any[]; const m: Record<string, number> = {}; ev.forEach((e) => { m[e.ev] = (m[e.ev] || 0) + e.n; }); out.events = Object.entries(m).sort((a, c) => c[1] - a[1]).slice(0, 8); }
+      if (can('events')) {
+        const ev = ((await srv.from('app_events').select('ev,n').eq('business_id', id).gte('created_at', tsIso(30)).limit(5000)).data || []) as any[];
+        const m: Record<string, number> = {};
+        ev.forEach((e) => { m[e.ev] = (m[e.ev] || 0) + e.n; });
+        out.events = Object.entries(m).sort((a, c) => c[1] - a[1]).slice(0, 8);
+      }
       return J(out);
     }
 
