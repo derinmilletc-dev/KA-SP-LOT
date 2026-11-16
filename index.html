@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v149';
+const APP_VER = 'v150';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13583,9 +13583,108 @@ function mxCard() {
   let F, A, C; try { F = mxForecast(30); A = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: mxN(v.tot), due: v.due, who: v.cust }))); C = mxClose(); } catch (e) { return ''; }
   const old = A.slice(2).reduce((t, r) => t + r.t, 0); const nr = mxRecs().filter((r) => !r.off).length;
   const tile = (a, i, t, s, w) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px;${w ? 'border-color:#E5484D;' : ''}"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`;
-  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}</div><button class="btn sec sm" data-a="mxrec">${ic('plus', 16)} Tekrarlayan kayıtlar${nr ? ' (' + nr + ')' : ''}</button></div>`;
+  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}</div><button class="btn sec sm" data-a="mxrec">${ic('plus', 16)} Tekrarlayan kayıtlar${nr ? ' (' + nr + ')' : ''}</button></div>`;
 }
 { const _v = viewHTML; viewHTML = function () { const h = _v.apply(this, arguments); const u = S.user; if (!u || S.modal) return h; if (!((u.role === 'patron' && S.view === 'muhasebe') || (u.role === 'muhasebeci' && S.view === 'borc'))) return h; const c = mxCard(); if (!c) return h; return /^<div[^>]*>/.test(h) ? h.replace(/^(<div[^>]*>)/, (m) => m + c) : c + h; }; }
+
+/* =====================================================================
+   v150: fişten hızlı kayıt (fotoğraf, OCR, onaysız doğrudan deftere) ve cari ekstre / mutabakat
+   ===================================================================== */
+const MXF = { step: 'pick', p: null, err: '', n: 0 };
+const mxInp = 'width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit';
+function mxFisDate(text) {
+  const m = String(text || '').match(/(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{2,4})/); const t = fiIso();
+  if (m) { const d = +m[1], mo = +m[2]; let y = +m[3]; if (y < 100) y += 2000; if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12 && y >= 2000 && y <= +t.slice(0, 4)) { const iso = y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (iso <= addDays(t, 1)) return { iso, guess: false }; } }
+  return { iso: t, guess: true };
+}
+const mxAccs = () => Array.from(new Set(['Akaryakıt', 'Telefon / internet', 'Elektrik', 'Su', 'Kira', 'Yemek', 'Malzeme', 'Diğer'].concat(LEDGER.filter((r) => dirOf(r) === 'gider').map((r) => r.acc).filter(Boolean)))).slice(0, 40);
+function mxFisDup(p) { return LEDGER.find((r) => dirOf(r) === 'gider' && Math.abs(mxN(r.total) - mxN(p.total)) < 0.015 && r.iso && Math.abs(mxDiff(r.iso, p.iso)) <= 1); }
+NEWM.mxfis = () => {
+  if (MXF.step === 'reading') return sheet('Fişten kayıt', '<div class="callout">' + ic('clock') + '<div><b>Fiş okunuyor</b><p id="oc-prog" style="margin-top:2px">Birkaç saniye sürer…</p></div></div>');
+  if (MXF.step === 'form' && MXF.p) {
+    const p = MXF.p; const dup = mxFisDup(p); const accs = mxAccs(); if (p.acc && accs.indexOf(p.acc) < 0) accs.unshift(p.acc);
+    const kdv = mxN(p.total) * p.rate / (100 + p.rate);
+    return sheet('Fişi kontrol et', `${p.guess ? `<div class="callout warn" style="margin-bottom:10px">${ic('alert')}<div><p>Fişten bazı bilgiler net okunamadı (${p.guess}). Kontrol edip düzelt.</p></div></div>` : `<div class="callout" style="margin-bottom:10px">${ic('sparkle')}<div><p>Bilgiler fişten okundu. Kontrol et, uygunsa kaydet.</p></div></div>`}
+    ${dup ? `<div class="callout warn" style="margin-bottom:10px">${ic('alert')}<div><b>Benzer kayıt var</b><p style="margin-top:2px">${esc(dup.desc)} · ${fmt0(dup.total)} · ${mxDM(dup.iso)}. Aynı fişse kaydetme.</p></div></div>` : ''}
+    <div class="stack"><div class="field" style="margin:0"><label for="mf-d">Satıcı</label><input id="mf-d" style="${mxInp}" value="${esc(p.desc)}"></div>
+    <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-t">Tutar (₺)</label><input id="mf-t" inputmode="decimal" style="${mxInp}" value="${esc(String(p.total).replace('.', ','))}"></div><div class="field" style="margin:0;flex:1"><label for="mf-i">Tarih</label><input id="mf-i" type="date" style="${mxInp}" value="${esc(p.iso)}"></div></div>
+    <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-r">KDV %</label><select id="mf-r" style="${mxInp}">${[0, 1, 8, 10, 20].map((x) => `<option ${x === p.rate ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="field" style="margin:0;flex:1"><label for="mf-a">Hesap</label><select id="mf-a" style="${mxInp}">${accs.map((a) => `<option ${a === p.acc ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div></div>
+    ${BRANCHES.length ? `<div class="field" style="margin:0"><label for="mf-b">Şube</label><select id="mf-b" style="${mxInp}"><option value="">Belirtme</option>${BRANCHES.map((b) => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}</select></div>` : ''}
+    <p class="small muted">KDV tutarı yaklaşık ${fmt(kdv)}. Kayıt doğrudan tabloya girer, ayrıca onay beklemez.</p>
+    <div class="row wrap" style="gap:8px"><button class="btn grow" data-a="mxfsave">Kaydet</button><button class="btn sec" data-a="mxfnew">Vazgeç</button></div></div>`);
+  }
+  return sheet('Fişten kayıt', `<p class="muted small">Fişin fotoğrafını çek ya da galeriden seç. Kais satıcıyı, tutarı, tarihi ve KDV oranını okur. Sen kontrol edip kaydedince doğrudan tabloya girer.</p>${MXF.err ? `<div class="callout warn" style="margin:8px 0">${ic('alert')}<div><p>${esc(MXF.err)}</p></div></div>` : ''}
+  <label class="btn block" style="cursor:pointer;margin-top:10px">${ic('camera', 18)} Fiş fotoğrafı seç<input id="mxf-file" type="file" accept="image/*" capture="environment" style="display:none"></label><p class="small muted" style="margin-top:10px">İpucu: fişi düz bir zemine koy, aydınlık bir yerde çek. ${MXF.n ? '<br><b>' + MXF.n + ' fiş</b> kaydedildi.' : ''}</p>`);
+};
+H.mxfis = () => { MXF.step = 'pick'; MXF.p = null; MXF.err = ''; S.modal = { type: 'mxfis' }; renderModal(); };
+H.mxfnew = () => { MXF.step = 'pick'; MXF.p = null; MXF.err = ''; renderModal(); };
+document.addEventListener('change', (e) => {
+  const t = e.target; if (!t || t.id !== 'mxf-file' || !t.files || !t.files[0]) return; const f = t.files[0];
+  MXF.step = 'reading'; MXF.err = ''; renderModal(); const m0 = S.modal;
+  (async () => {
+    try {
+      const r = await ocrFile(f, (p) => { const x = document.getElementById('oc-prog'); if (x) x.textContent = 'Okunuyor %' + Math.round(p * 100); });
+      const p = ocrParse(r.text, r.conf); if (S.modal !== m0) return; if (p.total == null) throw new Error('no_total');
+      const dt = mxFisDate(r.text); const miss = []; if (dt.guess) miss.push('tarih bugün olarak alındı'); if (/okunamad/.test(p.seller)) miss.push('satıcı okunamadı'); if (p.rateGuess) miss.push('KDV oranı tahmin');
+      const sim = LEDGER.find((x) => x.desc && p.seller && x.desc.toLocaleLowerCase('tr').indexOf(p.seller.toLocaleLowerCase('tr').split(' ')[0]) >= 0);
+      MXF.p = { desc: /okunamad/.test(p.seller) ? '' : p.seller, total: p.total, iso: dt.iso, rate: p.rate, acc: p.cat || (sim && sim.acc) || 'Diğer', guess: miss.join(', ') }; MXF.step = 'form';
+    } catch (err) { if (S.modal !== m0) return; MXF.step = 'pick'; MXF.err = err && err.message === 'ocr_load' ? 'Okuma motoru yüklenemedi. İnternet bağlantını kontrol et.' : 'Fişten toplam tutar okunamadı. Daha aydınlık ve düz bir fotoğraf dene.'; }
+    renderModal();
+  })();
+});
+H.mxfsave = () => {
+  if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return;
+  const g = (id) => ($('#' + id) || {}).value || ''; const total = trNum(g('mf-t')); const iso = g('mf-i') || fiIso(); const desc = g('mf-d').trim();
+  if (!(total > 0)) return toast('Tutarı yaz.', 'warn'); if (desc.length < 2) return toast('Satıcıyı yaz.', 'warn');
+  const row = { id: 'g' + ++seq, date: mxDM(iso), iso, desc, acc: g('mf-a') || 'Diğer', doc: 'Fiş', rate: parseInt(g('mf-r'), 10) || 0, total, dir: 'gider', src: 'Fiş' }; const b = g('mf-b'); if (b) row.br = b;
+  LEDGER.push(row); try { pSched(); } catch (e) {} MXF.n++; MXF.step = 'pick'; MXF.p = null; toast('Fiş kaydedildi.', 'ok'); render(); S.modal = { type: 'mxfis' }; renderModal();
+};
+
+/* --- cari ekstre ve mutabakat --- */
+const MXC = { kind: 'musteri', name: '' };
+const mxKey = (s) => String(s || '').trim().toLocaleLowerCase('tr');
+function mxCariNames(kind) {
+  const m = {}; if (kind === 'musteri') { INV.forEach((v) => { if (v.cust) m[mxKey(v.cust)] = v.cust; }); } else { DEBTS.forEach((d) => { if (d.who) m[mxKey(d.who)] = d.who; }); }
+  return Object.values(m).sort((a, b) => a.localeCompare(b, 'tr'));
+}
+function mxCariRows(kind, name) {
+  const k = mxKey(name); const today = fiIso();
+  if (kind === 'musteri') return INV.filter((v) => mxKey(v.cust) === k).map((v) => { const open = v.st !== 'odendi'; const late = open && v.due && v.due < today ? mxDiff(today, v.due) : 0; return { iso: v.iso || '', no: v.no, tot: mxN(v.tot), due: v.due || '', open, late, note: '' }; }).sort((a, b) => (a.iso < b.iso ? 1 : -1)).slice(0, 80);
+  return DEBTS.filter((d) => mxKey(d.who) === k).map((d) => { const open = !d.paid; const late = open && d.due && d.due < today ? mxDiff(today, d.due) : 0; return { iso: d.due || '', no: d.note || 'Borç', tot: mxN(d.amt), due: d.due || '', open, late, note: '' }; }).sort((a, b) => (a.iso < b.iso ? 1 : -1)).slice(0, 80);
+}
+const mxDmy = (iso) => (iso ? iso.split('-').reverse().join('.') : '—');
+function mxCariText(kind, name, rows) {
+  const bal = rows.filter((r) => r.open).reduce((t, r) => t + r.tot, 0); const iban = (typeof EDOC !== 'undefined' && EDOC && EDOC.iban) || ''; const op = rows.filter((r) => r.open);
+  const ad = String(name).split(/\s+/)[0]; const NL = String.fromCharCode(10);
+  if (kind === 'musteri') return ['Merhaba ' + ad + ',', BIZ + ' olarak ' + mxDmy(fiIso()) + ' tarihi itibarıyla cari hesap özetiniz:', ...(op.length ? op.slice(0, 15).map((r) => '• ' + r.no + ' · ' + fmt0(r.tot) + ' · vade ' + mxDmy(r.due) + (r.late ? ' (' + r.late + ' gün gecikmiş)' : '')) : ['Açık bakiyeniz bulunmuyor.']), 'Toplam açık bakiye: ' + fmt0(bal), 'Kayıtlarınızla uyuşuyorsa onaylamanız, farklıysa bildirmeniz yeterli.' + (iban && bal > 0 ? NL + 'Ödeme için IBAN: ' + iban : ''), 'Teşekkürler.'].join(NL);
+  return ['Merhaba ' + ad + ',', BIZ + ' olarak ' + mxDmy(fiIso()) + ' tarihi itibarıyla kayıtlarımızda size ödenecek bakiye:', ...(op.length ? op.slice(0, 15).map((r) => '• ' + r.no + ' · ' + fmt0(r.tot) + ' · vade ' + mxDmy(r.due)) : ['Açık bakiye görünmüyor.']), 'Toplam: ' + fmt0(bal), 'Sizin kayıtlarınızla uyuşuyor mu? Farklıysa lütfen bildirin.', 'Teşekkürler.'].join(NL);
+}
+NEWM.mxcari = () => {
+  const names = mxCariNames(MXC.kind); if (MXC.name && !names.some((n) => mxKey(n) === mxKey(MXC.name))) MXC.name = '';
+  const rows = MXC.name ? mxCariRows(MXC.kind, MXC.name) : []; const bal = rows.filter((r) => r.open).reduce((t, r) => t + r.tot, 0); const tot = rows.reduce((t, r) => t + r.tot, 0);
+  const ph = MXC.name ? ((FCUST.find((x) => mxKey(x.name) === mxKey(MXC.name)) || {}).tel || '') : '';
+  const seg = (k, l) => `<button type="button" class="${MXC.kind === k ? 'on' : ''}" data-a="mxckind" data-k="${k}">${l}</button>`;
+  return sheet('Cari ekstre', `<div class="cb-chips" style="margin:0 0 10px">${seg('musteri', 'Müşteri')}${seg('tedarik', 'Tedarikçi')}</div>
+  <div class="field" style="margin:0"><label for="mc-n">${MXC.kind === 'musteri' ? 'Müşteri' : 'Tedarikçi'}</label><select id="mc-n" style="${mxInp}"><option value="">Seç</option>${names.map((n) => `<option ${mxKey(n) === mxKey(MXC.name) ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
+  ${!names.length ? '<p class="muted small" style="margin-top:10px">Henüz kayıt yok. Fatura ya da borç ekleyince burada listelenir.</p>' : ''}
+  ${MXC.name ? `<div class="kpis" style="margin-top:10px"><div class="kpi"><div class="l">Açık bakiye</div><div class="v num">${fmt0(bal)}</div></div><div class="kpi"><div class="l">Toplam</div><div class="v num">${fmt0(tot)}</div></div><div class="kpi"><div class="l">Belge</div><div class="v num">${rows.length}</div></div></div>
+  <div class="card flush" style="margin-top:10px">${rows.slice(0, 20).map((r) => `<div class="row between" style="padding:10px 14px;gap:8px;border-top:1px solid var(--line,#e5e8ee)"><div style="min-width:0"><b style="font-weight:600">${esc(r.no)}</b><div class="small muted">${mxDmy(r.iso)} · vade ${mxDmy(r.due)}</div></div><div style="text-align:right"><b class="num">${fmt0(r.tot)}</b><div><span class="pill ${r.open ? (r.late ? 'p-bad' : 'p-warn') : 'p-ok'}">${r.open ? (r.late ? r.late + ' gün gecikmiş' : 'Açık') : 'Ödendi'}</span></div></div></div>`).join('') || '<div class="empty">Kayıt yok.</div>'}</div>
+  <div class="field" style="margin:10px 0 0"><label for="mc-p">Telefon (WhatsApp)</label><input id="mc-p" type="tel" inputmode="tel" value="${esc(ph)}" placeholder="05xx xxx xx xx" style="${mxInp}"></div>
+  <div class="row wrap" style="margin-top:10px;gap:8px"><button class="btn grow" data-a="mxcwa">WhatsApp ile gönder</button><button class="btn sec" data-a="mxccopy">Kopyala</button><button class="btn sec" data-a="mxcpdf">PDF</button></div>` : ''}`);
+};
+H.mxcari = () => { S.modal = { type: 'mxcari' }; renderModal(); };
+H.mxckind = (el) => { MXC.kind = el.dataset.k; MXC.name = ''; renderModal(); };
+document.addEventListener('change', (e) => { const t = e.target; if (!t) return; if (t.id === 'mc-n') { MXC.name = t.value; renderModal(); } else if (t.id === 'mc-p' && MXC.name && MXC.kind === 'musteri') { let f = FCUST.find((x) => mxKey(x.name) === mxKey(MXC.name)); if (!f) { f = { id: 'fc' + (++seq), name: MXC.name, vkn: '', adr: '', eposta: '' }; FCUST.push(f); } f.tel = t.value.trim(); try { pSched(); } catch (x) {} } });
+const mxCText = () => mxCariText(MXC.kind, MXC.name, mxCariRows(MXC.kind, MXC.name));
+H.mxcwa = () => { if (!MXC.name) return; const ph = ($('#mc-p') || {}).value || ''; if (!waPhone(ph)) toast('Telefon yaz, mesaj numaraya açılsın.', 'warn'); window.open(waLink(ph, mxCText()), '_blank', 'noopener'); };
+H.mxccopy = async () => { if (!MXC.name) return; try { await navigator.clipboard.writeText(mxCText()); toast('Mesaj kopyalandı.', 'ok'); } catch (e) { toast('Kopyalanamadı.', 'warn'); } };
+H.mxcpdf = () => {
+  if (!MXC.name) return; const rows = mxCariRows(MXC.kind, MXC.name); const bal = rows.filter((r) => r.open).reduce((t, r) => t + r.tot, 0); const e = esc;
+  const tr = rows.map((r) => `<tr><td>${mxDmy(r.iso)}</td><td>${e(r.no)}</td><td>${mxDmy(r.due)}</td><td>${r.open ? (r.late ? r.late + ' gün gecikmiş' : 'Açık') : 'Ödendi'}</td><td style="text-align:right">${fmt(r.tot)}</td></tr>`).join('');
+  const html = `<!doctype html><meta charset="utf-8"><title>Cari ekstre</title><style>body{font:14px system-ui;padding:28px;color:#111}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border-bottom:1px solid #ddd;padding:7px 4px;text-align:left}h2{margin:0}.s{margin-top:28px;display:flex;gap:40px}.s div{flex:1;border-top:1px solid #999;padding-top:6px;font-size:12px;color:#555}</style><h2>Cari hesap ekstresi</h2><p>${e(BIZ)}<br>${e(MXC.name)} · ${mxDmy(fiIso())} tarihi itibarıyla</p><table><tr><th>Tarih</th><th>Belge</th><th>Vade</th><th>Durum</th><th>Tutar</th></tr>${tr}</table><p style="margin-top:14px;font-size:16px">Açık bakiye: <b>${fmt(bal)}</b></p><div class="s"><div>${e(BIZ)} kaşe / imza</div><div>${e(MXC.name)} mutabıkız, kaşe / imza</div></div><script>setTimeout(function(){window.print()},300)<\/script>`;
+  try { const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); return; } } catch (x) {}
+  saveBlob('cari-ekstre.html', new Blob([html], { type: 'text/html;charset=utf-8' })); toast('Dosya indirildi. Açıp yazdır.', 'ok');
+};
 </script>
 </body>
 </html>
