@@ -19,6 +19,11 @@ const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const num = (k: string, d: number) => { const v = Number(Deno.env.get(k)); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
 // İşletme başına limitler (isteğe bağlı sırlarla değiştirilir)
 let QERR = '';
+// Plana göre varsayılan Kais AI hakları (yer tutucu; ai_limits satırı ya da ortam sırrı bunların üstündedir)
+const PLAN_LIM: Record<string, { chat: [number, number]; read: [number, number] }> = {
+  deneme: { chat: [15, 200], read: [15, 200] }, baslangic: { chat: [25, 400], read: [25, 400] },
+  pro: { chat: [60, 1200], read: [60, 1200] }, kurumsal: { chat: [150, 3000], read: [150, 3000] },
+};
 const LIM = { chat: { day: num('AI_CHAT_DAY', 40), month: num('AI_CHAT_MONTH', 600) }, read: { day: num('AI_READ_DAY', 40), month: num('AI_READ_MONTH', 600) } };
 const SB_URL = Deno.env.get('SUPABASE_URL') || '';
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -28,7 +33,7 @@ const CATS = 'Hammadde, İş yemeği, Akaryakıt, Elektrik, Doğalgaz, Su, Telef
 
 const BASE = `Sen Kais AI'sın: Türkiye'deki küçük işletmeler (kafe, restoran, market) için çalışan bir yönetim ve muhasebe yardımcısı.
 Kurallar:
-- Her zaman Türkçe, kısa ve net yaz. Telefon ekranında okunacak, en fazla birkaç kısa paragraf.
+- Her zaman Türkçe, kısa ve net yaz. Telefon ekranında okunacak: önce sonucu söyle, en fazla 5-6 satır. Bir işlem yapılabiliyorsa uzun anlatma, actions ile hazırla.
 - Yalnızca sana verilen "context" verisine ve kullanıcının yazdıklarına dayan. Veride olmayan rakamı uydurma; bilmiyorsan "bu veride yok" de.
 - Para tutarlarını Türk lirası olarak, binlik ayraçlı yaz (örn. 12.400 ₺).
 - Vergi, hukuk ve bordro konularında kesin hüküm verme; tahmin olduğunu söyle, muhasebeciye danışmayı öner.
@@ -43,11 +48,13 @@ const ACTIONS_DOC = `Kullanıcı bir işlem isterse "actions" dizisine şu tiple
 - rezervasyon_durum: {"rezervasyon_id":"","durum":"geldi|gelmedi|iptal|bitti|onay"}
 - izin_karar: {"talep_id":"","karar":"onayla|reddet","neden":""}
 - sozlesme_olustur: {"ad_soyad":"","gorev":"","baslangic":"YYYY-MM-DD","maas":0,"maas_turu":"net|brut","haftalik_saat":45,"deneme_ay":2}
+- borc_ode: {"borc_id":"","kime":"","tutar":0}   (borc_id context.borclar içinden; tutar boşsa kalanın tamamı; otomatik:true olanı önerme)
+- fis_onayla: {"fis_id":""}   (context.bekleyen_fisler içinden)
 - hafiza_kaydet: {"not":""}   (kullanıcı "bunu hatırla" derse kısa bir not)
 Eksik bilgi varsa (tarih, kişi sayısı, tutar gibi) uydurma, soru sor ve actions boş kalsın.`;
 
 const ROLE_ACTIONS: Record<string, string[]> = {
-  patron: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'hafiza_kaydet'],
+  patron: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'borc_ode', 'fis_onayla', 'hafiza_kaydet'],
   mudur: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'hafiza_kaydet'],
   muhasebeci: ['excel_indir', 'hafiza_kaydet'],
   calisan: ['stok_guncelle', 'hafiza_kaydet'],
@@ -141,8 +148,10 @@ export async function handle(req: Request): Promise<Response> {
         const srv0 = createClient(SB_URL, SB_SRV, { auth: { persistSession: false } });
         const ov0 = await srv0.from('ai_limits').select('chat_day,chat_month,read_day,read_month').eq('business_id', bid).maybeSingle();
         const ov: any = ov0.data;
+        let pl2: any = null; try { const bp2 = await srv0.from('business_plans').select('plan').eq('business_id', bid).maybeSingle(); pl2 = !bp2.error && bp2.data ? PLAN_LIM[String((bp2.data as any).plan)] : null; } catch { /* yoksa varsayılan */ }
+        if (pl2) out.limits = { chat: { day: pl2.chat[0], month: pl2.chat[1] }, read: { day: pl2.read[0], month: pl2.read[1] } };
         if (ov) {
-          const L2: any = { chat: { day: LIM.chat.day, month: LIM.chat.month }, read: { day: LIM.read.day, month: LIM.read.month } };
+          const L2: any = JSON.parse(JSON.stringify(out.limits));
           for (const k of ['chat', 'read']) {
             if (Number(ov[k + '_day']) > 0) L2[k].day = Number(ov[k + '_day']);
             if (Number(ov[k + '_month']) > 0) L2[k].month = Number(ov[k + '_month']);
@@ -164,7 +173,9 @@ export async function handle(req: Request): Promise<Response> {
       // İşletmeye özel limit varsa onu kullan
       const ov = await srv.from('ai_limits').select('chat_day,chat_month,read_day,read_month').eq('business_id', bid).maybeSingle();
       const o: any = !ov.error && ov.data ? ov.data : {};
-      const lim = { day: Number(o[kind + '_day']) > 0 ? Number(o[kind + '_day']) : LIM[kind].day, month: Number(o[kind + '_month']) > 0 ? Number(o[kind + '_month']) : LIM[kind].month };
+      let pl: any = null; try { const bp = await srv.from('business_plans').select('plan').eq('business_id', bid).maybeSingle(); pl = !bp.error && bp.data ? PLAN_LIM[String((bp.data as any).plan)] : null; } catch { /* plan tablosu yoksa varsayılan */ }
+      const base = pl ? { day: pl[kind][0], month: pl[kind][1] } : LIM[kind];
+      const lim = { day: Number(o[kind + '_day']) > 0 ? Number(o[kind + '_day']) : base.day, month: Number(o[kind + '_month']) > 0 ? Number(o[kind + '_month']) : base.month };
       const h = await srv.rpc('ai_quota_hit', { p_biz: bid, p_kind: kind, p_day_max: lim.day, p_month_max: lim.month });
       const row = Array.isArray(h.data) ? h.data[0] : h.data;
       QERR = h.error ? String(h.error.message || h.error.code || 'rpc').slice(0, 160) : (row ? '' : 'bos_donus');

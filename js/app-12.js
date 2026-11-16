@@ -302,3 +302,70 @@ H.birthsave = (el) => {
   if (v && (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v > fiIso() || v < '1900-01-01')) { toast('Doğum tarihini kontrol et.', 'warn'); return; }
   p.birth = v; pSched(); render(); try { renderModal(); } catch (e) {} toast(v ? (leaveAgeMin(id) ? 'Kaydedildi. Yaşı nedeniyle izin hakkı en az 20 gün.' : 'Doğum tarihi kaydedildi.') : 'Doğum tarihi silindi.', 'ok');
 };
+
+/* v169: Kais AI: finans/vardiya bağlamı, borç ödeme ve fiş onay işlemleri, her rol için hızlı komutlar */
+AI_TYPES.push('borc_ode', 'fis_onayla');
+{
+  const _c = aiContext;
+  aiContext = function () {
+    const c = _c(); const r = S.user.role; const t = (f) => { try { return f(); } catch (e) { return undefined; } };
+    const money = ['patron', 'muhasebeci'].includes(r); const mgr = ['patron', 'mudur'].includes(r);
+    if (money) {
+      c.borclar = t(() => DEBTS.filter((d) => !d.paid).slice(0, 20).map((d) => ({ id: d.id, kime: d.who, not: d.note || '', kalan: d.auto ? Math.round(allDebts().find((x) => x.id === d.id).amt) : dbOpen(d), vade: d.due || null, otomatik: !!d.auto })));
+      c.alacaklar = t(() => RECV.filter((a) => !a.paid).slice(0, 15).map((a) => ({ kimden: a.name || a.who, tutar: a.amt, vade_gun: a.days })));
+      c.acik_faturalar = t(() => INV.filter((v) => v.st !== 'odendi').slice(0, 15).map((v) => ({ no: v.no, musteri: v.cust, kalan: ivOpen(v), vade: v.due || null })));
+      c.kdv = t(() => { const k = kdvData(PERIOD); return { donem: PERIOD, hesaplanan: Math.round(k.hes), indirilecek: Math.round(k.ind), odenecek: Math.round(k.pay), devreden: Math.round(k.carry), faturasiz_gider_sayisi: k.free }; });
+    }
+    if (mgr) {
+      c.bekleyen_fisler = t(() => RECEIPTS.filter((f) => f.status === 'bekliyor').slice(0, 15).map((f) => ({ id: f.id, satici: f.seller, tarih: f.date, toplam: f.total, kim: (byId(f.by) || {}).name || '' })));
+      c.vardiya_bugun = t(() => { const n = new Date(); return EMP_IDS.map((id) => { const s = vdState(n.getFullYear(), n.getMonth(), n.getDate(), id); return { ad: byId(id).name, durum: s.k === 'shift' ? s.t.n + ' ' + s.t.s + '-' + vdEnd(s.t) : s.k === 'leave' ? 'izinli' : s.k === 'off' ? 'haftalık izin' : s.k === 'hol' ? 'tatil' : 'plan yok' }; }); });
+    }
+    if (r === 'calisan') {
+      c.vardiyam = t(() => { const out = []; const n = new Date(); for (let i = 0; i < 7; i++) { const d = new Date(n.getFullYear(), n.getMonth(), n.getDate() + i); const s = vdState(d.getFullYear(), d.getMonth(), d.getDate(), S.user.id); out.push({ gun: vdYmd(d.getFullYear(), d.getMonth(), d.getDate()), durum: s.k === 'shift' ? s.t.n + ' ' + s.t.s + '-' + vdEnd(s.t) : s.k === 'leave' ? 'izinli' : s.k === 'off' ? 'haftalık izin' : s.k === 'hol' ? 'tatil' : 'plan yok' }); } return out; });
+    }
+    let s = JSON.stringify(c); if (s.length > 44000) { ['alacaklar', 'acik_faturalar', 'vardiya_bugun'].forEach((k) => { if (JSON.stringify(c).length > 44000) delete c[k]; }); }
+    return c;
+  };
+  const _card = aiActCard;
+  aiActCard = function (a, i, j) {
+    if (!['borc_ode', 'fis_onayla'].includes(a.type)) return _card(a, i, j);
+    if (a.st === 'done') return aiDoneCard(a); if (a.st === 'skip') return '<div class="small muted">Vazgeçildi.</div>';
+    const g = a.args || {}; const id = (k) => `aa-${i}-${j}-${k}`;
+    if (a.type === 'borc_ode') {
+      const d = aiDebtOf(g); if (!d) return `<div class="callout warn">${ic('alert')}<div>Ödenecek borç bulunamadı.</div></div>`;
+      if (d.auto) return `<div class="callout warn">${ic('alert')}<div>${esc(d.who)} kalemi otomatik hesaplanıyor. Borçlar sayfasından işaretle.</div></div>`;
+      const rest = dbOpen(d); const amt = Number(g.tutar) > 0 ? Math.min(Number(g.tutar), rest) : rest;
+      return `<div class="ai-card">${aiHead('wallet', 'Borç ödemesi', esc(d.who) + (d.note ? ' · ' + esc(d.note) : ''))}<div class="ai-pk"><div><small>Kalan borç</small><b>${fmt(rest)}</b></div><div><small>Vade</small><b>${d.due ? esc(isoTxt(d.due)) : '—'}</b></div></div>
+      <div class="field"><label for="${id('a')}">Ödenen tutar (₺)</label><input id="${id('a')}" type="text" inputmode="decimal" value="${esc(String(amt).replace('.', ','))}"></div><p class="ai-nt">Bu kayıt banka hareketi değildir; ödemeyi yaptıktan sonra işlenir.</p>${aiBtns(i, j, 'Ödemeyi kaydet')}</div>`;
+    }
+    const f = RECEIPTS.find((x) => x.id === g.fis_id);
+    if (!f || f.status !== 'bekliyor') return `<div class="callout warn">${ic('alert')}<div>Onay bekleyen böyle bir fiş yok.</div></div>`;
+    return `<div class="ai-card">${aiHead('receipt', 'Fiş onayı', esc(f.seller) + ' · ' + esc(f.date))}<div class="ai-pk"><div><small>Tutar</small><b>${fmt(f.total)}</b></div><div><small>KDV</small><b>%${f.rate}</b></div><div><small>Yükleyen</small><b>${esc((byId(f.by) || {}).name || '—')}</b></div></div><p class="ai-nt">Onaylanınca muhasebeciye gider.</p>${aiBtns(i, j, 'Onayla')}</div>`;
+  };
+  const _act = H.aiact2;
+  H.aiact2 = async function (el) {
+    const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j];
+    if (!a || !['borc_ode', 'fis_onayla'].includes(a.type)) return _act.apply(this, arguments);
+    if (a.st !== 'open') return; const g = a.args || {};
+    if (S.user.role !== 'patron') { toast('Bu işlem için yetkin yok.', 'warn'); return; } if (locked()) return;
+    const done = (m) => { a.st = 'done'; a.msg = m; try { aiMemSave(); } catch (e) {} render(); };
+    if (a.type === 'borc_ode') {
+      const d = aiDebtOf(g); if (!d || d.auto) { toast('Borç bulunamadı.', 'warn'); return; } const amt = trNum((document.getElementById(`aa-${el.dataset.i}-${el.dataset.j}-a`) || {}).value); const rest = dbOpen(d);
+      if (!(amt > 0)) { toast('Tutarı yaz.', 'warn'); return; } if (amt > rest + 0.005) { toast('Tutar kalandan fazla (' + fmt(rest) + ').', 'warn'); return; }
+      dbPay(d, amt, fiIso(), ''); try { pSched(); } catch (e) {} done(d.paid ? d.who + ' borcu tamamen ödendi.' : fmt(amt) + ' ödendi, kalan ' + fmt(dbOpen(d)) + '.'); return;
+    }
+    const f = RECEIPTS.find((x) => x.id === g.fis_id); if (!f || f.status !== 'bekliyor') { toast('Fiş zaten işlenmiş.', 'warn'); return; }
+    f.status = 'musavirde'; done(f.seller + ' fişi onaylandı, muhasebeciye gitti.');
+  };
+}
+function aiDebtOf(g) { const id = String(g.borc_id || ''); let d = id && DEBTS.find((x) => String(x.id) === id && !x.paid); if (!d && g.kime) { const k = mxKey(g.kime); const l = DEBTS.filter((x) => !x.paid && mxKey(x.who) === k); if (l.length === 1) d = l[0]; } return d || null; }
+/* her rol için hızlı komutlar */
+{
+  const _v2 = viewKaisAI;
+  viewKaisAI = function () {
+    let h = _v2.apply(this, arguments); const r = S.user && S.user.role; if (!r || kaMgr() && r === 'mudur') return h;
+    const Q = { patron: [['wallet', 'Geciken ödemeler ve alacaklar'], ['receipt', 'Bu ayki KDV durumu'], ['check', 'Onay bekleyen fişler']], muhasebeci: [['receipt', 'Bu ayki KDV durumu'], ['wallet', 'Geciken ödemeler ve alacaklar'], ['bars', 'Gider dağılımını özetle'], ['check', 'Faturasız gider var mı?']] }[r];
+    if (!Q) return h; const row = `<div class="kc-wrap"><div class="kc-lab">${ic('sparkle', 14)} Hızlı sorular</div><div class="kc-row">${Q.map((c) => `<button type="button" class="kc-p" data-a="aiq" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1])}</button>`).join('')}</div></div>`;
+    const m = '<div class="kx-sec"><div class="kx-lab"><b>Sorun</b>'; const i = h.indexOf(m); return i < 0 ? h : (h.indexOf('kc-wrap') >= 0 && r === 'patron' ? h.replace(/(<div class="kc-row">[\s\S]*?)(<\/div><\/div>)/, `$1${Q.map((c) => `<button type="button" class="kc-p" data-a="aiq" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1])}</button>`).join('')}$2`) : h.slice(0, i) + row + h.slice(i));
+  };
+}
