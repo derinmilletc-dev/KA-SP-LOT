@@ -1,0 +1,32 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: JS sozdizimi (index.html ve admin)
+        run: |
+          mkdir -p /tmp/chk
+          for f in index.html admin/index.html rez/index.html; do
+            node -e "
+              const fs=require('fs');const h=fs.readFileSync('$f','utf8');
+              const re=/<script(?![^>]*src)(?![^>]*type=\"(?:application|text)\/(?:json|template))[^>]*>([\s\S]*?)<\/script>/g;let m,i=0;
+              while((m=re.exec(h)))fs.writeFileSync('/tmp/chk/'+'$f'.replace(/\//g,'_')+'_'+(i++)+'.js',m[1]);"
+          done
+          for j in /tmp/chk/*.js; do echo "check $j"; node --check "$j"; done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Playwright
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - name: Duman testi
+        run: python3 tests/smoke.py
