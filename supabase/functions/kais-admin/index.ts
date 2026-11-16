@@ -113,9 +113,22 @@ export async function handle(req: Request): Promise<Response> {
       const d = need('businesses'); if (d) return d;
       const id = String(b.id || ''); if (!/^[0-9a-f-]{36}$/i.test(id)) return ERR('İşletme yok.');
       const x = (await bizRows()).find((r) => r.id === id); if (!x) return ERR('İşletme bulunamadı.', 404);
-      const em = await emails(); const mem = ((await srv.from('members').select('role,created_at').eq('business_id', id)).data || []) as any[];
+      const em = await emails(); const mem = ((await srv.from('members').select('role,created_at,user_id').eq('business_id', id)).data || []) as any[];
       const roles: Record<string, number> = {}; mem.forEach((m) => { roles[m.role] = (roles[m.role] || 0) + 1; });
       const out: any = { ok: true, business: { id, name: x.name, created_at: x.created_at, owner: em[x.owner_id] || '', roles, suspended_at: x.suspended_at || null, suspended_note: x.suspended_note || '' } };
+      out.members = mem.map((m) => ({ email: em[m.user_id] || '', role: m.role, since: m.created_at })).sort((p1, p2) => String(p1.since).localeCompare(String(p2.since)));
+      const full = await srv.from('businesses').select('*').eq('id', id).maybeSingle();
+      const fr: any = full.data || {}; const info: Record<string, any> = {};
+      ['lat', 'lng', 'city', 'il', 'ilce', 'district', 'address', 'adres', 'phone', 'telefon', 'sector', 'sektor'].forEach((k) => { if (fr[k] !== undefined && fr[k] !== null && fr[k] !== '') info[k] = fr[k]; });
+      out.info = info;
+      const cnt = async (t: string) => { try { const r = await srv.from(t).select('*', { count: 'exact', head: true }).eq('business_id', id); return r.error ? null : (r.count || 0); } catch (e0) { return null; } };
+      const lastOf = async (t: string, col: string) => { try { const r = await srv.from(t).select(col).eq('business_id', id).order(col, { ascending: false }).limit(1); return r.error ? null : ((r.data as any[])?.[0]?.[col] || null); } catch (e0) { return null; } };
+      out.usage = { cihaz_bildirim: await cnt('push_subs'), yedek_sayisi: await cnt('backups'), son_yedek: await lastOf('backups', 'created_at'), bekleyen_davet: await cnt('invites'), son_veri_guncelleme: await lastOf('app_state', 'updated_at') };
+      try {
+        const ea = ((await srv.from('app_events').select('created_at,n').eq('business_id', id).order('created_at', { ascending: true }).limit(5000)).data || []) as any[];
+        const days = new Set(ea.map((e) => String(e.created_at).slice(0, 10)));
+        out.activity = { ilk: ea[0]?.created_at || null, son: ea.length ? ea[ea.length - 1].created_at : null, aktif_gun: days.size, toplam_olay: ea.reduce((t, e) => t + (e.n || 1), 0) };
+      } catch (e0) { /* yoksay */ }
       if (can('ai')) {
         const q = await quota(31);
         const mine = q.filter((y) => y.business_id === id);

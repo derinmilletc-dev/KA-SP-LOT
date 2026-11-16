@@ -363,12 +363,28 @@ function eList(G) {
 }
 
 /* işletme detayı (sağdan açılan panel) */
+
+const ROLE_TR = { patron: 'Patron', mudur: 'Müdür', müdür: 'Müdür', muhasebeci: 'Muhasebeci', calisan: 'Çalışan', çalışan: 'Çalışan' };
+function drawerInfo(r) {
+  const i = r.info || {}, u = r.usage || {}, a = r.activity || {}; const kv = (k, v) => (v == null || v === '' ? '' : `<div class="row between sm"><span class="mut">${k}</span><b style="text-align:right;word-break:break-word">${v}</b></div>`);
+  const map = i.lat != null && i.lng != null ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(i.lat + ',' + i.lng)}" target="_blank" rel="noopener">${Number(i.lat).toFixed(4)}, ${Number(i.lng).toFixed(4)} · Haritada aç</a>` : '';
+  const place = [i.city || i.il, i.ilce || i.district].filter(Boolean).join(' / ');
+  const rows = kv('Konum', map || '<span class="mut">Girilmemiş</span>') + kv('Şehir', esc(place)) + kv('Adres', esc(i.address || i.adres)) + kv('Telefon', esc(i.phone || i.telefon)) + kv('Sektör', esc(i.sector || i.sektor));
+  const act = a.ilk !== undefined ? kv('İlk kullanım', a.ilk ? dstr(a.ilk) : '') + kv('Son aktiflik', a.son ? ago(a.son) : 'Hiç') + kv('Aktif gün sayısı', num(a.aktif_gun)) + kv('Toplam işlem', num(a.toplam_olay)) : '';
+  const sys = kv('Bildirim cihazı', u.cihaz_bildirim) + kv('Yedek sayısı', u.yedek_sayisi) + kv('Son yedek', u.son_yedek ? ago(u.son_yedek) : (u.yedek_sayisi === 0 ? 'Yok' : '')) + kv('Bekleyen davet', u.bekleyen_davet) + kv('Son veri güncellemesi', u.son_veri_guncelleme ? ago(u.son_veri_guncelleme) : '');
+  const mem = (r.members || []);
+  return `<div class="card stack"><h3>Bilgiler</h3>${rows}</div>
+  ${mem.length ? `<div class="card stack"><div class="row between"><h3>Ekip</h3><span class="mut sm">${mem.length} kişi</span></div>${mem.map((m) => `<div class="row">${avatar(m.email || m.role)}<div class="grow"><div class="sm" style="word-break:break-all"><b>${esc(m.email || '—')}</b></div><div class="mut sm">${esc(ROLE_TR[m.role] || m.role)} · ${dstr(m.since)}</div></div></div>`).join('')}</div>` : ''}
+  ${act ? `<div class="card stack"><h3>Kullanım</h3>${act}</div>` : ''}
+  ${sys.trim() ? `<div class="card stack"><h3>Sistem</h3>${sys}</div>` : ''}`;
+}
 function drawerHtml() {
   const d = S.drawer; if (!d || !d.data) return `<div class="ov" data-a="close"><div class="dr"><div class="mut">Yükleniyor…</div></div></div>`;
   const r = d.data, b = r.business, p = S.admin.perms || {}, sup = S.admin.role === 'super'; const L = r.limits || {};
   return `<div class="ov" data-a="close"><div class="dr"><div class="stack">
   <div class="row between"><div><h2>${esc(b.name)}</h2><div class="mut sm">${esc(b.owner || '—')} · ${dstr(b.created_at)}</div></div><button class="btn sec sm" data-a="close">Kapat</button></div>
   <div class="row wrap">${b.suspended_at ? '<span class="pill bad">Askıda</span>' : '<span class="pill ok">Aktif</span>'}${Object.keys(b.roles).map((k) => `<span class="pill gray">${esc(k)}: ${b.roles[k]}</span>`).join('')}</div>
+  ${drawerInfo(r)}
   ${r.ai ? `<div class="card"><h3>AI isteği</h3><div class="mut sm" style="margin:2px 0 10px">Son 14 gün</div>${bars(r.ai.series)}</div>` : ''}
   ${r.ai && p.limits ? `<div class="card stack" id="lim"><h3>AI limiti</h3><p class="mut sm" style="margin:0">Boş bırakılan alan varsayılan limiti kullanır (günlük 40, aylık 600).</p><div class="grid g2 keep" style="gap:8px"><div><label>Sohbet / gün</label><input type="number" data-l="chat_day" value="${L.chat_day || ''}"></div><div><label>Sohbet / ay</label><input type="number" data-l="chat_month" value="${L.chat_month || ''}"></div><div><label>Okuma / gün</label><input type="number" data-l="read_day" value="${L.read_day || ''}"></div><div><label>Okuma / ay</label><input type="number" data-l="read_month" value="${L.read_month || ''}"></div></div><input type="text" data-l="note" placeholder="Not (isteğe bağlı)" value="${esc(L.note || '')}"><div class="row"><button class="btn sm" data-a="limsave" data-id="${esc(b.id)}">Kaydet</button><button class="btn sec sm" data-a="limclear" data-id="${esc(b.id)}">Varsayılana dön</button></div></div>` : ''}
   ${r.events && r.events.length ? `<div class="card stack"><h3>Çok kullandığı (30 gün)</h3>${r.events.map((e) => `<div class="row between sm"><span>${esc(e[0])}</span><b>${num(e[1])}</b></div>`).join('')}</div>` : ''}
