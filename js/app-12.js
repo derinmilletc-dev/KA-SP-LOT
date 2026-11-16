@@ -119,8 +119,6 @@ H.mhsave = (el) => {
   const hk = g('mh-hk'); const def = mhKod(Object.assign({}, r, { hk: '' })); if (hk && hk !== def) r.hk = hk; else delete r.hk;
   try { pSched(); } catch (e) {} toast('Kaydedildi.', 'ok'); S.modal = { type: 'mhrows' }; renderModal();
 };
-/* giriş kartına iki kısayol */
-{ const _mc = mxCard; mxCard = function () { let h = _mc.apply(this, arguments); if (!h) return h; const tile = (a, i, t, s) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`; const add = tile('mhrap', 'table', 'Mizan ve bilanço', 'Gelir tablosu, Tek Düzen') + tile('mhrows', 'list', 'Kayıt ayrıntısı', 'Tevkifat, ÖTV, stopaj, döviz'); const i = h.lastIndexOf('</div></div>'); return i < 0 ? h : h.slice(0, i) + add + h.slice(i); }; }
 /* =====================================================================
    v161 Abonelik ve plan: sunucudaki plan durumunu okur (plan_get), süre bitimine yaklaşınca uyarır,
    süre ve ek süre bitince yalnızca okuma moduna alır (sunucu 'plan_expired' ile de korur).

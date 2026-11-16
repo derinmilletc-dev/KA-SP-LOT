@@ -315,12 +315,42 @@ H.mxapply = () => {
 };
 
 /* --- giriş kartı --- */
+const MXC_CSS = `<style id="mxc-css">
+.mxc{margin-bottom:14px}
+.mxc-h{display:flex;align-items:flex-end;justify-content:space-between;padding:2px 4px 10px}
+.mxc-h h3{font-size:19px}.mxc-h p{margin-top:2px}
+.mxc-hero{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mxc-st{display:flex;flex-direction:column;gap:10px;text-align:left;padding:14px;border:0;border-radius:18px;background:var(--surface);box-shadow:0 1px 2px rgba(18,33,59,.06),0 6px 18px rgba(18,33,59,.05);min-height:112px}
+.mxc-st:active,.mxc-r:active{transform:scale(.985)}
+.mxc-ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--cini-wash);color:var(--cini)}
+.mxc-st.bad .mxc-ic{background:var(--nar-wash);color:var(--nar)}
+.mxc-st.ok .mxc-ic{background:var(--yesil-wash);color:var(--yesil)}
+.mxc-st.warn .mxc-ic{background:var(--safran-wash);color:var(--safran)}
+.mxc-k{font-size:12.5px;color:var(--muted);font-weight:500}
+.mxc-v{font:650 15px/1.25 var(--font-display);color:var(--ink);margin-top:2px}
+.mxc-st.bad .mxc-v{color:var(--nar)}
+.mxc-g{margin:16px 4px 8px;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mxc-l{background:var(--surface);border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(18,33,59,.06),0 6px 18px rgba(18,33,59,.05)}
+.mxc-r{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;background:none;text-align:left;border-top:1px solid var(--line)}
+.mxc-r:first-child{border-top:0}
+.mxc-r .t{flex:1;min-width:0}.mxc-r b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
+.mxc-r span.s{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mxc-r .chev{color:var(--muted);opacity:.6;font-size:20px;line-height:1}
+.mxc-pill{font-size:12px;font-weight:650;padding:3px 9px;border-radius:999px;background:var(--cini-wash);color:var(--cini)}
+.mxc-pill.ok{background:var(--yesil-wash);color:var(--yesil)}.mxc-pill.warn{background:var(--safran-wash);color:var(--safran)}
+</style>`;
 function mxCard() {
   if (!mxCan()) return '';
   let F, A, C; try { F = mxForecast(30); A = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: ivOpen(v), due: v.due, who: v.cust }))); C = mxClose(); } catch (e) { return ''; }
   const old = A.slice(2).reduce((t, r) => t + r.t, 0); const nr = mxRecs().filter((r) => !r.off).length;
-  const tile = (a, i, t, s, w) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px;${w ? 'border-color:#E5484D;' : ''}"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`;
-  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxkdv', 'table', 'KDV hazırlığı', 'Oran bazlı özet, Excel')}${tile('mxpaket', 'send', 'Excel dönem dosyası', 'Tek dosyada özet, defter, KDV')}${tile('ivdagit', 'wallet', 'Ödeme dağıt', 'Bir ödemeyi birden çok faturaya')}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${tile('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${tile('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div></div>`;
+  const st = (a, i, k, v, tone) => `<button class="mxc-st ${tone || ''}" data-a="${a}"><span class="mxc-ic">${ic(i, 19)}</span><span><span class="mxc-k">${k}</span><span class="mxc-v" style="display:block">${v}</span></span></button>`;
+  const row = (a, i, t, sub, pill) => `<button class="mxc-r" data-a="${a}"><span class="mxc-ic">${ic(i, 18)}</span><span class="t"><b>${t}</b><span class="s">${sub}</span></span>${pill || ''}<span class="chev" aria-hidden="true">›</span></button>`;
+  const done = C.ok >= C.it.length - 2; const pill = `<span class="mxc-pill ${C.ok >= C.it.length ? 'ok' : done ? '' : 'warn'}">${C.ok}/${C.it.length}</span>`;
+  return MXC_CSS + `<section class="mxc"><div class="mxc-h"><div><h3>Akıllı muhasebe</h3><p class="muted small">Tahmin, eşleştirme ve kontroller</p></div></div>
+  <div class="mxc-hero">${st('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0 ? 'bad' : 'ok')}${st('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0 ? 'bad' : 'ok')}</div>
+  <div class="mxc-g">Takip</div><div class="mxc-l">${row('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${row('ivdagit', 'wallet', 'Ödeme dağıt', 'Bir ödemeyi birden çok faturaya')}${row('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${row('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div>
+  <div class="mxc-g">Kapanış ve vergi</div><div class="mxc-l">${row('mxkapanis', 'check', 'Ay sonu kontrolü', 'Eksikleri gör', pill)}${row('mxkdv', 'table', 'KDV hazırlığı', 'Oran bazlı özet, tevkifat, Excel')}${row('mhrap', 'table', 'Mizan ve bilanço', 'Gelir tablosu, Tek Düzen')}${row('mxpaket', 'send', 'Excel dönem dosyası', 'Tek dosyada özet, defter, KDV')}</div>
+  <div class="mxc-g">Kayıt</div><div class="mxc-l">${row('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${row('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${row('mhrows', 'list', 'Kayıt ayrıntısı', 'Tevkifat, ÖTV, stopaj, döviz')}</div></section>`;
 }
 { const _v = viewHTML; viewHTML = function () { const h = _v.apply(this, arguments); const u = S.user; if (!u || S.modal) return h; if (!((u.role === 'patron' && S.view === 'muhasebe') || (u.role === 'muhasebeci' && S.view === 'borc'))) return h; const c = mxCard(); if (!c) return h; return /^<div[^>]*>/.test(h) ? h.replace(/^(<div[^>]*>)/, (m) => m + c) : c + h; }; }
 
