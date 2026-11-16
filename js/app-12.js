@@ -419,12 +419,14 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 @media(min-width:1000px) and (max-height:780px){.lx3 .lp-pv{display:none}}
 @media(min-width:1000px) and (max-height:640px){.lx3 .lp{display:none}}
 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}.lx-caps.on{display:block}
+.lx-copyr{width:100%;text-align:center;font-size:12.5px;color:#74839A;margin:14px 0 0}@media(min-width:1000px){.lx3 .lx-copyr{display:none}}
 `;
   document.head.appendChild(css);
   const FE = {
     own: { h: 'İşletmenizi tek yerden yönetin.', p: 'Fiş, ekip, stok ve tedarik süreçleriniz tek ekranda.', f: [['receipt', 'Fişi fotoğrafla, Kais okusun', 'Tutar, KDV ve kategori kendiliğinden gelir.'], ['users', 'Ekip, vardiya ve izin', 'Plan, talep ve onaylar tek yerde.'], ['box', 'Stok ve tedarik', 'Azalan ürün için sipariş önerisi hazır.'], ['sparkle', 'Kais AI', 'Sorunu yaz, işlemi senin onayına hazırlasın.']] },
     emp: { h: 'Ekibe hoş geldin.', p: 'Vardiyanı, iznini ve görevlerini tek yerden takip et.', f: [['calendar', 'Vardiya planın', 'Hangi gün kaçta, hep elinin altında.'], ['clock', 'İzin ve talepler', 'İzin iste, durumunu anında gör.'], ['check', 'Görevler', 'Bugünün işleri ve tamamladıkların.']] },
   };
+  const CPR = '© ' + new Date().getFullYear() + ' KaisPilot. Tüm hakları saklıdır.';
   const _out = loginHTML;
   loginHTML = function () {
     let h = _out.apply(this, arguments); if (S.user || h.indexOf('class="login lx') < 0) return h;
@@ -432,7 +434,8 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
     const feats = `<div class="lp">${d.f.map((x) => `<div class="lp-f"><span class="lp-i">${ic(x[0], 20)}</span><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join('')}</div>`;
     const pv = k === 'own' ? `<div class="lp lp-pvw"><div class="lp-pv"><div class="lp-ph"><span>Bugün</span><span>Örnek ekran</span></div><div class="lp-k"><div><small>Bu ay gelir</small><b>₺248.600</b></div><div><small>Gider</small><b>₺161.200</b></div><div><small>Onay bekleyen fiş</small><b class="up">3</b></div></div><div class="lp-ai"><i>K</i><span>Süt stoğu azalıyor. Tedarikçiye sipariş hazırlayayım mı?</span></div></div></div>` : '';
     h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><h2>${d.h}</h2><p>${d.p}</p></div>`);
-    h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">© KaisPilot</div></section>`);
+    h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">${CPR}</div></section>`);
+    h = h.replace(/<\/section><\/div>$/, `</section><p class="lx-copyr">${CPR}</p></div>`);
     h = h.replace(/<div class="login lx([^"]*)"/, '<div class="login lx$1 lx3"');
     h = h.replace(/(<div class="lx-in">(?:(?!<\/div>)[\s\S])*?id="(?:id|sg)-pw"[\s\S]*?<\/div>)/, '$1<div class="lx-caps" role="status">Caps Lock açık</div>');
     return h;
