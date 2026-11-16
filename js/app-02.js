@@ -74,7 +74,7 @@ H.lrsend = () => {
   if (!(days >= 1)) return er('Gün sayısını yaz.');
   if (why.length < 5) return er('Nedenini yaz. Nedensiz talep gönderilemez.');
   if (type === 'yillik') {
-    const ent = (leaveDays(monthsBetween(PROFILES[S.user.id].hire)) + yizCarry(S.user.id));
+    const ent = (leaveDays(monthsBetween(PROFILES[S.user.id].hire), S.user.id) + yizCarry(S.user.id));
     const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
     if (days > ent - used) return er(ent ? `Kalan yıllık iznin ${ent - used} gün. Daha fazlası için ücretsiz izin seç.` : 'Yıllık izin hakkın henüz doğmadı. Ücretsiz izin isteyebilirsin.');
   }
@@ -111,7 +111,7 @@ H.lrok = (el) => {
 H.lrfinal = () => {
   const m = S.modal; const r = LVREQ.find((x) => x.id === m.id); const e = lrEff(r);
   if (m.kind === 'yillik') {
-    const ent = (leaveDays(monthsBetween(PROFILES[r.uid].hire)) + yizCarry(r.uid));
+    const ent = (leaveDays(monthsBetween(PROFILES[r.uid].hire), r.uid) + yizCarry(r.uid));
     const used = LEAVES.filter((x) => x.uid === r.uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
     if (e.days > ent - used) { document.getElementById('la-err').textContent = ent ? `Kalan yıllık izin ${ent - used} gün. Türü ücretsiz ya da mazeret izni yap.` : 'Yıllık izin hakkı henüz doğmadı. Türü değiştir.'; return; }
   }

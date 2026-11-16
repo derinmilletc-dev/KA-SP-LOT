@@ -416,8 +416,8 @@ function mxCariNames(kind) {
 }
 function mxCariRows(kind, name) {
   const k = mxKey(name); const today = fiIso();
-  if (kind === 'musteri') return INV.filter((v) => mxKey(v.cust) === k).map((v) => { const open = v.st !== 'odendi'; const late = open && v.due && v.due < today ? mxDiff(today, v.due) : 0; return { iso: v.iso || '', no: v.no, tot: mxN(v.tot), due: v.due || '', open, late, note: '' }; }).sort((a, b) => (a.iso < b.iso ? 1 : -1)).slice(0, 80);
-  return DEBTS.filter((d) => mxKey(d.who) === k).map((d) => { const open = !d.paid; const late = open && d.due && d.due < today ? mxDiff(today, d.due) : 0; return { iso: d.due || '', no: d.note || 'Borç', tot: mxN(d.amt), due: d.due || '', open, late, note: '' }; }).sort((a, b) => (a.iso < b.iso ? 1 : -1)).slice(0, 80);
+  if (kind === 'musteri') return INV.filter((v) => mxKey(v.cust) === k).map((v) => { const open = v.st !== 'odendi'; const late = open && v.due && v.due < today ? mxDiff(today, v.due) : 0; return { id: v.id, iso: v.iso || '', no: v.no, tot: mxN(v.tot), due: v.due || '', open, late, note: '' }; }).sort((a, b) => (a.iso < b.iso ? 1 : -1)).slice(0, 80);
+  return DEBTS.filter((d) => mxKey(d.who) === k).map((d) => { const open = !d.paid; const late = open && d.due && d.due < today ? mxDiff(today, d.due) : 0; return { id: d.id, iso: d.due || '', no: d.note || 'Borç', tot: mxN(d.amt), due: d.due || '', open, late, note: '' }; }).sort((a, b) => (a.iso < b.iso ? 1 : -1)).slice(0, 80);
 }
 const mxDmy = (iso) => (iso ? iso.split('-').reverse().join('.') : '—');
 function mxCariText(kind, name, rows) {
@@ -967,8 +967,8 @@ mxKind.invmulti = ['Birden çok fatura', 'p-info']; mxKind.invpart = ['Kısmi ta
 /* borç/alacak ekstre kapsamı: kısmi tutarlar */
 { const _cr = mxCariRows; mxCariRows = function (kind, name) {
   const k = mxKey(name); const rows = _cr.apply(this, arguments);
-  if (kind === 'musteri') return rows.map((r) => { const v = INV.find((x) => x.no === r.no && mxKey(x.cust) === k); return v && r.open && ivPaidAmt(v) > 0 ? Object.assign({}, r, { tot: ivOpen(v), note: 'Kısmi tahsilat (fatura ' + fmt0(v.tot) + ')' }) : r; });
-  return rows.map((r) => { const d = DEBTS.find((x) => mxKey(x.who) === k && (x.note || 'Borç') === r.no); return d && r.open && dbPaidAmt(d) > 0 ? Object.assign({}, r, { tot: dbOpen(d), note: 'Kısmi ödeme' }) : r; });
+  if (kind === 'musteri') return rows.map((r) => { const v = INV.find((x) => (r.id ? x.id === r.id : x.no === r.no) && mxKey(x.cust) === k); return v && r.open && ivPaidAmt(v) > 0 ? Object.assign({}, r, { tot: ivOpen(v), note: 'Kısmi tahsilat (fatura ' + fmt0(v.tot) + ')' }) : r; });
+  return rows.map((r) => { const d = DEBTS.find((x) => (r.id ? x.id === r.id : (x.note || 'Borç') === r.no) && mxKey(x.who) === k); return d && r.open && dbPaidAmt(d) > 0 ? Object.assign({}, r, { tot: dbOpen(d), note: 'Kısmi ödeme' }) : r; });
 }; }
 
 /* ===== v158: çevrimdışı yazma kuyruğu + 3 yollu birleştirme =====

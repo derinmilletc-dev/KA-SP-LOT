@@ -198,7 +198,7 @@ function lqCalc(m) {
     EMP_IDS.forEach((id) => { if (id !== me && vdOnLeave(id, mo, dd)) clash[id] = 1; }); });
   const cal = r.length; return { cal, work, off, clash: Object.keys(clash).length, txt: m.d1 === (m.d2 || m.d1) || !m.d2 || m.d2 < m.d1 ? isoShort(m.d1) : isoShort(m.d1) + '–' + isoShort(m.d2) };
 }
-function lqEnt() { const p = PROFILES[S.user.id]; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(S.user.id); const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; }
+function lqEnt() { const p = PROFILES[S.user.id]; const ent = leaveDays(monthsBetween(p.hire), S.user.id) + yizCarry(S.user.id); const used = LEAVES.filter((x) => x.uid === S.user.id && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; }
 function lvreqModal() {
   const m = S.modal; if (!m.kind) { m.kind = 'yillik'; m.sub = 0; m.d1 = ''; m.d2 = ''; m.why = ''; m.days = null; }
   const e = lqEnt(); const c = lqCalc(m); const days = m.days != null ? m.days : (c ? Math.max(c.work, c ? (c.work ? c.work : 1) : 1) : 1);
@@ -248,7 +248,7 @@ function lcOverlap(r) {
   const e = lrEff(r); let q = null; try { q = izOrd(e.txt); } catch (x) {} if (!q) return [];
   return EMP_IDS.filter((id) => id !== r.uid && ekLeaves(id).some((x) => { const w = ekRange(x); return w && w[0] <= q[1] && q[0] <= w[1]; })).map((id) => (byId(id).name || '').split(' ')[0]);
 }
-function lcLeft(uid) { const p = PROFILES[uid]; if (!p) return null; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(uid); const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return Math.max(0, ent - used); }
+function lcLeft(uid) { const p = PROFILES[uid]; if (!p) return null; const ent = leaveDays(monthsBetween(p.hire), uid) + yizCarry(uid); const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return Math.max(0, ent - used); }
 lrCard = function (r, who) {
   const u = byId(r.uid); const admin = who === 'admin'; const e = lrEff(r); const open = ['bekliyor', 'yanit', 'karsi'].includes(r.status);
   const cur = r.status === 'bekliyor' ? 1 : r.status === 'karsi' ? 1 : r.status === 'yanit' ? 2 : 3; const bad = r.status === 'reddedildi';

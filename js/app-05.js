@@ -316,10 +316,10 @@ H.vdhpsave = () => { const ds = S.modal.d; const old = Object.assign({}, VD_HP[d
 const YZ_CARRY = {}; P_OBJ.push(['YZ_CARRY', () => YZ_CARRY]);
 function yizCarry(uid) { return Math.max(0, Number(YZ_CARRY[uid]) || 0); }
 function yizInfo(uid) {
-  const p = PROFILES[uid] || {}; const mm = p.hire ? monthsBetween(p.hire) : 0; const ent = leaveDays(mm), carry = yizCarry(uid), tot = ent + carry;
+  const p = PROFILES[uid] || {}; const mm = p.hire ? monthsBetween(p.hire) : 0; const ent = leaveDays(mm, uid), carry = yizCarry(uid), tot = ent + carry;
   const L = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik'); const used = L.reduce((a, x) => a + x.days, 0); const left = tot - used;
   let next = null, nextDays = 0;
-  if (p.hire) { const a = p.hire.split('-').map(Number); let ny = REF.y; if (REF.m > a[1] || (REF.m === a[1] && REF.d >= a[2])) ny++; if (mm < 12) ny = a[0] + 1; const iso = ny + '-' + String(a[1]).padStart(2, '0') + '-' + String(a[2]).padStart(2, '0'); const days = Math.round((new Date(iso) - new Date(REF.y, REF.m - 1, REF.d)) / 86400000); next = { iso, days }; nextDays = leaveDays((Math.floor(mm / 12) + 1) * 12); }
+  if (p.hire) { const a = p.hire.split('-').map(Number); let ny = REF.y; if (REF.m > a[1] || (REF.m === a[1] && REF.d >= a[2])) ny++; if (mm < 12) ny = a[0] + 1; const iso = ny + '-' + String(a[1]).padStart(2, '0') + '-' + String(a[2]).padStart(2, '0'); const days = Math.round((new Date(iso) - new Date(REF.y, REF.m - 1, REF.d)) / 86400000); next = { iso, days }; nextDays = leaveDays((Math.floor(mm / 12) + 1) * 12, uid); }
   const pend = LVREQ.filter((r) => r.uid === uid && r.type === 'yillik' && ['bekliyor', 'yanit'].includes(r.status)).reduce((a, r) => a + lrEff(r).days, 0);
   return { p, mm, ent, carry, tot, used, left, L, next, nextDays, pend };
 }
@@ -336,7 +336,7 @@ function yizView(segH) {
   const ins = []; I.forEach(({ id, i }) => { const n = byId(id).name;
     if (i.mm >= 12 && i.left >= 10) ins.push({ t: 'w', x: `${n}: ${i.left} gün kullanılmamış izin var. Planlamasını öner.` });
     if (i.left < 0) ins.push({ t: 'w', x: `${n}: hakkından ${-i.left} gün fazla izin kullanmış görünüyor. Kaydı kontrol et.` });
-    if (i.mm < 12 && i.next) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde ilk yıllık izin hakkını kazanacak (${leaveDays(12)} gün).` });
+    if (i.mm < 12 && i.next) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde ilk yıllık izin hakkını kazanacak (${leaveDays(12, id)} gün).` });
     else if (i.next && i.next.days <= 60 && i.nextDays > i.ent) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde izin hakkı ${i.ent} günden ${i.nextDays} güne çıkacak.` }); });
   if (!ins.length) ins.push({ t: 'ok', x: 'Herkesin izin durumu düzenli. Biriken veya aşan izin yok.' });
   return `<div class="stack-lg">${segH}<div class="iz-t"><div><span>Toplam hak</span><b>${tot}<small>gün</small></b></div><div><span>Kullanılan</span><b>${used}<small>gün</small></b></div><div class="${left < 0 ? 'bad' : ''}"><span>Kalan</span><b>${left}<small>gün</small></b></div><div><span>Yakında hak kazanan</span><b>${soon}<small>kişi</small></b></div></div>
@@ -455,7 +455,7 @@ yizView = function (segH) {
   let L = I.filter(fil(S.yzf || '')); const so = S.yzs || 'kalan'; L = L.slice().sort((a, b) => so === 'ad' ? byId(a.id).name.localeCompare(byId(b.id).name, 'tr') : so === 'kidem' ? b.i.mm - a.i.mm : b.i.left - a.i.left);
   const ins = []; I.forEach(({ id, i }) => { const n = byId(id).name;
     if (i.mm >= 12 && i.left >= 10) ins.push({ t: 'w', x: `${n}: ${i.left} gün kullanılmamış izin var.` }); if (i.left < 0) ins.push({ t: 'w', x: `${n}: hakkından ${-i.left} gün fazla izin kullanmış görünüyor.` });
-    if (i.mm < 12 && i.next) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde ilk izin hakkını kazanacak (${leaveDays(12)} gün).` }); else if (i.next && i.next.days <= 60 && i.nextDays > i.ent) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde hakkı ${i.ent} günden ${i.nextDays} güne çıkacak.` }); });
+    if (i.mm < 12 && i.next) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde ilk izin hakkını kazanacak (${leaveDays(12, id)} gün).` }); else if (i.next && i.next.days <= 60 && i.nextDays > i.ent) ins.push({ t: '', x: `${n}: ${isoTxt(i.next.iso)} tarihinde hakkı ${i.ent} günden ${i.nextDays} güne çıkacak.` }); });
   const ye = new Date(REF.y, 11, 31); const wk = Math.max(0, Math.round((ye - new Date(REF.y, REF.m - 1, REF.d)) / 604800000)); if (left > 0 && wk) ins.push({ t: '', x: `Yıl sonuna ${wk} hafta var. Ekipte toplam ${left} gün izin kalıyor.` });
   if (!ins.length) ins.push({ t: 'ok', x: 'Herkesin izin durumu düzenli.' });
   const sg = I.filter((x) => x.i.left >= 3).sort((a, b) => b.i.left - a.i.left).slice(0, 3).map((x) => ({ id: x.id, s: yizSuggest(x.id) })).filter((x) => x.s);
@@ -633,7 +633,7 @@ const izOrd = (t) => {
   if (m && mi(m[2]) >= 0) { const o = mi(m[2]) * 40 + Number(m[1]); return [o, o]; }
   return null;
 };
-const izLeft = (uid) => { const p = PROFILES[uid]; if (!p || !p.hire) return null; const ent = leaveDays(monthsBetween(p.hire)) + yizCarry(uid); const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; };
+const izLeft = (uid) => { const p = PROFILES[uid]; if (!p || !p.hire) return null; const ent = leaveDays(monthsBetween(p.hire), uid) + yizCarry(uid); const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0); return { ent, used, left: Math.max(0, ent - used) }; };
 function izHints(r) {
   const h = []; const e = lrEff(r); const p = PROFILES[r.uid];
   if (['onayli', 'reddedildi'].includes(r.status)) return '';

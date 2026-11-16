@@ -54,6 +54,29 @@ with sync_playwright() as p:
     check('Vardiya: otomatik plan vardiya uretir', r['any'] and r['n'] > 0, r)
     check('Vardiya: kontrol notlari hesaplanir', len(r['ins']) > 0)
 
+    # ---- Yasa bagli asgari 20 gun izin (4857 md. 53) ----
+    r = ev("""()=>{ const t=fiIso(); const y=Number(t.slice(0,4)); const md=t.slice(5); const at=(age,dayShift)=>{ const d=new Date(y-age,Number(md.slice(0,2))-1,Number(md.slice(3))+dayShift); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+      PROFILES.u4.hire='2023-02-13'; PROFILES.u6.hire='2026-03-03'; PROFILES.u7.hire='2005-09-12'; const o={}; const base=leaveDays(monthsBetween(PROFILES.u4.hire),'u4'); o.base=base;
+      const set=(u,b)=>{ PROFILES[u].birth=b; };
+      set('u4',at(50,0)); o.a50=leaveDays(monthsBetween(PROFILES.u4.hire),'u4'); set('u4',at(50,1)); o.a49=leaveDays(monthsBetween(PROFILES.u4.hire),'u4');
+      set('u4',at(18,0)); o.a18=leaveDays(monthsBetween(PROFILES.u4.hire),'u4'); set('u4',at(19,0)); o.a19=leaveDays(monthsBetween(PROFILES.u4.hire),'u4');
+      set('u6',at(55,0)); o.young=leaveDays(monthsBetween(PROFILES.u6.hire),'u6');
+      set('u7',at(60,0)); o.long=leaveDays(monthsBetween(PROFILES.u7.hire),'u7'); // 26 gun kalir
+      set('u4',at(52,0)); o.ekBal=ekBal('u4').ent; o.izLeft=izLeft('u4').ent;
+      delete PROFILES.u4.birth; delete PROFILES.u6.birth; delete PROFILES.u7.birth; return o; }""")
+    check('Izin: 50 yasinda en az 20 gun', r['a50'] == 20 and r['base'] == 14, r)
+    check('Izin: 49 yasinda normal hak', r['a49'] == 14, r)
+    check('Izin: 18 yasinda 20 gun, 19 yasinda normal', r['a18'] == 20 and r['a19'] == 14, r)
+    check('Izin: 1 yil dolmamissa yasa bakilmaksizin hak yok', r['young'] == 0, r)
+    check('Izin: 26 gun hakki olan 20ye dusmez', r['long'] == 26, r)
+    check('Izin: ekip ve talep ekranlari ayni hakki kullanir', r['ekBal'] == 20 and r['izLeft'] == 20, r)
+    # ---- Kismi odenen borc: ayni notlu iki borc, cari ekstre ----
+    r = ev("""()=>{ DEBTS.length=0; DEBTS.push({id:'dA',who:'Toptanci X',note:'Borç',amt:1000,due:addDays(REF_ISO,-5),rem:3,on:true,paid:false},{id:'dB',who:'Toptanci X',note:'Borç',amt:500,due:addDays(REF_ISO,5),rem:3,on:true,paid:false});
+      dbPay(DEBTS[0],400,REF_ISO,''); const rows=mxCariRows('tedarikci','Toptanci X'); const m={}; rows.forEach(x=>m[x.id]=x.tot);
+      return {all:allDebts().map(d=>d.amt), m, op:DEBTS.map(dbOpen)}; }""")
+    check('Borc: kismi odeme listede kalani gosterir', r['all'] == [600, 500], r)
+    check('Borc: ayni notlu iki borcta cari ekstre dogru satiri gunceller', r['m'] == {'dA': 600, 'dB': 500}, r)
+
     # ---- Rol gorunurlugu ----
     r = ev("""()=>{ const bad=[]; const views=[...new Set(Object.values(NAV).flat().map(x=>x[0]))].concat(['maas','muhasebe','ayarlar','admin','stok','ekip','musteri']);
       for(const role of ['patron','mudur','muhasebeci','calisan']){ loginAs(USERS.find(x=>x.role===role));

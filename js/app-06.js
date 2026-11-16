@@ -506,7 +506,7 @@ viewMaasim = function () {
   const u = byId(uid); const p = PROFILES[uid]; const mm = monthsBetween(p.hire); const d = dueOf(uid); const pr = empPayroll(uid);
   const tabs = [['maas', 'Maaş'], ['mesai', 'Mesai'], ['izin', 'İzin'], ['hak', 'Haklar']]; const hasCtr = LVREQ.some((r) => r.uid === uid && (r.status === 'karsi' || r.unreadEmp)); const cur = tabs.some((x) => x[0] === S.sub.maasim) ? S.sub.maasim : (hasCtr || S.msUnread ? 'izin' : 'maas');
   const pct = d.total ? Math.max(0, Math.min(100, Math.round(d.paid / d.total * 100))) : 0; const pdy = msPayday(p);
-  const lv = LEAVES.filter((x) => x.uid === uid); const ent = leaveDays(mm) + yizCarry(uid); const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0); const left = Math.max(0, ent - used);
+  const lv = LEAVES.filter((x) => x.uid === uid); const ent = leaveDays(mm, uid) + yizCarry(uid); const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0); const left = Math.max(0, ent - used);
   const hour15 = d.hourly * 1.5; const otPct = Math.min(100, Math.round(p.otYear / 270 * 100)); const pays = PAYS.filter((x) => x.uid === uid && x.per === NEXTP); const last = PAYS.find((x) => x.uid === uid && x.kind === 'maas' && x.per === PERIOD);
   const ring = (v, tone) => `<div class="cs-rg"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="7"/><circle cx="30" cy="30" r="25" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="${(157.1 * (1 - v / 100)).toFixed(1)}" transform="rotate(-90 30 30)"/></svg><b>%${v}</b></div>`;
   let body = '';

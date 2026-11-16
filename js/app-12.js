@@ -295,3 +295,10 @@ if (typeof document !== 'undefined') {
   document.addEventListener('input', (e) => { const t = e.target; if (t && t.id === 'sg-pw') { const h = document.getElementById('sg-pwh'); if (h) { const ok = t.value.length >= 8; h.textContent = ok ? 'Şifre uygun.' : 'En az 8 karakter.'; h.className = 'sg-ok' + (ok ? ' y' : ''); } } });
   try { if (sessionStorage.getItem('kp_lg') === 'emp') S.lgTab = 'emp'; } catch (e) {}
 }
+
+/* v168: doğum tarihi (yaşa bağlı asgari 20 gün izin) */
+H.birthsave = (el) => {
+  if (!S.user || !['patron', 'mudur'].includes(S.user.role)) return; const id = el.dataset.id; const p = PROFILES[id]; const v = ((document.getElementById('dr-birth') || {}).value || '').trim(); if (!p) return;
+  if (v && (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v > fiIso() || v < '1900-01-01')) { toast('Doğum tarihini kontrol et.', 'warn'); return; }
+  p.birth = v; pSched(); render(); try { renderModal(); } catch (e) {} toast(v ? (leaveAgeMin(id) ? 'Kaydedildi. Yaşı nedeniyle izin hakkı en az 20 gün.' : 'Doğum tarihi kaydedildi.') : 'Doğum tarihi silindi.', 'ok');
+};

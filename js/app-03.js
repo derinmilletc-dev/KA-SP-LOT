@@ -1527,6 +1527,7 @@ async function onbLoadList() {
     const s = await c.from('onboard_sub').select('user_id,app_uid,answers,consents,signature,contract_version,accepted_at,updated_at,contract_snapshot').eq('business_id', bid); if (s.error) throw s.error;
     const d = await c.from('onboard_docs').select('user_id,doc_id,name,mime').eq('business_id', bid); if (d.error) throw d.error;
     ONB.list = (m.data || []).filter((x) => ['calisan', 'mudur'].includes(x.role)).map((x) => ({ m: x, s: (s.data || []).find((y) => y.user_id === x.user_id) || null, d: (d.data || []).filter((y) => y.user_id === x.user_id) }));
+  try { (ONB.list || []).forEach((x) => { const b = x.s && x.s.answers && x.s.answers.dogum; const uid = x.m && x.m.app_uid; if (uid && PROFILES[uid] && /^\d{4}-\d{2}-\d{2}$/.test(b || '') && PROFILES[uid].birth !== b) { PROFILES[uid].birth = b; pSched(); } }); } catch (e2) {}
   } catch (e) { ONB.list = { err: idMsg(e) }; }
   ONB.listBusy = false;
 }

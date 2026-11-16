@@ -1124,7 +1124,10 @@ const MON = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'E
 const isoTxt = (iso) => { const a = iso.split('-').map(Number); return String(a[2]).padStart(2, '0') + ' ' + MON[a[1] - 1] + ' ' + a[0]; };
 const monthsBetween = (iso) => { const a = iso.split('-').map(Number); let mm = (REF.y - a[0]) * 12 + (REF.m - a[1]); if (REF.d < a[2]) mm--; return Math.max(0, mm); };
 const tenureTxt = (mm) => { const y = Math.floor(mm / 12); const r = mm % 12; return [y ? y + ' yıl' : '', r ? r + ' ay' : ''].filter(Boolean).join(' ') || '1 aydan az'; };
-const leaveDays = (mm) => (mm < 12 ? 0 : mm <= 60 ? 14 : mm < 180 ? 20 : 26);
+const empAge = (uid) => { const b = (PROFILES[uid] || {}).birth; if (!/^\d{4}-\d{2}-\d{2}$/.test(b || '')) return null; const t = fiIso(); let a = Number(t.slice(0, 4)) - Number(b.slice(0, 4)); if (t.slice(5) < b.slice(5)) a--; return a >= 0 && a < 120 ? a : null; };
+/* İş Kanunu md. 53: 18 ve daha küçük, 50 ve daha yukarı yaştaki işçilere yıllık izin 20 günden az olamaz */
+const leaveAgeMin = (uid) => { const a = uid ? empAge(uid) : null; return a != null && (a <= 18 || a >= 50); };
+const leaveDays = (mm, uid) => { const d = mm < 12 ? 0 : mm <= 60 ? 14 : mm < 180 ? 20 : 26; return d && d < 20 && leaveAgeMin(uid) ? 20 : d; };
 const noticeWeeks = (mm) => (mm < 6 ? 2 : mm < 18 ? 4 : mm < 36 ? 6 : 8);
 const PAY_KIND = { maas: 'Maaş', avans: 'Avans', mesai: 'Mesai', prim: 'Prim' };
 const LV_KIND = { yillik: 'Yıllık izin', rapor: 'Rapor', ucretsiz: 'Ücretsiz izin', mazeret: 'Mazeret izni' };
@@ -1369,7 +1372,7 @@ function empDetail(uid, mine, ro) {
   const u = byId(uid); const p = PROFILES[uid]; const mm = monthsBetween(p.hire); const d = dueOf(uid);
   const pct = d.total ? Math.max(0, Math.min(100, Math.round((d.paid / d.total) * 100))) : 0;
   const lv = LEAVES.filter((x) => x.uid === uid);
-  const ent = leaveDays(mm) + yizCarry(uid);
+  const ent = leaveDays(mm, uid) + yizCarry(uid);
   const used = lv.filter((x) => x.type === 'yillik').reduce((a, x) => a + x.days, 0);
   const left = Math.max(0, ent - used);
   const pays = PAYS.filter((x) => x.uid === uid && x.per === NEXTP);
@@ -1404,7 +1407,7 @@ function empDetail(uid, mine, ro) {
   ${d.offers.length ? d.offers.map((m) => `<div class="logline"><span>${esc(m.title)}<span class="small muted" style="display:block">Kabul edildi · ${esc(m.hours)} saat ek çalışma</span></span><b class="num">${fmt(Number(m.pay))}</b></div>`).join('') : '<p class="small muted">Bu ay kabul edilmiş mesai teklifi yok.</p>'}${puantaj(uid)}</div>
 
   <div class="card stack"><div class="row between wrap"><div><h3>İzinler</h3><p class="muted small" style="margin-top:2px">Yıllık izin ve rapor günleri puanlamada kapsam dışıdır.</p></div>${mine || ro ? '' : `<button class="btn sm" data-a="lvadd" data-id="${uid}">${ic('plus', 16)} İzin ekle</button>`}</div>
-  ${ent ? `<div class="kpis">${kpi('Yıllık hak', ent + ' gün')}${kpi('Kullanılan', used + ' gün')}${kpi('Kalan', left + ' gün')}</div><div class="prog" role="img" aria-label="Yıllık iznin ${used} günü kullanıldı"><i style="width:${Math.min(100, Math.round((used / ent) * 100))}%"></i></div>` : `<div class="callout">${ic('info')}<div>Yıllık izin hakkı 1 yıl dolunca doğar (${esc(eligible)}). O tarihten sonra ${leaveDays(12)} gün.</div></div>`}
+  ${ent ? `<div class="kpis">${kpi('Yıllık hak', ent + ' gün')}${kpi('Kullanılan', used + ' gün')}${kpi('Kalan', left + ' gün')}</div><div class="prog" role="img" aria-label="Yıllık iznin ${used} günü kullanıldı"><i style="width:${Math.min(100, Math.round((used / ent) * 100))}%"></i></div>` : `<div class="callout">${ic('info')}<div>Yıllık izin hakkı 1 yıl dolunca doğar (${esc(eligible)}). O tarihten sonra ${leaveDays(12, uid)} gün.</div></div>`}
   ${lv.length ? `<div>${lv.map((x) => `<div class="logline"><span><span class="pill ${LV_PILL[x.type]}">${LV_KIND[x.type]}</span> <span class="muted">${esc(x.txt)}</span>${x.note ? `<span class="small muted" style="display:block">${esc(x.note)}</span>` : ''}${x.type === 'ucretsiz' ? `<span class="small muted" style="display:block">${x.ded ? 'Maaştan kesinti: ' + fmt(x.ded) + ' (günlük ' + fmt(x.perDay) + ')' : 'Maaştan kesinti yapılmadı'}</span>` : ''}</span><b class="num">${x.days} gün</b></div>`).join('')}</div>` : '<p class="small muted">Kayıtlı izin yok.</p>'}</div>
 
   ${ro ? '' : lrSection(uid, mine)}
@@ -1462,7 +1465,7 @@ function payModal(m) {
   <div class="err" id="pay-err" role="alert"></div><button class="btn block" data-a="payok" data-id="${m.uid}">Kaydet</button><p class="small muted">Bu kayıt banka hareketi değildir. Ödemeyi yaptıktan sonra buraya işlersin.</p>`);
 }
 function leaveModal(m) {
-  const u = byId(m.uid); const p = PROFILES[m.uid]; const ent = leaveDays(monthsBetween(p.hire));
+  const u = byId(m.uid); const p = PROFILES[m.uid]; const ent = leaveDays(monthsBetween(p.hire), m.uid);
   const used = LEAVES.filter((x) => x.uid === m.uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
   return sheet('İzin ekle', `<div class="callout">${ic('info')}<div><b>${esc(u.name)}</b><p style="margin-top:2px">Yıllık izin: ${ent} gün hak, ${used} gün kullanıldı, ${Math.max(0, ent - used)} gün kaldı</p></div></div>
   <div class="field"><label for="lv-type">İzin türü</label><select id="lv-type">${Object.keys(LV_KIND).map((k) => `<option value="${k}">${LV_KIND[k]}</option>`).join('')}</select></div>
@@ -1496,7 +1499,7 @@ function aiModal(m) {
   return sheet('Okuma sonucu', `<dl class="kv"><dt>Çalışan</dt><dd>${esc(x.name)}</dd><dt>Görev</dt><dd>${esc(x.pos)}</dd><dt>İşe giriş</dt><dd>${esc(isoTxt(x.hire))}</dd><dt>Maaş</dt><dd class="num">${fmt(x.salary)} ${m.stype === 'net' ? 'net' : 'brüt'}</dd><dt>Haftalık saat</dt><dd>${x.hours} saat</dd><dt>Deneme</dt><dd>${x.trial} ay</dd></dl>
   ${m.stype === 'brut' ? `<div class="callout warn">${ic('alert')}<div>Brüt maaş. Net ödeme bordroya göre belli olur, hesap yaklaşık kalır.</div></div>` : ''}
   <div><b style="font-weight:600">Kais şuralara kaydedecek</b>
-  ${chk('Çalışan profili', 'Görev ve işe giriş tarihi')}${chk('Maaş', `${CURM} maaş hesabı, ${fmt0(x.salary)} ${m.stype === 'net' ? 'net' : 'brüt'}`)}${chk('Mesai', `Haftalık ${x.hours} saat, yüzde 50 zamlı fazla mesai`)}${chk('İzinler', `Kıdem ${tenureTxt(mm)}, yıllık izin ${leaveDays(mm) || 'henüz yok'}${leaveDays(mm) ? ' gün' : ''}`)}${chk('Haklar ve süreler', `Deneme ${x.trial} ay, ihbar süresi ${noticeWeeks(mm)} hafta`)}</div>
+  ${chk('Çalışan profili', 'Görev ve işe giriş tarihi')}${chk('Maaş', `${CURM} maaş hesabı, ${fmt0(x.salary)} ${m.stype === 'net' ? 'net' : 'brüt'}`)}${chk('Mesai', `Haftalık ${x.hours} saat, yüzde 50 zamlı fazla mesai`)}${chk('İzinler', `Kıdem ${tenureTxt(mm)}, yıllık izin ${leaveDays(mm, m.uid) || 'henüz yok'}${leaveDays(mm, m.uid) ? ' gün' : ''}`)}${chk('Haklar ve süreler', `Deneme ${x.trial} ay, ihbar süresi ${noticeWeeks(mm)} hafta`)}</div>
   <div class="row"><button class="btn grow" data-a="aisave">Kaydet</button><button class="btn sec" data-a="closemodal">Vazgeç</button></div><p class="small muted">Prototipte okuma sonucu örnektir. Hukuki değerleri iş hukukçusu ya da muhasebeciyle teyit et.</p>`);
 }
 function renderModal() {
@@ -1601,7 +1604,7 @@ H.lvok = (el) => {
   if (!(days >= 1)) { g('lv-err').textContent = 'Gün sayısını yaz.'; return; }
   if (!txt) { g('lv-err').textContent = 'Tarihi yaz.'; return; }
   if (type === 'yillik') {
-    const ent = (leaveDays(monthsBetween(PROFILES[uid].hire)) + yizCarry(uid));
+    const ent = (leaveDays(monthsBetween(PROFILES[uid].hire), uid) + yizCarry(uid));
     const used = LEAVES.filter((x) => x.uid === uid && x.type === 'yillik').reduce((a, x) => a + x.days, 0);
     if (days > ent - used) { g('lv-err').textContent = ent ? `Kalan yıllık izin ${ent - used} gün. Daha fazlası için ücretsiz izin seç.` : 'Yıllık izin hakkı henüz doğmadı.'; return; }
   }
