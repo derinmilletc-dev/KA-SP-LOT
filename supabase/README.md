@@ -31,3 +31,14 @@ Uygulama kapalıyken de çalışır:
 
 ## Ekip verisi koruması (v100)
 `sql/tenant_state_guard.sql` dosyasını SQL Editor'de çalıştır. Çalışan hesabı ekip kaydını yazarken ayar, yetki, ad, vardiya planı ve masa düzeni gibi bölümleri değiştiremez (sunucu eski haline geri koyar). Müdür yetki ayarlarını (SETTINGS.perm) ve rolleri değiştiremez. Patron serbesttir.
+
+## Kais AI ve Kais push (v142)
+
+`kais-ai` fotoğraftan fiş/fiyat listesi okuma ve Kais AI sohbetini, `kais-push` telefon bildirimini çalıştırır.
+
+1. **Sır ekle** (Edge Functions → Secrets): `ANTHROPIC_API_KEY` (zorunlu). İsteğe bağlı: `KAIS_AI_MODEL`.
+   `kais-push` için `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (kais-cron'dakilerle aynı).
+2. **Yükle:** `supabase functions deploy kais-ai` ve `supabase functions deploy kais-push`.
+   Panelden yüklüyorsan: Edge Functions → fonksiyon → Code sekmesine `index.ts` içeriğini yapıştır → Deploy.
+   **JWT doğrulaması açık kalsın** (kais-cron'un aksine `--no-verify-jwt` kullanma).
+3. `kais-push` yalnızca `send` eylemini destekler; `order_notify` ve `report_now` kapalıdır.
