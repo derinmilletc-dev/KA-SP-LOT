@@ -369,3 +369,12 @@ function aiDebtOf(g) { const id = String(g.borc_id || ''); let d = id && DEBTS.f
     const m = '<div class="kx-sec"><div class="kx-lab"><b>Sorun</b>'; const i = h.indexOf(m); return i < 0 ? h : (h.indexOf('kc-wrap') >= 0 && r === 'patron' ? h.replace(/(<div class="kc-row">[\s\S]*?)(<\/div><\/div>)/, `$1${Q.map((c) => `<button type="button" class="kc-p" data-a="aiq" data-q="${esc(c[1])}">${ic(c[0], 14)}${esc(c[1])}</button>`).join('')}$2`) : h.slice(0, i) + row + h.slice(i));
   };
 }
+
+/* v170: logoya (üst çubuk, yan menü, giriş ekranı) dokununca her zaman ana ekrana git */
+if (typeof document !== 'undefined') document.addEventListener('click', (e) => {
+  const t = e.target; if (!t || !t.closest) return; const lg = t.closest('.top .mark, .side .brand, .lx-brand, .login .brand'); if (!lg) return;
+  e.preventDefault();
+  if (S.user) { S.modal = null; try { renderModal(); } catch (x) {} H.nav({ dataset: { v: 'bugun' } }); try { window.scrollTo(0, 0); } catch (x) {} return; }
+  S.lgCreate = false; S.sg = null; S.loginErr = ''; S.lgTab = 'own'; render(); try { window.scrollTo(0, 0); } catch (x) {}
+});
+if (typeof document !== 'undefined') { const css = document.createElement('style'); css.textContent = '.top .mark,.side .brand,.lx-brand,.login .brand{cursor:pointer}'; document.head.appendChild(css); }

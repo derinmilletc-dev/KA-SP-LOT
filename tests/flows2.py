@@ -77,6 +77,13 @@ with sync_playwright() as p:
     check('Borc: kismi odeme listede kalani gosterir', r['all'] == [600, 500], r)
     check('Borc: ayni notlu iki borcta cari ekstre dogru satiri gunceller', r['m'] == {'dA': 600, 'dB': 500}, r)
 
+    # ---- Logo: ana ekrana git ----
+    login('patron')
+    r = ev("""()=>{ S.view='stok'; render(); document.querySelector('.top .mark').click(); const a=S.view; S.view='ekip'; S.modal={type:'prof'}; render(); renderModal(); document.querySelector('.top .mark').click(); return [a,S.view,S.modal]; }""")
+    check('Logo: ust cubuktaki logo ana ekrana goturur ve acik pencereyi kapatir', r[0] == 'bugun' and r[1] == 'bugun' and r[2] is None, r)
+    ev("()=>{S.user=null;S.lgCreate=true;render();document.querySelector('.lx-brand').click()}")
+    check('Logo: giris ekraninda baslangic giris ekranina doner', ev("()=>S.lgCreate")==False)
+
     # ---- Rol gorunurlugu ----
     r = ev("""()=>{ const bad=[]; const views=[...new Set(Object.values(NAV).flat().map(x=>x[0]))].concat(['maas','muhasebe','ayarlar','admin','stok','ekip','musteri']);
       for(const role of ['patron','mudur','muhasebeci','calisan']){ loginAs(USERS.find(x=>x.role===role));
