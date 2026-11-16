@@ -16,7 +16,10 @@ const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 // Tahmini dolar maliyeti (kaba): sohbet Sonnet, okuma Haiku
 const USD = { chat: 0.015, read: 0.0005 };
-export const PERMS = ['businesses', 'ai', 'errors', 'events', 'feedback', 'limits', 'audit'] as const;
+export const PERMS = ['businesses', 'ai', 'errors', 'events', 'feedback', 'limits', 'audit', 'kais'] as const;
+const NLC = String.fromCharCode(10);
+const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
+const AMODEL = Deno.env.get('KAIS_ADMIN_MODEL') || 'claude-sonnet-5-5';
 type Perm = typeof PERMS[number];
 
 const dayIso = (d: number) => new Date(Date.now() - d * 864e5).toISOString().slice(0, 10);
@@ -177,6 +180,60 @@ export async function handle(req: Request): Promise<Response> {
       const r = await srv.from('account_feedback').select('created_at,reason,note,role,was_owner').order('created_at', { ascending: false }).limit(200);
       const rows = (r.data || []) as any[]; const cnt: Record<string, number> = {}; rows.forEach((x) => { const k = x.reason || 'Belirtilmemiş'; cnt[k] = (cnt[k] || 0) + 1; });
       return J({ ok: true, rows, counts: Object.entries(cnt).sort((a, c) => c[1] - a[1]) });
+    }
+
+
+    if (action === 'kais') {
+      const d = need('kais'); if (d) return d;
+      if (!AKEY) return ERR('Kais AI kurulmamış (ANTHROPIC_API_KEY yok).', 503);
+      const snap: any = { tarih: dayIso(0), saat_dilimi: 'Europe/Istanbul' };
+      if (can('businesses')) {
+        const bz = await bizRows(); const em = await emails();
+        const ev7 = ((await srv.from('app_events').select('business_id,created_at').gte('created_at', tsIso(7)).limit(20000)).data || []) as any[];
+        const act = new Set(ev7.map((x) => x.business_id).filter(Boolean));
+        snap.isletmeler = { toplam: bz.length, son7gun_yeni: bz.filter((x) => x.created_at >= tsIso(7)).length, son30gun_yeni: bz.filter((x) => x.created_at >= tsIso(30)).length, son7gun_aktif: act.size, askida: bz.filter((x) => x.suspended_at).map((x) => x.name),
+          yeniler: bz.slice().sort((a, c) => String(c.created_at).localeCompare(String(a.created_at))).slice(0, 6).map((x) => ({ ad: x.name, sahip: em[x.owner_id] || '', tarih: String(x.created_at).slice(0, 10) })),
+          pasif_14gun: bz.filter((x) => !ev7.some((e) => e.business_id === x.id)).slice(0, 10).map((x) => x.name) };
+      }
+      if (can('ai')) {
+        const q = await quota(31); const bz = await bizRows(); const nm: Record<string, string> = {}; bz.forEach((x) => { nm[x.id] = x.name; });
+        const today = dayIso(0); const mo = today.slice(0, 7); const per: Record<string, any> = {}; let tc = 0, tr = 0, mc = 0, mr = 0;
+        q.forEach((y) => { const k = y.kind as 'chat' | 'read'; if (y.day === today) { if (k === 'chat') tc += y.n; else tr += y.n; } if (String(y.day).slice(0, 7) === mo) { if (k === 'chat') mc += y.n; else mr += y.n; const o = per[y.business_id] || (per[y.business_id] = { ad: nm[y.business_id] || '-', sohbet: 0, okuma: 0 }); o[k === 'chat' ? 'sohbet' : 'okuma'] += y.n; } });
+        snap.ai = { bugun: { sohbet: tc, okuma: tr, tahmini_usd: +(tc * USD.chat + tr * USD.read).toFixed(2) }, bu_ay: { sohbet: mc, okuma: mr, tahmini_usd: +(mc * USD.chat + mr * USD.read).toFixed(2) }, en_cok_kullanan: Object.values(per).sort((a: any, c: any) => (c.sohbet * USD.chat + c.okuma * USD.read) - (a.sohbet * USD.chat + a.okuma * USD.read)).slice(0, 6) };
+      }
+      if (can('errors')) {
+        const er = ((await srv.from('app_errors').select('created_at,msg,view,ver').gte('created_at', tsIso(7)).limit(3000)).data || []) as any[]; const g: Record<string, any> = {};
+        er.forEach((x) => { const o = g[x.msg] || (g[x.msg] = { mesaj: String(x.msg).slice(0, 160), adet: 0, ekran: x.view || '', surum: x.ver || '' }); o.adet++; });
+        snap.hatalar = { son24saat: er.filter((x) => x.created_at >= tsIso(1)).length, son7gun: er.length, en_sik: Object.values(g).sort((a: any, c: any) => c.adet - a.adet).slice(0, 8) };
+      }
+      if (can('events')) {
+        const ev = ((await srv.from('app_events').select('ev,n').gte('created_at', tsIso(7)).limit(20000)).data || []) as any[]; const m: Record<string, number> = {};
+        ev.forEach((e) => { m[e.ev] = (m[e.ev] || 0) + e.n; });
+        snap.kullanim_7gun = Object.entries(m).sort((a, c) => c[1] - a[1]).slice(0, 14).map(([k, n]) => ({ olay: k, adet: n }));
+      }
+      if (can('feedback')) {
+        const r = ((await srv.from('account_feedback').select('created_at,reason,note').order('created_at', { ascending: false }).limit(30)).data || []) as any[]; const cnt: Record<string, number> = {};
+        r.forEach((x) => { const k = x.reason || 'Belirtilmemiş'; cnt[k] = (cnt[k] || 0) + 1; });
+        snap.ayrilma_geri_bildirimi = { nedenler: cnt, son_notlar: r.filter((x) => x.note).slice(0, 5).map((x) => String(x.note).slice(0, 200)) };
+      }
+      const brief = b.brief === true;
+      const hist = (Array.isArray(b.messages) ? b.messages : []).slice(-12).map((m: any) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content || '').slice(0, 3000) })).filter((m: any) => m.content);
+      if (brief) hist.length = 0;
+      if (brief) hist.push({ role: 'user', content: 'Günlük özet hazırla.' });
+      if (!hist.length || hist[hist.length - 1].role !== 'user') return ERR('Mesaj yok.');
+      const sys = [
+        "Sen KaisPilot platformunun yönetici asistanı Kais AI'sın. Yalnızca"+' '+' platformun sahibine ve yetkili yöneticilerine hizmet edersin.',
+        'KaisPilot işletmeler için muhasebe, ekip, stok ve fatura uygulamasıdır. Aşağıdaki JSON, platformun şu anki özet verisidir. Yalnızca buna dayan, veride olmayan şeyi uydurma; yoksa "bu veride yok" de.',
+        'İşletmelerin muhasebe, çalışan veya fiş içeriklerini görmezsin; yalnızca sayılar ve durumlar vardır.',
+        'Türkçe, kısa ve net yaz. Telefon ekranı için kısa paragraflar kullan. Rakamları yuvarla, dolar tutarları tahmindir.',
+        brief ? 'Görev: günlük özet. Yapı: 1) Bir cümlelik genel durum. 2) Dikkat edilecekler (en fazla 3 madde: hatalar, maliyet, pasif işletme). 3) Fırsatlar veya önerilen 1-2 aksiyon. Toplam 120 kelimeyi geçme.' : 'Soruya veriden cevap ver, gerekirse 1-2 somut öneri ekle.',
+        'VERİ: ' + JSON.stringify(snap),
+      ].join(NLC);
+      const rr = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': AKEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: AMODEL, max_tokens: 900, system: sys, messages: hist }) });
+      if (!rr.ok) return ERR('Kais AI şu an cevap veremedi.', 502);
+      const jj: any = await rr.json(); const text = (jj.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join(NLC).trim();
+      await audit(brief ? 'kais_ozet' : 'kais_soru');
+      return J({ ok: true, text: text || 'Cevap boş geldi.' });
     }
 
     if (action === 'suspend' || action === 'unsuspend') {

@@ -60,3 +60,8 @@ Uygulama kapalıyken de çalışır:
 - Giriş: e-posta, şifre ve zorunlu 2FA (TOTP). Telefon kaybında kurtarma: SQL'de `delete from auth.mfa_factors where user_id = '<id>';`.
 - Yetkiler: ana admin her şeyi görür, moderatör ve yetkilerini yalnızca ana admin yönetir. Admin yalnızca sayı ve durum görür; muhasebe, çalışan ve fiş verisi görünmez.
 - Askıya alınan işletme: giriş ekranında uyarı alır ve Kais AI kullanamaz.
+
+## v147 — Admin: Kais AI
+- `kais-admin` yeniden yüklenmeli (`/tmp/out/kais-admin-FINAL.ts`). Yeni izin: `kais` (moderatöre ayrıca verilir, ana admin hepsini görür).
+- Aynı `ANTHROPIC_API_KEY` sırrı kullanılır. İsteğe bağlı: `KAIS_ADMIN_MODEL` (varsayılan claude-sonnet-5-5).
+- Kais AI yalnızca özet sayıları (işletme, AI, hata, kullanım, geri bildirim) görür; muhasebe/çalışan/fiş verisi yoktur.
