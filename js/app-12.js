@@ -157,3 +157,9 @@ function planPaint() {
 { const _ca = cloudAttach; cloudAttach = async function () { const r = await _ca.apply(this, arguments); try { await planLoad(); } catch (e) {} return r; }; }
 { const _cp = cloudPoll; cloudPoll = async function () { const r = await _cp.apply(this, arguments); try { if (Date.now() - PLAN.at > 10 * 60000) planLoad(); } catch (e) {} return r; }; }
 { const _rn = render; render = function () { const r = _rn.apply(this, arguments); try { planPaint(); } catch (e) {} return r; }; }
+
+/* KDV hesabı için tek yerden: ÖTV matrahtan düşülür, tevkifat KDV'nin kesilen kısmıdır (tv). */
+function mhKdvParts(r) {
+  const t = mxN(r.total), rt = mxN(r.rate), otv = Math.max(0, mxN(r.otv)); const base = t - otv; const m = rt ? base / (1 + rt / 100) : base; const k = rt ? base - m : 0;
+  return { t, m, k, tv: k * mhTv(r) };
+}

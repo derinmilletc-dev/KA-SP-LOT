@@ -448,7 +448,7 @@ function fxCard() {
 /* -- KDV özeti -- */
 function kdvData(per) {
   const rows = LEDGER.filter((r) => lper(r) === per); const by = {}; let hes = 0, ind = 0, hm = 0, im = 0;
-  rows.forEach((r) => { const k = Number(r.rate) || 0; const v = kdv(r), net = r.total - v; by[k] = by[k] || { h: 0, i: 0, hm: 0, im: 0 }; if (dirOf(r) === 'gelir') { by[k].h += v; by[k].hm += net; hes += v; hm += net; } else { by[k].i += v; by[k].im += net; ind += v; im += net; } });
+  rows.forEach((r) => { const k = Number(r.rate) || 0; const P = mhKdvParts(r); const v = P.k, net = P.m; by[k] = by[k] || { h: 0, i: 0, hm: 0, im: 0 }; if (dirOf(r) === 'gelir') { const hv = v - P.tv; by[k].h += hv; by[k].hm += net; hes += hv; hm += net; } else { by[k].i += v; by[k].im += net; ind += v; im += net; hes += P.tv; by[k].h += P.tv; } });
   return { by, hes, ind, hm, im, pay: Math.max(0, hes - ind), carry: Math.max(0, ind - hes), n: rows.length, free: ROWS.filter((r) => r.kind === 'gider' && !r.fid).length };
 }
 H.kdvp = (el) => { S.kdvp = el.dataset.p; render(); };
@@ -610,7 +610,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v162';
+const APP_VER = 'v163';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }

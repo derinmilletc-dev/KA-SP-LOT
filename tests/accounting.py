@@ -35,6 +35,16 @@ with sync_playwright() as p:
     check('Gelir tablosu: satis 2000, maliyet 1000, gider 3600, net -2600', g == [2000, 1000, 1000, 3600, 0, -2600], g)
     bl = pg.evaluate("()=>{const g=mhRange();const B=mhBilanco(g.to);return [B.ok,B.aktif,B.pasif]}")
     check('Bilanco aktif=pasif', bl[0], bl)
+    kd = pg.evaluate("()=>{const K=mxKdv(__ym);return [K.hes,K.ind,K.net,K.sor,K.tvs]}")
+    # satis1 kdv200 + satis2 kdv200-100(tevkifat)=100 -> 300; alis kdv: e1 200, e2 (OTV dusulunce 1200/1.2) 200, e4 200, e5 100 = 700; sorumlu 0
+    check('KDV: tevkifatli satista musterinin kestigi KDV hesaplanana yazilmaz', kd[0] == 300 and kd[4] == 100, kd)
+    check('KDV: OTV matrahtan dusuldu, indirilecek 700', kd[1] == 700, kd)
+    pg.evaluate("()=>{LEDGER[2].tv='5/10'}")
+    kd = pg.evaluate("()=>{const K=mxKdv(__ym);return [K.hes,K.ind,K.sor]}")
+    check('KDV: alista tevkifat sorumlu sifatiyla hesaplanana eklenir, indirilecek tam', kd == [400, 700, 100], kd)
+    pg.evaluate("()=>{delete LEDGER[2].tv}")
+    kd2 = pg.evaluate("()=>{const d=kdvData(CURM);return [typeof d.hes]}")
+    check('Eski KDV ozeti calisir', kd2 == ['number'])
     # hesap eslemesi degisimi
     pg.evaluate("()=>{mhMap()['Kira']='740'}")
     check('Hesap eslemesi gecerli (Kira 740)', pg.evaluate("()=>mhKod(LEDGER[2])") == '740')

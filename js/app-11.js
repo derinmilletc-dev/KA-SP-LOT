@@ -710,20 +710,23 @@ function ixFixRate() { const sh = ixCur(); if (!sh || MXI.map.rate == null) retu
 const MXK = { ym: '' };
 const mxYm = () => MXK.ym || fiIso().slice(0, 7);
 function mxKdv(ym) {
-  const rows = LEDGER.filter((r) => r.iso && r.iso.slice(0, 7) === ym); const G = {}, X = {}; let nodoc = 0, nodocAmt = 0, norate = 0;
+  const rows = LEDGER.filter((r) => r.iso && r.iso.slice(0, 7) === ym); const G = {}, X = {}; let nodoc = 0, nodocAmt = 0, norate = 0, sor = 0, tvs = 0;
   rows.forEach((r) => {
-    const t = mxN(r.total); const rt = mxN(r.rate); const m = rt ? t / (1 + rt / 100) : t; const k = t - m; const gelir = dirOf(r) === 'gelir';
+    const P = mhKdvParts(r); const t = P.t, rt = mxN(r.rate), m = P.m; const gelir = dirOf(r) === 'gelir';
     if (!gelir && (!r.doc || r.doc === '—')) { nodoc++; nodocAmt += t; return; }
+    /* tevkifat: satışta müşteri KDV'nin bir kısmını keser (bize hesaplanan olarak yazılmaz); alışta biz sorumlu sıfatıyla beyan ederiz */
+    const k = gelir ? P.k - P.tv : P.k; if (gelir) tvs += P.tv; else sor += P.tv;
     const B = gelir ? G : X; const o = B[rt] || (B[rt] = { rate: rt, m: 0, k: 0, t: 0, n: 0 }); o.m += m; o.k += k; o.t += t; o.n++;
   });
-  const sum = (B, f) => Object.values(B).reduce((a, o) => a + o[f], 0); const hes = sum(G, 'k'), ind = sum(X, 'k');
-  return { rows, G, X, hes: r2(hes), ind: r2(ind), net: r2(hes - ind), gm: r2(sum(G, 'm')), xm: r2(sum(X, 'm')), nodoc, nodocAmt: r2(nodocAmt) };
+  const sum = (B, f) => Object.values(B).reduce((a, o) => a + o[f], 0); const hes = sum(G, 'k') + sor, ind = sum(X, 'k');
+  return { rows, G, X, hes: r2(hes), ind: r2(ind), net: r2(hes - ind), gm: r2(sum(G, 'm')), xm: r2(sum(X, 'm')), nodoc, nodocAmt: r2(nodocAmt), sor: r2(sor), tvs: r2(tvs) };
 }
 const mxKdvTbl = (B, title) => { const L = Object.values(B).sort((a, b) => a.rate - b.rate); return `<div class="card flush" style="margin-top:10px"><div class="row between" style="padding:12px 14px 6px"><h3>${title}</h3></div>${L.length ? L.map((o) => `<div class="row between" style="padding:9px 14px;gap:8px;border-top:1px solid var(--line,#e5e8ee)"><div><b style="font-weight:600">%${o.rate}</b><div class="small muted">${o.n} kayıt · matrah ${fmt0(o.m)}</div></div><b class="num">${fmt0(o.k)}</b></div>`).join('') : '<div class="empty">Kayıt yok.</div>'}</div>`; };
 NEWM.mxkdv = () => {
   const ym = mxYm(); const K = mxKdv(ym); const inp = 'width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit';
   return sheet('KDV hazırlığı', `<div class="field" style="margin:0"><label for="mk-m">Dönem</label><input id="mk-m" type="month" value="${esc(ym)}" style="${inp}"></div>
   <div class="kpis" style="margin-top:10px"><div class="kpi"><div class="l">Hesaplanan</div><div class="v num">${fmt0(K.hes)}</div></div><div class="kpi"><div class="l">İndirilecek</div><div class="v num">${fmt0(K.ind)}</div></div><div class="kpi"><div class="l">${K.net >= 0 ? 'Ödenecek' : 'Devreden'}</div><div class="v num">${fmt0(Math.abs(K.net))}</div></div></div>
+  ${K.sor || K.tvs ? `<div class="callout" style="margin-top:10px">${ic('alert')}<div><b>Tevkifat hesaba katıldı</b><p style="margin-top:2px">${K.tvs ? 'Satışlarda müşterinin kestiği ' + fmt0(K.tvs) + ' KDV hesaplanana yazılmadı. ' : ''}${K.sor ? 'Alışlarda sorumlu sıfatıyla ' + fmt0(K.sor) + ' KDV hesaplanana eklendi; aynı tutar indirilecekte de var.' : ''}</p></div></div>` : ''}
   ${K.nodoc ? `<div class="callout warn" style="margin-top:10px">${ic('alert')}<div><b>${K.nodoc} belgesiz gider hesaba katılmadı</b><p style="margin-top:2px">${fmt0(K.nodocAmt)} tutarındaki giderin belge türü yok. Fiş ya da fatura bilgisi girilirse indirilecek KDV'ye eklenir.</p></div></div>` : ''}
   ${!K.rows.length ? '<p class="muted small" style="margin-top:10px">Bu dönemde kayıt yok.</p>' : ''}${mxKdvTbl(K.G, 'Hesaplanan KDV (satışlar)')}${mxKdvTbl(K.X, 'İndirilecek KDV (alışlar, belgeli giderler)')}
   <button class="btn block" style="margin-top:12px" data-a="mxkdvxl" ${K.rows.length ? '' : 'disabled'}>Excel olarak indir</button><p class="small muted" style="margin-top:8px">Kayıtlardaki KDV oranı ve KDV dahil tutardan hesaplanır. Beyanname öncesi mali müşavirinle kontrol et.</p>`);
@@ -737,7 +740,7 @@ H.mxkdvxl = async () => {
     const ws = wb.addWorksheet('KDV Özeti'); ws.columns = [{ width: 28 }, { width: 8 }, { width: 10 }, { width: 16 }, { width: 16 }, { width: 16 }]; ws.addRow([BIZ + ' · KDV özeti · ' + ym]).font = { bold: true, size: 13 }; ws.addRow([]);
     const sec = (t, B) => { ws.addRow([t]).font = { bold: true }; const h = ws.addRow(['', 'KDV %', 'Kayıt', 'Matrah', 'KDV', 'Toplam']); h.font = { bold: true }; Object.values(B).sort((a, b) => a.rate - b.rate).forEach((o) => { const r = ws.addRow(['', o.rate, o.n, r2(o.m), r2(o.k), r2(o.t)]); [4, 5, 6].forEach((c) => { r.getCell(c).numFmt = num; }); }); ws.addRow([]); };
     sec('Hesaplanan KDV (satışlar)', K.G); sec('İndirilecek KDV (belgeli giderler)', K.X);
-    [['Hesaplanan KDV', K.hes], ['İndirilecek KDV', K.ind], [K.net >= 0 ? 'Ödenecek KDV' : 'Devreden KDV', Math.abs(K.net)]].forEach((a) => { const r = ws.addRow([a[0], '', '', '', a[1]]); r.font = { bold: true }; r.getCell(5).numFmt = num; });
+    [['Hesaplanan KDV' + (K.sor ? ' (sorumlu sıfatıyla ' + K.sor.toFixed(2) + ' dahil)' : ''), K.hes], ['İndirilecek KDV', K.ind], [K.net >= 0 ? 'Ödenecek KDV' : 'Devreden KDV', Math.abs(K.net)]].forEach((a) => { const r = ws.addRow([a[0], '', '', '', a[1]]); r.font = { bold: true }; r.getCell(5).numFmt = num; });
     if (K.nodoc) { ws.addRow([]); ws.addRow(['Belgesiz gider (hesaba katılmadı)', '', K.nodoc, '', '', K.nodocAmt]).getCell(6).numFmt = num; }
     ['Gelir', 'Gider'].forEach((T) => { const w = wb.addWorksheet(T); w.columns = [{ header: 'Tarih', width: 12 }, { header: 'Açıklama', width: 36 }, { header: 'Hesap', width: 18 }, { header: 'Belge', width: 12 }, { header: 'KDV %', width: 8 }, { header: 'Matrah', width: 14 }, { header: 'KDV', width: 14 }, { header: 'Toplam', width: 14 }]; w.getRow(1).font = { bold: true };
       K.rows.filter((r) => (dirOf(r) === 'gelir') === (T === 'Gelir')).sort((a, b) => (a.iso < b.iso ? -1 : 1)).forEach((r) => { const t = mxN(r.total), rt = mxN(r.rate), m = rt ? t / (1 + rt / 100) : t; const x = w.addRow([mxDmy(r.iso), r.desc || '', r.acc || '', r.doc || '', rt, r2(m), r2(t - m), r2(t)]); [6, 7, 8].forEach((c) => { x.getCell(c).numFmt = num; }); }); });
