@@ -174,3 +174,13 @@ export function planWeekly(stok: any, led: any, now: { date: string; min: number
   const pc = prev > 0 ? ' (' + (cur >= prev ? '+' : '') + Math.round((cur / prev - 1) * 100) + '%)' : '';
   return { key: 'weekly:' + now.date, title: 'Geçen haftanın özeti', body: 'Ciro ' + tl(cur) + pc + (gid ? ', gider ' + tl(gid) : '') + (cur && gid ? ', fark ' + tl(cur - gid) : '') + '.' };
 }
+
+// Günlük kapanış: akşam 21:00-22:00 arası, yöneticilere günde bir kez.
+export function planClose(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string } | null {
+  if (now.min < 21 * 60 || now.min >= 22 * 60) return null;
+  const sales: any[] = stok && Array.isArray(stok.SALES) ? stok.SALES : []; const rows: any[] = led && Array.isArray(led.LEDGER) ? led.LEDGER : [];
+  const ciro = sales.filter((r) => r.date === now.date).reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const gider = rows.filter((r) => r.iso === now.date && (r.dir || 'gider') === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  if (!ciro && !gider) return null;
+  return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.' };
+}

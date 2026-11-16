@@ -182,6 +182,16 @@ function planWeekly(stok: any, led: any, now: { date: string; min: number }): { 
   return { key: 'weekly:' + now.date, title: 'Geçen haftanın özeti', body: 'Ciro ' + tl(cur) + pc + (gid ? ', gider ' + tl(gid) : '') + (cur && gid ? ', fark ' + tl(cur - gid) : '') + '.' };
 }
 
+// Günlük kapanış: akşam 21:00-22:00 arası, yöneticilere günde bir kez.
+function planClose(stok: any, led: any, now: { date: string; min: number }): { key: string; title: string; body: string } | null {
+  if (now.min < 21 * 60 || now.min >= 22 * 60) return null;
+  const sales: any[] = stok && Array.isArray(stok.SALES) ? stok.SALES : []; const rows: any[] = led && Array.isArray(led.LEDGER) ? led.LEDGER : [];
+  const ciro = sales.filter((r) => r.date === now.date).reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const gider = rows.filter((r) => r.iso === now.date && (r.dir || 'gider') === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  if (!ciro && !gider) return null;
+  return { key: 'close:' + now.date, title: 'Günün kapanışı', body: 'Bugün ciro ' + tl(ciro) + (gider ? ', gider ' + tl(gider) : '') + (ciro && gider ? ', fark ' + tl(ciro - gider) : '') + '.' };
+}
+
 /* ===== index.ts ===== */
 
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -280,6 +290,7 @@ Deno.serve(async (req) => {
       }
       for (const a of planAlerts(stok, now).concat(planAlerts2(stok, now))) { if (await claim(bid, a.key, 'alert')) out.pushes += await pushManagers(bid, a.title, a.body, a.key); }
       const wk = planWeekly(stok, led, now); if (wk && (await claim(bid, wk.key, 'weekly'))) out.pushes += await pushManagers(bid, wk.title, wk.body, wk.key);
+      const cl = planClose(stok, led, now); if (cl && (await claim(bid, cl.key, 'close'))) out.pushes += await pushManagers(bid, cl.title, cl.body, cl.key);
       const d = planDaily(ekip, now);
       if (d && (await claim(bid, d.key, 'daily'))) out.pushes += await pushManagers(bid, d.title, d.body, d.key);
     } catch (e) { out.errors.push(bid + ': ' + String((e as Error).message)); }

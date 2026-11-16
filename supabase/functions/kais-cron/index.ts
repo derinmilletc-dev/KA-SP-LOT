@@ -3,7 +3,7 @@
 // 2) Geç kalan çalışan ve sabah özeti için yöneticilere push
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
-import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, lateTxt, validEmail } from './logic.ts';
+import { TZ, nowIn, planMails, planLate, planDaily, planAlerts, planAlerts2, planWeekly, planClose, lateTxt, validEmail } from './logic.ts';
 
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sb = createClient(URL_, SRV, { auth: { persistSession: false } });
@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
       }
       for (const a of planAlerts(stok, now).concat(planAlerts2(stok, now))) { if (await claim(bid, a.key, 'alert')) out.pushes += await pushManagers(bid, a.title, a.body, a.key); }
       const wk = planWeekly(stok, led, now); if (wk && (await claim(bid, wk.key, 'weekly'))) out.pushes += await pushManagers(bid, wk.title, wk.body, wk.key);
+      const cl = planClose(stok, led, now); if (cl && (await claim(bid, cl.key, 'close'))) out.pushes += await pushManagers(bid, cl.title, cl.body, cl.key);
       const d = planDaily(ekip, now);
       if (d && (await claim(bid, d.key, 'daily'))) out.pushes += await pushManagers(bid, d.title, d.body, d.key);
     } catch (e) { out.errors.push(bid + ': ' + String((e as Error).message)); }

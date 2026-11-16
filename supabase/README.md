@@ -48,3 +48,8 @@ Uygulama kapalıyken de çalışır:
 - Varsayılan limitler (işletme başına): sohbet günde 40, ayda 600; fiş ve fiyat okuma günde 40, ayda 600. Değiştirmek için sırlar: `AI_CHAT_DAY`, `AI_CHAT_MONTH`, `AI_READ_DAY`, `AI_READ_MONTH`.
 - Fiş, belge ve fiyat listesi okuma `KAIS_AI_MODEL_FAST` (varsayılan `claude-haiku-5-5`) ile, sohbet ve eylemler `KAIS_AI_MODEL` (varsayılan `claude-sonnet-5-5`) ile çalışır.
 - Tablo kurulu değilse sayaç sessizce atlanır, kullanıcı engellenmez.
+
+## Hata kaydı, kullanım sayacı, kapanış bildirimi (v145)
+- `supabase/sql/telemetry.sql` dosyasını SQL Editor'de bir kez çalıştır (app_errors ve app_events tabloları, kullanıcı yalnızca kendi adına ekleyebilir, okuma yalnızca sunucu).
+- `kais-cron` güncellendi: her akşam 21:00-22:00 arası yöneticilere "Günün kapanışı" bildirimi (ciro, gider, fark). Dashboard'a `index.single.ts` içeriği yapıştırılır.
+- Davet bağlantısı: `/?kod=KOD` adresi açılınca çalışan giriş ekranında kod kendiliğinden yazılır; davet penceresinde QR ve WhatsApp düğmesi vardır.

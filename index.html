@@ -12969,6 +12969,57 @@ async function aiuLoad() {
   try { const c = sbClient(); if (!c || !SBS.biz) return; const r = await c.functions.invoke('kais-ai', { body: { business_id: SBS.biz.id, mode: 'usage', messages: [{ role: 'user', content: 'kullanım' }] } }); if (r.data && r.data.usage) { AIU.d = r.data.usage; AIU.at = Date.now(); if (S.view === 'kaisai') render(); } else AIU.at = Date.now(); } catch (e) { AIU.at = Date.now(); } finally { AIU.busy = false; }
 }
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
+
+/* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
+const APP_VER = 'v145';
+const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
+/* 2) Boş ekran yönlendirmesi */
+function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
+{ const _vh = viewHTML; viewHTML = function () {
+  const h = _vh.apply(this, arguments); let add = '';
+  try { if (sbLive()) {
+    if (S.view === 'muhasebe' && !LEDGER.length && !RECEIPTS.length) add = emCard('Henüz kayıt yok', 'İlk fişini fotoğrafla ekle, Kais satıcıyı, tutarı ve KDV\'yi okur.', 'upload', 'Fiş ekle');
+    else if (S.view === 'stok' && !STOCK.length) add = emCard('Stokta ürün yok', 'Ürünlerini tek tek ekle ya da fiyat listesi fotoğrafı yükle.', 'stkadd', 'Ürün ekle');
+    else if (S.view === 'ekip' && !EMP_IDS.length) add = emCard('Henüz çalışan yok', 'Ekip sayfasından çalışanını davet et, kodu WhatsApp ile gönder.', '', '');
+  } } catch (e) {}
+  if (!add) return h; const i = h.indexOf('>'); return i < 0 ? add + h : h.slice(0, i + 1) + add + h.slice(i + 1);
+}; }
+/* 3) Davet: WhatsApp ve QR */
+const ivLink = (code) => ((typeof location !== 'undefined' && /^http/.test(location.protocol)) ? location.origin : 'https://kaistrade.vercel.app') + '/?kod=' + encodeURIComponent(code);
+{ const _ic = NEWM.invcode; NEWM.invcode = function (m) { let h = _ic.apply(this, arguments); try { const l = ivLink(m.code);
+  h = h.replace('<button class="btn block" data-a="invcopy">Mesajı kopyala</button>', `<div class="su-qr">${qrSvg(l, 168)}<p class="small muted" style="margin:6px 0 0;text-align:center">Telefonla okutunca kod kendiliğinden yazılır</p></div><button class="btn block" data-a="invwa">WhatsApp ile gönder</button><button class="btn sec block" data-a="invcopy" style="margin-top:8px">Mesajı kopyala</button>`); } catch (e) {} return h; }; }
+H.invwa = () => { const m = S.modal; if (!m || !m.code) return; const t = invText(m.code) + '\nTek dokunuşla aç: ' + ivLink(m.code); try { window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); } catch (e) { cpy(t, 'Mesaj kopyalandı.'); } };
+/* davet bağlantısıyla gelen kişi: kod kendiliğinden yazılır */
+setTimeout(() => { try { const k = new URLSearchParams(location.search).get('kod'); if (!k || S.user) return; S.lgTab = 'emp'; S.lgCreate = true; S.empMode = 'join'; render(); setTimeout(() => { const i = document.getElementById('id-code'); if (i) i.value = k.toUpperCase().slice(0, 8); }, 250); } catch (e) {} }, 600);
+/* 5) Hata kaydı ve 6) kullanım sayacı: yalnızca bulut girişi varken, kişisel veri taşımaz */
+const TLM = { errs: [], seen: {}, ev: {}, off: false, n: 0 };
+function tlmCtx() { try { if (!sbOK() || !SBS.user || !SBS.biz) return null; return { business_id: SBS.biz.id, user_id: SBS.user.id, role: S.user ? S.user.role : null }; } catch (e) { return null; } }
+function tlmErr(msg, stack) { try { msg = String(msg || '').slice(0, 300); if (!msg || TLM.seen[msg] || TLM.n >= 8) return; TLM.seen[msg] = 1; TLM.n++; TLM.errs.push({ view: S.view || null, msg, stack: String(stack || '').slice(0, 800), ua: String(navigator.userAgent || '').slice(0, 160), ver: APP_VER }); } catch (e) {} }
+window.addEventListener('error', (e) => tlmErr(e.message, e.error && e.error.stack));
+window.addEventListener('unhandledrejection', (e) => tlmErr(e.reason && e.reason.message || e.reason, e.reason && e.reason.stack));
+function tlmEv(k) { TLM.ev[k] = (TLM.ev[k] || 0) + 1; }
+async function tlmFlush() {
+  if (TLM.off) return; const x = tlmCtx(); if (!x) return; const c = sbClient(); if (!c) return;
+  const errs = TLM.errs.splice(0), ev = TLM.ev; TLM.ev = {};
+  try {
+    if (errs.length) { const r = await c.from('app_errors').insert(errs.map((e) => Object.assign({}, x, e))); if (r.error && /app_errors|schema cache|does not exist/i.test(r.error.message || '')) TLM.off = true; }
+    const rows = Object.keys(ev).map((k) => Object.assign({}, x, { ev: k, n: ev[k] })); if (rows.length && !TLM.off) { const r = await c.from('app_events').insert(rows); if (r.error && /app_events|schema cache|does not exist/i.test(r.error.message || '')) TLM.off = true; }
+  } catch (e) {}
+}
+setInterval(tlmFlush, 60000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tlmFlush(); });
+{ const _n = H.nav; H.nav = function (el) { try { if (el && el.dataset && el.dataset.v) tlmEv('v:' + el.dataset.v); } catch (e) {} return _n.apply(this, arguments); }; }
+['fisave', 'savereceipt', 'aisend', 'xlsx', 'rxcsv', 'rxpdf', 'invmake', 'invwa', 'kdvcsv', 'bkdl', 'lrsend'].forEach((n) => { const f = H[n]; if (typeof f === 'function') H[n] = function () { try { tlmEv('a:' + n); } catch (e) {} return f.apply(this, arguments); }; });
+/* 7) Yıllık dışa aktarma kartı (Raporlar) */
+function expCard() {
+  return `<div class="card stack"><div><h3>Dışa aktar</h3><p class="muted small" style="margin-top:2px">Muhasebeciye vermek ya da arşivlemek için.</p></div>
+  <button class="btn sec block" data-a="xlsx">${ic('file')} Tüm kayıtlar (Excel)</button>
+  <button class="btn sec block" data-a="expfat">${ic('file')} Faturalar (CSV)</button>
+  ${S.user && S.user.role === 'patron' ? `<button class="btn sec block" data-a="bkdl">${ic('file')} Tüm veri yedeği</button>` : ''}</div>`;
+}
+{ const _v = viewRaporX; viewRaporX = function () { const h = _v.apply(this, arguments); const i = h.indexOf('<div class="card stack"><div><h3>Aylık karşılaştırma</h3>'); return i < 0 ? h : h.slice(0, i) + expCard() + h.slice(i); }; }
+H.expfat = () => { const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; const L = [['No', 'Tarih', 'Müşteri', 'Tutar', 'Durum', 'Vade'].join(';')].concat(INV.map((v) => [q(v.no), q(v.iso || v.date || ''), q(v.cust), String(Number(v.tot) || 0).replace('.', ','), v.st === 'odendi' ? 'Ödendi' : 'Bekliyor', q(v.due || '')].join(';')));
+  saveBlob('faturalar.csv', new Blob(['﻿' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' })); toast('Faturalar indirildi.', 'ok'); };
+(function () { try { const st = document.createElement('style'); st.textContent = '.su-empty{display:flex;gap:12px;align-items:center}.su-qr{display:grid;place-items:center;margin:8px 0}.su-qr svg{border-radius:8px;background:#fff;padding:6px}'; document.head.appendChild(st); } catch (e) {} })();
 </script>
 </body>
 </html>
