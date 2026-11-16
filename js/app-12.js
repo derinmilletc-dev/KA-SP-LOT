@@ -383,7 +383,7 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 {
   const css = document.createElement('style'); css.id = 'lx3-css';
   css.textContent = `
-.lx3 .lp,.lx3 .lp-ft{display:none}
+.lx3 .lp,.lx3 .lp-ft,.lx3 .lx-sl{display:none}
 @media(min-width:1000px){
 .login.lx.lx2.lx3{display:grid!important;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:stretch!important;justify-content:stretch!important;padding:0!important;min-height:100vh!important;background:#F4F7FC!important}
 .lx3 .lx-hero{grid-column:1;grid-row:1;max-width:none!important;width:auto!important;padding:44px 60px 36px!important;position:relative!important;overflow:hidden!important;color:#fff;display:flex!important;flex-direction:column!important;gap:26px;background:linear-gradient(150deg,#0C4F9E 0%,#0A3A70 52%,#072B55 100%)!important}
@@ -396,8 +396,9 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 .lx3 .lx-hero{justify-content:flex-start;gap:0!important;padding:44px clamp(48px,5vw,84px) 34px!important;background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1px,transparent 0) 0 0/26px 26px,linear-gradient(155deg,#0D55A8 0%,#093566 50%,#061F40 100%)!important}
 .lx3 .lx-copy{display:block!important;margin-top:auto;max-width:none!important;width:100%!important}
 .lx3 .lx-copy h2 em{white-space:nowrap}
-.lx3 .lx-eb{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;letter-spacing:.2px;color:rgba(255,255,255,.88);padding:7px 14px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)}
-.lx3 .lx-eb::before{content:"";width:7px;height:7px;border-radius:50%;background:#2ED39A;box-shadow:0 0 0 4px rgba(46,211,154,.22)}
+.lx3 .lx-brand{display:flex!important;align-items:center}
+.lx3 .lx-sl{display:inline-flex;align-items:center;margin-left:16px;padding:6px 0 6px 16px;border-left:1px solid rgba(255,255,255,.28);font-style:normal;font-size:13px;font-weight:500;letter-spacing:.25px;color:rgba(255,255,255,.78);white-space:nowrap}
+.lx3 .lx-sl::before{content:"";width:6px;height:6px;border-radius:50%;background:#2ED39A;box-shadow:0 0 0 4px rgba(46,211,154,.2);margin-right:10px}
 .lx3 .lx-copy h2{font-size:clamp(40px,3.7vw,66px)!important;line-height:1.08!important;letter-spacing:-.025em;color:#fff!important;max-width:680px;font-weight:600;margin:22px 0 0!important}
 .lx3 .lx-copy h2 em{font-style:normal;font-weight:700;background:linear-gradient(100deg,#8FD0FF,#5BE5B4);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
 .lx3 .lx-copy p{font-size:clamp(17px,1.35vw,20px)!important;line-height:1.55!important;font-weight:400;color:rgba(255,255,255,.72)!important;max-width:520px;margin-top:20px!important}
@@ -423,15 +424,15 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 .lx3 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}
 .lx3 .lx-caps.on{display:block}
 }
-@media(min-width:1000px) and (max-height:800px){.lx3 .lp-pvw{display:none!important}}
+@media(min-width:1000px) and (max-height:900px){.lx3 .lp-pvw{display:none!important}}
 @media(min-width:1000px) and (max-height:700px){.lx3 .lp{display:none!important}}
 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}.lx-caps.on{display:block}
 .lx-copyr{width:100%;text-align:center;font-size:12.5px;color:#74839A;margin:14px 0 0}@media(min-width:1000px){.lx3 .lx-copyr{display:none}}
 `;
   document.head.appendChild(css);
   const FE = {
-    own: { eb: 'Küçük işletmeler için akıllı yönetim', h: 'İşletmenizi <em>tek yerden</em> yönetin.', p: 'Fiş, ekip, stok ve tedarik süreçleriniz tek ekranda.', f: [['receipt', 'Fişi fotoğrafla, Kais okusun', 'Tutar, KDV ve kategori kendiliğinden gelir.'], ['users', 'Ekip, vardiya ve izin', 'Plan, talep ve onaylar tek yerde.'], ['box', 'Stok ve tedarik', 'Azalan ürün için sipariş önerisi hazır.'], ['sparkle', 'Kais AI', 'Sorunu yaz, işlemi senin onayına hazırlasın.']] },
-    emp: { eb: 'Ekip alanı', h: 'Ekibe <em>hoş geldin.</em>', p: 'Vardiyanı, iznini ve görevlerini tek yerden takip et.', f: [['calendar', 'Vardiya planın', 'Hangi gün kaçta, hep elinin altında.'], ['clock', 'İzin ve talepler', 'İzin iste, durumunu anında gör.'], ['check', 'Görevler', 'Bugünün işleri ve tamamladıkların.']] },
+    own: { h: 'İşletmenizi <em>tek yerden</em> yönetin.', p: 'Fiş, ekip, stok ve tedarik süreçleriniz tek ekranda.', f: [['receipt', 'Fişi fotoğrafla, Kais okusun', 'Tutar, KDV ve kategori kendiliğinden gelir.'], ['users', 'Ekip, vardiya ve izin', 'Plan, talep ve onaylar tek yerde.'], ['box', 'Stok ve tedarik', 'Azalan ürün için sipariş önerisi hazır.'], ['sparkle', 'Kais AI', 'Sorunu yaz, işlemi senin onayına hazırlasın.']] },
+    emp: { h: 'Ekibe <em>hoş geldin.</em>', p: 'Vardiyanı, iznini ve görevlerini tek yerden takip et.', f: [['calendar', 'Vardiya planın', 'Hangi gün kaçta, hep elinin altında.'], ['clock', 'İzin ve talepler', 'İzin iste, durumunu anında gör.'], ['check', 'Görevler', 'Bugünün işleri ve tamamladıkların.']] },
   };
   const CPR = '© ' + new Date().getFullYear() + ' KaisPilot. Tüm hakları saklıdır.';
   const _out = loginHTML;
@@ -440,9 +441,10 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
     const k = (S.lgTab === 'emp' && !S.lgCreate) ? 'emp' : 'own'; const d = FE[k];
     const feats = `<div class="lp">${d.f.map((x) => `<div class="lp-f"><span class="lp-i">${ic(x[0], 20)}</span><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join('')}</div>`;
     const pv = k === 'own' ? `<div class="lp lp-pvw"><div class="lp-pv"><div class="lp-ph"><span>Bugün</span><span>Örnek ekran</span></div><div class="lp-k"><div><small>Bu ay gelir</small><b>₺248.600</b></div><div><small>Gider</small><b>₺161.200</b></div><div><small>Onay bekleyen fiş</small><b class="up">3</b></div></div><div class="lp-ai"><i>K</i><span>Süt stoğu azalıyor. Tedarikçiye sipariş hazırlayayım mı?</span></div></div></div>` : '';
-    h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><span class="lx-eb">${d.eb}</span><h2>${d.h}</h2><p>${d.p}</p></div>`);
+    h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><h2>${d.h}</h2><p>${d.p}</p></div>`);
     h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">${CPR}</div></section>`);
     h = h.replace(/<\/section><\/div>$/, `</section><p class="lx-copyr">${CPR}</p></div>`);
+    h = h.replace(/(<div class="lx-brand">[\s\S]*?<span>KaisPilot<\/span>)/, '$1<i class="lx-sl">Yöneten Siz, Kolaylaştıran Kais</i>');
     h = h.replace(/<div class="login lx([^"]*)"/, '<div class="login lx$1 lx3"');
     h = h.replace(/(<div class="lx-in">(?:(?!<\/div>)[\s\S])*?id="(?:id|sg)-pw"[\s\S]*?<\/div>)/, '$1<div class="lx-caps" role="status">Caps Lock açık</div>');
     return h;
