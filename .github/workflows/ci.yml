@@ -52,6 +52,7 @@ jobs:
           python3 tests/flows2.py
           python3 tests/signup.py
           python3 tests/ai_actions.py
+          python3 tests/slowload.py
       - name: Disari aktarmalar (Excel, CSV, yedek)
         run: |
           pip install openpyxl pillow

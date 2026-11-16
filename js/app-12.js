@@ -447,3 +447,10 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
   render = function () { _rn.apply(this, arguments); try { if (!S.user && window.matchMedia && matchMedia('(min-width:1000px)').matches && !S.lgCreate && !(document.activeElement && document.activeElement.tagName === 'INPUT')) setTimeout(() => { const em = document.getElementById('id-em'); const pw = document.getElementById('id-pw'); const t = em && em.value ? pw : em; if (t && !(document.activeElement && document.activeElement.tagName === 'INPUT')) t.focus(); }, 40); } catch (e) {} };
   document.addEventListener('keydown', (e) => { const t = e.target; if (!t || !t.id || !/^(id|sg)-pw$/.test(t.id) || !e.getModifierState) return; const c = t.closest('.lx-f, .lx-in'); const box = c && (c.parentElement || c).querySelector('.lx-caps'); if (box) box.classList.toggle('on', e.getModifierState('CapsLock')); });
 }
+
+/* v173: betikler ağdan sırayla yüklenirken ilk çizim eski giriş ekranıyla kalabiliyordu; tüm betikler gelince bir kez yeniden çiz */
+if (typeof window !== 'undefined') {
+  const lastPaint = () => { try { if (!S.user && !S.modal && !Array.from(document.querySelectorAll('input')).some((i) => i.value && i.id !== 'id-em')) { const e = document.getElementById('id-em'); if (e && e.value) S.lgEm = e.value; render(); } } catch (e) {} };
+  setTimeout(lastPaint, 0);
+  if (document.readyState !== 'complete') window.addEventListener('load', () => setTimeout(lastPaint, 50)); else setTimeout(lastPaint, 50);
+}
