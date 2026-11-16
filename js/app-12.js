@@ -161,3 +161,9 @@ function mhKdvParts(r) {
   const t = mxN(r.total), rt = mxN(r.rate), otv = Math.max(0, mxN(r.otv)); const base = t - otv; const m = rt ? base / (1 + rt / 100) : base; const k = rt ? base - m : 0;
   return { t, m, k, tv: k * mhTv(r) };
 }
+
+/* v165: salt okunur planda yazan kalan işleyiciler de kilitlenir (dönem kapanışı bunlara uygulanmaz) */
+['saleimport', 'ebsave', 'rztadd', 'vdtog', 'vdmin', 'vdauto', 'vdcopy', 'vdclear', 'vdpub', 'vdtadd', 'vdtdel', 'izweek', 'izoff', 'brpub', 'brnoti', 'brkp', 'brkm', 'brperm', 'chk', 'rqsend', 'opgo', 'ppwk', 'ftcol', 'clkmode', 'rptog', 'kaall', 'kaundo', 'sendmsg', 'respond'].forEach((n) => {
+  const o = H[n]; if (typeof o !== 'function') return;
+  H[n] = function () { try { if (PLAN.ro) { toast('Aboneliğin sona erdiği için kayıt yapılamıyor.', 'warn'); return; } } catch (e) {} return o.apply(this, arguments); };
+});

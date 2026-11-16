@@ -516,7 +516,7 @@ H.rzst = (el) => {
 };
 H.rzcopy = (el) => { const r = RESV.find((x) => x.id === el.dataset.id); if (r) cpy(rzMsg(r, 'hat'), 'Mesaj kopyalandı.'); };
 H.rznew = () => { S.modal = { type: 'rznew', id: null, name: '', phone: '', n: 2, date: S.rzDate, time: '19:00', dur: RCFG.dur, src: 'Telefon', note: '', tid: 'auto' }; renderModal(); };
-H.rzedit = (el) => { const r = RESV.find((x) => x.id === el.dataset.id); if (!r) return; S.modal = { type: 'rznew', id: r.id, name: r.name, phone: r.phone, n: r.n, date: r.date, time: r.time, dur: r.dur, src: r.src, note: r.note, tid: r.tids.length === 1 ? r.tids[0] : 'auto' }; renderModal(); };
+H.rzedit = (el) => { const r = RESV.find((x) => x.id === el.dataset.id); if (!r) return; S.modal = { type: 'rznew', id: r.id, od: r.date, name: r.name, phone: r.phone, n: r.n, date: r.date, time: r.time, dur: r.dur, src: r.src, note: r.note, tid: r.tids.length === 1 ? r.tids[0] : 'auto' }; renderModal(); };
 function rzCheck(m) {
   const s = toMin(m.time); let res = null; let msg = ''; let alt = [];
   if (m.tid === 'auto') { res = rzAssign(m.date, m.time, m.dur, m.n, m.id); if (!res) alt = rzAlt(m.date, m.time, m.dur, m.n, m.id); }
@@ -542,7 +542,7 @@ H.rzslot = (el) => { if (S.modal && S.modal.type === 'rznew') { S.modal.time = e
 H.rzsave = () => {
   const m = S.modal; if (!m || m.type !== 'rznew') return; const g = (id) => (document.getElementById(id) || {}).value; m.name = (g('rz-name') || m.name || '').trim(); m.phone = (g('rz-phone') || m.phone || '').trim(); m.note = (g('rz-note') != null ? g('rz-note') : m.note) || '';
   const err = (t) => { const e = document.getElementById('rz-err'); if (e) e.textContent = t; };
-  if (!m.name) return err('Misafirin adını yaz.'); if (!(m.n >= 1)) return err('Kişi sayısını yaz.'); if (!m.date || m.date < REF_ISO) return err('Geçmiş bir tarih seçilemez.');
+  if (!m.name) return err('Misafirin adını yaz.'); if (!(m.n >= 1)) return err('Kişi sayısını yaz.'); if (!m.date || (m.date < REF_ISO && !(m.id && m.date === m.od))) return err('Geçmiş bir tarih seçilemez.');
   const c = rzCheck(m); if (!c.res) return err(c.msg || 'Bu saatte uygun masa yok. Başka saat ya da masa seç.');
   if (m.id) { const r = RESV.find((x) => x.id === m.id); if (r) Object.assign(r, { name: m.name, phone: m.phone, n: m.n, date: m.date, time: m.time, dur: m.dur, src: m.src, note: m.note, tids: c.res }); }
   else RESV.push({ id: 'r' + (++seq), name: m.name, phone: m.phone, n: m.n, date: m.date, time: m.time, dur: m.dur, tids: c.res, src: m.src, note: m.note, st: 'onay', by: S.user ? S.user.id : '' });
@@ -560,7 +560,7 @@ onChange = function (e) {
   if (ch === 'rzcap') { const t = TABLES.find((x) => x.id === el.dataset.id); if (t) t.cap = Math.max(1, Math.min(30, parseInt(el.value, 10) || t.cap)); render(); return; }
   if (ch === 'rzf' && S.modal && S.modal.type === 'rznew') {
     const m = S.modal; const k = el.dataset.k; m[k] = (k === 'n' || k === 'dur') ? Number(el.value) : el.value;
-    if (['n', 'date', 'time', 'dur', 'tid'].includes(k)) { if (k === 'date' && m.date < REF_ISO) m.date = REF_ISO; renderModal(); }
+    if (['n', 'date', 'time', 'dur', 'tid'].includes(k)) { if (k === 'date' && m.date < REF_ISO && !(m.id && m.date === m.od)) m.date = REF_ISO; renderModal(); }
     else if (k === 'phone') { const h = rzHist(m.phone, m.id); const x = document.getElementById('rz-hist'); if (x) x.textContent = h.miss ? h.miss + ' kez gelmemiş bir misafir.' : ''; }
     return;
   }

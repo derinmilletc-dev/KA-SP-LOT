@@ -1523,7 +1523,7 @@ const _ms = H.mailsave;
 H.mailsave = (el) => { _ms(el); if (S.mail.on && !S.openChk.includes('mail')) { S.openChk.push('mail'); render(); } };
 
 H.respond = (el) => {
-  const m = MSGS.find((x) => x.id === el.dataset.id);
+  const m = MSGS.find((x) => x.id === el.dataset.id); if (!m) return;
   if (el.dataset.v === 'red') { S.modal = { type: 'why', kind: 'offer', id: m.id }; renderModal(); return; }
   m.res[S.user.id] = 'kabul'; render(); toast('Teklifi kabul ettin.', 'ok');
 };
@@ -1535,7 +1535,7 @@ H.whyok = () => {
   const t = ((document.getElementById('why-text') || {}).value || '').trim();
   if (t.length < 5) { const er = document.getElementById('why-err'); if (er) er.textContent = 'En az bir cümle yaz. Gerekçe olmadan devam edilemez.'; return; }
   if (m.kind === 'offer') {
-    const g = MSGS.find((x) => x.id === m.id);
+    const g = MSGS.find((x) => x.id === m.id); if (!g) { S.modal = null; render(); return; }
     g.res[S.user.id] = 'red'; (g.why = g.why || {})[S.user.id] = { text: t, time: nowT() }; g.whyNew = true;
     S.modal = null; render(); toast('Teklifi reddettin. Mazeretin işverene gitti.', 'ok'); return;
   }
