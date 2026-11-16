@@ -18,6 +18,7 @@ const MODEL_FAST = Deno.env.get('KAIS_AI_MODEL_FAST') || 'claude-haiku-5-5';
 const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const num = (k: string, d: number) => { const v = Number(Deno.env.get(k)); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
 // İşletme başına limitler (isteğe bağlı sırlarla değiştirilir)
+let QERR = '';
 const LIM = { chat: { day: num('AI_CHAT_DAY', 40), month: num('AI_CHAT_MONTH', 600) }, read: { day: num('AI_READ_DAY', 40), month: num('AI_READ_MONTH', 600) } };
 const SB_URL = Deno.env.get('SUPABASE_URL') || '';
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -135,6 +136,7 @@ export async function handle(req: Request): Promise<Response> {
     const q = await sb.from('ai_quota').select('day,kind,n').eq('business_id', bid).gte('day', new Date(Date.now() - 32 * 864e5).toISOString().slice(0, 10));
     const tr = new Date(Date.now() + 3 * 36e5).toISOString().slice(0, 10); const out: any = { chat: { day: 0, month: 0 }, read: { day: 0, month: 0 }, limits: LIM };
     (q.data || []).forEach((x: any) => { if (!out[x.kind]) return; if (x.day === tr) out[x.kind].day += x.n; if (String(x.day).slice(0, 7) === tr.slice(0, 7)) out[x.kind].month += x.n; });
+    out.diag = { srv: !!SB_SRV, err: QERR };
     return J({ usage: out });
   }
   const kind: 'chat' | 'read' = (mode === 'fis' || mode === 'belge' || /"urunler"/.test(last)) ? 'read' : 'chat';
@@ -143,8 +145,9 @@ export async function handle(req: Request): Promise<Response> {
       const srv = createClient(SB_URL, SB_SRV, { auth: { persistSession: false } });
       const h = await srv.rpc('ai_quota_hit', { p_biz: bid, p_kind: kind, p_day_max: LIM[kind].day, p_month_max: LIM[kind].month });
       const row = Array.isArray(h.data) ? h.data[0] : h.data;
+      QERR = h.error ? String(h.error.message || h.error.code || 'rpc').slice(0, 160) : (row ? '' : 'bos_donus');
       if (!h.error && row && row.ok === false) return ERR(row.day_n >= LIM[kind].day ? 'Bugünlük Kais AI hakkın doldu. Yarın yeniden dene.' : 'Bu ayki Kais AI hakkın doldu. Yeni ay başında yenilenir.', 429);
-    } catch (_) { /* sayaç tablosu kurulu değilse engelleme */ }
+    } catch (e) { QERR = 'exc:' + String((e as Error)?.message || e).slice(0, 160); }
   }
   try {
     // 1) Yapılandırılmış okuma kipleri: yalnızca JSON
