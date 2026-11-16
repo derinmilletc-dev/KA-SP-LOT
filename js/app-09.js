@@ -534,7 +534,7 @@ H.mkpay = (el) => { S.modal = { type: 'mkpay', id: el.dataset.id }; renderModal(
 NEWM.mkpay = (m) => { const o = mkOrdOf(m.id); return sheet('Ödemeyi bildir', `<p class="muted">${esc(o.supplier_name)} için havaleyi yaptıktan sonra bilgisini gir. Üretici ödemeyi görünce onaylar.</p><div class="field"><label for="mk-pa">Havale tutarı (₺)</label><input id="mk-pa" inputmode="decimal" value="${esc(String(o.total || ''))}"></div><div class="field"><label for="mk-pd">Havale tarihi</label><input type="date" id="mk-pd" value="${REF_ISO}"></div><div class="field"><label for="mk-pr">Dekont / referans no</label><input id="mk-pr" maxlength="60"></div><div class="field"><label for="mk-pf">Dekont fotoğrafı (isteğe bağlı)</label><input type="file" id="mk-pf" accept="image/*"></div><div class="err" id="mk-e" role="alert"></div><button class="btn block" data-a="mkpayok" data-id="${m.id}">Ödendi olarak kaydet</button>`); };
 function mkResize(file) { return new Promise((ok, no) => { const fr = new FileReader(); fr.onerror = () => no(new Error('Dosya okunamadı.')); fr.onload = () => { const im = new Image(); im.onerror = () => no(new Error('Görsel açılamadı.')); im.onload = () => { const k = Math.min(1, 1400 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); c.toBlob((b) => (b ? ok(b) : no(new Error('Görsel işlenemedi.'))), 'image/jpeg', 0.75); }; im.src = fr.result; }; fr.readAsDataURL(file); }); }
 H.mkpayok = async (el) => {
-  if (MK.busy) return; const v = (id) => ((document.getElementById(id) || {}).value || '').trim(); const e = document.getElementById('mk-e'); const amt = Number(v('mk-pa').replace(',', '.')); if (!(amt > 0)) { e.textContent = 'Tutarı yaz.'; return; }
+  if (MK.busy) return; const v = (id) => ((document.getElementById(id) || {}).value || '').trim(); const e = document.getElementById('mk-e'); const amt = trNum(v('mk-pa')); if (!(amt > 0)) { e.textContent = 'Tutarı yaz.'; return; }
   MK.busy = true; let path = null; const f = (document.getElementById('mk-pf') || {}).files; 
   if (f && f[0]) { try { const b = await mkResize(f[0]); path = el.dataset.id + '/' + Date.now() + '.jpg'; const u = await sbClient().storage.from('market-docs').upload(path, b, { contentType: 'image/jpeg' }); if (u.error) { path = null; toast('Dekont fotoğrafı yüklenemedi, ödeme bilgisi yine de kaydedilecek.', 'warn'); } } catch (x) { path = null; } }
   MK.busy = false; return mkDo(el.dataset.id, 'paid', { p_amount: amt, p_date: v('mk-pd') || null, p_text: v('mk-pr') || null, p_doc: path });
@@ -771,7 +771,7 @@ H.plread = async () => {
 };
 H.plsave = () => {
   const g = (i) => document.getElementById(i); const items = {}; let n = 0;
-  PL.rows.forEach((r, i) => { const sid = g('pl-m' + i).value; const v = Number(String(g('pl-p' + i).value).replace(',', '.')); if (sid && v > 0) { items[sid] = v; n++; } });
+  PL.rows.forEach((r, i) => { const sid = g('pl-m' + i).value; const v = trNum(g('pl-p' + i).value); if (sid && v > 0) { items[sid] = v; n++; } });
   if (!n) { g('pl-err').textContent = 'Eşleşen ürün yok. En az bir satırı bir ürünle eşle.'; return; }
   let sup = SUPPLIERS.find((t) => t.id === PL.sup);
   if (PL.nw.trim()) { sup = { id: 't' + (++seq), name: PL.nw.trim(), phone: '', email: '', lead: 2, minAmt: 0, items: {} }; SUPPLIERS.push(sup); }

@@ -855,7 +855,7 @@ function dbRem(d) {
   if (rest <= 0.005) return Object.assign({}, d, { paid: true });
   return Object.assign({}, d, { orig: d.amt, amt: rest, note: String(d.note || '') + ' · ' + fmt0(dbPaidAmt(d)) + ' ödendi' });
 }
-const dbOpen = (d) => (d.paid ? 0 : dbRem(d).amt);
+const dbOpen = (d) => { if (d.paid) return 0; const r = dbRem(d); return r.paid ? 0 : r.amt; };
 function dbPay(d, amt, iso, note) {
   const a = Math.min(ivR(mxN(amt)), dbOpen(d)); if (!(a > 0)) return 0;
   (d.pays || (d.pays = [])).push({ id: 'p' + ++seq, iso: iso || fiIso(), amt: a, note: String(note || '').slice(0, 80) });

@@ -72,7 +72,7 @@ function hitFix() { try { document.querySelectorAll('main button,main .sw,main [
       const upd = (i) => {
         const row = root.querySelectorAll('.pl-r')[i]; if (!row) return; const sel = document.getElementById('pl-m' + i); const inp = document.getElementById('pl-p' + i); const nm = row.querySelector('.pl-n');
         let h = nm.querySelector('.pl-h'); if (!h) { h = document.createElement('span'); h.className = 'pl-h'; nm.appendChild(h); }
-        const v = Number(String(inp.value).replace(',', '.')); const old = sup && sel.value && sup.items && sup.items[sel.value];
+        const v = trNum(inp.value); const old = sup && sel.value && sup.items && sup.items[sel.value];
         row.classList.toggle('pl-un', !sel.value);
         if (!sel.value) { h.className = 'pl-h nw'; h.textContent = 'Eşleşmedi. Ürün seç ya da atla'; }
         else if (old > 0 && v > 0) { const d = Math.round((v / old - 1) * 100); h.className = 'pl-h ' + (d > 0 ? 'up' : d < 0 ? 'dn' : ''); h.textContent = d === 0 ? 'Fiyat aynı' : 'Eski ' + fmt(old) + ' ' + (d > 0 ? '↑ %' : '↓ %') + Math.abs(d); }
@@ -358,7 +358,7 @@ function kaInvoiceAct(text) { if (!fiOk()) return { content: 'Fatura kesmek patr
 /* ===== v137: fatura gönder (PDF/WhatsApp/e-posta), tahsilat, tekrarlayan, müşteri rehberi, ürün listesi ===== */
 const FCUST = [], FITEMS = [], FREC = [];
 [['FCUST', FCUST], ['FITEMS', FITEMS], ['FREC', FREC]].forEach(([k, a]) => { P_ARR.push([k, () => a]); P_SCOPE[k] = 'muh'; });
-const fiIso = () => new Date().toISOString().slice(0, 10);
+const fiIso = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }; /* yerel gün: gece 00-03 arası UTC dünü gösterirdi */
 const fiAddMonth = (iso) => { const a = iso.split('-').map(Number); const d = new Date(Date.UTC(a[0], a[1], 1)); const last = new Date(Date.UTC(a[0], a[1] + 1, 0)).getUTCDate(); d.setUTCDate(Math.min(a[2], last)); return d.toISOString().slice(0, 10); };
 const fiLate = (v) => v.st !== 'odendi' && v.due && v.due < fiIso();
 const fiLateN = () => INV.filter(fiLate).length;
@@ -610,7 +610,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v164';
+const APP_VER = 'v165';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }

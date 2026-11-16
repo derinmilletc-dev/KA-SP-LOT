@@ -762,7 +762,8 @@ function ocrParse(text, conf) {
   seller = seller.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü0-9 .&'-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
   if (seller && seller === seller.toLocaleUpperCase('tr-TR')) seller = seller.toLocaleLowerCase('tr-TR').replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toLocaleUpperCase('tr-TR'));
   const rc = {}; lines.filter((l) => /kdv|kdy/i.test(l)).forEach((l) => { [...l.matchAll(/%\s*(\d{1,2})|[*xX]\s*(\d{1,2})(?!\d)|(?:^|[\s"“”'*])(1|8|10|18|20)(?=\s+\d{1,3}(?:\.\d{3})*[,.]\d{2})/g)].forEach((m) => { const v = Number(m[1] || m[2] || m[3]); if ([1, 8, 10, 18, 20].includes(v)) rc[v] = (rc[v] || 0) + 1; }); });
-  const rk = Object.keys(rc).sort((a, b) => rc[b] - rc[a])[0]; const rate = rk ? Number(rk) : 20;
+  if (!Object.keys(rc).length) lines.forEach((l) => { const m = l.match(/[%&]\s*(\d{1,2})(?!\d)/); if (m && [1, 8, 10, 18, 20].includes(Number(m[1]))) rc[Number(m[1])] = (rc[Number(m[1])] || 0) + 1; });
+  const rk = Object.keys(rc).sort((a, b) => rc[b] - rc[a] || Number(b) - Number(a))[0]; const rate = rk ? Number(rk) : 20;
   let cat = null; const lo = seller.toLocaleLowerCase('tr-TR'); const rule = RULES.find((r) => lo.includes(String(r.k).toLocaleLowerCase('tr-TR')));
   if (rule) cat = rule.v; else if (/akaryak|petrol|opet|shell|bp\b|total\b|aygaz|lpg/.test(lo + ' ' + raw.toLowerCase().slice(0, 300))) cat = 'Akaryakıt'; else if (/turkcell|vodafone|telekom|superonline/.test(lo)) cat = 'Telefon / internet'; else if (/enerji|elektrik|edaş|enerjisa/.test(lo)) cat = 'Elektrik'; else if (/su\s*idare|iski|aski/.test(lo)) cat = 'Su';
   const found = (total != null ? 1 : 0) + (date ? 1 : 0) + (seller ? 1 : 0); const c0 = Number(conf) > 0 ? Number(conf) / 100 : 0.6;
@@ -821,7 +822,7 @@ function posRow(p) {
   const g = (...k) => { for (const x of k) if (p[x] != null && p[x] !== '') return p[x]; return null; };
   const prod = String(g('urun', 'product', 'name', 'prod', 'item') || '').trim();
   const qty = Number(String(g('adet', 'qty', 'quantity', 'miktar') == null ? 1 : g('adet', 'qty', 'quantity', 'miktar')).replace(',', '.'));
-  const total = Number(String(g('tutar', 'total', 'amount', 'fiyat', 'price') == null ? NaN : g('tutar', 'total', 'amount', 'fiyat', 'price')).replace(',', '.'));
+  const _tv = g('tutar', 'total', 'amount', 'fiyat', 'price'); const total = _tv == null ? NaN : typeof _tv === 'number' ? _tv : trNum(_tv);
   let d = String(g('tarih', 'date', 'time') || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { const m = d.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/); d = m ? m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0') : REF_ISO; }
   if (!prod || !(qty > 0) || !isFinite(total) || total < 0) return null;
   return { date: d, prod, qty, total };
@@ -1500,7 +1501,7 @@ H.onbnext = async () => {
     if (String(ONB.d.sig || '').trim().length < 3) return onbErr('İmza için adını soyadını yaz.');
     ONB.busy = true; render();
     await onbSaveSub({ consents: ONB.d.consents, signature: ONB.d.sig.trim(), contract_version: ONB.ver, contract_snapshot: onbFill(cfg.contract && cfg.contract.text), accepted_at: new Date().toISOString() });
-    try { const p = PROFILES[S.user.id]; if (p && canW('ekip')) { p.contract = true; p.cAt = new Date().toISOString().slice(0, 10); } } catch (e) {}
+    try { const p = PROFILES[S.user.id]; if (p && canW('ekip')) { p.contract = true; p.cAt = fiIso(); } } catch (e) {}
     ONB.busy = false; ONB.block = false; ONB.reaccept = false; render(); toast('Teşekkürler, her şey tamam. Hoş geldin!', 'ok');
   } catch (e) { ONB.busy = false; render(); onbErr('Kaydedilemedi: ' + idMsg(e)); }
 };

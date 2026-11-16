@@ -71,7 +71,7 @@ NEWM.mhrap = () => {
 H.mhrap = () => { S.modal = { type: 'mhrap' }; renderModal(); };
 H.mhtab = (el) => { MH.tab = el.dataset.v || 'mizan'; renderModal(); };
 H.mhmode = () => { MH.mode = MH.mode === 'yil' ? 'ay' : 'yil'; renderModal(); };
-H.mhopen = () => { const v = mhN(String((document.getElementById('mh-open') || {}).value || '').replace(',', '.')); if (!S.settings) S.settings = {}; S.settings.mhOpen = v; try { pSched(); } catch (e) {} toast('Açılış bakiyesi kaydedildi.', 'ok'); renderModal(); };
+H.mhopen = () => { const v = mhN(trNum((document.getElementById('mh-open') || {}).value)); if (!S.settings) S.settings = {}; S.settings.mhOpen = v; try { pSched(); } catch (e) {} toast('Açılış bakiyesi kaydedildi.', 'ok'); renderModal(); };
 document.addEventListener('change', (e) => { const t = e.target; if (t && t.id === 'mh-m' && /^\d{4}-\d{2}$/.test(t.value)) { MH.ym = t.value; renderModal(); } });
 H.mhxl = async () => {
   try {
@@ -110,7 +110,7 @@ NEWM.mhedit = (m) => {
 };
 H.mhedit = (el) => { S.modal = { type: 'mhedit', id: el.dataset.id }; renderModal(); };
 H.mhsave = (el) => {
-  if (typeof locked === 'function' && locked()) return; const r = LEDGER.find((x) => x.id === el.dataset.id); if (!r) return; const g = (id) => String((document.getElementById(id) || {}).value || '').trim(); const n = (id) => mhN(g(id).replace(',', '.'));
+  if (typeof locked === 'function' && locked()) return; const r = LEDGER.find((x) => x.id === el.dataset.id); if (!r) return; const g = (id) => String((document.getElementById(id) || {}).value || '').trim(); const n = (id) => mhN(trNum(g(id)));
   const tv = g('mh-tv'), otv = n('mh-otv'), stp = n('mh-stp'), cur = g('mh-cur') || 'TRY', fx = n('mh-fx'), kur = n('mh-kur');
   if (otv < 0 || stp < 0 || otv + stp > mhN(r.total) + 0.005) { toast('ÖTV ve stopaj toplamdan büyük olamaz.', 'warn'); return; }
   if (cur !== 'TRY' && (fx <= 0 || kur <= 0)) { toast('Döviz için tutar ve kur gir.', 'warn'); return; }

@@ -46,6 +46,14 @@ jobs:
         run: python3 tests/accounting.py
       - name: Plan bandi ve salt okunur mod
         run: python3 tests/plan_client.py
+      - name: Uctan uca akislar (fis, izin, talep, ariza, gorev, fatura, borc, stok)
+        run: python3 tests/flows.py
+      - name: Disari aktarmalar (Excel, CSV, yedek)
+        run: |
+          pip install openpyxl pillow
+          python3 tests/exports.py
+      - name: Fis tarama (OCR) uctan uca
+        run: python3 tests/ocr_flow.py
       - name: Yerel kutuphaneler + CSP (Excel, PDF, OCR)
         run: python3 tests/vendor_csp.py
   sql:
