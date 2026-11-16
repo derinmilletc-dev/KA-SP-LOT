@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v145';
+const APP_VER = 'v146';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13020,6 +13020,12 @@ function expCard() {
 H.expfat = () => { const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; const L = [['No', 'Tarih', 'Müşteri', 'Tutar', 'Durum', 'Vade'].join(';')].concat(INV.map((v) => [q(v.no), q(v.iso || v.date || ''), q(v.cust), String(Number(v.tot) || 0).replace('.', ','), v.st === 'odendi' ? 'Ödendi' : 'Bekliyor', q(v.due || '')].join(';')));
   saveBlob('faturalar.csv', new Blob(['﻿' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' })); toast('Faturalar indirildi.', 'ok'); };
 (function () { try { const st = document.createElement('style'); st.textContent = '.su-empty{display:flex;gap:12px;align-items:center}.su-qr{display:grid;place-items:center;margin:8px 0}.su-qr svg{border-radius:8px;background:#fff;padding:6px}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* v146 Askıya alınan işletme girişi: sütun yoksa sessizce atlanır */
+{ const _ie = idEnter; idEnter = async function () {
+  try { const c = sbClient(); if (c && SBS.user && ID.active) { const r = await c.from('businesses').select('suspended_at').eq('id', ID.active.business_id).maybeSingle();
+    if (!r.error && r.data && r.data.suspended_at) { try { await c.auth.signOut(); } catch (e) {} SBS.user = null; SBS.biz = null; ID.active = null; ID.mems = []; S.loginErr = 'Bu işletmenin hesabı askıya alınmış. Destek ile iletişime geç.'; render(); return; } } } catch (e) {}
+  return _ie.apply(this, arguments); }; }
 </script>
 </body>
 </html>

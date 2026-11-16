@@ -136,6 +136,7 @@ export async function handle(req: Request): Promise<Response> {
     const q = await sb.from('ai_quota').select('day,kind,n').eq('business_id', bid).gte('day', new Date(Date.now() - 32 * 864e5).toISOString().slice(0, 10));
     const tr = new Date(Date.now() + 3 * 36e5).toISOString().slice(0, 10); const out: any = { chat: { day: 0, month: 0 }, read: { day: 0, month: 0 }, limits: LIM };
     (q.data || []).forEach((x: any) => { if (!out[x.kind]) return; if (x.day === tr) out[x.kind].day += x.n; if (String(x.day).slice(0, 7) === tr.slice(0, 7)) out[x.kind].month += x.n; });
+    try { if (SB_SRV) { const ov: any = (await createClient(SB_URL, SB_SRV, { auth: { persistSession: false } }).from('ai_limits').select('chat_day,chat_month,read_day,read_month').eq('business_id', bid).maybeSingle()).data; if (ov) { const L2: any = { chat: { ...LIM.chat }, read: { ...LIM.read } }; (['chat', 'read'] as const).forEach((k) => { if (Number(ov[k + '_day']) > 0) L2[k].day = Number(ov[k + '_day']); if (Number(ov[k + '_month']) > 0) L2[k].month = Number(ov[k + '_month']); }); out.limits = L2; } } } catch (_) { /* yoksay */ }
     out.diag = { srv: !!SB_SRV, err: QERR };
     return J({ usage: out });
   }
@@ -143,10 +144,17 @@ export async function handle(req: Request): Promise<Response> {
   if (SB_SRV) {
     try {
       const srv = createClient(SB_URL, SB_SRV, { auth: { persistSession: false } });
-      const h = await srv.rpc('ai_quota_hit', { p_biz: bid, p_kind: kind, p_day_max: LIM[kind].day, p_month_max: LIM[kind].month });
+      // Askıya alınmış işletme Kais AI kullanamaz (sütun yoksa sessizce atlanır)
+      const sp = await srv.from('businesses').select('suspended_at').eq('id', bid).maybeSingle();
+      if (!sp.error && sp.data && (sp.data as any).suspended_at) return ERR('Bu işletmenin hesabı askıya alınmış. Destek ile iletişime geç.', 403);
+      // İşletmeye özel limit varsa onu kullan
+      const ov = await srv.from('ai_limits').select('chat_day,chat_month,read_day,read_month').eq('business_id', bid).maybeSingle();
+      const o: any = !ov.error && ov.data ? ov.data : {};
+      const lim = { day: Number(o[kind + '_day']) > 0 ? Number(o[kind + '_day']) : LIM[kind].day, month: Number(o[kind + '_month']) > 0 ? Number(o[kind + '_month']) : LIM[kind].month };
+      const h = await srv.rpc('ai_quota_hit', { p_biz: bid, p_kind: kind, p_day_max: lim.day, p_month_max: lim.month });
       const row = Array.isArray(h.data) ? h.data[0] : h.data;
       QERR = h.error ? String(h.error.message || h.error.code || 'rpc').slice(0, 160) : (row ? '' : 'bos_donus');
-      if (!h.error && row && row.ok === false) return ERR(row.day_n >= LIM[kind].day ? 'Bugünlük Kais AI hakkın doldu. Yarın yeniden dene.' : 'Bu ayki Kais AI hakkın doldu. Yeni ay başında yenilenir.', 429);
+      if (!h.error && row && row.ok === false) return ERR(row.day_n >= lim.day ? 'Bugünlük Kais AI hakkın doldu. Yarın yeniden dene.' : 'Bu ayki Kais AI hakkın doldu. Yeni ay başında yenilenir.', 429);
     } catch (e) { QERR = 'exc:' + String((e as Error)?.message || e).slice(0, 160); }
   }
   try {

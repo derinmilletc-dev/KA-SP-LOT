@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0e1116">
+<title>KaisPilot Admin</title>
+<link rel="icon" href="/icon-192.png">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--acc:#2a78d6;--acc2:#e8f1fc;--ok:#12a150;--warn:#c77700;--bad:#d92d20;--r:14px;--sh:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06)}
+:root[data-t=dark]{--bg:#0d1014;--card:#151a21;--ink:#eaeef4;--mut:#8b96a5;--line:#252c36;--acc:#5aa1f2;--acc2:#16283d;--ok:#3ccf7b;--warn:#f0a53a;--bad:#f2685e;--sh:none}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;letter-spacing:-.01em}h2{font-size:20px}h3{font-size:15px}
+.mut{color:var(--mut)}.sm{font-size:12.5px}.row{display:flex;gap:10px;align-items:center}.wrap{flex-wrap:wrap}.between{justify-content:space-between}.grow{flex:1;min-width:0}
+.btn{border:0;background:var(--acc);color:#fff;padding:9px 14px;border-radius:10px;font-weight:600;cursor:pointer}.btn:disabled{opacity:.5;cursor:default}
+.btn.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn.bad{background:var(--bad)}.btn.sm{padding:6px 10px;font-size:12.5px}.btn.block{width:100%}
+input[type=text],input[type=email],input[type=password],input[type=number],textarea,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc2)}
+label{display:block;font-size:12.5px;color:var(--mut);margin:0 0 5px}.field{margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:600;background:var(--acc2);color:var(--acc)}.pill.ok{background:rgba(18,161,80,.12);color:var(--ok)}.pill.bad{background:rgba(217,45,32,.12);color:var(--bad)}.pill.warn{background:rgba(199,119,0,.14);color:var(--warn)}.pill.gray{background:var(--line);color:var(--mut)}
+/* düzen */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.side{border-right:1px solid var(--line);background:var(--card);padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 16px;font-weight:700;font-size:15px}.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--acc),#6c5ce7);display:grid;place-items:center;color:#fff;font-weight:800}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;color:var(--mut);cursor:pointer;border:0;background:none;text-align:left;font-weight:500}.nav:hover{background:var(--bg)}.nav.on{background:var(--acc2);color:var(--acc);font-weight:600}
+.nav svg{width:18px;height:18px;flex:none}.side .sp{flex:1}
+.main{padding:22px 26px 40px;max-width:1180px;width:100%}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+.stat .v{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:4px}.stat .l{color:var(--mut);font-size:12.5px}.stat .s{font-size:12px;color:var(--mut);margin-top:2px}
+table{width:100%;border-collapse:collapse}th{font-size:12px;color:var(--mut);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}tr.rw{cursor:pointer}tr.rw:hover td{background:var(--bg)}td.n,th.n{text-align:right}
+.tbl{overflow-x:auto}
+.bars{display:flex;align-items:flex-end;gap:4px;height:96px}.bars i{flex:1;background:var(--acc);border-radius:4px 4px 0 0;min-height:2px;opacity:.85}.bars i:hover{opacity:1}.axis{display:flex;justify-content:space-between;color:var(--mut);font-size:11px;margin-top:4px}
+.bar{height:8px;border-radius:6px;background:var(--line);overflow:hidden}.bar b{display:block;height:100%;background:var(--acc);border-radius:6px}
+.center{min-height:100vh;display:grid;place-items:center;padding:20px}.box{width:100%;max-width:380px}
+.err{color:var(--bad);font-size:13px;margin:8px 0}.qr{display:grid;place-items:center;margin:10px 0}.qr img{width:176px;height:176px;background:#fff;padding:8px;border-radius:12px}
+code.sec{display:block;word-break:break-all;background:var(--bg);padding:8px 10px;border-radius:8px;font-size:12.5px}
+.ov{position:fixed;inset:0;background:rgba(10,14,20,.55);display:flex;justify-content:flex-end;z-index:20}.dr{width:min(520px,100%);height:100%;background:var(--bg);overflow:auto;padding:18px;border-left:1px solid var(--line)}
+.chk{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer}.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:40}
+.tabs{display:none}
+@media(max-width:820px){.g2.keep{grid-template-columns:1fr 1fr}
+ .app{grid-template-columns:1fr}.side{display:none}.main{padding:14px 14px 90px}.g4{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}
+ .tabs{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));overflow-x:auto;gap:2px;z-index:10}
+ .tabs .nav{flex-direction:column;gap:2px;font-size:10.5px;padding:6px 10px;min-width:64px;align-items:center;text-align:center;flex:none}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast-root"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+const SB_URL = 'https://bbcsbkgbwzciyfymvpxh.supabase.co';
+const SB_KEY = 'sb_publishable_Pc2JtwezlCiezDW4P4IKxw_gXFXUjnA';
+const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const usd = (n) => '$' + (Number(n) || 0).toFixed((Number(n) || 0) < 10 ? 2 : 0);
+const num = (n) => (Number(n) || 0).toLocaleString('tr-TR');
+function ago(iso) { if (!iso) return '—'; const s = (Date.now() - new Date(iso).getTime()) / 1000; if (s < 60) return 'az önce'; if (s < 3600) return Math.floor(s / 60) + ' dk önce'; if (s < 86400) return Math.floor(s / 3600) + ' sa önce'; if (s < 86400 * 30) return Math.floor(s / 86400) + ' gün önce'; return new Date(iso).toLocaleDateString('tr-TR'); }
+const dstr = (iso) => iso ? new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const ICO = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>',
+  biz: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V7l8-4 8 4v14M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg>',
+  ai: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+  bug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 014 4v3a4 4 0 01-8 0v-3a4 4 0 014-4zM9 5l1.5 2M15 5l-1.5 2M4 12h4M16 12h4M5 19l3-2M19 19l-3-2"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>',
+  msg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18 14.5a6.5 6.5 0 013.5 5.5"/></svg>',
+  log: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/></svg>',
+  out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>'
+};
+const PERM_L = { businesses: 'İşletmeleri görme', ai: 'AI kullanım ve maliyet', errors: 'Hata kayıtları', events: 'Kullanım istatistiği', feedback: 'Geri bildirimler', limits: 'AI limitlerini değiştirme', audit: 'Denetim kaydı' };
+const S = { view: 'overview', admin: null, d: {}, q: '', drawer: null, mfa: null, err: '', busy: false };
+
+/* tema */
+(function () { let t = null; try { t = localStorage.getItem('kpa_theme'); } catch (e) {} if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; document.documentElement.dataset.t = t; })();
+function toggleTheme() { const t = document.documentElement.dataset.t === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.t = t; try { localStorage.setItem('kpa_theme', t); } catch (e) {} }
+function toast(m) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; $('#toast-root').appendChild(e); setTimeout(() => e.remove(), 2600); }
+
+/* sunucu çağrısı */
+async function api(action, payload) {
+  try {
+    const r = await sb.functions.invoke('kais-admin', { body: Object.assign({ action }, payload || {}) });
+    if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} return { ok: false, error: m || (/not found|404|FunctionsFetch|Relay/i.test(String(r.error.message)) ? 'Admin sunucusu (kais-admin) yüklenmemiş.' : 'Sunucuya ulaşılamadı.') }; }
+    return r.data || { ok: false, error: 'Boş yanıt.' };
+  } catch (e) { return { ok: false, error: 'Bağlantı hatası.' }; }
+}
+
+/* giriş ve 2FA */
+function shell(inner) { $('#root').innerHTML = `<div class="center"><div class="box stack"><div class="row" style="gap:10px"><span class="logo">K</span><div><h2>KaisPilot Admin</h2><div class="mut sm">Yetkili kişiler için</div></div></div>${inner}</div></div>`; }
+function viewLogin(signup) {
+  shell(`<div class="card stack"><div class="field" style="margin:0"><label for="em">E-posta</label><input id="em" type="email" autocomplete="username" value="${esc(S.em || '')}"></div><div class="field" style="margin:0"><label for="pw">Şifre</label><input id="pw" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}"></div>${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn block" data-a="${signup ? 'signup' : 'login'}">${signup ? 'Hesap oluştur' : 'Giriş yap'}</button><button class="btn sec block" data-a="${signup ? 'tologin' : 'tosignup'}">${signup ? 'Giriş ekranına dön' : 'Hesabım yok (moderatörler için)'}</button></div>`);
+}
+async function doAuth(signup) {
+  const em = ($('#em').value || '').trim(), pw = $('#pw').value || ''; S.err = ''; S.em = em;
+  if (!em || pw.length < 8) { S.err = 'E-posta ve en az 8 karakterli şifre yaz.'; return viewLogin(signup); }
+  const r = signup ? await sb.auth.signUp({ email: em, password: pw }) : await sb.auth.signInWithPassword({ email: em, password: pw });
+  if (r.error) { S.err = /invalid login/i.test(r.error.message) ? 'E-posta ya da şifre hatalı.' : /registered|exists/i.test(r.error.message) ? 'Bu e-posta zaten kayıtlı. Giriş yap.' : 'Giriş yapılamadı.'; return viewLogin(signup); }
+  if (signup && !r.data.session) { const s2 = await sb.auth.signInWithPassword({ email: em, password: pw }); if (s2.error) { S.err = 'Hesap oluşturuldu. Şimdi giriş yap.'; return viewLogin(false); } }
+  boot();
+}
+async function viewMfaChallenge() {
+  const f = await sb.auth.mfa.listFactors(); const fa = (f.data && f.data.totp || []).find((x) => x.status === 'verified');
+  if (!fa) return viewMfaEnroll();
+  S.mfa = { id: fa.id };
+  shell(`<div class="card stack"><div><h3>İki adımlı doğrulama</h3><p class="mut sm" style="margin:4px 0 0">Authenticator uygulamandaki 6 haneli kodu yaz.</p></div><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="font-size:22px;letter-spacing:6px;text-align:center">${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn block" data-a="mfaverify">Doğrula</button><button class="btn sec block" data-a="logout">Çıkış</button></div>`);
+  const i = $('#code'); if (i) i.focus();
+}
+async function viewMfaEnroll() {
+  const f = await sb.auth.mfa.listFactors(); for (const x of (f.data && f.data.all || [])) { if (x.status === 'unverified') await sb.auth.mfa.unenroll({ factorId: x.id }); }
+  const r = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'KaisPilot Admin ' + Date.now() });
+  if (r.error) { S.err = 'İki adımlı doğrulama kurulamadı: ' + r.error.message; return shell(`<div class="card stack"><div class="err">${esc(S.err)}</div><button class="btn sec block" data-a="logout">Çıkış</button></div>`); }
+  S.mfa = { id: r.data.id };
+  shell(`<div class="card stack"><div><h3>İki adımlı doğrulamayı kur</h3><p class="mut sm" style="margin:4px 0 0">Admin girişi için zorunlu. Google Authenticator, Microsoft Authenticator ya da benzeri bir uygulamayla QR kodu okut.</p></div><div class="qr"><img alt="QR" src="${esc(r.data.totp.qr_code)}"></div><div><div class="mut sm">QR okutamazsan bu anahtarı elle gir:</div><code class="sec">${esc(r.data.totp.secret)}</code></div><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 haneli kod" style="text-align:center;letter-spacing:4px">${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn block" data-a="mfaverify">Kur ve gir</button><button class="btn sec block" data-a="logout">Çıkış</button></div>`);
+}
+async function mfaVerify() {
+  const code = ($('#code').value || '').replace(/\D/g, ''); S.err = '';
+  if (code.length !== 6) { const e0 = $('.err'); if (e0) e0.textContent = '6 haneli kodu yaz.'; else $('#code').insertAdjacentHTML('afterend', '<div class="err">6 haneli kodu yaz.</div>'); return; }
+  const r = await sb.auth.mfa.challengeAndVerify({ factorId: S.mfa.id, code });
+  if (r.error) { S.err = 'Kod hatalı ya da süresi doldu. Yeni kodu dene.'; const el = $('#code'); const e = $('.err'); if (e) e.textContent = S.err; else el.insertAdjacentHTML('afterend', `<div class="err">${esc(S.err)}</div>`); el.value = ''; return; }
+  boot();
+}
+async function boot() {
+  const ses = (await sb.auth.getSession()).data.session; if (!ses) return viewLogin(false);
+  const al = (await sb.auth.mfa.getAuthenticatorAssuranceLevel()).data || {};
+  if (al.currentLevel !== 'aal2') return al.nextLevel === 'aal2' ? viewMfaChallenge() : viewMfaEnroll();
+  const r = await api('me');
+  if (!r.ok) {
+    if (r.error === 'mfa_required') return viewMfaChallenge();
+    return shell(`<div class="card stack"><h3>Erişim yok</h3><p class="mut">${esc(r.error)}</p><p class="mut sm">Giriş yapılan hesap: ${esc(ses.user.email)}</p><button class="btn sec block" data-a="logout">Çıkış</button></div>`);
+  }
+  S.admin = r.admin; S.view = 'overview'; S.d = {}; render();
+}
+
+/* ana ekran */
+function navItems() {
+  const a = S.admin, p = a.perms || {}; const L = [['overview', 'Genel bakış', 'home']];
+  if (p.businesses) L.push(['businesses', 'İşletmeler', 'biz']); if (p.ai) L.push(['ai', 'AI ve maliyet', 'ai']); if (p.errors) L.push(['errors', 'Hatalar', 'bug']);
+  if (p.events) L.push(['events', 'Kullanım', 'chart']); if (p.feedback) L.push(['feedback', 'Geri bildirim', 'msg']);
+  if (a.role === 'super') L.push(['mods', 'Moderatörler', 'users']); if (p.audit) L.push(['audit', 'Denetim', 'log']);
+  return L;
+}
+function render() {
+  if (!S.admin) return;
+  const L = navItems(); const t = (x) => `<button class="nav ${S.view === x[0] ? 'on' : ''}" data-a="go" data-v="${x[0]}">${ICO[x[2]]}<span>${x[1]}</span></button>`;
+  $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><span class="logo">K</span>KaisPilot Admin</div>${L.map(t).join('')}<div class="sp"></div><div class="card" style="padding:10px 12px"><div class="sm" style="font-weight:600;word-break:break-all">${esc(S.admin.email)}</div><div style="margin-top:4px"><span class="pill ${S.admin.role === 'super' ? '' : 'gray'}">${S.admin.role === 'super' ? 'Ana admin' : 'Moderatör'}</span></div></div><button class="nav" data-a="theme">${ICO.moon}<span>Tema</span></button><button class="nav" data-a="logout">${ICO.out}<span>Çıkış</span></button></aside>
+  <main class="main"><div class="top"><h2>${esc((L.find((x) => x[0] === S.view) || [0, ''])[1])}</h2><div class="row"><button class="btn sec sm" data-a="reload">Yenile</button></div></div><div id="page"><div class="mut">Yükleniyor…</div></div></main></div>
+  <nav class="tabs">${L.map(t).join('')}<button class="nav" data-a="theme">${ICO.moon}<span>Tema</span></button><button class="nav" data-a="logout">${ICO.out}<span>Çıkış</span></button></nav>${S.drawer ? drawerHtml() : ''}`;
+  loadPage();
+}
+async function loadPage() {
+  const v = S.view; const el = $('#page'); let r;
+  const map = { overview: ['overview'], businesses: ['businesses', { q: S.q }], ai: ['ai'], errors: ['errors'], events: ['events', { days: S.evDays || 7 }], feedback: ['feedback'], mods: ['mods_list'], audit: ['audit'] };
+  r = await api.apply(null, map[v]); if (S.view !== v) return;
+  if (!r.ok) { if (r.error === 'mfa_required') return boot(); if (el) el.innerHTML = `<div class="card err">${esc(r.error)}</div>`; return; }
+  S.d[v] = r; if (el) el.innerHTML = PAGES[v](r);
+}
+function bars(series, fmt) { const k = Object.keys(series); const mx = Math.max.apply(null, k.map((x) => series[x]).concat([0.0001])); return `<div class="bars">${k.map((x) => `<i style="height:${Math.max(2, Math.round(series[x] / mx * 100))}%" title="${esc(new Date(x).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}: ${esc(fmt ? fmt(series[x]) : series[x])}"></i>`).join('')}</div><div class="axis"><span>${esc(new Date(k[0]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span><span>${esc(new Date(k[k.length - 1]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }))}</span></div>`; }
+const stat = (l, v, s) => `<div class="card stat"><div class="l">${l}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+const PAGES = {
+  overview(r) {
+    let h = ''; const b = r.businesses, a = r.ai, e = r.errors;
+    h += `<div class="grid g4">${b ? stat('Toplam işletme', num(b.total), `Son 7 günde +${b.new7}`) + stat('Aktif işletme (7 gün)', num(b.active7), `${num(b.users)} kullanıcı`) : ''}${a ? stat('AI bugün (tahmini)', usd(a.usdToday), `${a.today.chat} sohbet · ${a.today.read} okuma`) + stat('AI bu ay (tahmini)', usd(a.usdMonth), `${a.month.chat} sohbet · ${a.month.read} okuma`) : ''}${e ? stat('Hata (24 saat)', num(e.last24), `Son 7 gün: ${num(e.last7)}`) : ''}${b && b.suspended ? stat('Askıdaki işletme', num(b.suspended)) : ''}</div>`;
+    h += `<div class="grid g2" style="margin-top:12px">${b ? `<div class="card"><h3>Yeni kayıtlar</h3><div class="mut sm" style="margin:2px 0 10px">Son 14 gün</div>${bars(b.signups)}</div>` : ''}${a ? `<div class="card"><h3>AI maliyeti</h3><div class="mut sm" style="margin:2px 0 10px">Son 14 gün, tahmini dolar</div>${bars(a.series, usd)}</div>` : ''}</div>`;
+    if (!b && !a && !e) h += `<div class="card mut">Henüz görüntüleyebileceğin bir bölüm yok. Ana admin sana yetki vermeli.</div>`;
+    return h;
+  },
+  businesses(r) {
+    const ai = r.rows.some((x) => x.ai), er = r.rows.some((x) => x.errors7 != null);
+    return `<div class="stack"><input id="q" type="text" placeholder="İşletme adı ya da sahip e-postası ara" value="${esc(S.q)}"><div class="card tbl" style="padding:4px 6px"><table><tr><th>İşletme</th><th>Sahip</th><th class="n">Üye</th><th>Son aktiflik</th>${ai ? '<th class="n">AI (ay)</th>' : ''}${er ? '<th class="n">Hata (7g)</th>' : ''}<th>Durum</th></tr>${r.rows.map((x) => `<tr class="rw" data-a="biz" data-id="${esc(x.id)}"><td><b>${esc(x.name)}</b><div class="mut sm">${dstr(x.created_at)}</div></td><td class="mut">${esc(x.owner || '—')}</td><td class="n">${x.members}</td><td class="mut">${ago(x.last_seen)}</td>${ai ? `<td class="n">${x.ai ? usd(x.ai.usd) : ''}</td>` : ''}${er ? `<td class="n">${x.errors7 || 0}</td>` : ''}<td>${x.suspended ? '<span class="pill bad">Askıda</span>' : '<span class="pill ok">Aktif</span>'}</td></tr>`).join('') || '<tr><td colspan="7" class="mut">İşletme yok.</td></tr>'}</table></div></div>`;
+  },
+  ai(r) {
+    const tot = r.rows.reduce((a, x) => a + x.usd, 0);
+    return `<div class="stack"><div class="card"><div class="row between"><h3>Günlük maliyet</h3><span class="mut sm">Son 30 gün, tahmini</span></div><div style="margin-top:10px">${bars(r.series, usd)}</div></div>
+    <div class="card tbl" style="padding:4px 6px"><div class="row between" style="padding:10px 10px 4px"><h3>Bu ay işletme bazında</h3><span class="mut sm">Toplam ${usd(tot)}</span></div><table><tr><th>İşletme</th><th class="n">Sohbet</th><th class="n">Okuma</th><th class="n">Tahmini</th><th></th></tr>${r.rows.map((x) => `<tr class="rw" data-a="biz" data-id="${esc(x.id)}"><td><b>${esc(x.name)}</b></td><td class="n">${x.chat}</td><td class="n">${x.read}</td><td class="n">${usd(x.usd)}</td><td>${x.custom ? '<span class="pill warn">Özel limit</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="mut">Bu ay kullanım yok.</td></tr>'}</table></div>
+    <p class="mut sm">Maliyetler kaba tahmindir (sohbet ~${usd(r.usd.chat)}, okuma ~$${r.usd.read}). Gerçek rakam Anthropic konsolundadır.</p></div>`;
+  },
+  errors(r) {
+    return `<div class="stack"><p class="mut sm" style="margin:0">Son 14 gün · ${num(r.total)} kayıt · aynı hata tek satırda toplanır.</p>${r.groups.map((g) => `<div class="card"><div class="row between wrap"><b style="word-break:break-word">${esc(g.msg)}</b><span class="pill bad">${g.n}×</span></div><div class="mut sm" style="margin-top:6px">${ago(g.last)} · ${g.biz} işletme${g.views.length ? ' · ' + esc(g.views.join(', ')) : ''}${g.vers.length ? ' · ' + esc(g.vers.join(', ')) : ''}</div></div>`).join('') || '<div class="card mut">Hata kaydı yok. 🎉</div>'}</div>`;
+  },
+  events(r) {
+    const mx = Math.max.apply(null, r.rows.map((x) => x.n).concat([1]));
+    const nm = (e) => e.startsWith('v:') ? 'Ekran: ' + e.slice(2) : e.startsWith('a:') ? 'İşlem: ' + e.slice(2) : e;
+    return `<div class="stack"><div class="row"><button class="btn sec sm" data-a="evd" data-d="7" ${r.days === 7 ? 'style="border-color:var(--acc);color:var(--acc)"' : ''}>7 gün</button><button class="btn sec sm" data-a="evd" data-d="30" ${r.days === 30 ? 'style="border-color:var(--acc);color:var(--acc)"' : ''}>30 gün</button></div><div class="card"><h3>Günlük olay sayısı</h3><div style="margin-top:10px">${bars(r.series)}</div></div><div class="card stack"><h3>En çok kullanılanlar</h3>${r.rows.map((x) => `<div><div class="row between sm"><span>${esc(nm(x.ev))}</span><b>${num(x.n)}</b></div><div class="bar" style="margin-top:4px"><b style="width:${Math.max(2, Math.round(x.n / mx * 100))}%"></b></div></div>`).join('') || '<span class="mut">Henüz veri yok.</span>'}</div></div>`;
+  },
+  feedback(r) {
+    return `<div class="stack"><div class="card stack"><h3>Ayrılma nedenleri</h3>${r.counts.map((c) => `<div class="row between sm"><span>${esc(c[0])}</span><b>${c[1]}</b></div>`).join('') || '<span class="mut">Henüz geri bildirim yok.</span>'}</div>${r.rows.filter((x) => x.note).map((x) => `<div class="card"><div class="row between"><span class="pill gray">${esc(x.reason || 'Neden yok')}</span><span class="mut sm">${ago(x.created_at)}</span></div><p style="margin:8px 0 0">${esc(x.note)}</p></div>`).join('')}</div>`;
+  },
+  mods(r) {
+    const row = (x) => x.role === 'super' ? `<div class="card"><div class="row between"><div><b>${esc(x.email)}</b><div class="mut sm">Tüm yetkiler</div></div><span class="pill">Ana admin</span></div></div>` :
+      `<div class="card stack" data-uid="${esc(x.user_id)}"><div class="row between"><div><b>${esc(x.email)}</b><div class="mut sm">${dstr(x.created_at)}</div></div><span class="pill ${x.active ? 'ok' : 'gray'}">${x.active ? 'Aktif' : 'Pasif'}</span></div><div class="grid g2" style="gap:0 16px">${r.perms.map((p) => `<label class="chk"><input type="checkbox" data-p="${p}" ${x.perms && x.perms[p] ? 'checked' : ''}>${PERM_L[p]}</label>`).join('')}</div><div class="row wrap"><button class="btn sm" data-a="modsave" data-id="${esc(x.user_id)}">Kaydet</button><button class="btn sec sm" data-a="modact" data-id="${esc(x.user_id)}" data-on="${x.active ? 0 : 1}">${x.active ? 'Pasifleştir' : 'Aktifleştir'}</button><button class="btn sec sm" data-a="modrm" data-id="${esc(x.user_id)}" style="color:var(--bad)">Kaldır</button></div></div>`;
+    return `<div class="stack">${r.rows.map(row).join('')}<div class="card stack" id="modnew"><h3>Moderatör ekle</h3><p class="mut sm" style="margin:0">Kişi önce admin giriş sayfasındaki "Hesabım yok" ile hesap oluşturmalı. Sonra e-postasını buraya yaz.</p><div class="field" style="margin:0"><label>E-posta</label><input id="mn-em" type="email"></div><div class="grid g2" style="gap:0 16px">${r.perms.map((p) => `<label class="chk"><input type="checkbox" data-p="${p}">${PERM_L[p]}</label>`).join('')}</div><button class="btn" data-a="modadd">Ekle</button></div></div>`;
+  },
+  audit(r) {
+    return `<div class="card tbl" style="padding:4px 6px"><table><tr><th>Zaman</th><th>Kim</th><th>İşlem</th><th>Hedef</th></tr>${r.rows.map((x) => `<tr><td class="mut">${new Date(x.at).toLocaleString('tr-TR')}</td><td>${esc(x.email)}</td><td><span class="pill gray">${esc(x.action)}</span></td><td class="mut" style="word-break:break-all">${esc(x.target || '')}</td></tr>`).join('') || '<tr><td colspan="4" class="mut">Kayıt yok.</td></tr>'}</table></div>`;
+  }
+};
+
+/* işletme detayı (sağdan açılan panel) */
+function drawerHtml() {
+  const d = S.drawer; if (!d || !d.data) return `<div class="ov" data-a="close"><div class="dr"><div class="mut">Yükleniyor…</div></div></div>`;
+  const r = d.data, b = r.business, p = S.admin.perms || {}, sup = S.admin.role === 'super'; const L = r.limits || {};
+  return `<div class="ov" data-a="close"><div class="dr"><div class="stack">
+  <div class="row between"><div><h2>${esc(b.name)}</h2><div class="mut sm">${esc(b.owner || '—')} · ${dstr(b.created_at)}</div></div><button class="btn sec sm" data-a="close">Kapat</button></div>
+  <div class="row wrap">${b.suspended_at ? '<span class="pill bad">Askıda</span>' : '<span class="pill ok">Aktif</span>'}${Object.keys(b.roles).map((k) => `<span class="pill gray">${esc(k)}: ${b.roles[k]}</span>`).join('')}</div>
+  ${r.ai ? `<div class="card"><h3>AI isteği</h3><div class="mut sm" style="margin:2px 0 10px">Son 14 gün</div>${bars(r.ai.series)}</div>` : ''}
+  ${r.ai && p.limits ? `<div class="card stack" id="lim"><h3>AI limiti</h3><p class="mut sm" style="margin:0">Boş bırakılan alan varsayılan limiti kullanır (günlük 40, aylık 600).</p><div class="grid g2 keep" style="gap:8px"><div><label>Sohbet / gün</label><input type="number" data-l="chat_day" value="${L.chat_day || ''}"></div><div><label>Sohbet / ay</label><input type="number" data-l="chat_month" value="${L.chat_month || ''}"></div><div><label>Okuma / gün</label><input type="number" data-l="read_day" value="${L.read_day || ''}"></div><div><label>Okuma / ay</label><input type="number" data-l="read_month" value="${L.read_month || ''}"></div></div><input type="text" data-l="note" placeholder="Not (isteğe bağlı)" value="${esc(L.note || '')}"><div class="row"><button class="btn sm" data-a="limsave" data-id="${esc(b.id)}">Kaydet</button><button class="btn sec sm" data-a="limclear" data-id="${esc(b.id)}">Varsayılana dön</button></div></div>` : ''}
+  ${r.events && r.events.length ? `<div class="card stack"><h3>Çok kullandığı (30 gün)</h3>${r.events.map((e) => `<div class="row between sm"><span>${esc(e[0])}</span><b>${num(e[1])}</b></div>`).join('')}</div>` : ''}
+  ${r.errors && r.errors.length ? `<div class="card stack"><h3>Son hatalar</h3>${r.errors.map((e) => `<div class="sm"><b style="word-break:break-word">${esc(e.msg)}</b><div class="mut">${ago(e.created_at)}${e.view ? ' · ' + esc(e.view) : ''}</div></div>`).join('')}</div>` : ''}
+  ${sup ? (b.suspended_at ? `<div class="card stack"><h3>Askıya alınmış</h3><p class="mut sm" style="margin:0">${esc(b.suspended_note || 'Not yok')}</p><button class="btn sm" data-a="unsus" data-id="${esc(b.id)}">Askıdan çıkar</button></div>` : `<div class="card stack"><h3>Askıya al</h3><p class="mut sm" style="margin:0">İşletme Kais AI'yı kullanamaz ve uygulamaya girişte uyarı görür.</p><input type="text" id="susn" placeholder="Neden (not)"><button class="btn bad sm" data-a="sus" data-id="${esc(b.id)}">Askıya al</button></div>`) : ''}
+  </div></div></div>`;
+}
+async function openBiz(id) { S.drawer = { id, data: null }; render(); const r = await api('business', { id }); if (!r.ok) { S.drawer = null; render(); return toast(r.error); } S.drawer.data = r; const old = $('.ov'); if (old) old.outerHTML = drawerHtml(); }
+const readPerms = (root) => { const o = {}; root.querySelectorAll('input[data-p]').forEach((i) => { if (i.checked) o[i.dataset.p] = true; }); return o; };
+
+/* olaylar */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-a]'); if (!t) return; const a = t.dataset.a; if (a === 'close' && e.target.closest('.dr') && !e.target.closest('button[data-a=close]')) return;
+  if (a === 'login') return doAuth(false); if (a === 'signup') return doAuth(true); if (a === 'tosignup') { S.err = ''; return viewLogin(true); } if (a === 'tologin') { S.err = ''; return viewLogin(false); }
+  if (a === 'mfaverify') return mfaVerify();
+  if (a === 'logout') { await sb.auth.signOut(); S.admin = null; S.err = ''; S.drawer = null; return viewLogin(false); }
+  if (a === 'theme') return toggleTheme();
+  if (a === 'go') { S.view = t.dataset.v; S.drawer = null; return render(); }
+  if (a === 'reload') return render();
+  if (a === 'biz') return openBiz(t.dataset.id);
+  if (a === 'close') { S.drawer = null; const o = $('.ov'); if (o) o.remove(); return; }
+  if (a === 'evd') { S.evDays = Number(t.dataset.d); return loadPage(); }
+  if (a === 'limsave') { const o = { business_id: t.dataset.id }; document.querySelectorAll('#lim [data-l]').forEach((i) => { o[i.dataset.l] = i.value; }); const r = await api('set_limit', o); toast(r.ok ? 'Limit kaydedildi.' : r.error); if (r.ok) openBiz(t.dataset.id); return; }
+  if (a === 'limclear') { const r = await api('set_limit', { business_id: t.dataset.id, clear: true }); toast(r.ok ? 'Varsayılana döndü.' : r.error); if (r.ok) openBiz(t.dataset.id); return; }
+  if (a === 'sus') { const r = await api('suspend', { business_id: t.dataset.id, note: ($('#susn') || {}).value || '' }); toast(r.ok ? 'İşletme askıya alındı.' : r.error); if (r.ok) { openBiz(t.dataset.id); loadPage(); } return; }
+  if (a === 'unsus') { const r = await api('unsuspend', { business_id: t.dataset.id }); toast(r.ok ? 'Askıdan çıkarıldı.' : r.error); if (r.ok) { openBiz(t.dataset.id); loadPage(); } return; }
+  if (a === 'modadd') { const root = $('#modnew'); const r = await api('mod_add', { email: $('#mn-em').value, perms: readPerms(root) }); toast(r.ok ? 'Moderatör eklendi.' : r.error); if (r.ok) loadPage(); return; }
+  if (a === 'modsave') { const r = await api('mod_update', { user_id: t.dataset.id, perms: readPerms(t.closest('[data-uid]')) }); toast(r.ok ? 'Yetkiler kaydedildi.' : r.error); return; }
+  if (a === 'modact') { const r = await api('mod_update', { user_id: t.dataset.id, active: t.dataset.on === '1' }); toast(r.ok ? 'Güncellendi.' : r.error); if (r.ok) loadPage(); return; }
+  if (a === 'modrm') { if (t.dataset.sure !== '1') { t.dataset.sure = '1'; t.textContent = 'Emin misin? Tekrar bas'; return; } const r = await api('mod_remove', { user_id: t.dataset.id }); toast(r.ok ? 'Moderatör kaldırıldı.' : r.error); if (r.ok) loadPage(); return; }
+});
+let qT = null;
+document.addEventListener('input', (e) => { if (e.target.id === 'q') { S.q = e.target.value; clearTimeout(qT); qT = setTimeout(async () => { const r = await api('businesses', { q: S.q }); if (r.ok && S.view === 'businesses') { const keep = $('#q'); $('#page').innerHTML = PAGES.businesses(r); const n = $('#q'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 300); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter') { if ($('#code')) mfaVerify(); else if ($('#pw')) doAuth(!!document.querySelector('[data-a=signup]')); } });
+sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && S.admin) { S.admin = null; viewLogin(false); } });
+boot();
+</script>
+</body>
+</html>

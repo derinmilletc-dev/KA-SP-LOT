@@ -53,3 +53,10 @@ Uygulama kapalıyken de çalışır:
 - `supabase/sql/telemetry.sql` dosyasını SQL Editor'de bir kez çalıştır (app_errors ve app_events tabloları, kullanıcı yalnızca kendi adına ekleyebilir, okuma yalnızca sunucu).
 - `kais-cron` güncellendi: her akşam 21:00-22:00 arası yöneticilere "Günün kapanışı" bildirimi (ciro, gider, fark). Dashboard'a `index.single.ts` içeriği yapıştırılır.
 - Davet bağlantısı: `/?kod=KOD` adresi açılınca çalışan giriş ekranında kod kendiliğinden yazılır; davet penceresinde QR ve WhatsApp düğmesi vardır.
+
+## Admin paneli (v146)
+- Adres: `<site>/admin/` (aynı repo, ayrı sayfa; arama motorlarına kapalı).
+- Kurulum: (1) `supabase/sql/telemetry.sql`, (2) `supabase/sql/admin.sql` çalıştır (ana admin: ahmtt4565@gmail.com, hesap yoksa önce ana uygulamadan ya da admin sayfasından o e-postayla kayıt ol ve admin.sql'i yeniden çalıştır), (3) `kais-admin` fonksiyonunu deploy et (JWT doğrulaması AÇIK), (4) `kais-ai` fonksiyonunu güncelle (askıya alma ve işletme limiti desteği).
+- Giriş: e-posta, şifre ve zorunlu 2FA (TOTP). Telefon kaybında kurtarma: SQL'de `delete from auth.mfa_factors where user_id = '<id>';`.
+- Yetkiler: ana admin her şeyi görür, moderatör ve yetkilerini yalnızca ana admin yönetir. Admin yalnızca sayı ve durum görür; muhasebe, çalışan ve fiş verisi görünmez.
+- Askıya alınan işletme: giriş ekranında uyarı alır ve Kais AI kullanamaz.
