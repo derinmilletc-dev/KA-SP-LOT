@@ -393,38 +393,44 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
 .lx3 .lx-brand{color:#fff!important;font-size:22px!important}
 .lx3 .lx-brand svg{background:rgba(255,255,255,.16)!important;box-shadow:none!important;border:1px solid rgba(255,255,255,.28)}
 .lx3 .lx-art,.lx3 .lx2-tag{display:none!important}
-.lx3 .lx-copy{display:block!important;margin-top:auto}
-.lx3 .lx-copy h2{font-size:clamp(34px,3.3vw,46px)!important;line-height:1.1!important;letter-spacing:-1px;color:#fff!important;max-width:560px;font-weight:700}
-.lx3 .lx-copy p{font-size:17px!important;color:rgba(255,255,255,.78)!important;max-width:500px;margin-top:12px!important}
-.lx3 .lp{display:flex!important;flex-direction:column;gap:12px;max-width:520px}
-.lx3 .lp-f{display:flex;gap:14px;align-items:flex-start}
-.lx3 .lp-i{flex:none;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff}
-.lx3 .lp-i{display:grid!important;place-items:center}.lx3 .lp-i svg{width:20px!important;height:20px!important;margin:0!important;display:block!important;position:static!important}
-.lx3 .lp-f b{display:block;font-size:15.5px;font-weight:600;color:#fff}
-.lx3 .lp-f span{display:block;font-size:13.5px;color:rgba(255,255,255,.7);margin-top:1px}
-.lx3 .lp-pv{margin-top:6px;max-width:470px;border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.lx3 .lp-ph{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.65);margin-bottom:10px}
-.lx3 .lp-k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.lx3 .lp-k div{background:rgba(255,255,255,.1);border-radius:12px;padding:9px 11px}
-.lx3 .lp-k small{display:block;font-size:11px;color:rgba(255,255,255,.65)}.lx3 .lp-k b{display:block;font-size:16px;color:#fff;margin-top:2px;font-variant-numeric:tabular-nums}
+.lx3 .lx-hero{justify-content:flex-start;gap:0!important;padding:44px clamp(48px,5vw,84px) 34px!important;background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1px,transparent 0) 0 0/26px 26px,linear-gradient(155deg,#0D55A8 0%,#093566 50%,#061F40 100%)!important}
+.lx3 .lx-copy{display:block!important;margin-top:auto;max-width:none!important;width:100%!important}
+.lx3 .lx-copy h2 em{white-space:nowrap}
+.lx3 .lx-eb{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;letter-spacing:.2px;color:rgba(255,255,255,.88);padding:7px 14px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)}
+.lx3 .lx-eb::before{content:"";width:7px;height:7px;border-radius:50%;background:#2ED39A;box-shadow:0 0 0 4px rgba(46,211,154,.22)}
+.lx3 .lx-copy h2{font-size:clamp(40px,3.7vw,66px)!important;line-height:1.08!important;letter-spacing:-.025em;color:#fff!important;max-width:680px;font-weight:600;margin:22px 0 0!important}
+.lx3 .lx-copy h2 em{font-style:normal;font-weight:700;background:linear-gradient(100deg,#8FD0FF,#5BE5B4);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.lx3 .lx-copy p{font-size:clamp(17px,1.35vw,20px)!important;line-height:1.55!important;font-weight:400;color:rgba(255,255,255,.72)!important;max-width:520px;margin-top:20px!important}
+.lx3 .lp{display:grid!important;grid-template-columns:1fr 1fr;gap:14px;max-width:640px;margin-top:38px}
+.lx3 .lp-f{display:flex;flex-direction:column;gap:12px;align-items:flex-start;padding:18px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.lx3 .lp-i{flex:none;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);display:grid!important;place-items:center;color:#fff}
+.lx3 .lp-i svg{width:19px!important;height:19px!important;margin:0!important;display:block!important;position:static!important}
+.lx3 .lp-f b{display:block;font-size:15px;font-weight:600;color:#fff;letter-spacing:-.1px}
+.lx3 .lp-f span{display:block;font-size:13px;line-height:1.45;color:rgba(255,255,255,.62);margin-top:4px}
+.lx3 .lp-pvw{display:block!important;margin-top:14px}
+.lx3 .lp-pv{max-width:640px;border-radius:20px;padding:16px 18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.lx3 .lp-ph{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px;letter-spacing:.3px}
+.lx3 .lp-k{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lx3 .lp-k div{background:rgba(255,255,255,.08);border-radius:13px;padding:11px 13px}
+.lx3 .lp-k small{display:block;font-size:11.5px;color:rgba(255,255,255,.6)}.lx3 .lp-k b{display:block;font-size:19px;font-weight:600;color:#fff;margin-top:3px;font-variant-numeric:tabular-nums}
 .lx3 .lp-k b.up{color:#7BF1C4}
-.lx3 .lp-ai{display:flex;gap:9px;align-items:flex-start;margin-top:10px;font-size:13px;line-height:1.4;color:#fff;background:rgba(255,255,255,.12);border-radius:12px;padding:9px 11px}
-.lx3 .lp-ai i{flex:none;width:22px;height:22px;border-radius:7px;background:#2ED39A;color:#06361f;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px}
-.lx3 .lp-ft{display:block!important;font-size:12.5px;color:rgba(255,255,255,.55)}
+.lx3 .lp-ai{display:flex;gap:10px;align-items:center;margin-top:12px;font-size:13.5px;line-height:1.4;color:#fff;background:rgba(255,255,255,.1);border-radius:13px;padding:10px 12px}
+.lx3 .lp-ai i{flex:none;width:24px;height:24px;border-radius:8px;background:#2ED39A;color:#06361f;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:12px}
+.lx3 .lp-ft{display:block!important;font-size:12.5px;color:rgba(255,255,255,.5);margin-top:34px}
 .lx3 .lx-card{grid-column:2;grid-row:1;align-self:center!important;justify-self:center!important;max-width:460px!important;width:calc(100% - 64px)!important;margin:40px 32px!important;padding:34px 32px 28px!important}
 .lx3 .lx-card h1{font-size:30px!important}
 .lx3 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}
 .lx3 .lx-caps.on{display:block}
 }
-@media(min-width:1000px) and (max-height:780px){.lx3 .lp-pv{display:none}}
-@media(min-width:1000px) and (max-height:640px){.lx3 .lp{display:none}}
+@media(min-width:1000px) and (max-height:800px){.lx3 .lp-pvw{display:none!important}}
+@media(min-width:1000px) and (max-height:700px){.lx3 .lp{display:none!important}}
 .lx-caps{display:none;margin-top:6px;font-size:12.5px;color:#B45309;font-weight:600}.lx-caps.on{display:block}
 .lx-copyr{width:100%;text-align:center;font-size:12.5px;color:#74839A;margin:14px 0 0}@media(min-width:1000px){.lx3 .lx-copyr{display:none}}
 `;
   document.head.appendChild(css);
   const FE = {
-    own: { h: 'İşletmenizi tek yerden yönetin.', p: 'Fiş, ekip, stok ve tedarik süreçleriniz tek ekranda.', f: [['receipt', 'Fişi fotoğrafla, Kais okusun', 'Tutar, KDV ve kategori kendiliğinden gelir.'], ['users', 'Ekip, vardiya ve izin', 'Plan, talep ve onaylar tek yerde.'], ['box', 'Stok ve tedarik', 'Azalan ürün için sipariş önerisi hazır.'], ['sparkle', 'Kais AI', 'Sorunu yaz, işlemi senin onayına hazırlasın.']] },
-    emp: { h: 'Ekibe hoş geldin.', p: 'Vardiyanı, iznini ve görevlerini tek yerden takip et.', f: [['calendar', 'Vardiya planın', 'Hangi gün kaçta, hep elinin altında.'], ['clock', 'İzin ve talepler', 'İzin iste, durumunu anında gör.'], ['check', 'Görevler', 'Bugünün işleri ve tamamladıkların.']] },
+    own: { eb: 'Küçük işletmeler için akıllı yönetim', h: 'İşletmenizi <em>tek yerden</em> yönetin.', p: 'Fiş, ekip, stok ve tedarik süreçleriniz tek ekranda.', f: [['receipt', 'Fişi fotoğrafla, Kais okusun', 'Tutar, KDV ve kategori kendiliğinden gelir.'], ['users', 'Ekip, vardiya ve izin', 'Plan, talep ve onaylar tek yerde.'], ['box', 'Stok ve tedarik', 'Azalan ürün için sipariş önerisi hazır.'], ['sparkle', 'Kais AI', 'Sorunu yaz, işlemi senin onayına hazırlasın.']] },
+    emp: { eb: 'Ekip alanı', h: 'Ekibe <em>hoş geldin.</em>', p: 'Vardiyanı, iznini ve görevlerini tek yerden takip et.', f: [['calendar', 'Vardiya planın', 'Hangi gün kaçta, hep elinin altında.'], ['clock', 'İzin ve talepler', 'İzin iste, durumunu anında gör.'], ['check', 'Görevler', 'Bugünün işleri ve tamamladıkların.']] },
   };
   const CPR = '© ' + new Date().getFullYear() + ' KaisPilot. Tüm hakları saklıdır.';
   const _out = loginHTML;
@@ -433,7 +439,7 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
     const k = (S.lgTab === 'emp' && !S.lgCreate) ? 'emp' : 'own'; const d = FE[k];
     const feats = `<div class="lp">${d.f.map((x) => `<div class="lp-f"><span class="lp-i">${ic(x[0], 20)}</span><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join('')}</div>`;
     const pv = k === 'own' ? `<div class="lp lp-pvw"><div class="lp-pv"><div class="lp-ph"><span>Bugün</span><span>Örnek ekran</span></div><div class="lp-k"><div><small>Bu ay gelir</small><b>₺248.600</b></div><div><small>Gider</small><b>₺161.200</b></div><div><small>Onay bekleyen fiş</small><b class="up">3</b></div></div><div class="lp-ai"><i>K</i><span>Süt stoğu azalıyor. Tedarikçiye sipariş hazırlayayım mı?</span></div></div></div>` : '';
-    h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><h2>${d.h}</h2><p>${d.p}</p></div>`);
+    h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><span class="lx-eb">${d.eb}</span><h2>${d.h}</h2><p>${d.p}</p></div>`);
     h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">${CPR}</div></section>`);
     h = h.replace(/<\/section><\/div>$/, `</section><p class="lx-copyr">${CPR}</p></div>`);
     h = h.replace(/<div class="login lx([^"]*)"/, '<div class="login lx$1 lx3"');
