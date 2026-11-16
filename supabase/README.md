@@ -65,3 +65,10 @@ Uygulama kapalıyken de çalışır:
 - `kais-admin` yeniden yüklenmeli (`/tmp/out/kais-admin-FINAL.ts`). Yeni izin: `kais` (moderatöre ayrıca verilir, ana admin hepsini görür).
 - Aynı `ANTHROPIC_API_KEY` sırrı kullanılır. İsteğe bağlı: `KAIS_ADMIN_MODEL` (varsayılan claude-sonnet-5-5).
 - Kais AI yalnızca özet sayıları (işletme, AI, hata, kullanım, geri bildirim) görür; muhasebe/çalışan/fiş verisi yoktur.
+
+## v148 — Admin: duyuru, destek, notlar, büyüme, sistem, özellik bayrakları
+- SQL: `sql/admin2.sql` çalıştır. `kais-admin` yeniden yüklenmeli.
+- Yeni izinler: `announce`, `support`, `flags`. Büyüme ve notlar `businesses`, Sistem sağlığı `errors` iznine bağlıdır.
+- Duyurular uygulamada üstte bir şerit olarak görünür. Push bildirimi göndermez.
+- Uygulamada bayrak kullanmak için: `FLAG('anahtar')` true/false döner.
+- Destek görünümü yalnızca ana admine açıktır, veri yapısını ve kayıt sayısını gösterir, içeriği göstermez. Her kullanım denetim kaydına yazılır.

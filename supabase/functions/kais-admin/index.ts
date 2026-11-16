@@ -16,7 +16,7 @@ const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 // Tahmini dolar maliyeti (kaba): sohbet Sonnet, okuma Haiku
 const USD = { chat: 0.015, read: 0.0005 };
-export const PERMS = ['businesses', 'ai', 'errors', 'events', 'feedback', 'limits', 'audit', 'kais'] as const;
+export const PERMS = ['businesses', 'ai', 'errors', 'events', 'feedback', 'limits', 'audit', 'kais', 'announce', 'support', 'flags'] as const;
 const NLC = String.fromCharCode(10);
 const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const AMODEL = Deno.env.get('KAIS_ADMIN_MODEL') || 'claude-sonnet-5-5';
@@ -116,6 +116,7 @@ export async function handle(req: Request): Promise<Response> {
       const em = await emails(); const mem = ((await srv.from('members').select('role,created_at,user_id').eq('business_id', id)).data || []) as any[];
       const roles: Record<string, number> = {}; mem.forEach((m) => { roles[m.role] = (roles[m.role] || 0) + 1; });
       const out: any = { ok: true, business: { id, name: x.name, created_at: x.created_at, owner: em[x.owner_id] || '', roles, suspended_at: x.suspended_at || null, suspended_note: x.suspended_note || '' } };
+      try { const nt = await srv.from('business_notes').select('note,tags,updated_by,updated_at').eq('business_id', id).maybeSingle(); out.note = nt.data || null; } catch (e0) { /* yoksay */ }
       out.members = mem.map((m) => ({ email: em[m.user_id] || '', role: m.role, since: m.created_at })).sort((p1, p2) => String(p1.since).localeCompare(String(p2.since)));
       const full = await srv.from('businesses').select('*').eq('id', id).maybeSingle();
       const fr: any = full.data || {}; const info: Record<string, any> = {};
@@ -247,6 +248,138 @@ export async function handle(req: Request): Promise<Response> {
       const jj: any = await rr.json(); const text = (jj.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join(NLC).trim();
       await audit(brief ? 'kais_ozet' : 'kais_soru');
       return J({ ok: true, text: text || 'Cevap boş geldi.' });
+    }
+
+    if (action === 'note_set') {
+      const d = need('businesses'); if (d) return d;
+      const id = String(b.business_id || ''); if (!/^[0-9a-f-]{36}$/i.test(id)) return ERR('İşletme yok.');
+      const tags = (Array.isArray(b.tags) ? b.tags : []).map((t: any) => String(t).trim().slice(0, 24)).filter(Boolean).slice(0, 8);
+      const r = await srv.from('business_notes').upsert({ business_id: id, note: String(b.note || '').slice(0, 2000), tags, updated_by: adm.email, updated_at: new Date().toISOString() });
+      if (r.error) return ERR('Kaydedilemedi. admin2.sql çalıştırıldı mı?', 500);
+      await audit('not_kaydet', id); return J({ ok: true });
+    }
+
+    if (action === 'tags_all') {
+      const d = need('businesses'); if (d) return d;
+      const r = await srv.from('business_notes').select('business_id,tags,note');
+      return J({ ok: true, rows: r.data || [] });
+    }
+
+    if (action === 'growth') {
+      const d = need('businesses'); if (d) return d;
+      const bz = await bizRows(); const now = Date.now(); const D = 864e5;
+      const ev = ((await srv.from('app_events').select('business_id,created_at,ev').gte('created_at', tsIso(90)).limit(50000)).data || []) as any[];
+      const by: Record<string, number[]> = {}; const feat: Record<string, Set<string>> = {}; const dau: Record<string, Set<string>> = {};
+      for (let i = 29; i >= 0; i--) dau[dayIso(i)] = new Set();
+      ev.forEach((e) => {
+        if (!e.business_id) return; const t = new Date(e.created_at).getTime();
+        (by[e.business_id] || (by[e.business_id] = [])).push(t);
+        if (t >= now - 30 * D && String(e.ev).startsWith('a:')) { (feat[e.ev] || (feat[e.ev] = new Set())).add(e.business_id); }
+        const k = String(e.created_at).slice(0, 10); if (k in dau) dau[k].add(e.business_id);
+      });
+      const created = (x: any) => new Date(x.created_at).getTime();
+      const weeks: any[] = [];
+      for (let w = 7; w >= 0; w--) {
+        const from = now - (w + 1) * 7 * D, to = now - w * 7 * D; const co = bz.filter((x) => created(x) >= from && created(x) < to);
+        weeks.push({ from: new Date(from).toISOString().slice(0, 10), size: co.length, active7: co.filter((x) => (by[x.id] || []).some((t) => t >= now - 7 * D)).length });
+      }
+      const el7 = bz.filter((x) => now - created(x) >= 14 * D), el30 = bz.filter((x) => now - created(x) >= 37 * D);
+      const ret7 = el7.filter((x) => (by[x.id] || []).some((t) => t >= created(x) + 7 * D)).length;
+      const ret30 = el30.filter((x) => (by[x.id] || []).some((t) => t >= created(x) + 30 * D)).length;
+      const risk: any[] = [];
+      bz.forEach((x) => {
+        if (x.suspended_at) return; const ts = by[x.id] || []; const l7 = ts.filter((t) => t >= now - 7 * D).length; const p7 = ts.filter((t) => t >= now - 14 * D && t < now - 7 * D).length;
+        const last = ts.length ? new Date(Math.max.apply(null, ts)).toISOString() : null;
+        if (p7 >= 1 && l7 === 0) risk.push({ id: x.id, name: x.name, why: 'Bıraktı', l7, p7, last });
+        else if (p7 >= 4 && l7 < p7 * 0.5) risk.push({ id: x.id, name: x.name, why: 'Kullanım düştü', l7, p7, last });
+      });
+      risk.sort((a, c) => c.p7 - a.p7);
+      const act30 = new Set(ev.filter((e) => e.business_id && new Date(e.created_at).getTime() >= now - 30 * D).map((e) => e.business_id)).size;
+      const adoption = Object.entries(feat).map(([k, v]) => ({ ev: k, n: v.size })).sort((a, c) => c.n - a.n).slice(0, 12);
+      const series: Record<string, number> = {}; Object.keys(dau).forEach((k) => { series[k] = dau[k].size; });
+      return J({ ok: true, weeks, retention: { d7: { eligible: el7.length, kept: ret7 }, d30: { eligible: el30.length, kept: ret30 } }, risk: risk.slice(0, 20), adoption, active30: act30, series });
+    }
+
+    if (action === 'health') {
+      const d = need('errors'); if (d) return d;
+      const t0 = Date.now(); await srv.from('businesses').select('id', { count: 'exact', head: true }); const dbMs = Date.now() - t0;
+      const ml = await srv.from('mail_log').select('kind,created_at').gte('created_at', tsIso(7)).order('created_at', { ascending: false }).limit(3000);
+      const kinds: Record<string, any> = {}; ((ml.data || []) as any[]).forEach((x) => { const o = kinds[x.kind] || (kinds[x.kind] = { kind: x.kind, last: x.created_at, n24: 0, n7: 0 }); o.n7++; if (x.created_at >= tsIso(1)) o.n24++; });
+      const subs = await srv.from('push_subs').select('*', { count: 'exact', head: true });
+      const aq = await srv.from('ai_quota').select('day,n').gte('day', dayIso(7));
+      const aiDays: Record<string, number> = {}; ((aq.data || []) as any[]).forEach((x) => { aiDays[x.day] = (aiDays[x.day] || 0) + x.n; });
+      const er = ((await srv.from('app_errors').select('created_at,ver').gte('created_at', tsIso(14)).limit(5000)).data || []) as any[];
+      const series: Record<string, number> = {}; for (let i = 13; i >= 0; i--) series[dayIso(i)] = 0; const vers: Record<string, number> = {};
+      er.forEach((x) => { const k = String(x.created_at).slice(0, 10); if (k in series) series[k]++; if (x.ver && x.created_at >= tsIso(7)) vers[x.ver] = (vers[x.ver] || 0) + 1; });
+      return J({ ok: true, db_ms: dbMs, cron: Object.values(kinds), cron_ok: !ml.error, push_subs: subs.count || 0, ai_days: aiDays, errors: series, vers: Object.entries(vers).sort((a, c) => c[1] - a[1]).slice(0, 8) });
+    }
+
+    if (action === 'ann_list') {
+      const d = need('announce'); if (d) return d;
+      const r = await srv.from('admin_announcements').select('*').order('created_at', { ascending: false }).limit(60);
+      if (r.error) return ERR('Tablo yok. admin2.sql çalıştırılmalı.', 503);
+      return J({ ok: true, rows: r.data || [] });
+    }
+    if (action === 'ann_create') {
+      const d = need('announce'); if (d) return d;
+      const title = String(b.title || '').trim().slice(0, 80); const body = String(b.body || '').trim().slice(0, 600); if (!title) return ERR('Başlık gerekli.');
+      const ids = (Array.isArray(b.target) ? b.target : []).map((x: any) => String(x)).filter((x: string) => /^[0-9a-f-]{36}$/i.test(x));
+      const days = Math.min(90, Math.max(1, Math.floor(Number(b.days) || 7))); const kind = ['info', 'warn', 'ok'].includes(b.kind) ? b.kind : 'info';
+      const r = await srv.from('admin_announcements').insert({ title, body, kind, target: ids.length ? ids : null, expires_at: new Date(Date.now() + days * 864e5).toISOString(), created_by: adm.email, active: true });
+      if (r.error) return ERR('Gönderilemedi. admin2.sql çalıştırıldı mı?', 500);
+      await audit('duyuru_gonder', ids.length ? ids.join(',') : 'hepsi', { title }); return J({ ok: true });
+    }
+    if (action === 'ann_end') {
+      const d = need('announce'); if (d) return d;
+      const r = await srv.from('admin_announcements').update({ active: false }).eq('id', String(b.id || '')); if (r.error) return ERR('Güncellenemedi.', 500);
+      await audit('duyuru_bitir', String(b.id || '')); return J({ ok: true });
+    }
+
+    if (action === 'flags_list') {
+      const d = need('flags'); if (d) return d;
+      const r = await srv.from('feature_flags').select('*').order('key');
+      if (r.error) return ERR('Tablo yok. admin2.sql çalıştırılmalı.', 503);
+      return J({ ok: true, rows: r.data || [] });
+    }
+    if (action === 'flag_set') {
+      const d = need('flags'); if (d) return d;
+      const key = String(b.key || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 40); if (!key) return ERR('Anahtar gerekli.');
+      const ids = (Array.isArray(b.business_ids) ? b.business_ids : []).map((x: any) => String(x)).filter((x: string) => /^[0-9a-f-]{36}$/i.test(x));
+      const r = await srv.from('feature_flags').upsert({ key, label: String(b.label || key).slice(0, 60), description: String(b.description || '').slice(0, 200), enabled_all: b.enabled_all === true, business_ids: ids, updated_at: new Date().toISOString(), updated_by: adm.email });
+      if (r.error) return ERR('Kaydedilemedi. admin2.sql çalıştırıldı mı?', 500);
+      await audit('bayrak_kaydet', key, { enabled_all: b.enabled_all === true, n: ids.length }); return J({ ok: true });
+    }
+    if (action === 'flag_del') {
+      const d = need('flags'); if (d) return d;
+      const key = String(b.key || ''); await srv.from('feature_flags').delete().eq('key', key); await audit('bayrak_sil', key); return J({ ok: true });
+    }
+
+    if (action === 'tickets') {
+      const d = need('support'); if (d) return d;
+      const r = await srv.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(150);
+      if (r.error) return ERR('Tablo yok. admin2.sql çalıştırılmalı.', 503);
+      const bz = await bizRows(); const nm: Record<string, string> = {}; bz.forEach((x) => { nm[x.id] = x.name; }); const em = await emails();
+      return J({ ok: true, rows: ((r.data || []) as any[]).map((x) => ({ ...x, biz: nm[x.business_id] || '-', email: em[x.user_id] || '' })) });
+    }
+    if (action === 'ticket_reply') {
+      const d = need('support'); if (d) return d;
+      const id = String(b.id || ''); const reply = String(b.reply || '').trim().slice(0, 1500); const status = b.status === 'open' ? 'open' : 'solved';
+      const r = await srv.from('support_tickets').update({ reply: reply || null, status, replied_at: new Date().toISOString(), replied_by: adm.email }).eq('id', id);
+      if (r.error) return ERR('Kaydedilemedi.', 500);
+      await audit('destek_cevap', id, { status }); return J({ ok: true });
+    }
+
+    if (action === 'support_view') {
+      if (!isSuper) return ERR('Bu işlemi yalnızca ana admin yapabilir.', 403);
+      const id = String(b.business_id || ''); if (!/^[0-9a-f-]{36}$/i.test(id)) return ERR('İşletme yok.');
+      const r = await srv.from('app_state').select('scope,version,updated_at,state').eq('business_id', id);
+      if (r.error) return ERR('Okunamadı.', 500);
+      const scopes = ((r.data || []) as any[]).map((x) => {
+        const raw = typeof x.state === 'string' ? x.state : JSON.stringify(x.state || {}); let keys: any[] = [];
+        try { const o = JSON.parse(raw); if (o && typeof o === 'object') keys = Object.keys(o).map((k) => ({ k, t: Array.isArray(o[k]) ? 'liste' : typeof o[k], n: Array.isArray(o[k]) ? o[k].length : (o[k] && typeof o[k] === 'object' ? Object.keys(o[k]).length : null) })); } catch (e0) { /* yoksay */ }
+        return { scope: x.scope, version: x.version, updated_at: x.updated_at, bytes: raw.length, keys: keys.slice(0, 40) };
+      });
+      await audit('destek_gorunum', id); return J({ ok: true, scopes, note: 'Yalnızca veri yapısı ve kayıt sayıları görünür; içerik gösterilmez.' });
     }
 
     if (action === 'suspend' || action === 'unsuspend') {

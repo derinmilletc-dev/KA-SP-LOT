@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v146';
+const APP_VER = 'v147';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13026,6 +13026,52 @@ H.expfat = () => { const q = (v) => '"' + String(v == null ? '' : v).replace(/"/
   try { const c = sbClient(); if (c && SBS.user && ID.active) { const r = await c.from('businesses').select('suspended_at').eq('id', ID.active.business_id).maybeSingle();
     if (!r.error && r.data && r.data.suspended_at) { try { await c.auth.signOut(); } catch (e) {} SBS.user = null; SBS.biz = null; ID.active = null; ID.mems = []; S.loginErr = 'Bu işletmenin hesabı askıya alınmış. Destek ile iletişime geç.'; render(); return; } } } catch (e) {}
   return _ie.apply(this, arguments); }; }
+
+/* v147 Duyuru şeridi, özellik bayrakları, destek talepleri */
+const KX = { flags: [], ann: [], tix: null, busy: false };
+function FLAG(k) { return KX.flags.indexOf(k) >= 0; }
+async function kxLoad() {
+  try {
+    const c = sbClient(); if (!c || !SBS.user) return;
+    try { const f = await c.rpc('my_flags'); if (!f.error && Array.isArray(f.data)) KX.flags = f.data; } catch (e) {}
+    try { const a = await c.from('admin_announcements').select('id,title,body,kind,created_at').order('created_at', { ascending: false }).limit(5); if (!a.error) KX.ann = a.data || []; } catch (e) {}
+    kxBar();
+  } catch (e) {}
+}
+function kxSeen() { try { return JSON.parse(localStorage.getItem('kp_ann_seen') || '[]'); } catch (e) { return []; } }
+function kxBar() {
+  let el = document.getElementById('ann-bar');
+  const seen = kxSeen(); const a = (KX.ann || []).find((x) => seen.indexOf(x.id) < 0);
+  if (!a || !SBS.user) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'ann-bar'; document.body.appendChild(el); }
+  const col = a.kind === 'warn' ? '#b45309' : a.kind === 'ok' ? '#15803d' : '#1d4ed8';
+  el.style.cssText = 'position:fixed;left:10px;right:10px;top:max(10px,env(safe-area-inset-top));z-index:9999;background:#fff;color:#111;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.22);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;border-left:5px solid ' + col + ';max-width:560px;margin:0 auto';
+  el.innerHTML = '<div style="flex:1;min-width:0"><b style="display:block;font-size:14.5px">' + esc(a.title) + '</b>' + (a.body ? '<div style="font-size:13.5px;color:#444;margin-top:3px;white-space:pre-wrap">' + esc(a.body) + '</div>' : '') + '</div><button data-annx="' + esc(a.id) + '" style="border:0;background:#eef0f3;border-radius:9px;min-width:44px;min-height:44px;font-size:13px;font-weight:600">Tamam</button>';
+}
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-annx]'); if (!b) return; const s = kxSeen(); s.push(b.dataset.annx); try { localStorage.setItem('kp_ann_seen', JSON.stringify(s.slice(-50))); } catch (x) {} kxBar(); });
+{ const _ie2 = idEnter; idEnter = async function () { const r = await _ie2.apply(this, arguments); try { kxLoad(); } catch (e) {} return r; }; }
+setInterval(() => { try { if (SBS.user && !document.hidden) kxLoad(); } catch (e) {} }, 600000);
+
+async function kxTickets() {
+  try { const c = sbClient(); const r = await c.from('support_tickets').select('id,created_at,kind,message,status,reply,replied_at').eq('user_id', SBS.user.id).order('created_at', { ascending: false }).limit(10); KX.tix = r.error ? [] : (r.data || []); } catch (e) { KX.tix = []; }
+  if (S.modal && S.modal.type === 'support') renderModal();
+}
+NEWM.support = () => {
+  const t = KX.tix;
+  const list = t === null ? '<p class="muted small">Yükleniyor…</p>' : !t.length ? '<p class="muted small">Henüz mesajın yok.</p>' : t.map((x) => '<div class="card" style="padding:10px 12px;margin-top:8px"><div class="small muted">' + esc(new Date(x.created_at).toLocaleDateString('tr-TR')) + ' · ' + (x.status === 'solved' ? 'Çözüldü' : 'Açık') + '</div><div style="margin-top:4px;white-space:pre-wrap">' + esc(x.message) + '</div>' + (x.reply ? '<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--bg2,#f4f6f9)"><b class="small">Kais ekibi</b><div style="white-space:pre-wrap">' + esc(x.reply) + '</div></div>' : '') + '</div>').join('');
+  return sheet('Destek', '<p class="muted">Bir sorun, öneri ya da sorun varsa yaz. Ekibimiz buradan cevap verir.</p><div class="field"><label for="sp-k">Konu</label><select id="sp-k"><option value="sorun">Sorun bildir</option><option value="oneri">Öneri</option><option value="soru">Soru</option></select></div><div class="field"><label for="sp-m">Mesajın</label><textarea id="sp-m" rows="4" style="width:100%;font-size:16px" placeholder="Ne oldu? Hangi ekranda?"></textarea></div><button class="btn block" data-a="spsend">Gönder</button><h3 style="margin-top:18px">Mesajların</h3>' + list);
+};
+H.support = () => { KX.tix = null; S.modal = { type: 'support' }; renderModal(); kxTickets(); };
+H.spsend = async () => {
+  if (KX.busy) return; const m = ($('#sp-m') || {}).value || ''; const k = ($('#sp-k') || {}).value || 'sorun'; if (m.trim().length < 5) return toast('Mesajı biraz daha ayrıntılı yaz.', 'warn');
+  KX.busy = true;
+  try {
+    const c = sbClient(); const r = await c.from('support_tickets').insert({ business_id: ID.active.business_id, user_id: SBS.user.id, role: S.user ? S.user.role : null, kind: k, message: m.trim().slice(0, 1500), ver: APP_VER });
+    if (r.error) throw r.error; toast('Mesajın iletildi.', 'ok'); try { tlmEv('a:support'); } catch (e) {} await kxTickets();
+  } catch (e) { toast('Gönderilemedi. Biraz sonra tekrar dene.', 'warn'); }
+  KX.busy = false;
+};
+{ const _va = viewAyarlar; viewAyarlar = function () { const h = _va.apply(this, arguments); const card = '<div class="card stack"><div><h3>Destek</h3><p class="muted small" style="margin-top:2px">Sorun, öneri ya da sorunun mu var? Bize yaz, buradan cevap veririz.</p></div><button class="btn sec block" data-a="support">Destek ile yaz</button></div>'; return card + h; }; }
 </script>
 </body>
 </html>
