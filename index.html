@@ -12971,7 +12971,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v154';
+const APP_VER = 'v155';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -13583,7 +13583,7 @@ function mxCard() {
   let F, A, C; try { F = mxForecast(30); A = mxAge(INV.filter((v) => v.st !== 'odendi').map((v) => ({ amt: mxN(v.tot), due: v.due, who: v.cust }))); C = mxClose(); } catch (e) { return ''; }
   const old = A.slice(2).reduce((t, r) => t + r.t, 0); const nr = mxRecs().filter((r) => !r.off).length;
   const tile = (a, i, t, s, w) => `<button class="btn sec" data-a="${a}" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;height:auto;min-height:74px;border-radius:14px;${w ? 'border-color:#E5484D;' : ''}"><span style="display:flex;gap:6px;align-items:center;font-weight:600">${ic(i, 17)} ${t}</span><span class="small muted" style="font-weight:400">${s}</span></button>`;
-  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxkdv', 'table', 'KDV hazırlığı', 'Oran bazlı özet, Excel')}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${tile('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${tile('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div></div>`;
+  return `<div class="card stack" style="margin-bottom:12px"><div class="row between"><div><h3>Akıllı muhasebe</h3><p class="muted small" style="margin-top:2px">Tahmin, eşleştirme ve kontroller</p></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile('mxnakit', 'trend', 'Nakit akışı', F.min < 0 ? 'Kasa eksiye inebilir' : '30 gün ' + mxSign(F.d30), F.min < 0)}${tile('mxyas', 'clock', 'Yaşlandırma', old ? fmt0(old) + ' 30 günü aştı' : 'Gecikme yok', old > 0)}${tile('mxekstre', 'file', 'Banka ekstresi', 'Otomatik eşleştir')}${tile('mxkapanis', 'check', 'Ay sonu kontrolü', C.ok + '/' + C.it.length + ' tamam', C.ok < C.it.length - 2)}${tile('mxkdv', 'table', 'KDV hazırlığı', 'Oran bazlı özet, Excel')}${tile('mxpaket', 'send', 'Aylık paket', 'Muhasebeciye gönder')}${tile('mxfis', 'camera', 'Fişten kayıt', 'Fotoğraf çek, kaydolsun')}${tile('mxcari', 'list', 'Cari ekstre', 'Mutabakat gönder')}${tile('mximp', 'file', 'Excel\'den aktar', 'Mevcut takibini taşı')}${tile('mxrec', 'plus', 'Tekrarlayan', nr ? nr + ' kayıt aktif' : 'Kira, abonelik')}</div></div>`;
 }
 { const _v = viewHTML; viewHTML = function () { const h = _v.apply(this, arguments); const u = S.user; if (!u || S.modal) return h; if (!((u.role === 'patron' && S.view === 'muhasebe') || (u.role === 'muhasebeci' && S.view === 'borc'))) return h; const c = mxCard(); if (!c) return h; return /^<div[^>]*>/.test(h) ? h.replace(/^(<div[^>]*>)/, (m) => m + c) : c + h; }; }
 
@@ -14006,6 +14006,51 @@ H.mxkdvxl = async () => {
       K.rows.filter((r) => (dirOf(r) === 'gelir') === (T === 'Gelir')).sort((a, b) => (a.iso < b.iso ? -1 : 1)).forEach((r) => { const t = mxN(r.total), rt = mxN(r.rate), m = rt ? t / (1 + rt / 100) : t; const x = w.addRow([mxDmy(r.iso), r.desc || '', r.acc || '', r.doc || '', rt, r2(m), r2(t - m), r2(t)]); [6, 7, 8].forEach((c) => { x.getCell(c).numFmt = num; }); }); });
     const buf = await wb.xlsx.writeBuffer(); saveBlob('kdv-' + ym + '.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); toast('Excel indirildi.', 'ok');
   } catch (e) { toast('Excel hazırlanamadı. İnternet bağlantını kontrol et.', 'warn'); }
+};
+
+/* =====================================================================
+   v155: aylık muhasebe paketi (tek Excel: özet, defter, faturalar, borçlar, KDV) + paylaşım
+   ===================================================================== */
+function mxPkData(ym) {
+  const K = mxKdv(ym); const rows = K.rows.slice().sort((a, b) => (a.iso < b.iso ? -1 : 1)); const gel = rows.filter((r) => dirOf(r) === 'gelir').reduce((t, r) => t + mxN(r.total), 0), gid = rows.filter((r) => dirOf(r) !== 'gelir').reduce((t, r) => t + mxN(r.total), 0);
+  const inv = INV.filter((v) => (v.iso && v.iso.slice(0, 7) === ym) || v.st !== 'odendi'); const openInv = INV.filter((v) => v.st !== 'odendi'); const late = INV.filter((v) => fiLate(v));
+  const debts = allDebts().filter((d) => !d.paid); const pend = RECEIPTS.filter((f) => f.status === 'musavirde').length;
+  return { K, rows, gel: r2(gel), gid: r2(gid), net: r2(gel - gid), inv, openInv, late, debts, pend, openAmt: r2(openInv.reduce((t, v) => t + mxN(v.tot), 0)), lateAmt: r2(late.reduce((t, v) => t + mxN(v.tot), 0)), debtAmt: r2(debts.reduce((t, d) => t + mxN(d.amt), 0)) };
+}
+function mxPkText(ym, D) {
+  const NL = String.fromCharCode(10); return [BIZ + ' · ' + ym + ' dönemi muhasebe paketi', 'Gelir: ' + fmt0(D.gel), 'Gider: ' + fmt0(D.gid), 'Net: ' + fmt0(D.net), (D.K.net >= 0 ? 'Ödenecek KDV: ' : 'Devreden KDV: ') + fmt0(Math.abs(D.K.net)), 'Açık alacak: ' + fmt0(D.openAmt) + (D.late.length ? ' (' + D.late.length + ' fatura gecikmiş)' : ''), 'Ödenecek borç: ' + fmt0(D.debtAmt), D.K.nodoc ? D.K.nodoc + ' belgesiz gider var (' + fmt0(D.K.nodocAmt) + ')' : '', D.pend ? D.pend + ' belge onay bekliyor' : '', 'Detaylar ekteki Excel dosyasında.'].filter(Boolean).join(NL);
+}
+async function mxPkBuild(ym, D) {
+  const X = await xlLoad(); const wb = new X.Workbook(); const num = '#,##0.00'; const hd = (ws) => { ws.getRow(1).font = { bold: true }; ws.views = [{ state: 'frozen', ySplit: 1 }]; };
+  const o = wb.addWorksheet('Özet'); o.columns = [{ width: 34 }, { width: 18 }]; o.addRow([BIZ + ' · ' + ym]).font = { bold: true, size: 14 }; o.addRow(['Hazırlanma tarihi', mxDmy(fiIso())]); o.addRow([]);
+  [['Gelir toplamı', D.gel], ['Gider toplamı', D.gid], ['Net', D.net], ['Hesaplanan KDV', D.K.hes], ['İndirilecek KDV', D.K.ind], [D.K.net >= 0 ? 'Ödenecek KDV' : 'Devreden KDV', Math.abs(D.K.net)], ['Belgesiz gider (KDV hesabına girmedi)', D.K.nodocAmt], ['Açık alacak', D.openAmt], ['Vadesi geçmiş alacak', D.lateAmt], ['Ödenecek borç', D.debtAmt]].forEach((a) => { const r = o.addRow(a); r.getCell(2).numFmt = num; }); o.addRow(['Onay bekleyen belge', D.pend]);
+  const d = wb.addWorksheet('Defter'); d.columns = [{ header: 'Tarih', width: 12 }, { header: 'Tür', width: 8 }, { header: 'Açıklama', width: 36 }, { header: 'Hesap', width: 18 }, { header: 'Belge', width: 12 }, { header: 'KDV %', width: 8 }, { header: 'Matrah', width: 14 }, { header: 'KDV', width: 14 }, { header: 'Toplam', width: 14 }, { header: 'Şube', width: 14 }, { header: 'Kaynak', width: 12 }]; hd(d);
+  D.rows.forEach((r) => { const t = mxN(r.total), rt = mxN(r.rate), m = rt ? t / (1 + rt / 100) : t; const b = (BRANCHES.find((x) => x.id === r.br) || {}).name || ''; const x = d.addRow([mxDmy(r.iso), dirOf(r) === 'gelir' ? 'Gelir' : 'Gider', r.desc || '', r.acc || '', r.doc || '', rt, r2(m), r2(t - m), r2(t), b, r.src || '']); [7, 8, 9].forEach((c) => { x.getCell(c).numFmt = num; }); });
+  const f = wb.addWorksheet('Faturalar'); f.columns = [{ header: 'Fatura no', width: 14 }, { header: 'Tarih', width: 12 }, { header: 'Müşteri', width: 30 }, { header: 'Tutar', width: 14 }, { header: 'Vade', width: 12 }, { header: 'Durum', width: 16 }]; hd(f);
+  D.inv.forEach((v) => { const x = f.addRow([v.no, mxDmy(v.iso), v.cust, mxN(v.tot), mxDmy(v.due), v.st === 'odendi' ? 'Ödendi' : fiLate(v) ? 'Vadesi geçti' : 'Açık']); x.getCell(4).numFmt = num; });
+  const b = wb.addWorksheet('Borçlar'); b.columns = [{ header: 'Kime', width: 28 }, { header: 'Açıklama', width: 30 }, { header: 'Tutar', width: 14 }, { header: 'Vade', width: 12 }]; hd(b);
+  D.debts.forEach((x) => { const r = b.addRow([x.who, x.note || '', mxN(x.amt), mxDmy(x.due)]); r.getCell(3).numFmt = num; });
+  const k = wb.addWorksheet('KDV'); k.columns = [{ width: 26 }, { width: 8 }, { width: 8 }, { width: 14 }, { width: 14 }, { width: 14 }];
+  [['Hesaplanan KDV (satışlar)', D.K.G], ['İndirilecek KDV (belgeli giderler)', D.K.X]].forEach((a) => { k.addRow([a[0]]).font = { bold: true }; k.addRow(['', 'KDV %', 'Kayıt', 'Matrah', 'KDV', 'Toplam']).font = { bold: true }; Object.values(a[1]).sort((p, q) => p.rate - q.rate).forEach((s) => { const r = k.addRow(['', s.rate, s.n, r2(s.m), r2(s.k), r2(s.t)]); [4, 5, 6].forEach((c) => { r.getCell(c).numFmt = num; }); }); k.addRow([]); });
+  return new Blob([await wb.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+NEWM.mxpaket = () => {
+  const ym = mxYm(); const D = mxPkData(ym); const inp = 'width:100%;font-size:16px;padding:12px;border:1px solid var(--line,#d9dde3);border-radius:12px;background:var(--card,#fff);color:inherit';
+  const row = (l, v, w) => `<div class="row between" style="padding:9px 14px;border-top:1px solid var(--line,#e5e8ee)"><span>${l}</span><b class="num"${w ? ' style="color:#b42318"' : ''}>${v}</b></div>`;
+  return sheet('Aylık paket', `<p class="muted small">Muhasebecine göndereceğin dönem paketi tek Excel dosyasında: özet, defter, faturalar, borçlar ve KDV.</p><div class="field" style="margin:8px 0 0"><label for="mk-m">Dönem</label><input id="mk-m" type="month" value="${esc(ym)}" style="${inp}"></div>
+  <div class="card flush" style="margin-top:10px">${row('Gelir', fmt0(D.gel))}${row('Gider', fmt0(D.gid))}${row('Net', fmt0(D.net))}${row(D.K.net >= 0 ? 'Ödenecek KDV' : 'Devreden KDV', fmt0(Math.abs(D.K.net)))}${row('Açık alacak', fmt0(D.openAmt))}${row('Ödenecek borç', fmt0(D.debtAmt))}${D.late.length ? row('Vadesi geçmiş fatura', D.late.length + ' · ' + fmt0(D.lateAmt), 1) : ''}${D.K.nodoc ? row('Belgesiz gider', D.K.nodoc + ' · ' + fmt0(D.K.nodocAmt), 1) : ''}${D.pend ? row('Onay bekleyen belge', String(D.pend), 1) : ''}</div>
+  ${D.K.nodoc || D.pend || D.late.length ? `<div class="callout warn" style="margin-top:10px">${ic('alert')}<div><p>Pakette eksikler var. Göndermeden önce Ay sonu kontrolünden bakabilirsin.</p></div></div>` : ''}
+  <div class="row wrap" style="margin-top:12px;gap:8px"><button class="btn grow" data-a="mxpkshare">Paketi paylaş</button><button class="btn sec" data-a="mxpkdl">Excel indir</button></div><p class="small muted" style="margin-top:8px">Paylaş, telefonunda WhatsApp ya da e-posta seçeneklerini açar. Desteklenmiyorsa dosya iner ve özet mesaj hazırlanır.</p>`);
+};
+H.mxpaket = () => { S.modal = { type: 'mxpaket' }; renderModal(); };
+H.mxpkdl = async () => { const ym = mxYm(); try { toast('Paket hazırlanıyor…'); const D = brScope(() => mxPkData(ym)); const blob = await mxPkBuild(ym, D); saveBlob('muhasebe-paketi-' + ym + '.xlsx', blob); toast('Paket indirildi.', 'ok'); } catch (e) { toast('Paket hazırlanamadı. İnternet bağlantını kontrol et.', 'warn'); } };
+H.mxpkshare = async () => {
+  const ym = mxYm(); try {
+    toast('Paket hazırlanıyor…'); const D = brScope(() => mxPkData(ym)); const blob = await mxPkBuild(ym, D); const name = 'muhasebe-paketi-' + ym + '.xlsx'; const text = brScope(() => mxPkText(ym, D));
+    const file = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: BIZ + ' ' + ym, text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    saveBlob(name, blob); toast('Dosya indirildi. Mesajına ekleyip gönder.', 'ok'); window.open(waLink('', text), '_blank', 'noopener');
+  } catch (e) { toast('Paket hazırlanamadı. İnternet bağlantını kontrol et.', 'warn'); }
 };
 </script>
 </body>
