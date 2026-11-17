@@ -1,14 +1,15 @@
 -- CANLIYI SIFIRLA: tüm işletmeleri, kullanıcı verilerini, test hesaplarını ve kayıtları siler. GERİ ALINAMAZ.
 -- Korunanlar: planlar, özellik bayrakları, admin hesapları (admin_users) ve aşağıdaki keep_emails listesi.
 -- Kullanmak için: aşağıdaki onay satırında 'HAYIR' yerine 'EVET' yaz, sonra Run et.
--- Önce Supabase → Database → Backups'tan yedek olduğuna bak. Storage'daki yüklenmiş dosyalar (fiş fotoğrafları) bu script ile silinmez:
+-- Silmeden önce otomatik yedek alınır: yedek_<tarih> adlı şemada (Table Editor'de şema listesinden görürsün).
+-- Ayrıca Supabase → Database → Backups'a da bak. Storage'daki yüklenmiş dosyalar (fiş fotoğrafları) bu script ile silinmez:
 -- Supabase → Storage'dan klasörleri elle boşalt.
 
 do $$
 declare
-  onay text := 'HAYIR';                       -- <== silmek için 'EVET' yaz
-  keep_emails text[] := array[]::text[];      -- <== ayrıca tutulacak e-postalar, örn. array['ben@gmail.com']
-  t text; n int;
+  onay text := 'EVET';                        -- <== hazır: çalıştırınca siler (iptal için 'HAYIR' yap)
+  keep_emails text[] := array['ahmtt4565@gmail.com'];   -- <== tutulacak hesap(lar); admin hesapları zaten tutulur
+  t text; n int; sema text := 'yedek_' || to_char(now(), 'YYYYMMDD_HH24MI');
   veri text[] := array[
     'businesses',
     'account_feedback','ai_quota','ai_usage','ai_limits','app_errors','app_events','booking_config','booking_requests',
@@ -17,6 +18,14 @@ declare
     'support_tickets','admin_audit'];
 begin
   if onay <> 'EVET' then raise exception 'Onay verilmedi. onay değerini EVET yap.'; end if;
+
+  -- önce yedek: public tabloların kopyası ayrı bir şemaya alınır (silinen her şey burada durur)
+  execute format('create schema %I', sema);
+  for t in select tablename from pg_tables where schemaname = 'public' loop
+    execute format('create table %I.%I as table public.%I', sema, t, t);
+  end loop;
+  execute format('create table %I.auth_users as select id, email from auth.users', sema);
+  raise notice 'Yedek şeması: %', sema;
 
   -- işletmeler silinince üyeler, davetler, fişler, plan kayıtları, hafıza, bildirimler vb. zincirleme gider
   foreach t in array veri loop
