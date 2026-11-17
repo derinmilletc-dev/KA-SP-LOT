@@ -610,7 +610,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v180';
+const APP_VER = 'v181';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -624,7 +624,7 @@ function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div 
   if (!add) return h; const i = h.indexOf('>'); return i < 0 ? add + h : h.slice(0, i + 1) + add + h.slice(i + 1);
 }; }
 /* 3) Davet: WhatsApp ve QR */
-const ivLink = (code) => ((typeof location !== 'undefined' && /^http/.test(location.protocol)) ? location.origin : 'https://kaistrade.vercel.app') + '/?kod=' + encodeURIComponent(code);
+const ivLink = (code) => ((typeof location !== 'undefined' && /^http/.test(location.protocol)) ? location.origin : 'https://www.kaispilot.com') + '/?kod=' + encodeURIComponent(code);
 { const _ic = NEWM.invcode; NEWM.invcode = function (m) { let h = _ic.apply(this, arguments); try { const l = ivLink(m.code);
   h = h.replace('<button class="btn block" data-a="invcopy">Mesajı kopyala</button>', `<div class="su-qr">${qrSvg(l, 168)}<p class="small muted" style="margin:6px 0 0;text-align:center">Telefonla okutunca kod kendiliğinden yazılır</p></div><button class="btn block" data-a="invwa">WhatsApp ile gönder</button><button class="btn sec block" data-a="invcopy" style="margin-top:8px">Mesajı kopyala</button>`); } catch (e) {} return h; }; }
 H.invwa = () => { const m = S.modal; if (!m || !m.code) return; const t = invText(m.code) + '\nTek dokunuşla aç: ' + ivLink(m.code); try { window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank'); } catch (e) { cpy(t, 'Mesaj kopyalandı.'); } };
