@@ -1410,6 +1410,12 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 /* v201: sekme çubuğu masaüstünde ince, modern kaydırma çubuğu */
 .seg.drg{cursor:grabbing;user-select:none}.seg.drg button{pointer-events:none}
 @media (hover:hover) and (pointer:fine){.seg.ovr,.seg.ovl{scrollbar-width:thin;scrollbar-color:#B7C5DB transparent;padding-bottom:9px;cursor:grab;scroll-behavior:smooth}.seg.ovr::-webkit-scrollbar,.seg.ovl::-webkit-scrollbar{display:block;height:5px}.seg.ovr::-webkit-scrollbar-track,.seg.ovl::-webkit-scrollbar-track{background:transparent}.seg.ovr::-webkit-scrollbar-thumb,.seg.ovl::-webkit-scrollbar-thumb{background:#B7C5DB;border-radius:9px}.seg.ovr::-webkit-scrollbar-thumb:hover,.seg.ovl::-webkit-scrollbar-thumb:hover{background:#8FA4C4}}
+/* v202: Şartlar ve sözleşmeler: iç içe geçen katlanır kartlar kalktı, alt çubuk içeriği örtmez */
+.sz{max-width:760px;width:100%;margin:0 auto;padding-bottom:104px;gap:14px}
+.sz-card{gap:14px}.sz-card>header{padding-bottom:10px;border-bottom:1px solid #EEF2F8}
+.sz-bar{max-width:760px;margin:0 auto;width:100%}
+@media(min-width:900px){.sz{padding-bottom:88px}.sz-bar{bottom:16px}}
+@media(min-width:700px){.sz-item{flex-direction:row!important;align-items:center;gap:10px;padding:8px 10px}.sz-item>.sz-in{flex:1;min-width:0}.sz-meta{flex:none;display:flex;align-items:center;gap:10px}}
 </style></head>
 <body>
 <div id="app"></div>
@@ -1423,9 +1429,9 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 <script src="js/app-05.js?v=fccd978a8f"></script>
 <script src="js/app-06.js?v=93a09755ae"></script>
 <script src="js/app-07.js?v=1e6800afee"></script>
-<script src="js/app-08.js?v=373c057f76"></script>
+<script src="js/app-08.js?v=df76accce3"></script>
 <script src="js/app-09.js?v=8de99f02a9"></script>
-<script src="js/app-10.js?v=06f1b609f0"></script>
+<script src="js/app-10.js?v=413b6dacab"></script>
 <script src="js/app-11.js?v=04b26555dd"></script>
 <script src="js/app-12.js?v=5134c536a4"></script>
 </body>

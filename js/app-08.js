@@ -1098,7 +1098,7 @@ function kbFoldCards(sel, ico, firstOpen) {
   const _r2 = render;
   render = function () {
     const r = _r2.apply(this, arguments);
-    if (S.user && !S.modal) { if (S.view === 'ayarlar' && S.user.role === 'patron') kbFoldCards('main .stack-lg > .card, main > .card.flush', 'gear', false); else if (S.view === 'sartlar') kbFoldCards('main .sz > .sz-card', 'file', true); }
+    if (S.user && !S.modal) { if (S.view === 'ayarlar' && S.user.role === 'patron') kbFoldCards('main .stack-lg > .card, main > .card.flush', 'gear', false); }
     return r;
   };
 }
