@@ -10,7 +10,7 @@ const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const AMODEL = Deno.env.get('KAIS_CRON_MODEL') || 'claude-haiku-5-5';
 const sb = createClient(URL_, SRV, { auth: { persistSession: false } });
 const RESEND = Deno.env.get('RESEND_API_KEY') || ''; const FROM = Deno.env.get('RESEND_FROM') || '';
-const VPUB = Deno.env.get('VAPID_PUBLIC_KEY') || ''; const VPRIV = Deno.env.get('VAPID_PRIVATE_KEY') || ''; const VSUB = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@example.com';
+const VPUB = (Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('VAPID_PUBLIC') || ''); const VPRIV = (Deno.env.get('VAPID_PRIVATE_KEY') || Deno.env.get('VAPID_PRIVATE') || ''); const VSUB = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@example.com';
 if (VPUB && VPRIV) webpush.setVapidDetails(VSUB, VPUB, VPRIV);
 
 async function claim(bid: string, key: string, kind: string) {

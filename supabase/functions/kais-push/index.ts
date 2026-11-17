@@ -15,8 +15,8 @@ const J = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status
 const SB_URL = Deno.env.get('SUPABASE_URL') || '';
 const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const VPUB = Deno.env.get('VAPID_PUBLIC_KEY') || '';
-const VPRIV = Deno.env.get('VAPID_PRIVATE_KEY') || '';
+const VPUB = (Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('VAPID_PUBLIC') || '');
+const VPRIV = (Deno.env.get('VAPID_PRIVATE_KEY') || Deno.env.get('VAPID_PRIVATE') || '');
 const VSUB = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@example.com';
 if (VPUB && VPRIV) webpush.setVapidDetails(VSUB, VPUB, VPRIV);
 
