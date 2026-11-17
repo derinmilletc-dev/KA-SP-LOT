@@ -1418,6 +1418,13 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 @media(min-width:700px){.sz-item{flex-direction:row!important;align-items:center;gap:10px;padding:8px 10px}.sz-item>.sz-in{flex:1;min-width:0}.sz-meta{flex:none;display:flex;align-items:center;gap:10px}}
 /* v203: giriş alanlarında yazınca çıkan vurgu (odak halkası, yeşil çerçeve ve onay işareti) kaldırıldı */
 .lx-in:focus-within,.lx2 .lx-in:focus-within,.lx2 .lx-in.ok{border-color:#D3DCE8!important;box-shadow:none!important}.lx2 .lx-in.ok::after,.lx-in.ok::after{content:none!important;display:none!important}
+/* v206: şifre sıfırlama akışı */
+.fp{display:flex;flex-direction:column;gap:14px;text-align:center;align-items:stretch}.fp-ic{width:52px;height:52px;border-radius:16px;background:var(--cini-wash);color:var(--cini);display:grid;place-items:center;margin:2px auto 0}.fp-ic.ok{background:#E3F4EA;color:#17653A}
+.fp-t{margin:0;font-size:15px;line-height:1.5;color:var(--ink-2)}.fp-t b{color:var(--ink);word-break:break-all}.fp .field{text-align:left}
+.fp-l{margin:0;padding:12px 14px 12px 30px;text-align:left;background:#F4F7FB;border-radius:14px;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.fp-r{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.fp-lk{background:none;border:0;color:var(--cini);font-weight:600;font-size:14px;padding:8px;cursor:pointer}
+.fp-pw{position:relative}.fp-pw input{width:100%;padding-right:46px}.fp-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--ink-2);padding:8px;cursor:pointer}
+.fp-m{display:flex;align-items:center;gap:10px;margin-top:8px}.fp-m i{flex:1;height:6px;border-radius:9px;background:#E3EAF4;position:relative;overflow:hidden}.fp-m i:after{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--w,0);border-radius:9px;background:#D64545;transition:width .2s,background .2s}.fp-m i[data-s="2"]:after{background:#E5A100}.fp-m i[data-s="3"]:after{background:#3FA66B}.fp-m i[data-s="4"]:after{background:#1E8F55}.fp-m span{font-size:12.5px;font-weight:600;color:var(--ink-2);min-width:44px;text-align:right}
 </style></head>
 <body>
 <div id="app"></div>
@@ -1433,8 +1440,8 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 <script src="js/app-07.js?v=1e6800afee"></script>
 <script src="js/app-08.js?v=df76accce3"></script>
 <script src="js/app-09.js?v=8de99f02a9"></script>
-<script src="js/app-10.js?v=e867452fce"></script>
+<script src="js/app-10.js?v=4bc1f044f9"></script>
 <script src="js/app-11.js?v=04b26555dd"></script>
-<script src="js/app-12.js?v=7cd1e583bb"></script>
+<script src="js/app-12.js?v=9b5bc9680f"></script>
 </body>
 </html>

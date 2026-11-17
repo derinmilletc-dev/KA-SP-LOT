@@ -816,3 +816,56 @@ if (typeof document !== 'undefined') {
     } catch (e) {}
   };
 }
+
+/* v206: şifre sıfırlama: adım adım akış (e-posta onayı → "e-postanı kontrol et" + yeniden gönder sayacı → güçlü yeni şifre) */
+{
+  const FP = { step: 1, email: '', busy: false, err: '', cool: 0, t: null, sentAt: 0 };
+  const okMail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim());
+  const maskMail = (v) => { const [a, d] = String(v).split('@'); return a.length <= 2 ? a.charAt(0) + '***@' + d : a.charAt(0) + '***' + a.slice(-1) + '@' + d; };
+  const PROV = { 'gmail.com': ['Gmail', 'https://mail.google.com/'], 'googlemail.com': ['Gmail', 'https://mail.google.com/'], 'outlook.com': ['Outlook', 'https://outlook.live.com/mail/'], 'hotmail.com': ['Outlook', 'https://outlook.live.com/mail/'], 'live.com': ['Outlook', 'https://outlook.live.com/mail/'], 'yahoo.com': ['Yahoo Mail', 'https://mail.yahoo.com/'], 'icloud.com': ['iCloud Mail', 'https://www.icloud.com/mail'], 'yandex.com': ['Yandex Mail', 'https://mail.yandex.com/'], 'yandex.com.tr': ['Yandex Mail', 'https://mail.yandex.com.tr/'] };
+  const provOf = (m) => PROV[String(m).split('@')[1].toLowerCase()] || null;
+  const tick = () => {
+    if (FP.t) clearInterval(FP.t); const upd = () => { const left = Math.max(0, FP.cool - Math.floor((Date.now() - FP.sentAt) / 1000)); const b = document.getElementById('fp-re'); if (b) { b.disabled = left > 0; b.textContent = left > 0 ? 'Tekrar gönder (' + left + ' sn)' : 'Tekrar gönder'; } if (left <= 0 && FP.t) { clearInterval(FP.t); FP.t = null; } };
+    upd(); FP.t = setInterval(upd, 1000);
+  };
+  H.idforgot = () => { FP.step = 1; FP.err = ''; FP.busy = false; FP.email = ((document.getElementById('id-em') || {}).value || S.lgEm || '').trim(); S.modal = { type: 'fpass' }; renderModal(); setTimeout(() => { const i = document.getElementById('fp-em'); if (i && !FP.email) i.focus(); }, 80); };
+  NEWM.fpass = () => {
+    if (FP.step === 2) {
+      const pv = provOf(FP.email);
+      return sheet('E-postanı kontrol et', `<div class="fp"><div class="fp-ic ok">${ic('check', 26)}</div><p class="fp-t">Sıfırlama bağlantısını <b>${esc(maskMail(FP.email))}</b> adresine gönderdik.</p>
+      ${pv ? `<a class="btn block" href="${pv[1]}" target="_blank" rel="noopener">${esc(pv[0])}'i aç</a>` : ''}
+      <ul class="fp-l"><li>Bağlantı yaklaşık 1 saat geçerli, tek kullanımlık.</li><li>Gelmediyse <b>Spam / Gereksiz</b> klasörüne bak.</li><li>Bağlantıya tıklayınca yeni şifreni belirleyeceksin.</li></ul>
+      <div class="err" id="fp-err" role="alert">${esc(FP.err)}</div>
+      <div class="fp-r"><button class="btn sec" id="fp-re" data-a="fpsend" disabled>Tekrar gönder</button><button class="fp-lk" data-a="fpchange">E-postayı değiştir</button></div></div>`);
+    }
+    return sheet('Şifreni sıfırla', `<div class="fp"><div class="fp-ic">${ic('lock', 24)}</div><p class="fp-t">Hesabına bağlı e-posta adresini onayla, sana güvenli bir sıfırlama bağlantısı gönderelim.</p>
+      <div class="field"><label for="fp-em">E-posta</label><input id="fp-em" type="email" inputmode="email" autocomplete="username" autocapitalize="none" value="${esc(FP.email)}" placeholder="ad@sirket.com"></div>
+      <div class="err" id="fp-err" role="alert">${esc(FP.err)}</div>
+      <button class="btn block" id="fp-go" data-a="fpsend"${FP.busy ? ' disabled' : ''}>${FP.busy ? 'Gönderiliyor…' : 'Bağlantı gönder'}</button><button class="fp-lk" data-a="closemodal">Vazgeç, girişe dön</button></div>`);
+  };
+  H.fpchange = () => { FP.step = 1; FP.err = ''; if (FP.t) { clearInterval(FP.t); FP.t = null; } renderModal(); };
+  H.fpsend = async () => {
+    if (FP.busy) return; const inp = document.getElementById('fp-em'); if (inp) FP.email = inp.value.trim(); const e = document.getElementById('fp-err');
+    if (!okMail(FP.email)) { FP.err = 'E-posta adresi geçerli görünmüyor. Yazımı kontrol et.'; if (e) e.textContent = FP.err; return; }
+    const c = sbClient(); if (!c) { FP.err = 'Bulut bağlantısı kullanılamıyor.'; if (e) e.textContent = FP.err; return; }
+    FP.busy = true; FP.err = ''; const go = document.getElementById('fp-go'); if (go) { go.disabled = true; go.textContent = 'Gönderiliyor…'; }
+    try { const r = await c.auth.resetPasswordForEmail(FP.email, { redirectTo: location.origin + location.pathname }); if (r.error) throw r.error; S.lgEm = FP.email; FP.step = 2; FP.cool = 60; FP.sentAt = Date.now(); FP.busy = false; renderModal(); tick(); }
+    catch (x) { FP.busy = false; try { console.warn('fpsend', x); } catch (e2) {} const m = String((x && x.message) || x || ''); FP.err = /sending recovery|error sending|smtp/i.test(m) ? 'E-posta şu an gönderilemedi. Biraz sonra tekrar dene, sürerse bize yaz.' : idMsg(x); if (FP.step === 2) { renderModal(); tick(); } else { const g = document.getElementById('fp-go'); if (g) { g.disabled = false; g.textContent = 'Bağlantı gönder'; } const e3 = document.getElementById('fp-err'); if (e3) e3.textContent = FP.err; } }
+  };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target && e.target.id === 'fp-em') { e.preventDefault(); H.fpsend(); } });
+  /* eski hata yazısı e-posta/şifre yazılınca silinir */
+  document.addEventListener('input', (e) => { const t = e.target; if (t && (t.id === 'id-em' || t.id === 'id-pw')) { const er = document.getElementById('id-err'); if (er && er.textContent) er.textContent = ''; S.loginErr = ''; } if (t && t.id === 'np-pw') npMeter(); });
+  /* yeni şifre: güç göstergesi, tekrar alanı, göster/gizle */
+  function npScore(v) { let s = 0; if (v.length >= 8) s++; if (v.length >= 12) s++; if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v)) s++; return Math.min(4, s); }
+  function npMeter() { const v = (document.getElementById('np-pw') || {}).value || ''; const s = v ? Math.max(1, npScore(v)) : 0; const b = document.getElementById('np-bar'); if (b) { b.dataset.s = s; b.style.setProperty('--w', s * 25 + '%'); } const t = document.getElementById('np-txt'); if (t) t.textContent = ['', 'Zayıf', 'Orta', 'İyi', 'Güçlü'][s] || ''; }
+  NEWM.newpw = () => sheet('Yeni şifre belirle', `<div class="fp"><div class="fp-ic">${ic('lock', 24)}</div><p class="fp-t">Hesabın için yeni bir şifre seç. En az 8 karakter, harf ve rakam karışık olsun.</p>
+    <div class="field"><label for="np-pw">Yeni şifre</label><div class="fp-pw"><input id="np-pw" type="password" autocomplete="new-password"><button type="button" class="fp-eye" data-a="npshow" aria-label="Göster veya gizle">${LXI.eye}</button></div><div class="fp-m"><i id="np-bar" data-s="0"></i><span id="np-txt"></span></div></div>
+    <div class="field"><label for="np-pw2">Şifreyi tekrar yaz</label><input id="np-pw2" type="password" autocomplete="new-password"></div>
+    <div class="err" id="np-err" role="alert"></div><button class="btn block" data-a="pwsave">Şifreyi kaydet</button></div>`);
+  H.npshow = () => { ['np-pw', 'np-pw2'].forEach((id) => { const i = document.getElementById(id); if (i) i.type = i.type === 'password' ? 'text' : 'password'; }); };
+  H.pwsave = async () => {
+    const v = (document.getElementById('np-pw') || {}).value || ''; const v2 = (document.getElementById('np-pw2') || {}).value || ''; const e = document.getElementById('np-err'); const say = (t) => { if (e) e.textContent = t; };
+    if (v.length < 8) return say('En az 8 karakter yaz.'); if (v !== v2) return say('İki şifre aynı değil.');
+    try { const r = await sbClient().auth.updateUser({ password: v }); if (r.error) throw r.error; try { history.replaceState(null, '', location.pathname); } catch (e2) {} S.modal = null; render(); toast('Şifren güncellendi. Artık yeni şifrenle girebilirsin.', 'ok'); } catch (x) { say(idMsg(x)); }
+  };
+}
