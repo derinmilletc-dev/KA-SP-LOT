@@ -128,7 +128,7 @@ const PLAN = { st: null, ro: false, at: 0 };
 async function planLoad() {
   try {
     if (!SBS.biz || (typeof DEMO !== 'undefined' && DEMO)) return; const c = sbClient(); if (!c) return;
-    const r = await c.rpc('plan_get', { bid: SBS.biz }); if (r.error || !r.data) return;
+    const r = await c.rpc('plan_get', { bid: SBS.biz.id || SBS.biz }); if (r.error || !r.data) return;
     PLAN.st = r.data; PLAN.ro = r.data.effective === 'readonly'; PLAN.at = Date.now(); planPaint();
     if (PLAN.ro) { PS.state = 'readonly'; try { paintStatus(); } catch (e) {} }
   } catch (e) {}
