@@ -261,16 +261,17 @@ async function sgFinish() {
       SBS.user = r.data.session.user;
     }
     await sbLoadBiz();
+    PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, sube: s.sube, yontem: s.yontem, zaman: (s.zaman || []).slice(), mods: (s.mods || []).slice() };
     if (!ID.mems.length) {
       const i = await c.from('businesses').insert({ name: s.biz, owner_id: SBS.user.id }); if (i.error) throw i.error;
-      freshBiz(s.biz, s.name || sgNameOf() || 'Patron'); PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, sube: s.sube, yontem: s.yontem, zaman: (s.zaman || []).slice(), mods: s.mods.slice() }; applyNames(); await sbLoadBiz();
+      freshBiz(s.biz, s.name || sgNameOf() || 'Patron'); applyNames(); await sbLoadBiz();
     }
     ID.busy = false; S.sg = null; S.lgCreate = false; try { sessionStorage.removeItem('kp_lg'); } catch (e) {}
     if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); try { profPend(); } catch (e) {} render();
   } catch (e) { ID.busy = false; sgErr(idMsg(e)); }
 }
 profPend = function () {
-  const p = PEND.prof; if (p) { if (!PROF.tur) Object.assign(PROF, { tur: p.tur || '', il: p.il || '', cal: p.cal || '', muh: p.muh || '', sube: p.sube || '', yontem: p.yontem || '', zaman: p.zaman || [], mods: p.mods || [] }); PEND.prof = null; pSched(); }
+  const p = PEND.prof; if (p) { if (!PROF.tur && !PROF.il && !PROF.cal && !PROF.muh && !(PROF.mods && PROF.mods.length)) Object.assign(PROF, { tur: p.tur || '', il: p.il || '', cal: p.cal || '', muh: p.muh || '', sube: p.sube || '', yontem: p.yontem || '', zaman: p.zaman || [], mods: p.mods || [] }); PEND.prof = null; pSched(); }
   if (PEND.tur && !PROF.tur) { PROF.tur = PEND.tur; pSched(); } PEND.tur = '';
 };
 /* Google */
