@@ -457,7 +457,7 @@ viewSatinAlma = function () {
 H.saof = (el) => { S.saOf = el.dataset.v; render(); };
 /* ===== v85: Rezervasyon, Kais asistan ===== */
 Object.assign(PROF, { kap: PROF.kap || '', masa: PROF.masa || '' });
-PF_FIELDS.splice(5, 0, ['kap', 'Kişi kapasitesi'], ['masa', 'Masa sayısı']);
+PF_FIELDS.splice(5, 0, ['kap', 'Kişi kapasitesi'], ['masa', 'Masa / bölüm / alan sayısı']);
 RCFG.k = RCFG.k || { on: true, conf: true, rem: true, hrs: 3, warn: true, ns: true };
 const rzK = () => { const k = RCFG.k = RCFG.k || {}; ['on', 'conf', 'rem', 'warn', 'ns', 'auto'].forEach((x) => { if (k[x] == null) k[x] = true; }); if (!k.hrs) k.hrs = 3; return k; };
 const rzCap = () => Number(PROF.kap) || TABLES.reduce((a, t) => a + (Number(t.cap) || 0), 0);
@@ -563,7 +563,7 @@ NEWM.rzmsg = (m) => { const r = RESV.find((x) => x.id === m.id); if (!r) return 
   return sheet('Müşteriye onay mesajı', `<div class="callout">${ic('sparkle')}<div>Kais ${esc(rzTitle(r))} için onay mesajını hazırladı. Gönder ya da sonra kuyruktan gönder.</div></div><pre class="rzk-pre">${esc(rzConfMsg(r))}</pre>
   <div class="row wrap" style="gap:8px"><button class="btn grow" data-a="rzsend" data-id="${r.id}" data-kind="conf" data-ch="mail">E-posta ile gönder</button><button class="btn sec" data-a="closemodal">Sonra</button></div><p class="small muted" style="margin-top:8px">Hatırlatma mesajı, rezervasyondan ${rzK().hrs} saat önce Kais'in kuyruğuna düşer.</p>`); };
 /* profil: kapasite alanları */
-{ const _p = NEWM.prof; NEWM.prof = function (m) { let h = _p(m); const f = `<div class="pf-row pf-2"><div class="pf-s" data-pfk="kap"><label class="pf-l">Kişi kapasitesi <span class="pf-h">aynı anda en fazla</span></label><input id="pf-kap" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Örn. 60" value="${esc(PROF.kap)}"></div><div class="pf-s" data-pfk="masa"><label class="pf-l">Masa sayısı</label><input id="pf-masa" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="Örn. 15" value="${esc(PROF.masa)}"></div></div>`;
+{ const _p = NEWM.prof; NEWM.prof = function (m) { let h = _p(m); const f = `<div class="pf-row pf-2"><div class="pf-s" data-pfk="kap"><label class="pf-l">Kişi kapasitesi <span class="pf-h">aynı anda en fazla</span></label><input id="pf-kap" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Örn. 60" value="${esc(PROF.kap)}"></div><div class="pf-s" data-pfk="masa"><label class="pf-l">Masa / bölüm / alan sayısı</label><input id="pf-masa" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="Örn. 15" value="${esc(PROF.masa)}"><span class="pf-h" style="display:block;margin-top:6px;line-height:1.35">(Rezervasyonla çalışıyorsan ya da rezervasyon alıyorsan yaz. Masa, bölüm veya alan sayısı olabilir.)</span></div></div>`;
   return h.replace(/(<div class="pf-s" data-pfk="cal">)/, f + '$1'); }; }
 { const _ps = H.pfsave; H.pfsave = function () { const g = (id) => ((document.getElementById(id) || {}).value || '').replace(/\D/g, '').slice(0, 4); if (document.getElementById('pf-kap')) { PROF.kap = g('pf-kap'); PROF.masa = g('pf-masa'); } return _ps.apply(this, arguments); }; }
 /* bildirimler */
