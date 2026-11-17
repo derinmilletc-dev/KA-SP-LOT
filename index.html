@@ -1416,6 +1416,8 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 .sz-bar{max-width:760px;margin:0 auto;width:100%}
 @media(min-width:900px){.sz{padding-bottom:88px}.sz-bar{bottom:16px}}
 @media(min-width:700px){.sz-item{flex-direction:row!important;align-items:center;gap:10px;padding:8px 10px}.sz-item>.sz-in{flex:1;min-width:0}.sz-meta{flex:none;display:flex;align-items:center;gap:10px}}
+/* v203: giriş alanlarında yazınca çıkan vurgu (odak halkası, yeşil çerçeve ve onay işareti) kaldırıldı */
+.lx-in:focus-within,.lx2 .lx-in:focus-within,.lx2 .lx-in.ok{border-color:#D3DCE8!important;box-shadow:none!important}.lx2 .lx-in.ok::after,.lx-in.ok::after{content:none!important;display:none!important}
 </style></head>
 <body>
 <div id="app"></div>
@@ -1431,7 +1433,7 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 <script src="js/app-07.js?v=1e6800afee"></script>
 <script src="js/app-08.js?v=df76accce3"></script>
 <script src="js/app-09.js?v=8de99f02a9"></script>
-<script src="js/app-10.js?v=413b6dacab"></script>
+<script src="js/app-10.js?v=a9497f8aab"></script>
 <script src="js/app-11.js?v=04b26555dd"></script>
 <script src="js/app-12.js?v=5134c536a4"></script>
 </body>
