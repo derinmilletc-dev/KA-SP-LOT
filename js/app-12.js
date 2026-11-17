@@ -589,3 +589,37 @@ async function consentFlush() {
   const _lb = sbLoadBiz;
   sbLoadBiz = async function () { const r = await _lb.apply(this, arguments); consentFlush(); return r; };
 }
+
+/* v183: şehir alanı için modern açılır liste (tarayıcının eski datalist'i yerine) */
+{
+  const css = document.createElement('style');
+  css.textContent = '.cx-dp{position:fixed;z-index:9999;background:#fff;border:1px solid #D3DCE8;border-radius:16px;box-shadow:0 12px 28px rgba(15,40,80,.18);padding:6px;max-height:min(300px,42vh);overflow-y:auto;-webkit-overflow-scrolling:touch}.cx-i{display:flex;align-items:center;min-height:46px;padding:0 14px;border-radius:12px;font-size:16px;color:var(--ink,#0F2850);cursor:pointer}.cx-i:hover,.cx-i.on{background:#EAF1FB}.cx-i.on{font-weight:700;color:var(--cini-d,#0A3E80)}.cx-e{padding:14px;text-align:center;color:#8895A9;font-size:14px}@media(prefers-color-scheme:dark){.cx-dp{background:#14233A;border-color:#2A3F5E}.cx-i{color:#E6EEF9}.cx-i:hover,.cx-i.on{background:#1E3558}}';
+  document.head.appendChild(css);
+  const fold = (s) => String(s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+  let dp = null, cur = null, idx = -1, items = [];
+  const close = () => { if (dp) { dp.remove(); dp = null; } cur = null; idx = -1; };
+  const pos = () => { if (!dp || !cur) return; const r = (cur.parentElement || cur).getBoundingClientRect(); const below = innerHeight - r.bottom; dp.style.left = r.left + 'px'; dp.style.width = r.width + 'px'; if (below < 220 && r.top > below) { dp.style.top = ''; dp.style.bottom = (innerHeight - r.top + 6) + 'px'; } else { dp.style.bottom = ''; dp.style.top = (r.bottom + 6) + 'px'; } };
+  const pick = (v) => { if (!cur) return; cur.value = v; cur.dispatchEvent(new Event('input', { bubbles: true })); close(); };
+  const hi = () => { if (!dp) return; dp.querySelectorAll('.cx-i').forEach((e, i) => e.classList.toggle('on', i === idx)); const e = dp.querySelectorAll('.cx-i')[idx]; if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); };
+  const show = (inp) => {
+    const q = fold(inp.value.trim()); const all = (typeof PF_IL !== 'undefined' ? PF_IL : []);
+    items = q ? all.filter((x) => fold(x).startsWith(q)).concat(all.filter((x) => !fold(x).startsWith(q) && fold(x).indexOf(q) >= 0)) : all.slice();
+    if (!dp) { dp = document.createElement('div'); dp.className = 'cx-dp'; dp.setAttribute('role', 'listbox'); document.body.appendChild(dp); dp.addEventListener('mousedown', (e) => { e.preventDefault(); const t = e.target.closest('.cx-i'); if (t) pick(t.dataset.v); }); dp.addEventListener('touchstart', () => {}, { passive: true }); }
+    cur = inp; idx = -1;
+    dp.innerHTML = items.length ? items.map((x) => '<div class="cx-i" role="option" data-v="' + esc(x) + '">' + esc(x) + '</div>').join('') : '<div class="cx-e">Sonuç yok, yazdığın gibi kalır</div>';
+    pos();
+  };
+  const isIl = (t) => t && t.tagName === 'INPUT' && (t.id === 'sg-il' || t.id === 'pf-il');
+  document.addEventListener('focusin', (e) => { if (isIl(e.target)) { e.target.removeAttribute('list'); show(e.target); } });
+  document.addEventListener('input', (e) => { if (isIl(e.target)) { e.target.removeAttribute('list'); show(e.target); } });
+  document.addEventListener('click', (e) => { if (isIl(e.target)) { if (!dp) show(e.target); } });
+  document.addEventListener('focusout', (e) => { if (isIl(e.target)) setTimeout(close, 120); });
+  document.addEventListener('keydown', (e) => {
+    if (!dp || !isIl(e.target)) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(items.length - 1, idx + 1); hi(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(0, idx - 1); hi(); }
+    else if (e.key === 'Enter' && idx >= 0) { e.preventDefault(); pick(items[idx]); }
+    else if (e.key === 'Escape') { close(); }
+  });
+  addEventListener('resize', pos); document.addEventListener('scroll', pos, true);
+}

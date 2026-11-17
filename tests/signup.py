@@ -52,7 +52,16 @@ with sync_playwright() as p:
     check('Kayit: adim 2ye gecer, hesap henuz acilmaz', ev("()=>S.sg.step")==2 and ev("()=>window.__calls.filter(c=>c[0]==='signUp').length")==0)
     ev("()=>H.sgnext()"); check('Kayit: isletme adi/sektor olmadan ilerlemez', ev("()=>S.sg.step")==2)
     pg.fill('#sg-biz','Deniz Kafe'); ev("()=>H.ddpick({closest:()=>document.querySelector('[data-dd]'),dataset:{v:'Kafe & Restoran',ic:'store'}})") if False else None
-    ev("()=>{document.querySelector('[data-dd] .lx-di').click()}"); pg.fill('#sg-il','Izmir')
+    ev("()=>{document.querySelector('[data-dd] .lx-di').click()}")
+    pg.click('#sg-il'); pg.wait_for_timeout(80)
+    check('Sehir: modern liste acilir, 81 il', ev("()=>document.querySelectorAll('.cx-dp .cx-i').length")>=80 and ev("()=>!document.getElementById('sg-il').hasAttribute('list')"))
+    pg.fill('#sg-il','izm'); pg.wait_for_timeout(80)
+    check('Sehir: yazinca filtrelenir (izm -> Izmir)', ev("()=>[...document.querySelectorAll('.cx-dp .cx-i')].map(x=>x.dataset.v)")==['İzmir'])
+    pg.screenshot(path='/tmp/sg_il.png')
+
+    pg.mouse.click(0,0) if False else None
+    ev("()=>document.querySelector('.cx-dp .cx-i').dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}))")
+    check('Sehir: secim degeri yazar, liste kapanir', ev("()=>document.getElementById('sg-il').value")=='İzmir' and ev("()=>!document.querySelector('.cx-dp')"))
     ev("()=>H.sgnext()"); check('Kayit: adim 3e gecer', ev("()=>S.sg.step")==3, ev("()=>[S.sg.tur,document.getElementById('sg-err')&&document.getElementById('sg-err').textContent]"))
     check('Kayit: sektore gore bolumler onceden secili', ev("()=>document.querySelectorAll('[data-grp=mods] .pf-c.on').length")>=1, ev("()=>S.sg.tur"))
     pg.screenshot(path='/tmp/sg3.png')
@@ -68,7 +77,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(600)
     cs = ev("()=>(window.__db.consents||[])")
     check('Onay kaydi: kurulumda sartlar+KVKK onayi kaydedilir', len(cs)==1 and cs[0]['kind']=='kurulum' and cs[0]['ver']=='2026-11-17' and cs[0]['docs'].get('kvkk') and cs[0]['email'], cs)
-    check('Kayit: isletme adi, sektor, sehir, ekip buyuklugu profile yazilir', r['biz']=='Deniz Kafe' and r['tur']!='' and r['il']=='Izmir' and r['cal']!='', r)
+    check('Kayit: isletme adi, sektor, sehir, ekip buyuklugu profile yazilir', r['biz']=='Deniz Kafe' and r['tur']!='' and r['il']=='İzmir' and r['cal']!='', r)
     check('Kayit: ad soyad patron adi olur', r['nm']=='Ahmet Yilmaz', r)
     # ayni e-posta ile tekrar kayit: yanlis sifre
     ev("()=>{S.user=null;SBS.user=null;window.__sess=null;ID.active=null;ID.mems=[];S.lgTab='own';S.lgCreate=false;render();H.lgcreate()}")
