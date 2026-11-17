@@ -781,3 +781,17 @@ if (typeof document !== 'undefined') {
   const _bd = H.backdrop;
   H.backdrop = function (el, e) { if (pd && el && pd !== el && el.contains(pd)) return; return _bd.apply(this, arguments); };
 }
+
+/* v197: kayıtta zaten sorulan bilgiler (tür, şehir, çalışan sayısı, muhasebeci, bölümler) profil ekranında tekrar sorulmaz */
+{
+  const _np2 = NEWM.prof;
+  NEWM.prof = function () {
+    const h = _np2.apply(this, arguments);
+    try {
+      const done = { tur: !!PROF.tur, il: !!PROF.il, cal: !!PROF.cal, muh: !!PROF.muh, mods: !!(PROF.mods && PROF.mods.length) };
+      const t = document.createElement('div'); t.innerHTML = h;
+      Object.keys(done).forEach((k) => { if (done[k]) t.querySelectorAll('[data-pfk="' + k + '"]').forEach((n) => { n.style.display = 'none'; }); });
+      return t.innerHTML;
+    } catch (e) { return h; }
+  };
+}
