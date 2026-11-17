@@ -156,7 +156,7 @@ NEWM.prof = () => {
    ${L('vd', 'Vergi dairesi', `<input id="pf-vd" autocomplete="off" list="pf-vdl" placeholder="Örn. ${esc(PROF.il || 'Kadıköy')} Vergi Dairesi" value="${esc(PROF.vd)}"><datalist id="pf-vdl">${PROF.il ? `<option value="${esc(PROF.il)} Vergi Dairesi">` : ''}</datalist>`)}
   </div>
   <div class="pf-row pf-2">
-   ${L('il', 'Şehir', `<input id="pf-il" list="pf-ill" autocomplete="off" placeholder="Yazmaya başla" value="${esc(PROF.il)}"><datalist id="pf-ill">${PF_IL.map((x) => `<option value="${x}">`).join('')}</datalist>`)}
+   ${L('il', 'Şehir', `<input id="pf-il" autocomplete="off" placeholder="Şehir yaz ya da seç" value="${esc(PROF.il)}">`)}
    ${L('ilce', 'İlçe', `<input id="pf-ilce" autocomplete="off" placeholder="Örn. Kadıköy" value="${esc(PROF.ilce)}">`)}
   </div>
   ${L('tel', 'İşletme telefonu', `<input id="pf-tel" inputmode="tel" autocomplete="tel" placeholder="0 5xx xxx xx xx" value="${esc(PROF.tel)}">`)}

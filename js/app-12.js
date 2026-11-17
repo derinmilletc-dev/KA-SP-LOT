@@ -207,7 +207,7 @@ lxCreate = function () {
   else if (st === 2) body = `${g ? `<div class="sg-hi">${LXI.mail}<div><b>${esc(SBS.user.email || 'Hesabın')}</b><span class="small muted">ile giriş yapıldı</span></div></div>` : ''}
     ${fld('İşletme adı', 'sg-biz', pfIc('store'), `<input id="sg-biz" type="text" autocomplete="organization" placeholder="İşletme adınızı yazın" value="${esc(s.biz)}">`)}
     <div class="lx-f"><label>Hangi sektördesin?</label>${ddHTML(s.tur, 'İşletme türünüzü seçin')}</div>
-    ${fld('Şehir <span class="lx-opt">isteğe bağlı</span>', 'sg-il', pfIc('store'), `<input id="sg-il" list="sg-ill" autocomplete="off" placeholder="Yazmaya başla" value="${esc(s.il)}"><datalist id="sg-ill">${PF_IL.map((x) => `<option value="${x}">`).join('')}</datalist>`)}`;
+    ${fld('Şehir <span class="lx-opt">isteğe bağlı</span>', 'sg-il', pfIc('store'), `<input id="sg-il" autocomplete="off" placeholder="Şehir yaz ya da seç" value="${esc(s.il)}">`)}`;
   else body = `<div class="lx-f"><label>Kaç kişi çalışıyor?</label>${pfChips('cal', PF_CAL, s.cal, false)}</div>
     <div class="lx-f"><label>Hangi bölümleri kullanacaksın?</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Birden fazla seçebilirsin. Sonradan Ayarlar'dan değiştirirsin.</p></div>
     <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>
@@ -593,7 +593,7 @@ async function consentFlush() {
 /* v183: şehir alanı için modern açılır liste (tarayıcının eski datalist'i yerine) */
 {
   const css = document.createElement('style');
-  css.textContent = '.cx-dp{position:fixed;z-index:9999;background:#fff;border:1px solid #D3DCE8;border-radius:16px;box-shadow:0 12px 28px rgba(15,40,80,.18);padding:6px;max-height:min(300px,42vh);overflow-y:auto;-webkit-overflow-scrolling:touch}.cx-i{display:flex;align-items:center;min-height:46px;padding:0 14px;border-radius:12px;font-size:16px;color:var(--ink,#0F2850);cursor:pointer}.cx-i:hover,.cx-i.on{background:#EAF1FB}.cx-i.on{font-weight:700;color:var(--cini-d,#0A3E80)}.cx-e{padding:14px;text-align:center;color:#8895A9;font-size:14px}@media(prefers-color-scheme:dark){.cx-dp{background:#14233A;border-color:#2A3F5E}.cx-i{color:#E6EEF9}.cx-i:hover,.cx-i.on{background:#1E3558}}';
+  css.textContent = '.cx-dp{position:fixed;z-index:9999;background:#fff;border:1px solid #D3DCE8;border-radius:18px;box-shadow:0 18px 40px rgba(15,40,80,.20);padding:8px 6px;max-height:min(312px,44vh);overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;animation:cxin .14s ease-out}@keyframes cxin{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:none}}.cx-h{padding:4px 12px 6px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8895A9}.cx-i{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border-radius:12px;font-size:16px;color:var(--ink,#0F2850);cursor:pointer}.cx-i svg{width:20px;height:20px;flex:none;color:#7C8CA3}.cx-i span{flex:1;min-width:0}.cx-i mark{background:none;color:var(--cini,#0D56A6);font-weight:800}.cx-i:hover,.cx-i.on{background:#EAF1FB}.cx-i.on svg,.cx-i:hover svg{color:var(--cini,#0D56A6)}.cx-i.sel{background:#CFE0F8;font-weight:700;color:var(--cini-d,#0A3E80)}.cx-e{padding:16px;text-align:center;color:#8895A9;font-size:14px}@media(prefers-color-scheme:dark){.cx-dp{background:#14233A;border-color:#2A3F5E}.cx-i{color:#E6EEF9}.cx-i:hover,.cx-i.on{background:#1E3558}.cx-i.sel{background:#264877;color:#fff}.cx-i mark{color:#8EC0FF}}';
   document.head.appendChild(css);
   const fold = (s) => String(s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
   let dp = null, cur = null, idx = -1, items = [];
@@ -606,8 +606,9 @@ async function consentFlush() {
     items = q ? all.filter((x) => fold(x).startsWith(q)).concat(all.filter((x) => !fold(x).startsWith(q) && fold(x).indexOf(q) >= 0)) : all.slice();
     if (!dp) { dp = document.createElement('div'); dp.className = 'cx-dp'; dp.setAttribute('role', 'listbox'); document.body.appendChild(dp); dp.addEventListener('mousedown', (e) => { e.preventDefault(); const t = e.target.closest('.cx-i'); if (t) pick(t.dataset.v); }); dp.addEventListener('touchstart', () => {}, { passive: true }); }
     cur = inp; idx = -1;
-    dp.innerHTML = items.length ? items.map((x) => '<div class="cx-i" role="option" data-v="' + esc(x) + '">' + esc(x) + '</div>').join('') : '<div class="cx-e">Sonuç yok, yazdığın gibi kalır</div>';
-    pos();
+    const mk = (x) => { const k = fold(x), i = q ? k.indexOf(q) : -1; return i < 0 ? esc(x) : esc(x.slice(0, i)) + '<mark>' + esc(x.slice(i, i + q.length)) + '</mark>' + esc(x.slice(i + q.length)); };
+    dp.innerHTML = items.length ? (q ? '' : '<div class="cx-h">Şehir seç</div>') + items.map((x) => '<div class="cx-i' + (fold(x) === fold(inp.value) ? ' sel' : '') + '" role="option" data-v="' + esc(x) + '">' + pfIc('pin') + '<span>' + mk(x) + '</span></div>').join('') : '<div class="cx-e">Sonuç yok. Yazdığın şehir olduğu gibi kaydedilir.</div>';
+    pos(); const sl = dp.querySelector('.cx-i.sel'); if (sl && !q) dp.scrollTop = Math.max(0, sl.offsetTop - 60);
   };
   const isIl = (t) => t && t.tagName === 'INPUT' && (t.id === 'sg-il' || t.id === 'pf-il');
   document.addEventListener('focusin', (e) => { if (isIl(e.target)) { e.target.removeAttribute('list'); show(e.target); } });

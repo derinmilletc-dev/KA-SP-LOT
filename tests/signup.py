@@ -53,7 +53,7 @@ with sync_playwright() as p:
     ev("()=>H.sgnext()"); check('Kayit: isletme adi/sektor olmadan ilerlemez', ev("()=>S.sg.step")==2)
     pg.fill('#sg-biz','Deniz Kafe'); ev("()=>H.ddpick({closest:()=>document.querySelector('[data-dd]'),dataset:{v:'Kafe & Restoran',ic:'store'}})") if False else None
     ev("()=>{document.querySelector('[data-dd] .lx-di').click()}")
-    pg.click('#sg-il'); pg.wait_for_timeout(80)
+    pg.click('#sg-il'); pg.wait_for_timeout(80); pg.screenshot(path='/tmp/sg_il0.png')
     check('Sehir: modern liste acilir, 81 il', ev("()=>document.querySelectorAll('.cx-dp .cx-i').length")>=80 and ev("()=>!document.getElementById('sg-il').hasAttribute('list')"))
     pg.fill('#sg-il','izm'); pg.wait_for_timeout(80)
     check('Sehir: yazinca filtrelenir (izm -> Izmir)', ev("()=>[...document.querySelectorAll('.cx-dp .cx-i')].map(x=>x.dataset.v)")==['İzmir'])
