@@ -575,7 +575,7 @@ NEWM.rzmsg = (m) => { const r = RESV.find((x) => x.id === m.id); if (!r) return 
 /* profil kartı metni */
 { const _pc = profCard; profCard = function () { return _pc().replace(/<p>İşletmen için \d+ kısa bilgi kaldı\. Kais ekranları sana göre hazırlar\.<\/p>/, (m) => '<p>Kais sizi ve işletmenizi daha iyi analiz edip daha iyi hizmet sunabilmesi için lütfen bilgilerin hepsini doldurun.</p>'); }; }
 /* hatırlatma zamanlayıcı: uygulama açıkken müdür/patrona haber */
-if (!window.__rzK85) { window.__rzK85 = setInterval(() => { try { const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role) || !rzK().on) return; window.__rzN = window.__rzN || {};
+if (!window.__rzK85) { window.__rzK85 = setInterval(() => { try { if (typeof SBS === 'undefined' || !SBS.biz) return; const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role) || !rzK().on) return; window.__rzN = window.__rzN || {};
   rzQueue().filter((x) => x.kind === 'rem').forEach((x) => { if (window.__rzN[x.r.id]) return; window.__rzN[x.r.id] = 1; toast(rzTitle(x.r) + ' için hatırlatma zamanı. Kais mesajı hazırladı.', 'warn'); try { pushSend([u.id], 'Rezervasyon hatırlatma', x.r.name + ' · ' + x.r.time + ' · ' + x.r.n + ' kişi. Hatırlatma mesajı hazır.'); } catch (e) {} if (S.view === 'rezerv' && !S.modal) render(); }); } catch (e) {} }, 60000); }
 /* profil kartı: Bugün sayfasında garanti göster */
 { const _vh85 = viewHTML; viewHTML = function () { let h = _vh85(); if (S.user && S.user.role === 'patron' && S.view === 'bugun' && !h.includes('pf-card')) { const c = profCard(); if (c) h = h.replace(/<div class="stack-lg[^"]*">/, (m) => m + c); } return h; }; }
@@ -813,7 +813,7 @@ NAV.calisan.forEach((n) => { if (n[0] === 'puanim' && !n[3]) n[3] = 'more'; }); 
     const k = ksTips().find((t) => t[0] === 'r' || t[1] === 'Kasa kapanışı girilmedi'); if (k) add('ks' + k[1], k[0] === 'r' ? 'bad' : 'warn', k[1] + '.', 'ops', 'kasa'); }
   return out; }; }
 { const _g = go; go = function (v) { const r = _g.apply(this, arguments); return r; }; }
-if (!window.__op86) { window.__op86 = setInterval(() => { try { const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role)) return; window.__opL = window.__opL || {}; opLate().forEach((l) => { const k = REF_ISO + l.id; if (window.__opL[k]) return; window.__opL[k] = 1; toast(opN(l.id) + ' ' + opLt(l) + '.', 'warn'); try { pushSend([u.id], 'Geç kalan çalışan', opN(l.id) + ' henüz giriş yapmadı (' + opLt(l) + ').'); } catch (e) {} }); } catch (e) {} }, 60000); }
+if (!window.__op86) { window.__op86 = setInterval(() => { try { if (typeof SBS === 'undefined' || !SBS.biz) return; const u = S.user; if (!u || !['patron', 'mudur'].includes(u.role)) return; window.__opL = window.__opL || {}; opLate().forEach((l) => { const k = REF_ISO + l.id; if (window.__opL[k]) return; window.__opL[k] = 1; toast(opN(l.id) + ' ' + opLt(l) + '.', 'warn'); try { pushSend([u.id], 'Geç kalan çalışan', opN(l.id) + ' henüz giriş yapmadı (' + opLt(l) + ').'); } catch (e) {} }); } catch (e) {} }, 60000); }
 /* ===== v87: görevler, vardiyam, arıza fotoğrafı, çalışan bildirimleri ===== */
 const TASKS = []; P_ARR.push(['TASKS', () => TASKS]); P_SCOPE.TASKS = 'ekip';
 { const _w = wipeData; wipeData = function () { _w.apply(this, arguments); TASKS.length = 0; }; }

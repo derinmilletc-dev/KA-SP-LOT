@@ -161,7 +161,7 @@ function vdMineSheet() {
 }
 /* otomatik bildirim + otomatik taslak */
 function vdTick() {
-  if (!S.user) return; const now = new Date(); const role = S.user.role;
+  if (!S.user || typeof SBS === 'undefined' || !SBS.biz) return; const now = new Date(); const role = S.user.role;
   const tds = [0, 1].map((i) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + i));
   if (role === 'calisan') { const s = vdMyDay(S.user.id, tds[0]); if (s.k === 'shift') { const df = (vdStart(vdYmd(tds[0].getFullYear(), tds[0].getMonth(), tds[0].getDate()), s.t) - now) / 60000; const k = vdYmd(tds[0].getFullYear(), tds[0].getMonth(), tds[0].getDate()); if (df > 0 && df <= 10 && !VD_LOC[k]) { VD_LOC[k] = 1; toast(`Vardiyanın başlamasına ${Math.ceil(df)} dakika kaldı. Kais iyi çalışmalar diler.`, 'ok'); } } return; }
   if (!['patron', 'mudur'].includes(role)) return; let dirty = false;

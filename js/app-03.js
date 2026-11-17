@@ -677,7 +677,7 @@ H.nfgo = (el) => { const x = notifList()[Number(el.dataset.i)]; if (!x) return; 
 H.nfread = () => { const s = nfLoad(); notifList().forEach((x) => s.add(x.key)); nfSave(); render(); renderModal(); };
 H.nfperm = async () => { try { await Notification.requestPermission(); } catch (e) {} renderModal(); };
 function nfCheck() {
-  if (!S.user) return; const s = nfLoad(); const fresh = notifList().filter((x) => !s.has(x.key) && !NF.notified.has(x.key));
+  if (!S.user || typeof SBS === 'undefined' || !SBS.biz) return; const s = nfLoad(); const fresh = notifList().filter((x) => !s.has(x.key) && !NF.notified.has(x.key));
   if (NF.first) { fresh.forEach((x) => NF.notified.add(x.key)); NF.first = false; return; }
   fresh.filter((x) => x.sev !== 'info' || x.key.startsWith('ry')).slice(0, 3).forEach((x) => {
     NF.notified.add(x.key);
