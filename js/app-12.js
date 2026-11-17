@@ -438,13 +438,14 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
   const _out = loginHTML;
   loginHTML = function () {
     let h = _out.apply(this, arguments); if (S.user || h.indexOf('class="login lx') < 0) return h;
-    const k = (S.lgTab === 'emp' && !S.lgCreate) ? 'emp' : 'own'; const d = FE[k];
+    const k = S.lgTab === 'emp' ? 'emp' : 'own'; const d = FE[k];
     const feats = `<div class="lp">${d.f.map((x) => `<div class="lp-f"><span class="lp-i">${ic(x[0], 20)}</span><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join('')}</div>`;
     const pv = k === 'own' ? `<div class="lp lp-pvw"><div class="lp-pv"><div class="lp-ph"><span>Bugün</span><span>Örnek ekran</span></div><div class="lp-k"><div><small>Bu ay gelir</small><b>₺248.600</b></div><div><small>Gider</small><b>₺161.200</b></div><div><small>Onay bekleyen fiş</small><b class="up">3</b></div></div><div class="lp-ai"><i>K</i><span>Süt stoğu azalıyor. Tedarikçiye sipariş hazırlayayım mı?</span></div></div></div>` : '';
     h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><h2>${d.h}</h2><p>${d.p}</p></div>`);
     h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">${CPR}</div></section>`);
     h = h.replace(/<\/section><\/div>$/, `</section><p class="lx-copyr">${CPR}</p></div>`);
     h = h.replace(/(<div class="lx-brand">[\s\S]*?<span>KaisPilot<\/span>)/, '$1<i class="lx-sl">Yöneten Siz, Kolaylaştıran Kais</i>');
+    if (k === 'emp' && S.lgCreate) h = h.replace(/<h1>Giriş yap<\/h1>(\s*<p class="lx-sub"[^>]*>)[^<]*/, '<h1>Ekibe katıl</h1>$1Davet koduyla hesabını oluştur');
     h = h.replace(/<div class="login lx([^"]*)"/, '<div class="login lx$1 lx3"');
     h = h.replace(/(<div class="lx-in">(?:(?!<\/div>)[\s\S])*?id="(?:id|sg)-pw"[\s\S]*?<\/div>)/, '$1<div class="lx-caps" role="status">Caps Lock açık</div>');
     return h;
@@ -541,3 +542,6 @@ AI_TYPES.push('gorev_ver', 'vardiya_taslak', 'alacak_tahsil');
   const css = document.createElement('style'); css.textContent = '.ai-why{margin:6px 2px 0;font-size:13px;color:var(--mut,#5b6b82)}.ai-why summary{cursor:pointer;font-weight:600}.ai-why p{margin:6px 0 0;line-height:1.45}';
   document.head.appendChild(css);
 }
+
+/* v178: davet mesajına tek dokunuşla açılan bağlantı da eklenir */
+H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\nTek dokunuşla aç: ' + ivLink(S.modal.code), 'Mesaj kopyalandı. WhatsApp\'tan gönder.'); };
