@@ -114,7 +114,7 @@ H.sbradd = async () => {
 {
   const _ie = idEnter;
   idEnter = async function () {
-    try { const f = localStorage.getItem('kp_newbiz'); if (f && ID.active && ID.active.business_id === f && ID.active.role === 'patron') { localStorage.removeItem('kp_newbiz'); NAMES.u1 = NAMES.u1 || { name: 'Patron', title: 'Patron' }; BIZ = ID.active.businesses.name; wipeData(); applyNames(); } } catch (e) {}
+    try { const f = localStorage.getItem('kp_newbiz'); if (f && ID.active && ID.active.business_id === f && ID.active.role === 'patron') { localStorage.removeItem('kp_newbiz'); freshBiz(ID.active.businesses.name, (NAMES.u1 && NAMES.u1.name) || 'Patron'); } } catch (e) {}
     return _ie.apply(this, arguments);
   };
   const _vs = viewHTML;

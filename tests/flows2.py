@@ -47,6 +47,7 @@ with sync_playwright() as p:
 
     # ---- Vardiya ----
     login('patron')
+    ev("()=>{ VD_T.length=0; VD_T.push({id:'t1',n:'Sabah',s:'08:00',e:'16:00',c:'#E99A2B'},{id:'t2',n:'Gün',s:'10:00',e:'18:00',c:'#3F86DD'},{id:'t3',n:'Akşam',s:'16:00',e:'00:00',c:'#7C5CCF'}); }")
     r = ev("""()=>{ const [y,m]=vdBase(); const n=vdAuto(y,m); const dim=new Date(y,m+1,0).getDate(); const o={n,dim};
       // her calisan icin haftalik kapasite: izinli gunde vardiya sayilmaz
       o.any=EMP_IDS.some(id=>{ for(let d=1;d<=dim;d++) if(vdState(y,m,d,id).k==='shift') return true; return false;});

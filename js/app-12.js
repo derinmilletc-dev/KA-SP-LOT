@@ -263,7 +263,7 @@ async function sgFinish() {
     await sbLoadBiz();
     if (!ID.mems.length) {
       const i = await c.from('businesses').insert({ name: s.biz, owner_id: SBS.user.id }); if (i.error) throw i.error;
-      NAMES.u1 = { name: s.name || sgNameOf() || 'Patron', title: 'Patron' }; BIZ = s.biz; wipeData(); PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, sube: s.sube, yontem: s.yontem, zaman: (s.zaman || []).slice(), mods: s.mods.slice() }; applyNames(); await sbLoadBiz();
+      freshBiz(s.biz, s.name || sgNameOf() || 'Patron'); PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, sube: s.sube, yontem: s.yontem, zaman: (s.zaman || []).slice(), mods: s.mods.slice() }; applyNames(); await sbLoadBiz();
     }
     ID.busy = false; S.sg = null; S.lgCreate = false; try { sessionStorage.removeItem('kp_lg'); } catch (e) {}
     if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); try { profPend(); } catch (e) {} render();
@@ -683,4 +683,16 @@ async function consentFlush() {
 .sg-ck input:focus-visible+.sg-bx{outline:3px solid rgba(21,83,176,.25);outline-offset:1px}.sg-ck.err .sg-bx{border-color:#B42318;box-shadow:0 0 0 3px rgba(180,35,24,.12)}
 .sg-ck span{flex:1;min-width:0}.sg-ck a{color:#1553b0;font-weight:600}.sg-ck b{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#E7EEF8;color:#4C6A94;font-size:11px;font-weight:700;vertical-align:1px}.sg-ck small{display:block;margin-top:3px;font-size:12px;color:#7C8CA3}`;
   document.head.appendChild(css);
+}
+
+/* v190: yeni işletme tamamen temiz başlar (önceki oturumdan ya da örnek veriden hiçbir şey kalmaz) */
+{ const _w = wipeData; wipeData = function () { _w.apply(this, arguments); try { VD_T.length = 0; } catch (e) {} }; }
+const BOOT_P = (() => { try { wipeData(); return pSnap(); } catch (e) { return ''; } })();
+function freshBiz(name, owner) {
+  try { if (BOOT_P) pApply(BOOT_P); } catch (e) {}
+  NAMES.u1 = { name: owner || 'Patron', title: 'Patron' }; BIZ = name; wipeData(); try { EDOC.unvan = name; } catch (e) {} applyNames();
+}
+{
+  const _rn = render;
+  render = function () { try { if (typeof SBS !== 'undefined' && SBS.biz && SBS.biz.name && BIZ !== SBS.biz.name) { BIZ = SBS.biz.name; } } catch (e) {} return _rn.apply(this, arguments); };
 }

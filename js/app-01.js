@@ -47,7 +47,7 @@ const ic = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0
 const mark = (s = 28) => `<svg width="${s}" height="${s}" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="7" y="7" width="18" height="18" rx="2"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)"/><circle cx="16" cy="16" r="3.2" fill="currentColor" stroke="none"/></svg>`;
 
 /* ---------- veri ---------- */
-let BIZ = 'Çınar Kafe & Fırın';
+let BIZ = 'İşletmem';
 const _NOW = new Date();
 const MONTH_LONG = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 const MONTH_ABBR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -55,13 +55,13 @@ const _PM = (_NOW.getMonth() + 11) % 12; const _PY = _NOW.getMonth() === 0 ? _NO
 const PREVM = MONTH_LONG[_PM]; const CURM = MONTH_LONG[_NOW.getMonth()]; const PREVA = MONTH_ABBR[_PM]; const CURA = MONTH_ABBR[_NOW.getMonth()];
 const PERIOD = PREVM + ' ' + _PY;
 const USERS = [
-  { id: 'u1', name: 'Kemal Çınar', role: 'patron', title: 'Patron', email: 'kemal@cinarkafe.example', color: '#0D56A6' },
-  { id: 'u2', name: 'Elif Yıldız', role: 'mudur', title: 'Müdür', email: 'elif@cinarkafe.example', color: '#17807E' },
-  { id: 'u3', name: 'Nesrin Aksoy', role: 'muhasebeci', title: 'Muhasebeci', email: 'nesrin@cinarkafe.example', color: '#7A4FB5' },
-  { id: 'u4', name: 'Ayşe Demir', role: 'calisan', title: 'Kasiyer', email: 'ayse@cinarkafe.example', color: '#B5651D' },
-  { id: 'u5', name: 'Mehmet Kaya', role: 'calisan', title: 'Barista', email: 'mehmet@cinarkafe.example', color: '#3E7C3A' },
-  { id: 'u6', name: 'Zeynep Arslan', role: 'calisan', title: 'Servis', email: 'zeynep@cinarkafe.example', color: '#C23A4D' },
-  { id: 'u7', name: 'Burak Şahin', role: 'calisan', title: 'Mutfak', email: 'burak@cinarkafe.example', color: '#4A5BA8' },
+  { id: 'u1', name: 'Patron', role: 'patron', title: 'Patron', email: '', color: '#0D56A6' },
+  { id: 'u2', name: 'Müdür', role: 'mudur', title: 'Müdür', email: '', color: '#17807E' },
+  { id: 'u3', name: 'Muhasebeci', role: 'muhasebeci', title: 'Muhasebeci', email: '', color: '#7A4FB5' },
+  { id: 'u4', name: 'Çalışan 1', role: 'calisan', title: 'Çalışan', email: '', color: '#B5651D' },
+  { id: 'u5', name: 'Çalışan 2', role: 'calisan', title: 'Çalışan', email: '', color: '#3E7C3A' },
+  { id: 'u6', name: 'Çalışan 3', role: 'calisan', title: 'Çalışan', email: '', color: '#C23A4D' },
+  { id: 'u7', name: 'Çalışan 4', role: 'calisan', title: 'Çalışan', email: '', color: '#4A5BA8' },
 ];
 const EMP_IDS = ['u4', 'u5', 'u6', 'u7'];
 const ROLE_LABEL = { patron: 'Patron', mudur: 'Müdür', muhasebeci: 'Muhasebeci', calisan: 'Çalışan' };
