@@ -999,13 +999,13 @@ const kaLvTxt = (a, b) => (a === b ? isoShort(a) : isoShort(a) + '–' + isoShor
   tbCard = function (r) { const h = _tc.apply(this, arguments); return r.pend ? h.replace('<div class="tb-ch">', '<div class="tb-ch"><span class="pill p-warn tb-p">Teyit bekliyor</span>') : h; };
 }
 
-/* ===== v104: yasal metinler (KVKK aydınlatma, gizlilik, kullanım şartları) ===== */
-const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlilik</a><span aria-hidden="true">·</span><a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma</a><span aria-hidden="true">·</span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartları</a>';
+/* ===== v104: yasal metinler (KVKK aydınlatma, gizlilik, kullanım sözleşmesi) ===== */
+const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlilik</a><span aria-hidden="true">·</span><a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma</a><span aria-hidden="true">·</span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesi</a>';
 {
   const _l = loginHTML;
   loginHTML = function () {
     let h = _l.apply(this, arguments);
-    if (h.indexOf('data-a="idnew"') >= 0 && h.indexOf('lg-yasal') < 0) h = h.replace('<button class="lx-go" type="button" data-a="idnew">', '<p class="lg-ok">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p><button class="lx-go" type="button" data-a="idnew">');
+    if (h.indexOf('data-a="idnew"') >= 0 && h.indexOf('lg-yasal') < 0) h = h.replace('<button class="lx-go" type="button" data-a="idnew">', '<p class="lg-ok">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p><button class="lx-go" type="button" data-a="idnew">');
     return h.replace(/<\/form>/, '</form><div class="lg-yasal" id="lg-yasal">' + LEGAL_LINKS + '</div>');
   };
 }

@@ -67,7 +67,7 @@ with sync_playwright() as p:
     check('Kayit: patron olarak girer, tek hesap ve tek isletme acilir', r['u']=='patron' and r['calls']==1 and r['bs']==1, r)
     pg.wait_for_timeout(600)
     cs = ev("()=>(window.__db.consents||[])")
-    check('Onay kaydi: kurulumda sartlar+KVKK onayi kaydedilir', len(cs)==1 and cs[0]['kind']=='kurulum' and cs[0]['ver']=='2026-11-15' and cs[0]['docs'].get('kvkk') and cs[0]['email'], cs)
+    check('Onay kaydi: kurulumda sartlar+KVKK onayi kaydedilir', len(cs)==1 and cs[0]['kind']=='kurulum' and cs[0]['ver']=='2026-11-17' and cs[0]['docs'].get('kvkk') and cs[0]['email'], cs)
     check('Kayit: isletme adi, sektor, sehir, ekip buyuklugu profile yazilir', r['biz']=='Deniz Kafe' and r['tur']!='' and r['il']=='Izmir' and r['cal']!='', r)
     check('Kayit: ad soyad patron adi olur', r['nm']=='Ahmet Yilmaz', r)
     # ayni e-posta ile tekrar kayit: yanlis sifre

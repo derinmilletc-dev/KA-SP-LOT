@@ -211,7 +211,7 @@ lxCreate = function () {
   else body = `<div class="lx-f"><label>Kaç kişi çalışıyor?</label>${pfChips('cal', PF_CAL, s.cal, false)}</div>
     <div class="lx-f"><label>Hangi bölümleri kullanacaksın?</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Birden fazla seçebilirsin. Sonradan Ayarlar'dan değiştirirsin.</p></div>
     <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>
-    <label class="kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>`;
+    <label class="kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>`;
   const back = st > (g ? 2 : 1) ? `<button type="button" class="lx-alt" data-a="sgback"><b>Geri</b></button>` : '';
   const nextLbl = st === 3 ? 'İşletmeyi oluştur' : 'Devam';
   const foot = st === 1 ? `<p class="lx-crb">Zaten hesabın var mı? <button type="button" class="lx-link" data-a="sgexit">Giriş yap</button></p>` : g ? `<p class="lx-crb">Davet koduyla mı katılacaksın? <button type="button" class="lx-link" data-a="sgjoin">Kodu gir</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p>` : '';
@@ -230,7 +230,7 @@ H.sgnext = () => {
     if (!/^\S+@\S+\.\S{2,}$/.test(s.em)) return sgErr('Geçerli bir e-posta adresi yaz.');
     if (s.pw.length < 8) return sgErr('Şifre en az 8 karakter olmalı.');
   } else if (s.step === 2) { if (!s.biz) return sgErr('İşletmenin adını yaz.'); if (!s.tur) return sgErr('Sektörünü seç.'); if (!s.mods.length && PF_SUG[s.tur]) s.mods = PF_SUG[s.tur].slice(); }
-  else { if (!s.kabul) return sgErr('Devam etmek için kullanım şartlarını ve KVKK metnini kabul etmelisin.'); return sgFinish(); }
+  else { if (!s.kabul) return sgErr('Devam etmek için kullanım sözleşmesini ve KVKK metnini kabul etmelisin.'); return sgFinish(); }
   S.loginErr = ''; s.step++; render(); try { window.scrollTo(0, 0); } catch (e) {}
 };
 async function sgFinish() {
@@ -268,7 +268,7 @@ H.sgjoin = () => { S.lgTab = 'emp'; S.lgCreate = false; S.loginErr = ''; render(
 H.sgclaim = async () => {
   const code = ((document.getElementById('sg-code') || {}).value || '').trim().toUpperCase(); if (!code) return sgErr('Davet kodunu yaz.');
   const c = sbClient(); if (!c || !SBS.user) return;
-  { const k = document.getElementById('sg-kabulj'); if (k && !k.checked) { const l = k.closest('.kb-cons'); if (l) l.classList.add('err'); return sgErr('Devam etmek için kullanım şartlarını ve KVKK metnini kabul etmelisin.'); } try { consentMark('davet', SBS.user.email); } catch (e) {} }
+  { const k = document.getElementById('sg-kabulj'); if (k && !k.checked) { const l = k.closest('.kb-cons'); if (l) l.classList.add('err'); return sgErr('Devam etmek için kullanım sözleşmesini ve KVKK metnini kabul etmelisin.'); } try { consentMark('davet', SBS.user.email); } catch (e) {} }
   try { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; if (x.data && x.data.error) throw new Error(x.data.error); await sbLoadBiz(); if (!ID.mems.length) return sgErr('Kod kabul edildi ama işletme bulunamadı. İşverenle konuş.'); if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); }
   catch (e) { sgErr(idMsg(e)); }
 };
@@ -282,7 +282,7 @@ H.sgown = () => { S.lgTab = 'own'; S.loginErr = ''; S.lgCreate = true; sgInit();
       return `<div class="login lx lx-emp"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>Ekibe hoş geldin.</h2><p>İşvereninin verdiği davet koduyla katıl.</p></div>${lxArt()}</section>
       <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form" novalidate><h1>Davet koduyla katıl</h1><p class="lx-sub" style="margin-bottom:12px">${esc(SBS.user.email || '')} olarak giriş yapıldı.</p>
       <div class="lx-f"><label for="sg-code">Davet kodu</label><div class="lx-in">${LXI.lock}<input id="sg-code" type="text" autocapitalize="characters" maxlength="8" placeholder="Örn. K7M2QX" style="text-transform:uppercase;letter-spacing:.5px"></div></div>
-      <label class="kb-cons"><input type="checkbox" id="sg-kabulj"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
+      <label class="kb-cons"><input type="checkbox" id="sg-kabulj"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
       <div class="err" id="sg-err" role="alert">${esc(S.loginErr)}</div><button class="lx-go" type="button" data-a="sgclaim"><span>Katıl</span>${LXI.arrow}</button>
       <p class="lx-crb">İşletme sahibi misin? <button type="button" class="lx-link" data-a="sgown">İşletmeni kur</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p></form></div></section></div>`;
     }
@@ -557,7 +557,7 @@ H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\n
   const _l = loginHTML;
   loginHTML = function () {
     let h = _l.apply(this, arguments);
-    return h.replace(/<p class="lg-ok">Hesap açarak [\s\S]*?<\/p>/, '<label class="kb-cons"><input type="checkbox" id="id-kabul"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>');
+    return h.replace(/<p class="lg-ok">Hesap açarak [\s\S]*?<\/p>/, '<label class="kb-cons"><input type="checkbox" id="id-kabul"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>');
   };
   const _n = H.idnew;
   H.idnew = function () {
@@ -569,7 +569,7 @@ H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\n
 }
 
 /* v179b: şartlar ve KVKK onayının kaydı (admin panelinde görünür) */
-const LEGAL_VER = '2026-11-15';
+const LEGAL_VER = '2026-11-17';
 const CK = 'kp_consent_pend';
 function consentMark(kind, email) { try { localStorage.setItem(CK, JSON.stringify({ kind, email: String(email || '').toLowerCase(), at: Date.now(), ua: String(navigator.userAgent || '').slice(0, 180) })); } catch (e) {} }
 async function consentFlush() {

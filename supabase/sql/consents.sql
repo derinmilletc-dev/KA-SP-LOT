@@ -7,7 +7,7 @@ create table if not exists public.consents (
   business_id uuid,
   email text,
   kind text not null check (kind in ('kurulum', 'davet', 'google')),
-  ver text not null,                      -- belge sürümü (örn. 2026-11-15)
+  ver text not null,                      -- belge sürümü (örn. 2026-11-17)
   docs jsonb not null default '{}'::jsonb, -- onaylanan belgeler
   ua text,                                 -- cihaz bilgisi (kısa)
   accepted_at timestamptz not null default now(),
