@@ -1,8 +1,8 @@
 /* ===== v45: Profilini tamamla ===== */
-const PROF = { tur: '', tip: '', vkn: '', vd: '', il: '', ilce: '', tel: '', cal: '', muh: '', mods: [], snooze: 0, done: false };
+const PROF = { tur: '', tip: '', vkn: '', vd: '', il: '', ilce: '', tel: '', cal: '', muh: '', sube: '', yontem: '', zaman: [], mods: [], snooze: 0, done: false };
 const PEND = { tur: '' };
 P_OBJ.push(['PROF', () => PROF]);
-function profReset() { Object.assign(PROF, { tur: '', tip: '', vkn: '', vd: '', il: '', ilce: '', tel: '', cal: '', muh: '', mods: [], snooze: 0, done: false }); }
+function profReset() { Object.assign(PROF, { tur: '', tip: '', vkn: '', vd: '', il: '', ilce: '', tel: '', cal: '', muh: '', sube: '', yontem: '', zaman: [], mods: [], snooze: 0, done: false }); }
 const _wd45 = wipeData; wipeData = function () { _wd45(); profReset(); };
 function profPend() { if (PEND.tur && !PROF.tur) { PROF.tur = PEND.tur; pSched(); } PEND.tur = ''; }
 

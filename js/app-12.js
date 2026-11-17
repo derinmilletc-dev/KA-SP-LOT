@@ -182,9 +182,13 @@ function mhKdvParts(r) {
 })();
 const SG_G = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
 const sgGoogleBtn = (label) => `<button type="button" class="sg-g" data-a="sggoogle">${SG_G}<span>${label || 'Google ile devam et'}</span></button>`;
+const PF_SUBE = ['Tek şube', '2–3 şube', '4+ şube'];
+const PF_YON = ['Defter / kâğıt', 'Excel', 'Başka bir program', 'Hiçbiri, yeni başlıyorum'];
+const PF_ZAMAN = ['Fiş ve muhasebe', 'Stok ve sipariş', 'Vardiya ve puantaj', 'Maaş ve bordro', 'Rezervasyon ve müşteri', 'Satış ve kasa'];
+const ZAMAN_MOD = { 'Stok ve sipariş': ['Stok', 'Tedarik'], 'Vardiya ve puantaj': ['Duyuru ve vardiya'], 'Maaş ve bordro': ['Bordro ve maaş'], 'Rezervasyon ve müşteri': ['Müşteri ve rezervasyon'], 'Satış ve kasa': ['Satış (POS)'] };
 const sgNameOf = () => { const u = SBS.user; const m = (u && u.user_metadata) || {}; return String(m.full_name || m.name || '').trim(); };
 S.sg = S.sg || null;
-function sgInit() { S.sg = { step: SBS.user ? 2 : 1, name: sgNameOf(), em: S.lgEm || '', pw: '', biz: '', tur: '', il: '', cal: '', mods: [], muh: '' }; }
+function sgInit() { S.sg = { step: SBS.user ? 2 : 1, name: sgNameOf(), em: S.lgEm || '', pw: '', biz: '', tur: '', il: '', cal: '', sube: '', yontem: '', zaman: [], mods: [], muh: '', kabul: false, pazar: false }; }
 function sgSnap() {
   if (!S.sg) return; const g = (id) => { const e = document.getElementById(id); return e ? e.value : undefined; };
   const set = (k, v) => { if (v !== undefined) S.sg[k] = String(v).trim(); };
@@ -192,14 +196,15 @@ function sgSnap() {
   if (document.getElementById('id-tur')) S.sg.tur = g('id-tur') || '';
   if (document.querySelector('[data-grp="cal"]')) S.sg.cal = pfOn('cal')[0] || ''; if (document.querySelector('[data-grp="muh"]')) S.sg.muh = pfOn('muh')[0] || '';
   if (document.querySelector('[data-grp="mods"]')) S.sg.mods = pfOn('mods');
-  { const k = document.getElementById('sg-kabul'); if (k) S.sg.kabul = k.checked; }
+  if (document.querySelector('[data-grp="sube"]')) S.sg.sube = pfOn('sube')[0] || ''; if (document.querySelector('[data-grp="yontem"]')) S.sg.yontem = pfOn('yontem')[0] || ''; if (document.querySelector('[data-grp="zaman"]')) S.sg.zaman = pfOn('zaman');
+  { const k = document.getElementById('sg-kabul'); if (k) S.sg.kabul = k.checked; const z = document.getElementById('sg-pazar'); if (z) S.sg.pazar = z.checked; }
 }
 const sgErr = (t) => { S.loginErr = t; const e = document.getElementById('sg-err'); if (e) e.textContent = t; };
 lxCreate = function () {
   if (!S.sg) sgInit(); const s = S.sg, st = s.step, g = !!SBS.user, nm = esc(s.name.split(' ')[0] || '');
   const fld = (lab, id, ico, inner) => `<div class="lx-f"><label for="${id}">${lab}</label><div class="lx-in">${ico}${inner}</div></div>`;
-  const pg = `<div class="sg-pg" aria-label="Adım ${st} / 3">${[1, 2, 3].map((i) => `<i class="${i <= st ? 'on' : ''}"></i>`).join('')}</div>`;
-  const titles = { 1: ['Hesabını oluştur', 'Başlamak 1 dakikanı almaz.'], 2: [g && nm ? 'Merhaba ' + nm + ', işletmeni tanıyalım' : 'İşletmeni tanıyalım', 'Sana uygun kurulumu hazırlayacağız.'], 3: ['Son dokunuş', 'Sektörüne göre bir başlangıç seçtik, değiştirebilirsin.'] };
+  const pg = `<div class="sg-pg" aria-label="Adım ${st} / 4">${[1, 2, 3, 4].map((i) => `<i class="${i <= st ? 'on' : ''}"></i>`).join('')}</div>`;
+  const titles = { 1: ['Hesabını oluştur', 'Başlamak 1 dakikanı almaz.'], 2: [g && nm ? 'Merhaba ' + nm + ', işletmeni tanıyalım' : 'İşletmeni tanıyalım', 'Sana uygun kurulumu hazırlayacağız.'], 3: ['İşin nasıl yürüyor?', 'Birkaç soruyla Kais seni daha iyi tanısın.'], 4: ['Son dokunuş', 'Sana özel kurulumu hazırladık, sonradan değiştirebilirsin.'] };
   let body = '';
   if (st === 1) body = `${sgGoogleBtn()}<div class="sg-or"><span>veya e-posta ile</span></div>${fld('Ad soyad', 'sg-name', pfIc('user'), `<input id="sg-name" type="text" autocomplete="name" placeholder="Adınız ve soyadınız" value="${esc(s.name)}">`)}
     ${fld('E-posta', 'sg-em', LXI.mail, `<input id="sg-em" type="email" autocomplete="username" inputmode="email" autocapitalize="none" placeholder="e-posta@firma.com" value="${esc(s.em)}">`)}
@@ -208,15 +213,20 @@ lxCreate = function () {
     ${fld('İşletme adı', 'sg-biz', pfIc('store'), `<input id="sg-biz" type="text" autocomplete="organization" placeholder="İşletme adınızı yazın" value="${esc(s.biz)}">`)}
     <div class="lx-f"><label>Hangi sektördesin?</label>${ddHTML(s.tur, 'İşletme türünüzü seçin')}</div>
     ${fld('Şehir <span class="lx-opt">isteğe bağlı</span>', 'sg-il', pfIc('store'), `<input id="sg-il" autocomplete="off" placeholder="Şehir yaz ya da seç" value="${esc(s.il)}">`)}`;
-  else body = `<div class="lx-f"><label>Kaç kişi çalışıyor?</label>${pfChips('cal', PF_CAL, s.cal, false)}</div>
-    <div class="lx-f"><label>Hangi bölümleri kullanacaksın?</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Birden fazla seçebilirsin. Sonradan Ayarlar'dan değiştirirsin.</p></div>
-    <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>
-    <label class="kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>`;
+  else if (st === 3) body = `<div class="lx-f"><label>Kaç kişi çalışıyor?</label>${pfChips('cal', PF_CAL, s.cal, false)}</div>
+    <div class="lx-f"><label>Kaç şubeniz var?</label>${pfChips('sube', PF_SUBE, s.sube, false)}</div>
+    <div class="lx-f"><label>İşleri şu an nasıl takip ediyorsun?</label>${pfChips('yontem', PF_YON, s.yontem, false)}</div>
+    <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>`;
+  else body = `<div class="sg-sum"><b>${esc(s.biz || 'İşletmen')}</b><span>${[s.tur, s.il, s.cal].filter(Boolean).map(esc).join(' · ')}</span></div>
+    <div class="lx-f"><label>En çok neye zaman harcıyorsun?</label>${pfChips('zaman', PF_ZAMAN, s.zaman, true)}<p class="sg-sm" style="margin-top:6px">Kais bunları öne çıkarır ve ilgili bölümleri senin için açar.</p></div>
+    <div class="lx-f"><label>Kullanacağın bölümler</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Sektörüne göre seçtik. Sonradan Ayarlar'dan değiştirirsin.</p></div>
+    <label class="kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesini</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
+    <label class="kb-cons kb-opt"><input type="checkbox" id="sg-pazar"${s.pazar ? ' checked' : ''}><span>KaisPilot'tan ürün haberleri, ipuçları ve kampanyaları e-posta ve bildirimle almak istiyorum. <em>İsteğe bağlı. İstediğin zaman kaispilot@gmail.com adresine yazarak vazgeçebilirsin.</em></span></label>`;
   const back = st > (g ? 2 : 1) ? `<button type="button" class="lx-alt" data-a="sgback"><b>Geri</b></button>` : '';
-  const nextLbl = st === 3 ? 'İşletmeyi oluştur' : 'Devam';
+  const nextLbl = st === 4 ? 'İşletmeyi oluştur' : 'Devam';
   const foot = st === 1 ? `<p class="lx-crb">Zaten hesabın var mı? <button type="button" class="lx-link" data-a="sgexit">Giriş yap</button></p>` : g ? `<p class="lx-crb">Davet koduyla mı katılacaksın? <button type="button" class="lx-link" data-a="sgjoin">Kodu gir</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p>` : '';
   return `<div class="login lx"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>İşletmenizi tek yerden yönetin.</h2><p>Fiş, ekip, stok ve tedarik süreçlerinizi tek ekrandan kontrol edin.</p></div>${lxArt()}</section>
-  <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form lx-cr" novalidate>${pg}<div class="sg-st">Adım ${st} / 3</div><h1>${titles[st][0]}</h1><p class="lx-sub" style="margin-bottom:12px">${titles[st][1]}</p>
+  <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form lx-cr" novalidate>${pg}<div class="sg-st">Adım ${st} / 4</div><h1>${titles[st][0]}</h1><p class="lx-sub" style="margin-bottom:12px">${titles[st][1]}</p>
   ${body}<div class="err" id="sg-err" role="alert">${esc(S.loginErr)}</div>
   <div class="sg-row">${back}<button class="lx-go" type="button" data-a="sgnext" style="flex:1"><span>${nextLbl}</span>${LXI.arrow}</button></div>${foot}</form></div></section></div>`;
 };
@@ -230,6 +240,7 @@ H.sgnext = () => {
     if (!/^\S+@\S+\.\S{2,}$/.test(s.em)) return sgErr('Geçerli bir e-posta adresi yaz.');
     if (s.pw.length < 8) return sgErr('Şifre en az 8 karakter olmalı.');
   } else if (s.step === 2) { if (!s.biz) return sgErr('İşletmenin adını yaz.'); if (!s.tur) return sgErr('Sektörünü seç.'); if (!s.mods.length && PF_SUG[s.tur]) s.mods = PF_SUG[s.tur].slice(); }
+  else if (s.step === 3) { /* hepsi isteğe bağlı */ }
   else { if (!s.kabul) return sgErr('Devam etmek için kullanım sözleşmesini ve KVKK metnini kabul etmelisin.'); return sgFinish(); }
   S.loginErr = ''; s.step++; render(); try { window.scrollTo(0, 0); } catch (e) {}
 };
@@ -246,14 +257,14 @@ async function sgFinish() {
     await sbLoadBiz();
     if (!ID.mems.length) {
       const i = await c.from('businesses').insert({ name: s.biz, owner_id: SBS.user.id }); if (i.error) throw i.error;
-      NAMES.u1 = { name: s.name || sgNameOf() || 'Patron', title: 'Patron' }; BIZ = s.biz; wipeData(); PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, mods: s.mods.slice() }; applyNames(); await sbLoadBiz();
+      NAMES.u1 = { name: s.name || sgNameOf() || 'Patron', title: 'Patron' }; BIZ = s.biz; wipeData(); PEND.prof = { tur: s.tur, il: s.il, cal: s.cal, muh: s.muh, sube: s.sube, yontem: s.yontem, zaman: (s.zaman || []).slice(), mods: s.mods.slice() }; applyNames(); await sbLoadBiz();
     }
     ID.busy = false; S.sg = null; S.lgCreate = false; try { sessionStorage.removeItem('kp_lg'); } catch (e) {}
     if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); try { profPend(); } catch (e) {} render();
   } catch (e) { ID.busy = false; sgErr(idMsg(e)); }
 }
 profPend = function () {
-  const p = PEND.prof; if (p) { if (!PROF.tur) Object.assign(PROF, { tur: p.tur || '', il: p.il || '', cal: p.cal || '', muh: p.muh || '', mods: p.mods || [] }); PEND.prof = null; pSched(); }
+  const p = PEND.prof; if (p) { if (!PROF.tur) Object.assign(PROF, { tur: p.tur || '', il: p.il || '', cal: p.cal || '', muh: p.muh || '', sube: p.sube || '', yontem: p.yontem || '', zaman: p.zaman || [], mods: p.mods || [] }); PEND.prof = null; pSched(); }
   if (PEND.tur && !PROF.tur) { PROF.tur = PEND.tur; pSched(); } PEND.tur = '';
 };
 /* Google */
@@ -571,19 +582,22 @@ H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\n
 /* v179b: şartlar ve KVKK onayının kaydı (admin panelinde görünür) */
 const LEGAL_VER = '2026-11-17';
 const CK = 'kp_consent_pend';
-function consentMark(kind, email) { try { localStorage.setItem(CK, JSON.stringify({ kind, email: String(email || '').toLowerCase(), at: Date.now(), ua: String(navigator.userAgent || '').slice(0, 180) })); } catch (e) {} }
+function consentMark(kind, email, pazar) { try { localStorage.setItem(CK, JSON.stringify({ kind, pazar: !!pazar, email: String(email || '').toLowerCase(), at: Date.now(), ua: String(navigator.userAgent || '').slice(0, 180) })); } catch (e) {} }
 async function consentFlush() {
   let p; try { p = JSON.parse(localStorage.getItem(CK) || 'null'); } catch (e) { p = null; } if (!p) return;
   if (Date.now() - p.at > 864e5) { try { localStorage.removeItem(CK); } catch (e) {} return; }
   const c = sbOK() && sbClient(); if (!c || !SBS.user || !SBS.user.email || String(SBS.user.email).toLowerCase() !== p.email) return;
   try {
     const r = await c.from('consents').insert({ user_id: SBS.user.id, business_id: (SBS.biz && SBS.biz.id) || null, email: SBS.user.email, kind: p.kind, ver: LEGAL_VER, docs: { kullanim: LEGAL_VER, kvkk: LEGAL_VER }, ua: p.ua });
-    if (!r.error || r.error.code === '23505') localStorage.removeItem(CK);
+    if (!r.error || r.error.code === '23505') {
+      if (p.pazar) { try { await c.from('consents').insert({ user_id: SBS.user.id, business_id: (SBS.biz && SBS.biz.id) || null, email: SBS.user.email, kind: 'pazarlama', ver: LEGAL_VER, docs: { ticari_ileti: LEGAL_VER }, ua: p.ua }); } catch (e) {} }
+      localStorage.removeItem(CK);
+    }
   } catch (e) {}
 }
 {
   const _sg = H.sgnext;
-  H.sgnext = function () { const before = S.sg && S.sg.step; const r = _sg.apply(this, arguments); try { if (before === 3 && S.sg && S.sg.kabul) consentMark(SBS.user && SBS.user.email && !S.sg.em ? 'google' : 'kurulum', S.sg.em || (SBS.user && SBS.user.email)); } catch (e) {} return r; };
+  H.sgnext = function () { const before = S.sg && S.sg.step; const r = _sg.apply(this, arguments); try { if (before === 4 && S.sg && S.sg.kabul) consentMark(SBS.user && SBS.user.email && !S.sg.em ? 'google' : 'kurulum', S.sg.em || (SBS.user && SBS.user.email), S.sg.pazar); } catch (e) {} return r; };
   const _jn = H.idnew;
   H.idnew = function () { const k = document.getElementById('id-kabul'); const em = (document.getElementById('id-em') || {}).value; if (k && k.checked && em) consentMark('davet', em); return _jn.apply(this, arguments); };
   const _lb = sbLoadBiz;
@@ -623,4 +637,15 @@ async function consentFlush() {
     else if (e.key === 'Escape') { close(); }
   });
   addEventListener('resize', pos); document.addEventListener('scroll', pos, true);
+}
+
+/* v188: kayıt adım 4/4: akıllı sorular, özet kartı, isteğe bağlı pazarlama onayı */
+{
+  const css = document.createElement('style');
+  css.textContent = '.sg-sum{display:flex;flex-direction:column;gap:2px;padding:12px 14px;margin:0 0 14px;border-radius:14px;background:linear-gradient(135deg,#EAF2FD,#F4F8FE);border:1px solid #D3E2F7}.sg-sum b{font-size:16px;color:#0F2850}.sg-sum span{font-size:13px;color:#4C5E78}.kb-opt{margin-top:6px;padding:10px 12px;border-radius:12px;background:#F4F7FB;border:1px dashed #C9D6E8}.kb-opt em{display:block;font-style:normal;font-size:12px;color:#74839A;margin-top:2px}';
+  document.head.appendChild(css);
+  const _pc = H.pfchip;
+  H.pfchip = function (el) { const r = _pc.apply(this, arguments); try { if (el.dataset.g === 'zaman' && el.classList.contains('on')) (ZAMAN_MOD[el.dataset.v] || []).forEach((m) => { const b = document.querySelector('[data-grp="mods"] .pf-c[data-v="' + m + '"]'); if (b) b.classList.add('on'); }); } catch (e) {} return r; };
+  const _ac = aiContext;
+  aiContext = function () { const c = _ac.apply(this, arguments); try { c.profil = { sektor: PROF.tur || undefined, sehir: PROF.il || undefined, calisan: PROF.cal || undefined, sube: PROF.sube || undefined, mevcut_yontem: PROF.yontem || undefined, en_cok_zaman_alan: (PROF.zaman || []).length ? PROF.zaman : undefined }; } catch (e) {} return c; };
 }
