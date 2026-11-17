@@ -3,6 +3,8 @@
 // 2) Geç kalan çalışan ve sabah özeti için yöneticilere push
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
+
+/* ---- logic.ts (birleştirildi) ---- */
 // Kais zamanlayıcı: saf mantık (test edilebilir). Dışarıya erişmez.
 const TZ = 'Europe/Istanbul';
 
@@ -260,12 +262,14 @@ function planOverdue(inv: any[], now: { date: string; min: number }): { key: str
   return { key: 'overdue:' + now.date, title: 'Vadesi geçen alacak', body: late.length + ' fatura, toplam ' + tl(sum) + ' tahsilat bekliyor. En büyüğü: ' + (top.cust || '—') + ' ' + tl(invOpen(top)) + '.' };
 }
 
+/* ---- index.ts ---- */
+
 const URL_ = Deno.env.get('SUPABASE_URL')!; const SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const AMODEL = Deno.env.get('KAIS_CRON_MODEL') || 'claude-haiku-5-5';
 const sb = createClient(URL_, SRV, { auth: { persistSession: false } });
 const RESEND = Deno.env.get('RESEND_API_KEY') || ''; const FROM = Deno.env.get('RESEND_FROM') || '';
-const VPUB = Deno.env.get('VAPID_PUBLIC_KEY') || ''; const VPRIV = Deno.env.get('VAPID_PRIVATE_KEY') || ''; const VSUB = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@example.com';
+const VPUB = (Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('VAPID_PUBLIC') || ''); const VPRIV = (Deno.env.get('VAPID_PRIVATE_KEY') || Deno.env.get('VAPID_PRIVATE') || ''); const VSUB = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@example.com';
 if (VPUB && VPRIV) webpush.setVapidDetails(VSUB, VPUB, VPRIV);
 
 async function claim(bid: string, key: string, kind: string) {

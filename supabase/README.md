@@ -51,7 +51,7 @@ Uygulama kapalıyken de çalışır:
 
 ## Hata kaydı, kullanım sayacı, kapanış bildirimi (v145)
 - `supabase/sql/telemetry.sql` dosyasını SQL Editor'de bir kez çalıştır (app_errors ve app_events tabloları, kullanıcı yalnızca kendi adına ekleyebilir, okuma yalnızca sunucu).
-- `kais-cron` güncellendi: her akşam 21:00-22:00 arası yöneticilere "Günün kapanışı" bildirimi (ciro, gider, fark). Dashboard'a `index.single.ts` içeriği yapıştırılır.
+- `kais-cron` güncellendi: her akşam 21:00-22:00 arası yöneticilere "Günün kapanışı" bildirimi (ciro, gider, fark). Dashboard'a `index.single.ts` içeriği yapıştırılır (logic.ts içinde birleşik; `python3 tools/build_cron_single.py` ile üretilir). Panelde ayrı logic.ts dosyası olmadığı için index.ts değil index.single.ts yapıştırılmalı.
 - Davet bağlantısı: `/?kod=KOD` adresi açılınca çalışan giriş ekranında kod kendiliğinden yazılır; davet penceresinde QR ve WhatsApp düğmesi vardır.
 
 ## Admin paneli (v146)
