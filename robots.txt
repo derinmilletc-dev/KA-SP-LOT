@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /tedarikci/
+Disallow: /rez/
+
+Sitemap: https://www.kaispilot.com/sitemap.xml
