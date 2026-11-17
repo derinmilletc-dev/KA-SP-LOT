@@ -299,7 +299,7 @@ H.sgown = () => { S.lgTab = 'own'; S.loginErr = ''; S.lgCreate = true; sgInit();
       return `<div class="login lx lx-emp"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>Ekibe hoş geldin.</h2><p>İşvereninin verdiği davet koduyla katıl.</p></div>${lxArt()}</section>
       <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form" novalidate><h1>Davet koduyla katıl</h1><p class="lx-sub" style="margin-bottom:12px">${esc(SBS.user.email || '')} olarak giriş yapıldı.</p>
       <div class="lx-f"><label for="sg-code">Davet kodu</label><div class="lx-in">${LXI.lock}<input id="sg-code" type="text" autocapitalize="characters" maxlength="8" placeholder="Örn. K7M2QX" style="text-transform:uppercase;letter-spacing:.5px"></div></div>
-      <label class="kb-cons"><input type="checkbox" id="sg-kabulj"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
+      <label class="kb-cons"><input type="checkbox" id="sg-kabulj"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesini</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
       <div class="err" id="sg-err" role="alert">${esc(S.loginErr)}</div><button class="lx-go" type="button" data-a="sgclaim"><span>Katıl</span>${LXI.arrow}</button>
       <p class="lx-crb">İşletme sahibi misin? <button type="button" class="lx-link" data-a="sgown">İşletmeni kur</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p></form></div></section></div>`;
     }
@@ -463,7 +463,7 @@ if (typeof document !== 'undefined') { const css = document.createElement('style
     const pv = k === 'own' ? `<div class="lp lp-pvw"><div class="lp-pv"><div class="lp-ph"><span>Bugün</span><span>Örnek ekran</span></div><div class="lp-k"><div><small>Bu ay gelir</small><b>₺248.600</b></div><div><small>Gider</small><b>₺161.200</b></div><div><small>Onay bekleyen fiş</small><b class="up">3</b></div></div><div class="lp-ai"><i>K</i><span>Süt stoğu azalıyor. Tedarikçiye sipariş hazırlayayım mı?</span></div></div></div>` : '';
     h = h.replace(/<div class="lx-copy">[\s\S]*?<\/div>/, `<div class="lx-copy"><h2>${d.h}</h2><p>${d.p}</p></div>`);
     h = h.replace('</section>', `${feats}${pv}<div class="lp-ft">${CPR}</div></section>`);
-    h = h.replace(/<\/section><\/div>$/, `</section><p class="lx-copyr">${CPR}</p></div>`);
+    h = h.replace(/<\/section><\/div>$/, `</section><p class="lx-copyr">© ${new Date().getFullYear()} KaisPilot</p></div>`);
     h = h.replace(/(<div class="lx-brand">[\s\S]*?<span>KaisPilot<\/span>)/, '$1<i class="lx-sl">Yöneten Siz, Kolaylaştıran Kais</i>');
     if (k === 'emp' && S.lgCreate) h = h.replace(/<h1>Giriş yap<\/h1>(\s*<p class="lx-sub"[^>]*>)[^<]*/, '<h1>Ekibe katıl</h1>$1Davet koduyla hesabını oluştur');
     h = h.replace(/<div class="login lx([^"]*)"/, '<div class="login lx$1 lx3"');
@@ -574,7 +574,7 @@ H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\n
   const _l = loginHTML;
   loginHTML = function () {
     let h = _l.apply(this, arguments);
-    return h.replace(/<p class="lg-ok">Hesap açarak [\s\S]*?<\/p>/, '<label class="kb-cons"><input type="checkbox" id="id-kabul"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>');
+    return h.replace(/<p class="lg-ok">Hesap açarak [\s\S]*?<\/p>/, '<label class="kb-cons"><input type="checkbox" id="id-kabul"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesini</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>');
   };
   const _n = H.idnew;
   H.idnew = function () {
@@ -695,4 +695,44 @@ function freshBiz(name, owner) {
 {
   const _rn = render;
   render = function () { try { if (typeof SBS !== 'undefined' && SBS.biz && SBS.biz.name && BIZ !== SBS.biz.name) { BIZ = SBS.biz.name; } } catch (e) {} return _rn.apply(this, arguments); };
+}
+
+/* v191: telefon giriş ekranı: ortalı logo + KaisPilot, kartsız sade form, Patron/Çalışan aynı düzen */
+if (typeof document !== 'undefined') {
+  const css = document.createElement('style'); css.id = 'lx4-css';
+  const S4 = '.login.lx3:has(#idform)';
+  css.textContent = `@media(max-width:999px){
+${S4}{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;min-height:100vh;min-height:100dvh;padding:0 30px calc(env(safe-area-inset-bottom,0px) + 14px)!important;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,system-ui,sans-serif;background:radial-gradient(120% 55% at 112% -6%,rgba(176,208,250,.62),rgba(176,208,250,0) 62%),radial-gradient(95% 34% at -12% 104%,rgba(196,219,251,.7),rgba(196,219,251,0) 64%),linear-gradient(180deg,#F5F8FD,#FCFDFF)!important}
+${S4} .lx-hero{flex:none!important;aspect-ratio:auto!important;height:auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center;background:none!important;padding:calc(env(safe-area-inset-top,0px) + 26px) 0 0!important;margin:0!important;width:100%!important;max-width:none!important;min-height:0!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;gap:0!important}
+${S4} .lx-hero::before,${S4} .lx-hero::after{display:none!important}
+${S4} .lx-copy,${S4} .lx-art,${S4} .lp,${S4} .lp-ft,${S4} .lx-sl{display:none!important}
+${S4} .lx-brand{display:flex!important;flex-direction:column!important;align-items:center!important;gap:10px!important;font-size:31px!important}
+${S4} .lx-brand svg{width:52px!important;height:52px!important;padding:10px!important;border-radius:15px!important;background:linear-gradient(160deg,#2b73d6,#0a2a60)!important;border:0!important;box-shadow:0 8px 18px rgba(10,42,96,.28)!important}
+${S4} .lx-brand span{font-size:31px!important;font-weight:800!important;letter-spacing:-.6px!important;color:#0E1B3D!important;line-height:1.1}
+${S4} .lx2-tag{display:block!important;margin:6px 0 0!important;padding:0!important;font-size:16.5px!important;line-height:1.35;color:#5D6E87!important;text-align:center}
+${S4} .lx-card{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;margin:36px 0 0!important;max-width:none!important;width:100%!important;animation:none!important;border-radius:0!important;flex:1 1 auto}
+${S4} .lx-cin{padding:0!important;max-width:none!important}
+${S4} .lx-cin>h1,${S4} .lx-cin>.lx-sub{display:none!important}
+${S4} .lx-tabs{margin:0 6px 28px!important;padding:4px!important;gap:4px!important;border-radius:16px!important;background:#E6ECF6!important;box-shadow:none!important}
+${S4} .lx-tabs button{min-height:38px!important;height:38px;border-radius:12px!important;font-size:16px!important}
+${S4} .lx-tabs button b{font-size:16px!important;font-weight:650!important}
+${S4} .lx-tabs button[aria-pressed=true]{box-shadow:0 2px 8px rgba(14,43,77,.12)!important;color:#0F5FBF!important}
+${S4} .sg-g{min-height:44px;height:44px;border-radius:14px;border:1.5px solid #D3DDEC;font-size:17px;font-weight:650}
+${S4} .sg-or{margin:8px 0 2px;font-size:15px}
+${S4} .lx-f{margin-top:4px}
+${S4} .lx-f label{font-size:16px!important;font-weight:700!important;color:#0E1B3D}
+${S4} .lx-in{min-height:42px!important;height:42px!important;padding-top:0!important;padding-bottom:0!important;border-radius:14px!important;border:1.5px solid #D9E2EF!important}
+${S4} .lx-in input{font-size:17px!important}
+${S4} .lx-link{font-size:16px!important;font-weight:700!important}
+${S4} .lx-go{min-height:46px!important;height:46px;border-radius:15px!important;font-size:18px!important;margin-top:14px!important}
+${S4} .lx-or{margin:10px 6px!important;font-size:15px!important}
+${S4} .lx-alt{min-height:40px!important;height:40px;border-radius:14px!important;border:1.5px solid #D3DDEC!important;font-size:17px!important;padding:0 12px!important}
+${S4} .lx-alt b{font-size:17px!important;font-weight:700!important}
+${S4} .lx-alt span:not(.lx-opt){display:none!important}
+${S4} .lg-yasal{display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;gap:8px;white-space:nowrap;margin-top:18px!important;font-size:13.5px;color:#7C8BA2}
+${S4} .lg-yasal span{margin:0!important;padding:0!important}
+${S4} .lg-yasal a{color:#7C8BA2!important;text-decoration:none}
+${S4} .lx-copyr{margin:10px 0 0!important;font-size:14px;color:#7C8BA2}
+}`;
+  document.head.appendChild(css);
 }

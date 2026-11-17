@@ -1000,12 +1000,12 @@ const kaLvTxt = (a, b) => (a === b ? isoShort(a) : isoShort(a) + '–' + isoShor
 }
 
 /* ===== v104: yasal metinler (KVKK aydınlatma, gizlilik, kullanım sözleşmesi) ===== */
-const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlilik</a><span aria-hidden="true">·</span><a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma</a><span aria-hidden="true">·</span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesi</a>';
+const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlilik</a><span aria-hidden="true">·</span><a href="/kvkk/" target="_blank" rel="noopener">KVKK Aydınlatma</a><span aria-hidden="true">·</span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım Sözleşmesi</a>';
 {
   const _l = loginHTML;
   loginHTML = function () {
     let h = _l.apply(this, arguments);
-    if (h.indexOf('data-a="idnew"') >= 0 && h.indexOf('lg-yasal') < 0) h = h.replace('<button class="lx-go" type="button" data-a="idnew">', '<p class="lg-ok">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesinı</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p><button class="lx-go" type="button" data-a="idnew">');
+    if (h.indexOf('data-a="idnew"') >= 0 && h.indexOf('lg-yasal') < 0) h = h.replace('<button class="lx-go" type="button" data-a="idnew">', '<p class="lg-ok">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesini</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p><button class="lx-go" type="button" data-a="idnew">');
     return h.replace(/<\/form>/, '</form><div class="lg-yasal" id="lg-yasal">' + LEGAL_LINKS + '</div>');
   };
 }
