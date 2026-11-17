@@ -31,6 +31,12 @@ with sync_playwright() as p:
     check('Kurulum: sayfada %% rozeti ve genel yuzde', ('su-pc' in html) and ('tamamlandı' in html))
     ev("()=>Object.assign(PROF,{tur:'Kafe',tip:'Limited şirket',vkn:'1',il:'Izmir',tel:'1',kap:'1',masa:'1',cal:'1',muh:'Var',mods:['Stok']})")
     check('Kurulum: tum alanlar dolu -> tamam', ev("()=>suSteps()[0].done"))
+    # 5) Hesap baglantilari: baglanan calisanin adi listede gorunur
+    ev("()=>{S.user={role:'patron',id:'u1'};ID.active={role:'patron',business_id:'B1'};const w=USERS.find(u=>u.id!=='u1'&&u.role==='calisan');window.__w=w;ID.team={members:[{id:'m1',app_uid:w.id,display_name:'Ayse Demir',email:'a@b.c'}],invites:[],err:''}}")
+    h = ev("()=>hesapHTML()")
+    check('Hesap: baglanan calisan adiyla gorunur', 'Ayse Demir' in h and '>AD<' in h, h[:200])
+    ev("()=>{ID.team.members=[]}")
+    check('Hesap: baglanmayan eski adiyla kalir', ev("()=>hesapHTML().includes(__w.name)"))
     check('Sayfa hatasi yok', not er, er)
     b.close()
 print('\nHEPSI GECTI' if not fails else 'FAIL: %d' % len(fails))
