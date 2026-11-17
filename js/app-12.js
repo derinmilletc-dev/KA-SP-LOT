@@ -773,3 +773,11 @@ ${S4} .lx-copyr{margin:10px 0 0!important;font-size:14px;color:#7C8BA2}
     return _ps.apply(this, arguments);
   };
 }
+
+/* v195: kutudaki yazıyı fareyle seçip arka plana bırakınca pencere kapanıyordu: kapanma için basma da arka planda başlamalı */
+if (typeof document !== 'undefined') {
+  let pd = null;
+  ['mousedown', 'touchstart', 'pointerdown'].forEach((n) => document.addEventListener(n, (e) => { pd = e.target; }, true));
+  const _bd = H.backdrop;
+  H.backdrop = function (el, e) { if (pd && el && pd !== el && el.contains(pd)) return; return _bd.apply(this, arguments); };
+}
