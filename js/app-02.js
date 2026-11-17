@@ -1307,6 +1307,18 @@ async function sbLoadBiz() {
 }
 async function sbBoot() {
   const c = sbClient(); if (!c) return;
+  if (REC.on) {
+    try {
+      const s = await c.auth.getSession(); const ses = s && s.data && s.data.session;
+      if (!ses && !REC.err) REC.err = 'expired';
+      if (ses) {
+        REC.email = ses.user.email || '';
+        try { const r = await c.from('members').select('role').eq('user_id', ses.user.id); const roles = (r && r.data || []).map((x) => x.role); REC.tab = roles.includes('patron') ? 'own' : roles.length ? 'emp' : (localStorage.getItem('kp_rtab') || 'own'); } catch (e) { REC.tab = localStorage.getItem('kp_rtab') || 'own'; }
+      }
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    } catch (e) { REC.err = REC.err || 'expired'; }
+    SBS.user = null; render(); return;
+  }
   try { const s = await c.auth.getSession(); SBS.user = s && s.data && s.data.session ? s.data.session.user : null; if (SBS.user) { await sbLoadBiz(); await sbPull(); } } catch (e) { SBS.err = sbMsg(e); }
   render();
 }

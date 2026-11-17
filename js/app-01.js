@@ -1692,3 +1692,12 @@ function onChange(e) {
   }
 }
 
+
+/* v207: şifre sıfırlama bağlantısı durumu (açılış kodu sbBoot erken çalışabildiği için en baştan tanımlı) */
+var REC = { on: false, err: '', email: '', tab: 'own', busy: false };
+try {
+  const hp = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+  if (hp.get('type') === 'recovery' && hp.get('access_token')) { REC.on = true; sessionStorage.setItem('kp_rec', '1'); }
+  else if (hp.get('error') && /otp_expired|invalid|expired/i.test((hp.get('error_code') || '') + ' ' + (hp.get('error_description') || ''))) { REC.on = true; REC.err = 'expired'; }
+  else if (sessionStorage.getItem('kp_rec') === '1') REC.on = true;
+} catch (e) {}

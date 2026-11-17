@@ -869,3 +869,59 @@ if (typeof document !== 'undefined') {
     try { const r = await sbClient().auth.updateUser({ password: v }); if (r.error) throw r.error; try { history.replaceState(null, '', location.pathname); } catch (e2) {} S.modal = null; render(); toast('Şifren güncellendi. Artık yeni şifrenle girebilirsin.', 'ok'); } catch (x) { say(idMsg(x)); }
   };
 }
+
+/* v207: şifre sıfırlama bağlantısı: siteye girmeden önce yeni şifre ekranı → kaydedince girişe döner (e-posta dolu, sekme doğru), tarayıcıya giriş bilgisini kaydetme; Patron ve Çalışan aynı akış */
+if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lgEm = le; } catch (e) {} }
+{
+  const _ie = idEnter; idEnter = async function () { if (REC.on) { render(); return; } return _ie.apply(this, arguments); };
+  const _fg = H.idforgot; H.idforgot = function () { try { localStorage.setItem('kp_rtab', S.lgTab || 'own'); } catch (e) {} return _fg.apply(this, arguments); };
+  const mk = (v) => { const [a, d] = String(v || '').split('@'); return d ? (a.length <= 2 ? a.charAt(0) + '***@' + d : a.charAt(0) + '***' + a.slice(-1) + '@' + d) : ''; };
+  const field = (id, label, ac) => `<div class="lx-f"><label for="${id}">${label}</label><div class="lx-in"><input id="${id}" type="password" autocomplete="${ac}" placeholder="••••••••"></div></div>`;
+  const recHTML = (h) => {
+    const hero = h.slice(0, h.indexOf('<section class="lx-card">')); let card;
+    if (REC.err) card = `<h1>Bağlantı geçerli değil</h1><p class="lx-sub">Süresi dolmuş ya da daha önce kullanılmış.</p><p class="lx-note">Güvenliğin için sıfırlama bağlantıları tek kullanımlık ve kısa ömürlü. Yeni bir bağlantı isteyebilirsin.</p><button class="lx-go" type="button" data-a="rcagain"><span>Yeni bağlantı iste</span>${LXI.arrow}</button><button type="button" class="lx-alt" data-a="rccancel"><b>Girişe dön</b></button>`;
+    else card = `<h1>Yeni şifreni belirle</h1><p class="lx-sub">${esc(mk(REC.email) || 'Hesabın')} için</p><form id="rcform" class="lx-form" novalidate>${field('rc-pw', 'Yeni şifre', 'new-password')}<div class="fp-m"><i id="rc-bar" data-s="0"></i><span id="rc-txt"></span></div>${field('rc-pw2', 'Şifreyi tekrar yaz', 'new-password')}<button type="button" class="lx-link" data-a="rceye">Şifreleri göster / gizle</button><div class="err" id="rc-err" role="alert"></div><button class="lx-go" type="button" data-a="rcsave"><span>Şifreyi kaydet</span>${LXI.arrow}</button><button type="button" class="lx-alt" data-a="rccancel"><b>Vazgeç, girişe dön</b></button><p class="lx-hint">En az 8 karakter. Kaydedince giriş ekranına döneceksin.</p></form>`;
+    return hero + `<section class="lx-card"><div class="lx-cin">${card}</div></section></div>`;
+  };
+  const _lh = loginHTML;
+  loginHTML = function () {
+    const h = _lh.apply(this, arguments);
+    if (REC.on) return recHTML(h);
+    if (S.loginNote && sbOK()) { const i = h.indexOf('<div class="lx-f">'); if (i > 0) return h.slice(0, i) + `<p class="lx-note ok" id="lx-recnote">${esc(S.loginNote)}</p>` + h.slice(i); }
+    return h;
+  };
+  const sc = (v) => { let s = 0; if (v.length >= 8) s++; if (v.length >= 12) s++; if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v)) s++; return Math.min(4, s); };
+  document.addEventListener('input', (e) => {
+    const t = e.target; if (!t) return;
+    if (t.id === 'rc-pw') { const v = t.value; const s = v ? Math.max(1, sc(v)) : 0; const b = document.getElementById('rc-bar'); if (b) { b.dataset.s = s; b.style.setProperty('--w', s * 25 + '%'); } const x = document.getElementById('rc-txt'); if (x) x.textContent = ['', 'Zayıf', 'Orta', 'İyi', 'Güçlü'][s]; }
+    if ((t.id === 'id-em' || t.id === 'id-pw') && S.loginNote) { S.loginNote = ''; const n = document.getElementById('lx-recnote'); if (n) n.remove(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target && (e.target.id === 'rc-pw' || e.target.id === 'rc-pw2')) { e.preventDefault(); H.rcsave(); } });
+  const leave = async () => { try { await sbClient().auth.signOut({ scope: 'local' }); } catch (e) {} try { sessionStorage.removeItem('kp_rec'); } catch (e) {} REC.on = false; REC.err = ''; SBS.user = null; ID.active = null; ID.mems = []; S.user = null; };
+  H.rceye = () => { ['rc-pw', 'rc-pw2'].forEach((id) => { const i = document.getElementById(id); if (i) i.type = i.type === 'password' ? 'text' : 'password'; }); };
+  H.rccancel = async () => { const em = REC.email; const tb = REC.tab; await leave(); S.lgTab = tb; S.lgEm = em || S.lgEm; render(); };
+  H.rcagain = async () => { const em = REC.email; await leave(); S.lgTab = localStorage.getItem('kp_rtab') || 'own'; S.lgEm = em || S.lgEm; render(); setTimeout(() => { try { H.idforgot(); } catch (e) {} }, 60); };
+  H.rcsave = async () => {
+    if (REC.busy) return; const v = (document.getElementById('rc-pw') || {}).value || ''; const v2 = (document.getElementById('rc-pw2') || {}).value || ''; const e = document.getElementById('rc-err'); const say = (t) => { if (e) e.textContent = t; };
+    if (v.length < 8) return say('En az 8 karakter yaz.'); if (v !== v2) return say('İki şifre aynı değil.');
+    REC.busy = true;
+    try {
+      const r = await sbClient().auth.updateUser({ password: v }); if (r.error) throw r.error;
+      const em = REC.email, tb = REC.tab; await leave(); S.lgTab = tb; S.lgEm = em; S.loginErr = ''; S.loginNote = 'Şifren güncellendi. Şimdi yeni şifrenle giriş yap.'; try { localStorage.setItem('kp_last_em', em); } catch (e2) {}
+      REC.busy = false; render(); setTimeout(() => { const p = document.getElementById('id-pw'); if (p) p.focus(); }, 80);
+    } catch (x) {
+      REC.busy = false; const m = String((x && x.message) || x || '');
+      if (/session.*missing|expired|jwt/i.test(m)) { REC.err = 'expired'; render(); return; }
+      say(/different from the old/i.test(m) ? 'Yeni şifre eskisiyle aynı olamaz.' : /weak|easy to guess|pwned/i.test(m) ? 'Bu şifre kolay tahmin edilir. Daha uzun veya karışık bir şifre seç.' : idMsg(x));
+    }
+  };
+  /* giriş başarılı olunca tarayıcıya şifreyi kaydettir, e-postayı hatırla */
+  const _ia = idAuth;
+  idAuth = async function (kind, mode) {
+    const em = ((document.getElementById('id-em') || {}).value || '').trim(); const pw = (document.getElementById('id-pw') || {}).value || '';
+    const r = await _ia.apply(this, arguments);
+    try { if (S.user && !REC.on && em && pw.length >= 8) { localStorage.setItem('kp_last_em', em); if (window.PasswordCredential && navigator.credentials && navigator.credentials.store) navigator.credentials.store(new PasswordCredential({ id: em, password: pw, name: em })); } } catch (e) {}
+    return r;
+  };
+  if (REC.on) setTimeout(() => { try { render(); } catch (e) {} }, 0);
+}
