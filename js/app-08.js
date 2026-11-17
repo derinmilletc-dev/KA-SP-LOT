@@ -788,10 +788,12 @@ document.addEventListener('change', (e) => { const el = e.target; if (el && el.d
 }
 
 /* ===== v101: yeni işletme karşılama (ilk kurulum) ===== */
+function suProf() { try { profPend(); const m = pfMissing().length, t = PF_FIELDS.length; return { pct: Math.round((t - m) / t * 100), miss: m }; } catch (e) { return { pct: PROF.tur ? 100 : 0, miss: 0 }; } }
+const suAll = (st) => Math.round(st.reduce((a, x) => a + (x.done ? 1 : (x.pct || 0) / 100), 0) / st.length * 100);
 function suSteps() {
   const t = ID.team; const team = !!(t && ((t.members || []).length > 1 || (t.invites || []).length > 0));
   return [
-    { k: 'prof', ico: 'gear', t: 'İşletme bilgilerini tamamla', s: 'Tür, vergi no, şehir. Kais\'in önerileri buna göre şekillenir.', done: !!PROF.tur, a: 'pfopen' },
+    { k: 'prof', ico: 'gear', t: 'İşletme bilgilerini tamamla', s: 'Tür, vergi no, şehir. Kais\'in önerileri buna göre şekillenir.', done: suProf().pct === 100, pct: suProf().pct, a: 'pfopen' },
     { k: 'team', ico: 'users', t: 'Ekibini davet et', s: 'Müdür, muhasebeci ve çalışanlar kendi hesabıyla girer.', done: team, a: 'nav', v: 'ekip', sub: 'hesap' },
     { k: 'stok', ico: 'box', t: 'İlk stok ürünlerini ekle', s: 'Kais azalanları takip eder, sipariş önerir.', done: STOCK.length > 0, a: 'nav', v: 'stok' },
     { k: 'sup', ico: 'tag', t: 'Tedarikçini ekle', s: 'Siparişler ve fiyat kıyası buradan yapılır.', done: SUPPLIERS.length > 0, a: 'nav', v: 'satinalma' },
@@ -803,13 +805,13 @@ const suFresh = () => !STOCK.length && !SUPPLIERS.length && !RECEIPTS.length && 
 function suPage() {
   const st = suSteps(); const n = st.filter((x) => x.done).length; const nx = st.findIndex((x) => !x.done); const nm = ((S.user && S.user.name) || '').split(' ')[0];
   return `<div class="stack-lg su"><div class="su-h"><span class="su-b">${ic('sparkle', 16)} İlk kurulum</span><h2>Hoş geldin${nm ? ', ' + esc(nm) : ''}</h2><p>${esc(BIZ)} için ${st.length} kısa adım. İstediğin sırayla yap, Kais her adımda yardım eder.</p>
-  <div class="su-p" role="progressbar" aria-valuenow="${n}" aria-valuemax="${st.length}"><i style="width:${Math.round(n / st.length * 100)}%"></i></div><small>${n} / ${st.length} tamam</small></div>
-  <div class="su-l">${st.map((x, i) => `<button type="button" class="su-s ${x.done ? 'ok' : i === nx ? 'now' : ''}" data-a="${x.a}"${x.v ? ` data-v="${x.v}"` : ''}${x.sub ? ` data-s="${x.sub}"` : ''}><span class="su-i">${x.done ? ic('check', 18) : ic(x.ico, 18)}</span><span class="su-t"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span>${x.done ? '<em>Tamam</em>' : ic('chevron', 18)}</button>`).join('')}</div>
+  <div class="su-p" role="progressbar" aria-valuenow="${n}" aria-valuemax="${st.length}"><i style="width:${suAll(st)}%"></i></div><small>${n} / ${st.length} tamam · %${suAll(st)} tamamlandı</small></div>
+  <div class="su-l">${st.map((x, i) => `<button type="button" class="su-s ${x.done ? 'ok' : i === nx ? 'now' : ''}" data-a="${x.a}"${x.v ? ` data-v="${x.v}"` : ''}${x.sub ? ` data-s="${x.sub}"` : ''}><span class="su-i">${x.done ? ic('check', 18) : ic(x.ico, 18)}</span><span class="su-t"><b>${esc(x.t)}</b><small>${esc(x.pct > 0 && !x.done ? 'Eksik bilgiler var, tamamlayınca Kais önerileri netleşir.' : x.s)}</small>${x.pct > 0 && !x.done ? `<i class="su-mb"><u style="width:${x.pct}%"></u></i>` : ''}</span>${x.done ? '<em>Tamam</em>' : x.pct > 0 ? `<em class="su-pc">%${x.pct}</em>` : ic('chevron', 18)}</button>`).join('')}</div>
   <div class="su-f"><button type="button" class="btn sec block" data-a="kaisai-go" data-v="kaisai">${ic('sparkle', 16)} Kais'e sor</button><button type="button" class="su-lk" data-a="suhide">Sonra yaparım</button></div></div>`;
 }
 function suBanner() {
   const st = suSteps(); const n = st.filter((x) => x.done).length; if (n === st.length) return '';
-  return `<div class="su-bn"><span class="su-bi">${ic('sparkle', 16)}</span><div class="grow"><b>Kurulum ${n}/${st.length}</b><small>Kalan adımlar seni bekliyor</small></div><button type="button" class="btn sm" data-a="suopen">Devam</button><button type="button" class="su-x" data-a="suclose" aria-label="Kapat">${ic('x', 16)}</button></div>`;
+  return `<div class="su-bn"><span class="su-bi">${ic('sparkle', 16)}</span><div class="grow"><b>Kurulum ${n}/${st.length} · %${suAll(st)}</b><small>Kalan adımlar seni bekliyor</small></div><button type="button" class="btn sm" data-a="suopen">Devam</button><button type="button" class="su-x" data-a="suclose" aria-label="Kapat">${ic('x', 16)}</button></div>`;
 }
 H.suhide = () => { S.settings.setupHide = true; S.suForce = false; try { pSched(); } catch (e) {} render(); };
 H.suopen = () => { S.suForce = true; render(); };
