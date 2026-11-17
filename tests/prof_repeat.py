@@ -37,6 +37,7 @@ with sync_playwright() as p:
     check('Hesap: baglanan calisan adiyla gorunur', 'Ayse Demir' in h and '>AD<' in h, h[:200])
     ev("()=>{ID.team.members=[]}")
     check('Hesap: baglanmayan eski adiyla kalir', ev("()=>hesapHTML().includes(__w.name)"))
+    check('Hesap: Yasal kutusu yok', '>Yasal<' not in ev("()=>hesapHTML()"))
     check('Sayfa hatasi yok', not er, er)
     b.close()
 print('\nHEPSI GECTI' if not fails else 'FAIL: %d' % len(fails))

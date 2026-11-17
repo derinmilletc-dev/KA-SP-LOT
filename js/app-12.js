@@ -796,3 +796,23 @@ if (typeof document !== 'undefined') {
     } catch (e) { return h; }
   };
 }
+
+/* v201: kaydırmalı sekme çubuğu (Vardiya, İzin takvimi…): fare tekeri yatay kaydırır, sürükleyerek kaydırılır, seçili sekme ortalanır */
+{
+  const _sf = segFix;
+  segFix = function () {
+    _sf.apply(this, arguments);
+    try {
+      document.querySelectorAll('.seg').forEach((s) => {
+        if (s.__hs) return; s.__hs = 1;
+        s.addEventListener('wheel', (e) => { if (s.scrollWidth <= s.clientWidth + 2 || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; s.scrollLeft += e.deltaY; e.preventDefault(); }, { passive: false });
+        let x0 = 0, l0 = 0, drag = false, moved = false;
+        s.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse' || e.button !== 0 || s.scrollWidth <= s.clientWidth + 2) return; drag = true; moved = false; x0 = e.clientX; l0 = s.scrollLeft; });
+        window.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - x0; if (Math.abs(dx) > 4) { moved = true; s.classList.add('drg'); } if (moved) s.scrollLeft = l0 - dx; });
+        window.addEventListener('pointerup', () => { if (!drag) return; drag = false; setTimeout(() => s.classList.remove('drg'), 0); });
+        s.addEventListener('click', (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+        const p = s.querySelector('[aria-pressed=true]'); if (p && s.scrollWidth > s.clientWidth + 2) s.scrollLeft = Math.max(0, p.offsetLeft - (s.clientWidth - p.offsetWidth) / 2);
+      });
+    } catch (e) {}
+  };
+}

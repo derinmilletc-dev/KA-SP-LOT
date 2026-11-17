@@ -1011,10 +1011,6 @@ const LEGAL_LINKS = '<a href="/gizlilik/" target="_blank" rel="noopener">Gizlili
     return h.replace(/<\/form>/, '</form><div class="lg-yasal" id="lg-yasal">' + LEGAL_LINKS + '</div>');
   };
 }
-{
-  const _h = hesapHTML;
-  hesapHTML = function () { const h = _h.apply(this, arguments); return h + `<div class="card"><h3>Yasal</h3><div class="lg-yasal lg-in">${LEGAL_LINKS}</div></div>`; };
-}
 
 /* ===== v105: siparişi tedarikçiye tek dokunuşla gönder ===== */
 NEWM.ordsend = (m) => {
