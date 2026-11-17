@@ -192,6 +192,7 @@ function sgSnap() {
   if (document.getElementById('id-tur')) S.sg.tur = g('id-tur') || '';
   if (document.querySelector('[data-grp="cal"]')) S.sg.cal = pfOn('cal')[0] || ''; if (document.querySelector('[data-grp="muh"]')) S.sg.muh = pfOn('muh')[0] || '';
   if (document.querySelector('[data-grp="mods"]')) S.sg.mods = pfOn('mods');
+  { const k = document.getElementById('sg-kabul'); if (k) S.sg.kabul = k.checked; }
 }
 const sgErr = (t) => { S.loginErr = t; const e = document.getElementById('sg-err'); if (e) e.textContent = t; };
 lxCreate = function () {
@@ -210,7 +211,7 @@ lxCreate = function () {
   else body = `<div class="lx-f"><label>Kaç kişi çalışıyor?</label>${pfChips('cal', PF_CAL, s.cal, false)}</div>
     <div class="lx-f"><label>Hangi bölümleri kullanacaksın?</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Birden fazla seçebilirsin. Sonradan Ayarlar'dan değiştirirsin.</p></div>
     <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>
-    <p class="lx-crb" style="text-align:left;margin:6px 0 0;font-size:13px;color:#4C5E78">Hesap açarak <a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okuduğunu kabul edersin.</p>`;
+    <label class="kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>`;
   const back = st > (g ? 2 : 1) ? `<button type="button" class="lx-alt" data-a="sgback"><b>Geri</b></button>` : '';
   const nextLbl = st === 3 ? 'İşletmeyi oluştur' : 'Devam';
   const foot = st === 1 ? `<p class="lx-crb">Zaten hesabın var mı? <button type="button" class="lx-link" data-a="sgexit">Giriş yap</button></p>` : g ? `<p class="lx-crb">Davet koduyla mı katılacaksın? <button type="button" class="lx-link" data-a="sgjoin">Kodu gir</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p>` : '';
@@ -229,7 +230,7 @@ H.sgnext = () => {
     if (!/^\S+@\S+\.\S{2,}$/.test(s.em)) return sgErr('Geçerli bir e-posta adresi yaz.');
     if (s.pw.length < 8) return sgErr('Şifre en az 8 karakter olmalı.');
   } else if (s.step === 2) { if (!s.biz) return sgErr('İşletmenin adını yaz.'); if (!s.tur) return sgErr('Sektörünü seç.'); if (!s.mods.length && PF_SUG[s.tur]) s.mods = PF_SUG[s.tur].slice(); }
-  else return sgFinish();
+  else { if (!s.kabul) return sgErr('Devam etmek için kullanım şartlarını ve KVKK metnini kabul etmelisin.'); return sgFinish(); }
   S.loginErr = ''; s.step++; render(); try { window.scrollTo(0, 0); } catch (e) {}
 };
 async function sgFinish() {
@@ -545,3 +546,22 @@ AI_TYPES.push('gorev_ver', 'vardiya_taslak', 'alacak_tahsil');
 
 /* v178: davet mesajına tek dokunuşla açılan bağlantı da eklenir */
 H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\nTek dokunuşla aç: ' + ivLink(S.modal.code), 'Mesaj kopyalandı. WhatsApp\'tan gönder.'); };
+
+/* v179: hesap açarken şartlar ve KVKK için onay kutusu (davetle katılımda da) */
+{
+  const css = document.createElement('style');
+  css.textContent = '.kb-cons{display:flex;gap:10px;align-items:flex-start;margin:10px 0 2px;font-size:13.5px;line-height:1.5;color:#4C5E78;cursor:pointer;text-align:left}.kb-cons input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:#1553b0;cursor:pointer}.kb-cons.err{color:#B42318}.kb-cons.err input{outline:2px solid #B42318;outline-offset:1px}';
+  document.head.appendChild(css);
+  const _l = loginHTML;
+  loginHTML = function () {
+    let h = _l.apply(this, arguments);
+    return h.replace(/<p class="lg-ok">Hesap açarak [\s\S]*?<\/p>/, '<label class="kb-cons"><input type="checkbox" id="id-kabul"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>');
+  };
+  const _n = H.idnew;
+  H.idnew = function () {
+    const k = document.getElementById('id-kabul');
+    if (k && !k.checked) { const l = k.closest('.kb-cons'); if (l) l.classList.add('err'); toast('Devam etmek için şartları ve KVKK metnini kabul etmelisin.', 'warn'); try { k.focus(); } catch (e) {} return; }
+    return _n.apply(this, arguments);
+  };
+  document.addEventListener('change', (e) => { const t = e.target; if (t && (t.id === 'id-kabul' || t.id === 'sg-kabul')) { const l = t.closest('.kb-cons'); if (l && t.checked) l.classList.remove('err'); } });
+}
