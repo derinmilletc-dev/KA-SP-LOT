@@ -50,12 +50,16 @@ const ACTIONS_DOC = `Kullanıcı bir işlem isterse "actions" dizisine şu tiple
 - sozlesme_olustur: {"ad_soyad":"","gorev":"","baslangic":"YYYY-MM-DD","maas":0,"maas_turu":"net|brut","haftalik_saat":45,"deneme_ay":2}
 - borc_ode: {"borc_id":"","kime":"","tutar":0}   (borc_id context.borclar içinden; tutar boşsa kalanın tamamı; otomatik:true olanı önerme)
 - fis_onayla: {"fis_id":""}   (context.bekleyen_fisler içinden)
-- hafiza_kaydet: {"not":""}   (kullanıcı "bunu hatırla" derse kısa bir not)
+- gorev_ver: {"gorev":"","kime":"herkes ya da ekip üyesi adı","son_gun":"YYYY-MM-DD"}   (kısa, net görev metni)
+- vardiya_taslak: {"ay":"YYYY-MM"}   (o ay için boş vardiya planı taslağı hazırlar, yayınlamaz)
+- alacak_tahsil: {"alacak_id":"","kimden":""}   (alacak_id context.alacaklar içinden; tahsil edildi olarak işaretler)
+- hafiza_kaydet: {"not":""}   (kullanıcı "bunu hatırla" derse ya da kalıcı bir tercih söylerse, örn. "süt hep Ahmet'ten alınır", kısa bir not)
+Her işlemin args içine "neden" alanı ekle: bu önerinin gerekçesi, tek kısa cümle, veriye dayalı (örn. "Süt stoğu 3 litre, haftalık kullanım 12 litre.").
 Eksik bilgi varsa (tarih, kişi sayısı, tutar gibi) uydurma, soru sor ve actions boş kalsın.`;
 
 const ROLE_ACTIONS: Record<string, string[]> = {
-  patron: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'borc_ode', 'fis_onayla', 'hafiza_kaydet'],
-  mudur: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'hafiza_kaydet'],
+  patron: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'borc_ode', 'fis_onayla', 'gorev_ver', 'vardiya_taslak', 'alacak_tahsil', 'hafiza_kaydet'],
+  mudur: ['siparis_olustur', 'stok_guncelle', 'excel_indir', 'duyuru_gonder', 'rezervasyon_ekle', 'rezervasyon_durum', 'izin_karar', 'sozlesme_olustur', 'gorev_ver', 'hafiza_kaydet'],
   muhasebeci: ['excel_indir', 'hafiza_kaydet'],
   calisan: ['stok_guncelle', 'hafiza_kaydet'],
 };

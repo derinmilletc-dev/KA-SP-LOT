@@ -312,7 +312,7 @@ AI_TYPES.push('borc_ode', 'fis_onayla');
     const money = ['patron', 'muhasebeci'].includes(r); const mgr = ['patron', 'mudur'].includes(r);
     if (money) {
       c.borclar = t(() => DEBTS.filter((d) => !d.paid).slice(0, 20).map((d) => ({ id: d.id, kime: d.who, not: d.note || '', kalan: d.auto ? Math.round(allDebts().find((x) => x.id === d.id).amt) : dbOpen(d), vade: d.due || null, otomatik: !!d.auto })));
-      c.alacaklar = t(() => RECV.filter((a) => !a.paid).slice(0, 15).map((a) => ({ kimden: a.name || a.who, tutar: a.amt, vade_gun: a.days })));
+      c.alacaklar = t(() => RECV.filter((a) => !a.paid).slice(0, 15).map((a) => ({ id: a.id, kimden: a.name || a.who, tutar: a.amt, vade_gun: a.days })));
       c.acik_faturalar = t(() => INV.filter((v) => v.st !== 'odendi').slice(0, 15).map((v) => ({ no: v.no, musteri: v.cust, kalan: ivOpen(v), vade: v.due || null })));
       c.kdv = t(() => { const k = kdvData(PERIOD); return { donem: PERIOD, hesaplanan: Math.round(k.hes), indirilecek: Math.round(k.ind), odenecek: Math.round(k.pay), devreden: Math.round(k.carry), faturasiz_gider_sayisi: k.free }; });
     }
@@ -462,4 +462,82 @@ if (typeof window !== 'undefined') {
   const lastPaint = () => { try { if (!S.user && !S.modal && !Array.from(document.querySelectorAll('input')).some((i) => i.value && i.id !== 'id-em')) { const e = document.getElementById('id-em'); if (e && e.value) S.lgEm = e.value; render(); } } catch (e) {} };
   setTimeout(lastPaint, 0);
   if (document.readyState !== 'complete') window.addEventListener('load', () => setTimeout(lastPaint, 50)); else setTimeout(lastPaint, 50);
+}
+
+/* v177: Kais AI: yeni işlemler (görev, vardiya taslağı, alacak tahsilatı), "Neden?" gerekçesi, Geri al, hafıza yönetimi */
+AI_TYPES.push('gorev_ver', 'vardiya_taslak', 'alacak_tahsil');
+{
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const norm = (a) => {
+    const g = a.args || {};
+    if (a.type === 'gorev_ver' && g.gorev != null) {
+      const k = String(g.kime || 'herkes'); const all = /herkes|hepsi|tüm|tum|ekip/i.test(k) || !k.trim(); const p = all ? [] : aiPeople([k]);
+      a.args = { t: String(g.gorev || '').trim().slice(0, 200), uid: all ? 'all' : (p[0] || ''), due: ISO.test(g.son_gun || '') && g.son_gun >= REF_ISO ? g.son_gun : REF_ISO, neden: g.neden };
+    }
+    if (a.type === 'vardiya_taslak' && g.ay != null) {
+      const m = /^(\d{4})-(\d{2})$/.exec(String(g.ay)); const d = new Date(REF_ISO);
+      a.args = { y: m ? +m[1] : d.getFullYear(), m: m ? +m[2] - 1 : d.getMonth(), neden: g.neden };
+    }
+  };
+  const recvOf = (g) => { const id = String(g.alacak_id || ''); let r = id && RECV.find((x) => x.id === id && !x.paid); if (!r && g.kimden) { const k = mxKey(g.kimden); const l = RECV.filter((x) => !x.paid && mxKey(x.name || x.who || '') === k); if (l.length === 1) r = l[0]; } return r || null; };
+  const snap = (a) => {
+    const g = a.args || {};
+    if (a.type === 'duyuru_gonder') { const n = MSGS.length; return () => { if (MSGS.length > n) { const m = MSGS[MSGS.length - 1]; return () => { const i = MSGS.indexOf(m); if (i >= 0) MSGS.splice(i, 1); }; } }; }
+    if (a.type === 'rezervasyon_ekle') { const n = RESV.length; return () => { if (RESV.length > n) { const r = RESV[RESV.length - 1]; return () => { const i = RESV.indexOf(r); if (i >= 0) RESV.splice(i, 1); }; } }; }
+    if (a.type === 'rezervasyon_durum') { const r = RESV.find((x) => x.id === g.rezervasyon_id); const st = r && r.st; return () => r && r.st !== st ? () => { r.st = st; } : null; }
+    if (a.type === 'fis_onayla') { const f = RECEIPTS.find((x) => x.id === g.fis_id); const st = f && f.status; return () => f && f.status !== st ? () => { f.status = st; } : null; }
+    if (a.type === 'borc_ode') { const d = aiDebtOf(g); const n = d && d.pays ? d.pays.length : 0; return () => { if (d && d.pays && d.pays.length > n) { const p = d.pays[d.pays.length - 1]; return () => { d.pays = d.pays.filter((x) => x !== p); d.paid = false; delete d.paidAt; try { pSched(); } catch (e) {} }; } }; }
+    if (a.type === 'gorev_ver') { const top = TASKS[0] && TASKS[0].id; return () => { const t = TASKS[0]; if (t && t.id !== top) return () => { const i = TASKS.indexOf(t); if (i >= 0) TASKS.splice(i, 1); }; }; }
+    return null;
+  };
+  ['aiact2', 'aiact'].forEach((nm) => {
+    const _o = H[nm];
+    H[nm] = async function (el) {
+      const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; if (!a || a.st !== 'open') return _o.apply(this, arguments);
+      norm(a);
+      if (a.type === 'alacak_tahsil') {
+        if (S.user.role !== 'patron') { toast('Bu işlem için yetkin yok.', 'warn'); return; } if (locked()) return;
+        const r = recvOf(a.args || {}); if (!r) { toast('Alacak bulunamadı ya da zaten tahsil edilmiş.', 'warn'); return; }
+        r.paid = true; try { pSched(); } catch (e) {} a.undo = () => { r.paid = false; try { pSched(); } catch (e) {} };
+        a.st = 'done'; a.msg = (r.name || r.who || 'Alacak') + ' alacağı tahsil edildi olarak işaretlendi.'; try { aiMemSave(); } catch (e) {} render(); return;
+      }
+      const post = snap(a); const r = await _o.apply(this, arguments);
+      if (a.st === 'done' && post) { try { const u = post(); if (u) { a.undo = u; render(); } } catch (e) {} }
+      return r;
+    };
+  });
+  H.aiundo = (el) => {
+    const a = ((AIC.msgs[+el.dataset.i] || {}).acts || [])[+el.dataset.j]; if (!a || a.st !== 'done' || typeof a.undo !== 'function') return;
+    if (locked()) return; try { a.undo(); } catch (e) { toast('Geri alınamadı.', 'warn'); return; }
+    a.undo = null; a.st = 'undone'; try { pSched(); aiMemSave(); } catch (e) {} render(); toast('İşlem geri alındı.', 'ok');
+  };
+  const _card = aiActCard;
+  aiActCard = function (a, i, j) {
+    try { norm(a); } catch (e) {}
+    if (a.st === 'undone') return `<div class="small muted">↩ Geri alındı: ${esc(a.msg || '')}</div>`;
+    if (a.st === 'done' && typeof a.undo === 'function') return aiDoneCard(a) + `<div class="ai-bt"><button class="btn sm sec" data-a="aiundo" data-i="${i}" data-j="${j}">Geri al</button></div>`;
+    let h;
+    if (a.type === 'alacak_tahsil') {
+      if (a.st === 'done') return aiDoneCard(a); if (a.st === 'skip') return '<div class="small muted">Vazgeçildi.</div>';
+      const r = recvOf(a.args || {});
+      h = !r ? `<div class="callout warn">${ic('alert')}<div>Tahsil edilecek alacak bulunamadı.</div></div>`
+        : `<div class="ai-card">${aiHead('wallet', 'Alacak tahsilatı', esc(r.name || r.who || '') + (r.note ? ' · ' + esc(r.note) : ''))}<div class="ai-pk"><div><small>Tutar</small><b>${fmt(r.amt)}</b></div><div><small>Durum</small><b>${r.days < 0 ? Math.abs(r.days) + ' gün gecikmiş' : r.days + ' gün var'}</b></div></div><p class="ai-nt">Parayı aldıktan sonra onayla. Bu kayıt banka hareketi değildir.</p>${aiBtns(i, j, 'Tahsil edildi')}</div>`;
+    } else h = _card(a, i, j);
+    const why = a.args && String(a.args.neden || '').trim();
+    if (a.st === 'open' && why && h && h.indexOf('callout warn') < 0) h += `<details class="ai-why"><summary>Neden?</summary><p>${esc(why.slice(0, 300))}</p></details>`;
+    return h;
+  };
+  /* hafıza yönetimi */
+  H.aimem = () => { S.modal = { type: 'aimem' }; renderModal(); };
+  NEWM.aimem = () => { const n = AIC.notes || []; return sheet('Kais hafızası', `<p class="muted small">Kais bunları hatırlar ve önerilerinde kullanır. Notlar cihazlar arasında eşlenir.</p>
+    <div class="stack" style="gap:6px">${n.length ? n.map((x, i) => `<div class="logline"><span>${esc(x)}</span><button class="btn sm sec" data-a="aimemdel" data-n="${i}" aria-label="Notu sil">Sil</button></div>`).join('') : '<p class="small muted">Henüz not yok. Sohbette "bunu hatırla" demen yeterli.</p>'}</div>
+    <div class="field" style="margin-top:12px"><label for="am-new">Yeni not</label><input id="am-new" type="text" maxlength="300" placeholder="Örn. Süt hep Ahmet'ten alınır"></div><button class="btn block" data-a="aimemadd">Hafızaya ekle</button>`); };
+  H.aimemdel = (el) => { const n = (AIC.notes || []).slice(); n.splice(+el.dataset.n, 1); AIC.notes = n; aiMemSave(); try { kmSched(); } catch (e) {} renderModal(); render(); };
+  H.aimemadd = () => { const e = document.getElementById('am-new'); const t = String((e && e.value) || '').trim().slice(0, 300); if (!t) { toast('Notu yaz.', 'warn'); return; } AIC.notes = (AIC.notes || []).concat([t]).slice(-30); aiMemSave(); try { kmSched(); } catch (x) {} renderModal(); render(); toast('Hafızaya eklendi.', 'ok'); };
+  const _v = viewKaisAI;
+  viewKaisAI = function () {
+    const h = _v.apply(this, arguments); return h.replace(/(<div class="ai-mem">[\s\S]*?)(<\/div>)/, '$1<button data-a="aimem">Hafızayı yönet</button>$2');
+  };
+  const css = document.createElement('style'); css.textContent = '.ai-why{margin:6px 2px 0;font-size:13px;color:var(--mut,#5b6b82)}.ai-why summary{cursor:pointer;font-weight:600}.ai-why p{margin:6px 0 0;line-height:1.45}';
+  document.head.appendChild(css);
 }
