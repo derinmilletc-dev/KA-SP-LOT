@@ -21,6 +21,7 @@ FAKE = """()=>{
     from(t){
       if(t==='members') return { select(){ const o=chain(db.members.filter(m=>m.user_id===(window.__sess&&window.__sess.user.id)).map(m=>Object.assign({},m,{businesses:db.businesses.find(b=>b.id===m.business_id)}))); return o; } };
       if(t==='businesses') return { insert(r){ const b={id:'B'+(db.businesses.length+1),name:r.name,owner_id:r.owner_id}; db.businesses.push(b); db.members.push({business_id:b.id,role:'patron',app_uid:'u1',display_name:null,user_id:r.owner_id}); return Promise.resolve({data:null,error:null}); }, select(){ return chain([]); } };
+      if(t==='consents') return { insert(r){ (db.consents=db.consents||[]).push(r); return Promise.resolve({data:null,error:null}); } };
       return { select(){return chain([])}, insert(){return Promise.resolve({data:null,error:null})}, upsert(){return Promise.resolve({data:null,error:null})}, update(){return chain([])} };
     },
     async rpc(n,a){ window.__calls.push(['rpc',n,a]); if(n==='claim_invite'){ if(a.p_code==='K7M2QX'){ const b={id:'BX',name:'Davetli Cafe',owner_id:'o'}; if(!db.businesses.find(x=>x.id==='BX')) db.businesses.push(b); db.members.push({business_id:'BX',role:'calisan',app_uid:'u4',display_name:'Ali',user_id:window.__sess.user.id}); return {data:{ok:true},error:null}; } return {data:{error:'invalid_code'},error:null}; } return {data:null,error:null}; },
@@ -64,6 +65,9 @@ with sync_playwright() as p:
     ev("()=>H.sgnext()"); pg.wait_for_timeout(1500)
     r = ev("()=>({u:S.user&&S.user.role, biz:BIZ, calls:window.__calls.filter(c=>c[0]==='signUp').length, bs:window.__db.businesses.length, tur:PROF.tur, il:PROF.il, cal:PROF.cal, nm:S.user&&S.user.name, err:S.loginErr})")
     check('Kayit: patron olarak girer, tek hesap ve tek isletme acilir', r['u']=='patron' and r['calls']==1 and r['bs']==1, r)
+    pg.wait_for_timeout(600)
+    cs = ev("()=>(window.__db.consents||[])")
+    check('Onay kaydi: kurulumda sartlar+KVKK onayi kaydedilir', len(cs)==1 and cs[0]['kind']=='kurulum' and cs[0]['ver']=='2026-11-15' and cs[0]['docs'].get('kvkk') and cs[0]['email'], cs)
     check('Kayit: isletme adi, sektor, sehir, ekip buyuklugu profile yazilir', r['biz']=='Deniz Kafe' and r['tur']!='' and r['il']=='Izmir' and r['cal']!='', r)
     check('Kayit: ad soyad patron adi olur', r['nm']=='Ahmet Yilmaz', r)
     # ayni e-posta ile tekrar kayit: yanlis sifre
@@ -82,9 +86,13 @@ with sync_playwright() as p:
     ev("()=>{S.user=null;ID.active=null;ID.mems=[];window.__sess={user:{id:'G2',email:'c@gmail.com',user_metadata:{}}};SBS.user=window.__sess.user;S.lgCreate=false;S.sg=null;S.lgTab='emp';render()}")
     check('Google: calisan sekmesinde davet kodu ekrani', ev("()=>!!document.getElementById('sg-code')"))
     pg.fill('#sg-code','ZZZZZZ'); ev("()=>H.sgclaim()"); pg.wait_for_timeout(300)
+    check('Davet (Google): onay kutusu isaretsizken ilerlemez', 'kabul' in ev("()=>document.getElementById('sg-err').textContent"))
+    ev("()=>{document.getElementById('sg-kabulj').click(); H.sgclaim()}"); pg.wait_for_timeout(300)
     check('Davet: gecersiz kod Turkce hata verir', 'geçersiz' in ev("()=>document.getElementById('sg-err').textContent"), ev("()=>S.loginErr"))
     pg.fill('#sg-code','K7M2QX'); ev("()=>H.sgclaim()"); pg.wait_for_timeout(1500)
     check('Davet: gecerli kodla calisan olarak girer', ev("()=>S.user&&S.user.role")=='calisan', ev("()=>S.loginErr"))
+    pg.wait_for_timeout(500)
+    check('Onay kaydi: davetle katilimda kaydedilir', any(c['kind']=='davet' and c['email']=='c@gmail.com' for c in ev("()=>(window.__db.consents||[])")), ev("()=>window.__db.consents"))
     # ---- Masaustu giris ekrani ----
     pg.set_viewport_size({'width': 1440, 'height': 860})
     ev("()=>{localStorage.setItem('kp_em','ayse@firma.com');S.lgEm='';S.user=null;SBS.user=null;S.lgCreate=false;S.lgTab='own';render()}")

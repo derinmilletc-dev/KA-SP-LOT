@@ -16,7 +16,7 @@ const SB_ANON = Deno.env.get('SUPABASE_ANON_KEY') || '';
 const SB_SRV = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 // Tahmini dolar maliyeti (kaba): sohbet Sonnet, okuma Haiku
 const USD = { chat: 0.015, read: 0.0005 };
-export const PERMS = ['businesses', 'ai', 'errors', 'events', 'feedback', 'limits', 'audit', 'kais', 'announce', 'support', 'flags'] as const;
+export const PERMS = ['businesses', 'ai', 'errors', 'events', 'feedback', 'limits', 'audit', 'kais', 'announce', 'support', 'flags', 'consents'] as const;
 const NLC = String.fromCharCode(10);
 const AKEY = Deno.env.get('ANTHROPIC_API_KEY') || '';
 const AMODEL = Deno.env.get('KAIS_ADMIN_MODEL') || 'claude-sonnet-5-5';
@@ -441,6 +441,15 @@ export async function handle(req: Request): Promise<Response> {
       const id = String(b.user_id || ''); const t = await srv.from('admin_users').select('*').eq('user_id', id).maybeSingle(); if (!t.data) return ERR('Bulunamadı.', 404);
       if ((t.data as any).role === 'super') return ERR('Ana admin silinemez.', 403);
       await srv.from('admin_users').delete().eq('user_id', id); await audit('mod_sil', (t.data as any).email); return J({ ok: true });
+    }
+
+    if (action === 'consents') {
+      const d = need('consents'); if (d) return d;
+      const r = await srv.from('consents').select('id,user_id,business_id,email,kind,ver,docs,ua,accepted_at').order('accepted_at', { ascending: false }).limit(2000);
+      if (r.error) return ERR('Onay tablosu kurulu değil. consents.sql çalıştırılmalı.', 503);
+      const rows = (r.data || []) as any[]; const em = await emails(); const biz = await bizRows(); const bn: Record<string, string> = {}; biz.forEach((x) => { bn[x.id] = x.name; });
+      const had = new Set(rows.map((x) => x.user_id)); const missing = Object.keys(em).filter((id) => !had.has(id)).map((id) => em[id]).slice(0, 200);
+      return J({ ok: true, rows: rows.map((x) => ({ at: x.accepted_at, email: x.email || em[x.user_id] || '', kind: x.kind, ver: x.ver, docs: x.docs, ua: x.ua, biz: x.business_id ? (bn[x.business_id] || '') : '' })), missing, total: rows.length, users: Object.keys(em).length });
     }
 
     if (action === 'audit') {

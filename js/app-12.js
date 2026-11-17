@@ -268,6 +268,7 @@ H.sgjoin = () => { S.lgTab = 'emp'; S.lgCreate = false; S.loginErr = ''; render(
 H.sgclaim = async () => {
   const code = ((document.getElementById('sg-code') || {}).value || '').trim().toUpperCase(); if (!code) return sgErr('Davet kodunu yaz.');
   const c = sbClient(); if (!c || !SBS.user) return;
+  { const k = document.getElementById('sg-kabulj'); if (k && !k.checked) { const l = k.closest('.kb-cons'); if (l) l.classList.add('err'); return sgErr('Devam etmek için kullanım şartlarını ve KVKK metnini kabul etmelisin.'); } try { consentMark('davet', SBS.user.email); } catch (e) {} }
   try { const x = await c.rpc('claim_invite', { p_code: code }); if (x.error) throw x.error; if (x.data && x.data.error) throw new Error(x.data.error); await sbLoadBiz(); if (!ID.mems.length) return sgErr('Kod kabul edildi ama işletme bulunamadı. İşverenle konuş.'); if (ID.mems.length > 1 && !ID.active) { render(); return; } await idEnter(); }
   catch (e) { sgErr(idMsg(e)); }
 };
@@ -281,6 +282,7 @@ H.sgown = () => { S.lgTab = 'own'; S.loginErr = ''; S.lgCreate = true; sgInit();
       return `<div class="login lx lx-emp"><section class="lx-hero"><div class="lx-brand">${lxMark(40)}<span>KaisPilot</span></div><div class="lx-copy"><h2>Ekibe hoş geldin.</h2><p>İşvereninin verdiği davet koduyla katıl.</p></div>${lxArt()}</section>
       <section class="lx-card"><div class="lx-cin"><form id="sgform" class="lx-form" novalidate><h1>Davet koduyla katıl</h1><p class="lx-sub" style="margin-bottom:12px">${esc(SBS.user.email || '')} olarak giriş yapıldı.</p>
       <div class="lx-f"><label for="sg-code">Davet kodu</label><div class="lx-in">${LXI.lock}<input id="sg-code" type="text" autocapitalize="characters" maxlength="8" placeholder="Örn. K7M2QX" style="text-transform:uppercase;letter-spacing:.5px"></div></div>
+      <label class="kb-cons"><input type="checkbox" id="sg-kabulj"><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım şartlarını</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
       <div class="err" id="sg-err" role="alert">${esc(S.loginErr)}</div><button class="lx-go" type="button" data-a="sgclaim"><span>Katıl</span>${LXI.arrow}</button>
       <p class="lx-crb">İşletme sahibi misin? <button type="button" class="lx-link" data-a="sgown">İşletmeni kur</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p></form></div></section></div>`;
     }
@@ -563,5 +565,27 @@ H.invcopy = () => { if (S.modal && S.modal.code) cpy(invText(S.modal.code) + '\n
     if (k && !k.checked) { const l = k.closest('.kb-cons'); if (l) l.classList.add('err'); toast('Devam etmek için şartları ve KVKK metnini kabul etmelisin.', 'warn'); try { k.focus(); } catch (e) {} return; }
     return _n.apply(this, arguments);
   };
-  document.addEventListener('change', (e) => { const t = e.target; if (t && (t.id === 'id-kabul' || t.id === 'sg-kabul')) { const l = t.closest('.kb-cons'); if (l && t.checked) l.classList.remove('err'); } });
+  document.addEventListener('change', (e) => { const t = e.target; if (t && (t.id === 'id-kabul' || t.id === 'sg-kabul' || t.id === 'sg-kabulj')) { const l = t.closest('.kb-cons'); if (l && t.checked) l.classList.remove('err'); } });
+}
+
+/* v179b: şartlar ve KVKK onayının kaydı (admin panelinde görünür) */
+const LEGAL_VER = '2026-11-15';
+const CK = 'kp_consent_pend';
+function consentMark(kind, email) { try { localStorage.setItem(CK, JSON.stringify({ kind, email: String(email || '').toLowerCase(), at: Date.now(), ua: String(navigator.userAgent || '').slice(0, 180) })); } catch (e) {} }
+async function consentFlush() {
+  let p; try { p = JSON.parse(localStorage.getItem(CK) || 'null'); } catch (e) { p = null; } if (!p) return;
+  if (Date.now() - p.at > 864e5) { try { localStorage.removeItem(CK); } catch (e) {} return; }
+  const c = sbOK() && sbClient(); if (!c || !SBS.user || !SBS.user.email || String(SBS.user.email).toLowerCase() !== p.email) return;
+  try {
+    const r = await c.from('consents').insert({ user_id: SBS.user.id, business_id: (SBS.biz && SBS.biz.id) || null, email: SBS.user.email, kind: p.kind, ver: LEGAL_VER, docs: { kullanim: LEGAL_VER, kvkk: LEGAL_VER }, ua: p.ua });
+    if (!r.error || r.error.code === '23505') localStorage.removeItem(CK);
+  } catch (e) {}
+}
+{
+  const _sg = H.sgnext;
+  H.sgnext = function () { const before = S.sg && S.sg.step; const r = _sg.apply(this, arguments); try { if (before === 3 && S.sg && S.sg.kabul) consentMark(SBS.user && SBS.user.email && !S.sg.em ? 'google' : 'kurulum', S.sg.em || (SBS.user && SBS.user.email)); } catch (e) {} return r; };
+  const _jn = H.idnew;
+  H.idnew = function () { const k = document.getElementById('id-kabul'); const em = (document.getElementById('id-em') || {}).value; if (k && k.checked && em) consentMark('davet', em); return _jn.apply(this, arguments); };
+  const _lb = sbLoadBiz;
+  sbLoadBiz = async function () { const r = await _lb.apply(this, arguments); consentFlush(); return r; };
 }
