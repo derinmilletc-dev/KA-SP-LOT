@@ -736,3 +736,9 @@ ${S4} .lx-copyr{margin:10px 0 0!important;font-size:14px;color:#7C8BA2}
 }`;
   document.head.appendChild(css);
 }
+
+/* v192: gerçek çalışanı olmayan işletmede "Çalışan 1 bugün henüz gelmedi" bildirimleri çıkmasın */
+{
+  const _ol = opLate;
+  opLate = function () { return _ol.apply(this, arguments).filter((l) => { const u = byId(l.id); return u && !/^Çalışan \d+$/.test(u.name || '') && !!(u.name || '').trim(); }); };
+}
