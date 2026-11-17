@@ -186,6 +186,12 @@ const PF_SUBE = ['Tek şube', '2–3 şube', '4+ şube'];
 const PF_YON = ['Defter / kâğıt', 'Excel', 'Başka bir program', 'Hiçbiri, yeni başlıyorum'];
 const PF_ZAMAN = ['Fiş ve muhasebe', 'Stok ve sipariş', 'Vardiya ve puantaj', 'Maaş ve bordro', 'Rezervasyon ve müşteri', 'Satış ve kasa'];
 const ZAMAN_MOD = { 'Stok ve sipariş': ['Stok', 'Tedarik'], 'Vardiya ve puantaj': ['Duyuru ve vardiya'], 'Maaş ve bordro': ['Bordro ve maaş'], 'Rezervasyon ve müşteri': ['Müşteri ve rezervasyon'], 'Satış ve kasa': ['Satış (POS)'] };
+const sgI = (d) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const SG_IC = { receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>', box: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', wallet: '<path d="M4 7a2 2 0 0 1 2-2h11v3"/><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="16.5" cy="13.5" r="1.2"/>', cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/>', cart: '<path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/>', truck: '<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>', mega: '<path d="M4 10v4l12 5V5z"/><path d="M16 9a3 3 0 0 1 0 6M7 15v4"/>' };
+const SG_ZI = { 'Fiş ve muhasebe': 'receipt', 'Stok ve sipariş': 'box', 'Vardiya ve puantaj': 'clock', 'Maaş ve bordro': 'wallet', 'Rezervasyon ve müşteri': 'cal', 'Satış ve kasa': 'cart' };
+const SG_ZD = { 'Fiş ve muhasebe': 'Fiş, KDV, gelir-gider', 'Stok ve sipariş': 'Sayım, tedarik, fire', 'Vardiya ve puantaj': 'Plan, giriş-çıkış', 'Maaş ve bordro': 'Maaş, izin, avans', 'Rezervasyon ve müşteri': 'Masa, müşteri, kampanya', 'Satış ve kasa': 'Kasa, günlük ciro' };
+const SG_MI = { 'Stok': 'box', 'Satış (POS)': 'cart', 'Tedarik': 'truck', 'Bordro ve maaş': 'wallet', 'Müşteri ve rezervasyon': 'cal', 'Duyuru ve vardiya': 'mega' };
+function sgTiles(g, list, sel, icons, desc, chip) { return `<div class="pf-cs sg-tg${chip ? ' sg-fl' : ''}" data-grp="${g}" data-multi="1">${list.map((x) => `<button type="button" class="pf-c sg-t${sel.includes(x) ? ' on' : ''}" data-a="pfchip" data-g="${g}" data-v="${esc(x)}" aria-pressed="${sel.includes(x) ? 'true' : 'false'}"><i class="sg-ti">${sgI(SG_IC[icons[x]] || SG_IC.box)}</i><b>${esc(x)}</b><u class="sg-tk"></u></button>`).join('')}</div>`; }
 const sgNameOf = () => { const u = SBS.user; const m = (u && u.user_metadata) || {}; return String(m.full_name || m.name || '').trim(); };
 S.sg = S.sg || null;
 function sgInit() { S.sg = { step: SBS.user ? 2 : 1, name: sgNameOf(), em: S.lgEm || '', pw: '', biz: '', tur: '', il: '', cal: '', sube: '', yontem: '', zaman: [], mods: [], muh: '', kabul: false, pazar: false }; }
@@ -217,11 +223,11 @@ lxCreate = function () {
     <div class="lx-f"><label>Kaç şubeniz var?</label>${pfChips('sube', PF_SUBE, s.sube, false)}</div>
     <div class="lx-f"><label>İşleri şu an nasıl takip ediyorsun?</label>${pfChips('yontem', PF_YON, s.yontem, false)}</div>
     <div class="lx-f"><label>Muhasebecin var mı?</label>${pfChips('muh', PF_MUH, s.muh, false)}</div>`;
-  else body = `<div class="sg-sum"><b>${esc(s.biz || 'İşletmen')}</b><span>${[s.tur, s.il, s.cal].filter(Boolean).map(esc).join(' · ')}</span></div>
-    <div class="lx-f"><label>En çok neye zaman harcıyorsun?</label>${pfChips('zaman', PF_ZAMAN, s.zaman, true)}<p class="sg-sm" style="margin-top:6px">Kais bunları öne çıkarır ve ilgili bölümleri senin için açar.</p></div>
-    <div class="lx-f"><label>Kullanacağın bölümler</label>${pfChips('mods', PF_MOD, s.mods, true)}<p class="sg-sm" style="margin-top:6px">Sektörüne göre seçtik. Sonradan Ayarlar'dan değiştirirsin.</p></div>
-    <label class="kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesini</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
-    <label class="kb-cons kb-opt"><input type="checkbox" id="sg-pazar"${s.pazar ? ' checked' : ''}><span>KaisPilot'tan ürün haberleri, ipuçları ve kampanyaları e-posta ve bildirimle almak istiyorum. <em>İsteğe bağlı. İstediğin zaman kaispilot@gmail.com adresine yazarak vazgeçebilirsin.</em></span></label>`;
+  else body = `<div class="sg-sum"><i class="sg-av">${esc((s.biz || 'K').trim().charAt(0).toLocaleUpperCase('tr'))}</i><div class="sg-sb"><b>${esc(s.biz || 'İşletmen')}</b><div class="sg-ch">${[s.tur, s.il, s.cal].filter(Boolean).map((x) => `<em>${esc(x)}</em>`).join('')}</div></div></div>
+    <div class="sg-sec"><h3>En çok neye zaman harcıyorsun?</h3><p>Birden fazla seçebilirsin. Kais bunları öne çıkarır ve ilgili bölümleri açar.</p>${sgTiles('zaman', PF_ZAMAN, s.zaman, SG_ZI)}</div>
+    <div class="sg-sec"><h3>Kullanacağın bölümler</h3><p>Sektörüne göre seçtik. Sonradan Ayarlar'dan değiştirirsin.</p>${sgTiles('mods', PF_MOD, s.mods, SG_MI, null, true)}</div>
+    <div class="sg-cc"><label class="sg-ck kb-cons"><input type="checkbox" id="sg-kabul"${s.kabul ? ' checked' : ''}><i class="sg-bx"></i><span><a href="/kullanim-sartlari/" target="_blank" rel="noopener">Kullanım sözleşmesini</a> ve <a href="/kvkk/" target="_blank" rel="noopener">KVKK aydınlatma metnini</a> okudum, kabul ediyorum.</span></label>
+    <label class="sg-ck sg-opt"><input type="checkbox" id="sg-pazar"${s.pazar ? ' checked' : ''}><i class="sg-bx"></i><span>Ürün haberleri, ipuçları ve kampanyaları e-posta ve bildirimle almak istiyorum <b>İsteğe bağlı</b><small>İstediğin zaman kaispilot@gmail.com adresine yazarak vazgeçebilirsin.</small></span></label></div>`;
   const back = st > (g ? 2 : 1) ? `<button type="button" class="lx-alt" data-a="sgback"><b>Geri</b></button>` : '';
   const nextLbl = st === 4 ? 'İşletmeyi oluştur' : 'Devam';
   const foot = st === 1 ? `<p class="lx-crb">Zaten hesabın var mı? <button type="button" class="lx-link" data-a="sgexit">Giriş yap</button></p>` : g ? `<p class="lx-crb">Davet koduyla mı katılacaksın? <button type="button" class="lx-link" data-a="sgjoin">Kodu gir</button> · <button type="button" class="lx-link" data-a="idout">Çıkış yap</button></p>` : '';
@@ -642,10 +648,39 @@ async function consentFlush() {
 /* v188: kayıt adım 4/4: akıllı sorular, özet kartı, isteğe bağlı pazarlama onayı */
 {
   const css = document.createElement('style');
-  css.textContent = '.sg-sum{display:flex;flex-direction:column;gap:2px;padding:12px 14px;margin:0 0 14px;border-radius:14px;background:linear-gradient(135deg,#EAF2FD,#F4F8FE);border:1px solid #D3E2F7}.sg-sum b{font-size:16px;color:#0F2850}.sg-sum span{font-size:13px;color:#4C5E78}.kb-opt{margin-top:6px;padding:10px 12px;border-radius:12px;background:#F4F7FB;border:1px dashed #C9D6E8}.kb-opt em{display:block;font-style:normal;font-size:12px;color:#74839A;margin-top:2px}';
+  css.textContent = '.kb-opt{margin-top:6px;padding:10px 12px;border-radius:12px;background:#F4F7FB;border:1px dashed #C9D6E8}.kb-opt em{display:block;font-style:normal;font-size:12px;color:#74839A;margin-top:2px}';
   document.head.appendChild(css);
   const _pc = H.pfchip;
   H.pfchip = function (el) { const r = _pc.apply(this, arguments); try { if (el.dataset.g === 'zaman' && el.classList.contains('on')) (ZAMAN_MOD[el.dataset.v] || []).forEach((m) => { const b = document.querySelector('[data-grp="mods"] .pf-c[data-v="' + m + '"]'); if (b) b.classList.add('on'); }); } catch (e) {} return r; };
   const _ac = aiContext;
   aiContext = function () { const c = _ac.apply(this, arguments); try { c.profil = { sektor: PROF.tur || undefined, sehir: PROF.il || undefined, calisan: PROF.cal || undefined, sube: PROF.sube || undefined, mevcut_yontem: PROF.yontem || undefined, en_cok_zaman_alan: (PROF.zaman || []).length ? PROF.zaman : undefined }; } catch (e) {} return c; };
+}
+
+/* v189: adım 4 görünümü: kartlı seçimler, özet kartı, onay kartı */
+{
+  const css = document.createElement('style');
+  css.textContent = `#sgform .lx-f{margin-bottom:20px}#sgform .lx-f>label{display:block;margin:0 0 10px;font-size:14.5px;font-weight:700;color:#0F2850}
+#sgform .pf-cs{display:flex;flex-wrap:wrap;gap:8px}#sgform .pf-c{min-height:42px;padding:0 16px;font-size:14px}
+#sgform .pf-c.on{border-color:#1553b0;background:#EDF4FE;color:#0F2850;box-shadow:0 0 0 3px rgba(21,83,176,.10)}
+.sg-sum{display:flex;align-items:center;gap:14px;padding:16px;margin:0 0 24px;border-radius:18px;background:linear-gradient(135deg,#0F3F85,#1C6FD0);color:#fff;box-shadow:0 10px 24px rgba(15,63,133,.22)}
+.sg-av{flex:none;width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:22px;color:#fff}
+.sg-sb{min-width:0;flex:1}.sg-sb b{display:block;font-size:17px;line-height:1.25;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sg-ch{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.sg-ch em{font-style:normal;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.16);color:#EAF2FF}
+.sg-sec{margin:0 0 24px}.sg-sec h3{margin:0;font-size:15px;font-weight:800;color:#0F2850;line-height:1.3}.sg-sec p{margin:4px 0 12px;font-size:13px;color:#74839A;line-height:1.45}
+#sgform .sg-tg{display:grid;grid-template-columns:1fr 1fr;gap:10px}#sgform .sg-tg.sg-fl{display:flex;flex-wrap:wrap;gap:8px}
+#sgform .pf-c.sg-t{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:12px;text-align:left;border-radius:16px;padding:12px;min-height:88px;border:1.5px solid #DCE5F1;background:#fff;color:#1B2B41;transition:border-color .15s,background .15s,box-shadow .15s,transform .1s}
+#sgform .pf-c.sg-t:active{transform:scale(.985)}
+.sg-ti{flex:none;width:34px;height:34px;border-radius:11px;background:#EEF3FA;color:#4C6A94;display:grid;place-items:center;font-style:normal;transition:background .15s,color .15s}
+.sg-t b{display:block;font-size:14px;line-height:1.25;font-weight:700;padding-right:4px}
+.sg-tk{position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;border:1.5px solid #C9D6E8;background:#fff;transition:all .15s;text-decoration:none}
+#sgform .pf-c.sg-t.on{border-color:#1553b0;background:#EDF4FE}#sgform .pf-c.sg-t.on .sg-ti{background:#1553b0;color:#fff}
+#sgform .pf-c.sg-t.on .sg-tk{background:#1553b0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/12px no-repeat;border-color:#1553b0}
+#sgform .sg-fl .pf-c.sg-t{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;min-height:44px;padding:0 14px 0 8px;border-radius:999px}
+#sgform .sg-fl .sg-ti{width:28px;height:28px;border-radius:50%}#sgform .sg-fl .sg-ti svg{width:16px;height:16px}#sgform .sg-fl .sg-t b{font-size:13.5px;padding:0;white-space:nowrap}#sgform .sg-fl .sg-tk{display:none}
+.sg-cc{margin:4px 0 6px;border-radius:18px;border:1px solid #DCE5F1;background:#fff;overflow:hidden}
+.sg-ck{display:flex!important;gap:12px;align-items:flex-start;margin:0!important;padding:14px!important;cursor:pointer;font-size:13.5px;line-height:1.5;color:#33465F;border:0!important;background:transparent!important;position:relative}.sg-ck+.sg-ck{border-top:1px solid #E6EDF6!important;background:#F7FAFD!important}
+.sg-ck input{position:absolute;opacity:0;width:0;height:0;margin:0}.sg-bx{flex:none;width:22px;height:22px;margin-top:1px;border-radius:7px;border:1.8px solid #B5C4D9;background:#fff;transition:all .15s}
+.sg-ck input:checked+.sg-bx{background:#1553b0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/14px no-repeat;border-color:#1553b0}
+.sg-ck input:focus-visible+.sg-bx{outline:3px solid rgba(21,83,176,.25);outline-offset:1px}.sg-ck.err .sg-bx{border-color:#B42318;box-shadow:0 0 0 3px rgba(180,35,24,.12)}
+.sg-ck span{flex:1;min-width:0}.sg-ck a{color:#1553b0;font-weight:600}.sg-ck b{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#E7EEF8;color:#4C6A94;font-size:11px;font-weight:700;vertical-align:1px}.sg-ck small{display:block;margin-top:3px;font-size:12px;color:#7C8CA3}`;
+  document.head.appendChild(css);
 }
