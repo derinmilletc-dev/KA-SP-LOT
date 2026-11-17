@@ -742,3 +742,34 @@ ${S4} .lx-copyr{margin:10px 0 0!important;font-size:14px;color:#7C8BA2}
   const _ol = opLate;
   opLate = function () { return _ol.apply(this, arguments).filter((l) => { const u = byId(l.id); return u && !/^Çalışan \d+$/.test(u.name || '') && !!(u.name || '').trim(); }); };
 }
+
+/* v194: işletme adı ve kendi adın Profil ekranından düzeltilebilir (eski hesaplarda yanlış kalan isimler için) */
+{
+  const _np = NEWM.prof;
+  NEWM.prof = function () {
+    let h = _np.apply(this, arguments);
+    if (!(typeof SBS !== 'undefined' && SBS.biz && roleOf() === 'patron')) return h;
+    const nm = (NAMES.u1 && NAMES.u1.name) || ((byId('u1') || {}).name) || '';
+    const f = `<div class="pf-row pf-2"><div class="pf-s"><label class="pf-l">İşletme adı</label><input id="pf-bn" autocomplete="organization" placeholder="İşletme adın" value="${esc(BIZ)}"></div><div class="pf-s"><label class="pf-l">Adın soyadın</label><input id="pf-un" autocomplete="name" placeholder="Adın soyadın" value="${esc(nm === 'Patron' ? '' : nm)}"></div></div>`;
+    return h.replace('<div class="pf-s" data-pfk="tur">', f + '<div class="pf-s" data-pfk="tur">');
+  };
+  const _ps = H.pfsave;
+  H.pfsave = async function () {
+    const g = (id) => ((document.getElementById(id) || {}).value || '').trim();
+    const bn = g('pf-bn'), un = g('pf-un');
+    if (document.getElementById('pf-bn')) {
+      try {
+        const c = sbClient();
+        if (bn && bn !== BIZ && c && SBS.biz) {
+          const r = await c.from('businesses').update({ name: bn }).eq('id', SBS.biz.id);
+          if (!r.error) { SBS.biz.name = bn; if (ID.active && ID.active.businesses) ID.active.businesses.name = bn; BIZ = bn; try { EDOC.unvan = bn; } catch (e) {} } else toast('İşletme adı kaydedilemedi.', 'bad');
+        }
+        if (un && un !== (NAMES.u1 && NAMES.u1.name)) {
+          NAMES.u1 = { name: un, title: 'Patron' }; applyNames();
+          if (c && SBS.user && ID.active) { try { await c.from('members').update({ display_name: un }).eq('business_id', SBS.biz.id).eq('user_id', SBS.user.id); } catch (e) {} }
+        }
+      } catch (e) {}
+    }
+    return _ps.apply(this, arguments);
+  };
+}
