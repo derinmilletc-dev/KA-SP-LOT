@@ -1295,7 +1295,7 @@ epostaHTML = function () {
   <p class="small muted">${esc(info)}</p>
   ${err ? `<div class="callout warn">${ic('alert')}<div>${esc(err)}</div></div>` : ''}${MAILX.limited ? `<div class="callout">${ic('info')}<div>Bugünlük belge okuma sınırı doldu. Kalanlar yarın taranır.</div></div>` : ''}
   <div class="row wrap">${nNew ? `<button class="btn" data-a="mailall"${MAILX.scanning ? ' disabled' : ''}>${nNew} belgeyi muhasebeye ekle</button>` : ''}<button class="btn sec" data-a="mailscan"${MAILX.scanning ? ' disabled' : ''}>${MAILX.scanning ? 'Taranıyor…' : 'Şimdi tara'}</button>${isP ? (MAILX.confirm ? `<span class="small">Bağlantı kaldırılsın mı?</span><button class="btn sm" data-a="maildiscok">Evet, kaldır</button><button class="btn sm sec" data-a="maildiscno">Vazgeç</button>` : '<button class="btn sec" data-a="maildisc">Bağlantıyı kaldır</button>') : ''}</div></div>
-  ${docs.length ? `<div class="card flush">${docs.map(mailRowHTML).join('')}</div>` : (conn.last_scan_at && !MAILX.scanning ? `<div class="card"><p class="muted">Son 90 günde fatura ya da makbuz gibi görünen bir e-posta bulunamadı.</p></div>` : '')}</div>`;
+  ${docs.length ? `<div class="card flush"${docs.length > 5 ? ' style="max-height:480px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch"' : ''}>${docs.map(mailRowHTML).join('')}</div>` : (conn.last_scan_at && !MAILX.scanning ? `<div class="card"><p class="muted">Son 90 günde fatura ya da makbuz gibi görünen bir e-posta bulunamadı.</p></div>` : '')}</div>`;
 };
 
 (function () {
