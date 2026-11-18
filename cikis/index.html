@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="robots" content="noindex"><title>E-posta listesinden çık · KaisPilot</title>
+<style>
+:root{--ink:#14213a;--mut:#5b6b82;--line:#e4eaf3;--bg:#f3f6fb;--acc:#1553b0;--card:#fff}
+@media(prefers-color-scheme:dark){:root{--ink:#e8eef9;--mut:#9fb0c8;--line:#26354f;--bg:#0c1423;--card:#121c30;--acc:#6aa5ff}}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:18px;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+.c{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 22px;text-align:center}
+h1{font-size:22px;margin:0 0 8px}p{margin:0 0 18px;color:var(--mut)}
+button{font:inherit;font-weight:700;border:0;border-radius:14px;padding:13px 22px;background:var(--acc);color:#fff;cursor:pointer;width:100%}button:disabled{opacity:.6;cursor:default}
+.ok{color:#1b7f4b;font-weight:600}.er{color:#b3261e;font-weight:600}
+</style></head><body><main class="c">
+<h1 id="t">Listeden çıkmak istiyor musun?</h1>
+<p id="d">Onaylarsan bu işletmeden kampanya e-postası almayı bırakırsın. Ödeme hatırlatması gibi tek kişiye giden mesajlar bundan etkilenmez.</p>
+<button id="go" type="button">Evet, listeden çık</button>
+<p id="m" style="margin:14px 0 0" role="status"></p>
+</main>
+<script>
+(function () {
+  var u = new URLSearchParams(location.search).get('u') || '';
+  var go = document.getElementById('go'), m = document.getElementById('m');
+  if (!u) { go.style.display = 'none'; document.getElementById('t').textContent = 'Bağlantı eksik'; document.getElementById('d').textContent = 'Bu bağlantı geçersiz. E-postadaki bağlantıya yeniden tıkla.'; return; }
+  go.addEventListener('click', function () {
+    go.disabled = true; m.className = ''; m.textContent = 'Kaydediliyor...';
+    fetch('https://bbcsbkgbwzciyfymvpxh.supabase.co/functions/v1/kais-send?u=' + encodeURIComponent(u), { method: 'POST' })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok && j.ok, e: j.error }; }); })
+      .then(function (x) {
+        if (x.ok) { document.getElementById('t').textContent = 'Listeden çıktın'; document.getElementById('d').textContent = 'Bu işletmeden artık kampanya e-postası almayacaksın.'; go.style.display = 'none'; m.textContent = ''; }
+        else { go.disabled = false; m.className = 'er'; m.textContent = x.e || 'Kaydedilemedi. Biraz sonra tekrar dene.'; }
+      })
+      .catch(function () { go.disabled = false; m.className = 'er'; m.textContent = 'Bağlanılamadı. İnternetini kontrol edip tekrar dene.'; });
+  });
+})();
+</script></body></html>

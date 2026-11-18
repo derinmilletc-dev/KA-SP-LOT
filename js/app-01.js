@@ -384,7 +384,7 @@ const itPill = (it) => ({ inceleniyor: '<span class="pill p-warn">İşveren ince
 const waitingNotes = () => Object.keys(NOTES).filter((id) => { const a = NOTES[id]; return a.length && byId(a[a.length - 1].by).role === 'muhasebeci'; });
 const mailStatus = (d) => (typeof mailStatusX === 'function' ? mailStatusX(d) : d.bank && RECEIPTS.some((f) => f.bank === d.bank) ? 'var' : d.total == null ? 'atla' : 'yeni');
 // Müşteriye e-posta gönderme henüz yok (yalnızca Gmail'den fatura okuma var). Sahte "gönderildi" göstermemek için her zaman false.
-const mailReady = () => false;
+const mailReady = () => { try { return !!SENDX.ready; } catch (e) { return false; } };
 
 /* Bugün: patron */
 function bugunPatron() {
@@ -798,9 +798,9 @@ function renderModalV2() {
     <div class="err" id="merr" role="alert"></div><button class="btn block" data-a="mailsave">İzin ver ve bağlan</button><p class="small muted">Prototipte gerçek bağlantı kurulmaz. Gelen kutusu örnek veridir.</p>`);
   } else if (m.type === 'remind') {
     const a = RECV.find((x) => x.id === m.id);
-    root.innerHTML = sheet('Ödeme hatırlatması', `<dl class="kv"><dt>Alıcı</dt><dd>${esc(a.name)}</dd><dt>Gönderen</dt><dd>${esc(S.mail.addr)}</dd><dt>Tutar</dt><dd class="num">${fmt(a.amt)}</dd></dl>
+    root.innerHTML = sheet('Ödeme hatırlatması', `<dl class="kv"><dt>Alıcı</dt><dd>${esc(a.name)}</dd><dt>Gönderen</dt><dd>${esc(BIZ)}</dd><dt>E-posta</dt><dd>${esc(a.email)}</dd><dt>Tutar</dt><dd class="num">${fmt(a.amt)}</dd></dl>
     <div class="field"><label for="remind-text">Mesaj</label><textarea id="remind-text" style="min-height:170px">${esc(remindDraft(a))}</textarea></div>
-    <button class="btn block" data-a="remindsend" data-id="${a.id}">${ic('send')} Gönder</button>`);
+    <p class="small muted">Yanıtlar senin e-posta adresine gelir. Aynı alacak için günde bir kez gönderebilirsin.</p><button class="btn block" data-a="remindsend" data-id="${a.id}"${SENDX.busy ? ' disabled' : ''}>${ic('send')} ${SENDX.busy ? 'Gönderiliyor…' : 'Gönder'}</button>`);
   } else if (m.type === 'notes') {
     const arr = NOTES[m.id] || [];
     const r = ROWS.find((x) => x.id === m.id);

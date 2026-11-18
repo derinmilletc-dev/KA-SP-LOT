@@ -1312,3 +1312,116 @@ async function mailBoot() {
   if (g === 'ok') { toast('Gmail bağlandı. Faturalar aranıyor…', 'ok'); H.mailscan(); }
   else toast(MAIL_ERR[q.get('m')] || MAIL_ERR.hata, 'bad');
 }
+
+/* ===== v240: müşteriye e-posta gönderme (kais-send, Resend) ===== */
+var SENDX = { ready: false, probed: false, at: 0, busy: false, left: 0, limit: 0, optAt: 0, why: '' };
+P_ARR.push(['CUSTOMERS', () => CUSTOMERS], ['CAMPAIGNS', () => CAMPAIGNS]); P_SCOPE.CUSTOMERS = 'stok'; P_SCOPE.CAMPAIGNS = 'stok';
+async function sendInvoke(action, extra) {
+  const c = sbClient();
+  const r = await c.functions.invoke('kais-send', { body: Object.assign({ action, business_id: mailBid() }, extra || {}) });
+  if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch|Failed to send/i.test(String(r.error.message)) ? 'E-posta gönderme sunucusu kurulmamış.' : 'E-posta servisi yanıt vermedi.')); }
+  if (r.data && r.data.error) throw new Error(r.data.error);
+  return r.data || {};
+}
+async function sendProbe(force) {
+  if (!mailCloud() || SENDX.busy) { if (!mailCloud() && SENDX.ready) { SENDX.ready = false; } return; }
+  if (!force && SENDX.probed && Date.now() - SENDX.at < 60000) return;
+  SENDX.at = Date.now(); SENDX.probed = true;
+  const was = SENDX.ready;
+  try {
+    const r = await sendInvoke('status');
+    SENDX.ready = !!r.configured; SENDX.left = r.dayLeft; SENDX.limit = r.dayLimit; SENDX.why = r.configured ? '' : 'Resend anahtarı sunucuda tanımlı değil.';
+  } catch (e) { SENDX.ready = false; SENDX.why = e.message || ''; }
+  let changed = was !== SENDX.ready;
+  if (SENDX.ready && Date.now() - SENDX.optAt > 60000) {
+    SENDX.optAt = Date.now();
+    try {
+      const o = await sendInvoke('optouts'); const set = new Set((o.emails || []).map((x) => String(x).toLowerCase()));
+      CUSTOMERS.forEach((c) => { if (c.iys !== 'ret' && c.email && set.has(String(c.email).toLowerCase())) { c.iys = 'ret'; changed = true; } });
+      if (changed && typeof pSched === 'function') pSched();
+    } catch (e) { /* çıkış listesi alınamadıysa sunucu yine de göndermez */ }
+  }
+  if (changed && S.view === 'musteri' || (changed && S.modal)) { try { render(); } catch (e) {} }
+}
+const _vmu240 = viewMusteri;
+viewMusteri = function () { sendProbe(false); return _vmu240(); };
+
+/* hatırlatma: gerçek gönderim */
+H.remindsend = async (el) => {
+  if (SENDX.busy) return;
+  const a = RECV.find((x) => x.id === el.dataset.id); if (!a) return;
+  const t = ((document.getElementById('remind-text') || {}).value || '').trim();
+  if (t.length < 5) { toast('Mesaj boş.', 'bad'); return; }
+  if (!a.email || !/^\S+@\S+\.\S+$/.test(a.email)) { toast('Bu kişinin e-posta adresi yok. Önce adresi ekle.', 'bad'); return; }
+  SENDX.busy = true; el.disabled = true; el.textContent = 'Gönderiliyor…';
+  try {
+    try { if (typeof pFlush === 'function') await pFlush(); } catch (e) {}
+    await sendInvoke('remind', { rid: a.id, text: t });
+    a.reminded = nowT(); S.modal = null; SENDX.busy = false; if (typeof pSched === 'function') pSched(); render(); toast(`Hatırlatma ${a.name} kişisine gönderildi.`, 'ok'); sendProbe(true);
+  } catch (e) { SENDX.busy = false; el.disabled = false; el.textContent = 'Gönder'; toast(e.message || 'Gönderilemedi.', 'bad'); }
+};
+
+/* kampanya: gerçek gönderim, iki adımlı onay */
+const _kamp240 = kampanyaHTML;
+kampanyaHTML = function () {
+  let h = _kamp240();
+  if (!mailReady()) return h;
+  const ok = segList(S.camp.seg).filter((x) => x.iys === 'onayli').length; const arm = !!S.camp.arm;
+  h = h.replace(/<button type="button" class="cm-go" data-a="campsend">[\s\S]*?<\/button>/, arm
+    ? `<button type="button" class="cm-go" data-a="campsend">${ic('send', 22)}<b>Evet, ${ok} kişiye şimdi gönder</b></button><button type="button" class="btn sec block" data-a="campno">Vazgeç</button>`
+    : `<button type="button" class="cm-go" data-a="campsend">${ic('send', 22)}<b>${ok} kişiye gönder</b></button>`);
+  h = h.replace(/<p class="cm-f">[\s\S]*?<\/p>/, `<p class="cm-f">${arm ? 'Gönderilen e-posta geri alınamaz. ' : ''}Mesaja otomatik "listeden çık" bağlantısı eklenir. Yalnızca "İzin verdi" olan müşterilere gider. Açılma oranı ölçülmez. Günlük kalan hak: ${SENDX.left}.</p>`);
+  return h;
+};
+H.campno = () => { snapCamp(); S.camp.arm = false; render(); };
+H.campsend = async () => {
+  snapCamp(); const c = S.camp;
+  const ok = segList(c.seg).filter((x) => x.iys === 'onayli');
+  if (!c.subj.trim() || !c.body.trim()) { toast('Konu ve mesajı yaz.', 'bad'); return; }
+  if (!ok.length) { toast('Bu grupta izinli müşteri yok.', 'bad'); return; }
+  if (!mailReady()) { toast('Müşteriye e-posta gönderme henüz hazır değil. Kampanya gönderilmedi.', 'warn'); return; }
+  if (SENDX.busy) return;
+  if (!c.arm) { c.arm = true; render(); return; }
+  SENDX.busy = true; toast('Gönderiliyor, biraz sürebilir…', 'ok');
+  try {
+    try { if (typeof pFlush === 'function') await pFlush(); } catch (e) {}
+    const cid = 'c' + Date.now().toString(36);
+    const r = await sendInvoke('campaign', { cid, subject: c.subj.trim(), text: c.body, ids: ok.map((x) => x.id) });
+    (r.optIds || []).forEach((id) => { const k = CUSTOMERS.find((x) => x.id === id); if (k) k.iys = 'ret'; });
+    if (r.sent > 0) CAMPAIGNS.push({ subj: c.subj.trim(), date: 'Bugün', sent: r.sent, open: 'ölçülmüyor' });
+    SENDX.busy = false; SENDX.left = r.dayLeft;
+    if (r.sent > 0) S.camp = { seg: 'all', subj: '', body: '' }; else c.arm = false;
+    if (typeof pSched === 'function') pSched(); render();
+    const extra = (r.failed ? ` ${r.failed} adres gönderilemedi.` : '') + (r.limited ? ' Günlük sınır doldu, kalanlar yarın gönderilebilir.' : '') + (r.dup ? ` ${r.dup} kişiye zaten gitmişti.` : '');
+    toast(r.sent > 0 ? `Kampanya ${r.sent} kişiye gönderildi.${extra}` : 'Hiç e-posta gitmedi.' + extra, r.sent > 0 && !r.failed ? 'ok' : 'warn');
+  } catch (e) { SENDX.busy = false; c.arm = false; render(); toast(e.message || 'Gönderilemedi.', 'bad'); }
+};
+const _camseg240 = H.campseg; H.campseg = (el) => { S.camp.arm = false; _camseg240(el); };
+const _camtpl240 = H.camptpl; H.camptpl = (el) => { S.camp.arm = false; _camtpl240(el); };
+
+/* müşteri listesi: ekleme, izin, silme */
+const cuIz = (c) => c.izinTarih ? ` · izin ${esc(c.izinTarih)}` : '';
+musteriListe = function () {
+  const rows = CUSTOMERS.map((c) => `<div class="emp"><span class="avatar" style="background:var(--cini);width:40px;height:40px">${esc(ini(c.name))}</span><div class="grow"><b style="font-weight:600">${esc(c.name)}</b><div class="small muted">${esc(c.email)}${cuIz(c)}</div></div>${iysPill(c.iys)}<div class="meta">${c.visits ? c.visits + ' ziyaret · son ziyaret ' + c.last + ' gün önce' : 'Elle eklendi'}</div>
+    <div class="row" style="gap:6px;margin-top:6px">${c.iys === 'yok' ? `<button class="btn sm sec" data-a="custizin" data-id="${esc(c.id)}">İzin aldım</button>` : ''}${c.iys === 'onayli' ? `<button class="btn sm sec" data-a="custret" data-id="${esc(c.id)}">İzni kaldır</button>` : ''}<button class="btn sm sec" data-a="custdel" data-id="${esc(c.id)}">Sil</button></div></div>`).join('');
+  return `<div class="stack-lg"><button class="btn" data-a="custnew">${ic('plus', 18)} Müşteri ekle</button>
+  <div class="card flush">${rows || '<div class="empty">Henüz müşteri yok. "Müşteri ekle" ile başla.</div>'}</div>
+  <div class="callout">${ic('info')}<div>Toplu e-posta yalnızca "İzin verdi" olanlara gider. İzni, müşteriden e-posta almak için onay aldıysan işaretle. Listeden çıkanlara bir daha gitmez. Kapsamı iş hukukçusuyla doğrula.</div></div></div>`;
+};
+NEWM.custnew = () => sheet('Müşteri ekle', `<div class="stack">
+  <div class="field"><label for="cu-name">Ad soyad</label><input id="cu-name" type="text" autocomplete="off" maxlength="80"></div>
+  <div class="field"><label for="cu-mail">E-posta</label><input id="cu-mail" type="email" autocomplete="off" maxlength="160" placeholder="ornek@mail.com"></div>
+  <label class="row" style="align-items:flex-start"><input id="cu-iz" type="checkbox"> <span>Bu kişi, işletmemden kampanya e-postası almayı kabul etti<span class="small muted" style="display:block">Onayı kendin aldıysan işaretle. Emin değilsen boş bırak, o zaman yalnızca kayıt olarak eklenir.</span></span></label>
+  <div class="err" id="cu-err" role="alert"></div><button class="btn block" data-a="custadd">Ekle</button><button class="btn sec block" data-a="closemodal">Vazgeç</button></div>`);
+H.custnew = () => { S.modal = { type: 'custnew' }; renderModal(); };
+H.custadd = () => {
+  const name = (document.getElementById('cu-name').value || '').trim(); const mail = (document.getElementById('cu-mail').value || '').trim().toLowerCase(); const iz = document.getElementById('cu-iz').checked; const er = document.getElementById('cu-err');
+  if (!name) { er.textContent = 'Adını yaz.'; return; }
+  if (!/^[^\s@<>",;]+@[^\s@<>",;]+\.[^\s@<>",;]{2,}$/.test(mail)) { er.textContent = 'Geçerli bir e-posta adresi yaz.'; return; }
+  if (CUSTOMERS.some((c) => String(c.email).toLowerCase() === mail)) { er.textContent = 'Bu e-posta zaten listede.'; return; }
+  CUSTOMERS.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: name.slice(0, 80), email: mail, visits: 0, last: 0, iys: iz ? 'onayli' : 'yok', izinTarih: iz ? new Date().toLocaleDateString('tr-TR') : '' });
+  S.modal = null; if (typeof pSched === 'function') pSched(); render(); toast('Müşteri eklendi.', 'ok');
+};
+H.custizin = (el) => { const c = CUSTOMERS.find((x) => x.id === el.dataset.id); if (!c || c.iys === 'ret') return; c.iys = 'onayli'; c.izinTarih = new Date().toLocaleDateString('tr-TR'); if (typeof pSched === 'function') pSched(); render(); toast('İzin işaretlendi. Onayı müşteriden aldığından emin ol.', 'ok'); };
+H.custret = (el) => { const c = CUSTOMERS.find((x) => x.id === el.dataset.id); if (!c) return; c.iys = 'yok'; c.izinTarih = ''; if (typeof pSched === 'function') pSched(); render(); toast('İzin kaldırıldı. Artık kampanya gitmez.', 'ok'); };
+H.custdel = (el) => { const i = CUSTOMERS.findIndex((x) => x.id === el.dataset.id); if (i < 0) return; const c = CUSTOMERS[i]; CUSTOMERS.splice(i, 1); if (typeof pSched === 'function') pSched(); render(); toast(`${c.name} listeden silindi.`, 'ok'); };

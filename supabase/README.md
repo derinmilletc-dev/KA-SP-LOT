@@ -105,3 +105,14 @@ Ayrı proje önerilir: Gmail izni "doğrulanmamış" iken 100 yeni kullanıcı s
 
 ### Google doğrulaması (sonra)
 `gmail.readonly` Google'ın "kısıtlı" izni. Doğrulanana kadar: kullanıcılar "Bu uygulama doğrulanmadı" uyarısı görür ve toplam 100 yeni kullanıcı sınırı vardır (sıfırlanmaz). 100'ün üstü için Google doğrulaması ve yıllık üçüncü taraf güvenlik değerlendirmesi (CASA) gerekir.
+
+## Müşteriye e-posta (kais-send)
+
+Ödeme hatırlatması ve izinli müşterilere toplu e-posta. Resend kullanır, `kais-cron` ile aynı sırları paylaşır.
+
+1. **SQL:** `sql/mail_send.sql` dosyasını SQL Editor'de çalıştır (iki tablo: `mail_sends`, `mail_optout`).
+2. **Sırlar:** `RESEND_API_KEY` ve `RESEND_FROM` zaten `kais-cron` için tanımlıysa yeni sır gerekmez. İsteğe bağlı: `MAIL_DAY` (işletme başına günlük sınır, varsayılan 50), `APP_URL`.
+3. **Fonksiyon:** `functions/kais-send/index.ts` içeriğini yeni fonksiyon `kais-send` olarak yapıştır, **Verify JWT kapalı** (oturumu fonksiyon kendisi doğrular, "listeden çık" bağlantısı oturumsuz çalışmalı).
+4. **Kontrol:** tarayıcıda `https://<proje>.supabase.co/functions/v1/kais-send` açınca `{"ok":true,"service":"kais-send","configured":true}` gelmeli.
+
+Nasıl çalışır: alıcı adresi ve izin bilgisi istemciden alınmaz, kayıtlı işletme verisinden okunur. Kampanya yalnızca `iys = onayli` olan ve listeden çıkmamış müşterilere gider. Her kampanya e-postasında imzalı "listeden çık" bağlantısı (`/cikis/` sayfası) ve tek tık başlığı (`List-Unsubscribe`) bulunur. Aynı alacağa günde bir hatırlatma, aynı kampanya aynı adrese bir kez gider. Açılma oranı ölçülmez.

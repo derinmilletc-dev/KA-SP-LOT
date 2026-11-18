@@ -63,11 +63,15 @@ jobs:
         run: python3 tests/vendor_csp.py
       - name: Gmail baglantisi (istemci)
         run: python3 tests/gmail_client.py
+      - name: E-posta gönderme (istemci)
+        run: python3 tests/send_client.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Gmail baglantisi (sunucu fonksiyonu, sahte Google)
         run: node --experimental-strip-types supabase/test_mail.mjs
+      - name: kais-send testleri
+        run: node --experimental-strip-types supabase/test_send.mjs
   sql:
     runs-on: ubuntu-latest
     services:
@@ -95,6 +99,6 @@ jobs:
             echo "== $f"; psql -v ON_ERROR_STOP=1 -q kt2 -f "$f"
           done
           createdb kt3
-          for f in supabase/tests/stub.sql supabase/sql/00_base_schema.sql supabase/sql/mail_gmail.sql supabase/tests/mail_gmail_test.sql; do
+          for f in supabase/tests/stub.sql supabase/sql/00_base_schema.sql supabase/sql/mail_gmail.sql supabase/sql/mail_send.sql supabase/tests/mail_gmail_test.sql; do
             echo "== $f"; psql -v ON_ERROR_STOP=1 -q kt3 -f "$f"
           done
