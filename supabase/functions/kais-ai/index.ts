@@ -67,9 +67,9 @@ const ROLE_ACTIONS: Record<string, string[]> = {
 const SAYIM = 'Kip: raf fotoğrafıyla sayım. Fotoğrafta net gördüğün ürünleri say; net görmediğini sayma ve söyle. Sonucu stok_guncelle eylemine tur say olarak koy; stok_id değerini context.stok içinden eşleştir.' + NL;
 const JSON_MODES: Record<string, string> = {
   fis: `Ekteki fiş, fatura ya da makbuzu oku. Yalnızca geçerli JSON döndür:
-{"satici":"","tarih":"YYYY-MM-DD","toplam":0,"kdv_orani":0,"kategori":"","guven":"yuksek|orta|dusuk"}
-- toplam: KDV dahil ödenecek genel toplam (sayı, TL).
-- kdv_orani: belgede görünen baskın KDV oranı (0, 1, 10 ya da 20). Göremiyorsan 10 yaz ve guven'i orta ya da dusuk yap.
+{"satici":"","tarih":"YYYY-MM-DD","toplam":0,"para_birimi":"TRY|USD|EUR|GBP|ZAR","kdv_orani":null,"kategori":"","guven":"yuksek|orta|dusuk"}
+- toplam: KDV dahil ödenecek genel toplam (yalnızca sayı). para_birimi: belgede görünen para birimi, görünmüyorsa boş bırak.
+- kdv_orani: belgede görünen baskın KDV oranı (0, 1, 10 ya da 20). Belgede net görmüyorsan null yaz, tahmin etme.
 - kategori şunlardan biri: ${CATS}.
 - Okuyamadığın alanı boş bırak, uydurma. Toplamı net okuyamıyorsan toplam 0 yaz.`,
   belge: `Kullanıcının yazdığı metinden bir çalışan için iş sözleşmesi bilgilerini çıkar. Yalnızca geçerli JSON döndür:

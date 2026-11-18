@@ -65,6 +65,8 @@ jobs:
         run: python3 tests/gmail_client.py
       - name: E-posta gönderme (istemci)
         run: python3 tests/send_client.py
+      - name: Para birimi ve fiş KDV (istemci)
+        run: python3 tests/currency_client.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -1425,3 +1425,40 @@ H.custadd = () => {
 H.custizin = (el) => { const c = CUSTOMERS.find((x) => x.id === el.dataset.id); if (!c || c.iys === 'ret') return; c.iys = 'onayli'; c.izinTarih = new Date().toLocaleDateString('tr-TR'); if (typeof pSched === 'function') pSched(); render(); toast('İzin işaretlendi. Onayı müşteriden aldığından emin ol.', 'ok'); };
 H.custret = (el) => { const c = CUSTOMERS.find((x) => x.id === el.dataset.id); if (!c) return; c.iys = 'yok'; c.izinTarih = ''; if (typeof pSched === 'function') pSched(); render(); toast('İzin kaldırıldı. Artık kampanya gitmez.', 'ok'); };
 H.custdel = (el) => { const i = CUSTOMERS.findIndex((x) => x.id === el.dataset.id); if (i < 0) return; const c = CUSTOMERS[i]; CUSTOMERS.splice(i, 1); if (typeof pSched === 'function') pSched(); render(); toast(`${c.name} listeden silindi.`, 'ok'); };
+
+/* ===== v241: raporlarda hesap bazında para birimi, fişte para birimi uyarısı ===== */
+const rowCurSym = (r) => { try { return kcurSym(tbChOf(r)); } catch (e) { return '₺'; } };
+const defCurSym = () => { try { return withCh('', () => curSym()); } catch (e) { return '₺'; } };
+function rcurList() { const d = defCurSym(); const l = [d]; ['nakit', 'banka'].forEach((k) => { const s = kcurSym(k); if (!l.includes(s)) l.push(s); }); return l; }
+H.rcur = (el) => { S.rcur = el.dataset.v; render(); };
+{
+  const _vr = viewRaporX;
+  viewRaporX = function () {
+    const list = rcurList();
+    if (list.length < 2) return _vr.apply(this, arguments);
+    const cur = list.includes(S.rcur) ? S.rcur : list[0];
+    const fullL = LEDGER.slice(); const fullI = INV.slice();
+    LEDGER.splice(0, LEDGER.length, ...fullL.filter((r) => rowCurSym(r) === cur));
+    if (cur !== defCurSym()) INV.splice(0, INV.length);
+    const oldF = CURFORCE; CURFORCE = cur; let h;
+    try { h = _vr.apply(this, arguments); }
+    finally { CURFORCE = oldF; LEDGER.splice(0, LEDGER.length, ...fullL); INV.splice(0, INV.length, ...fullI); }
+    const chips = `<div class="card stack" style="gap:8px"><div class="small"><b>Para birimi</b></div><div class="chips" role="group" aria-label="Para birimi">${list.map((c) => `<button class="chip" data-a="rcur" data-v="${esc(c)}" aria-pressed="${c === cur}">${esc(c)}</button>`).join('')}</div><p class="small muted">Hesaplar farklı para biriminde tutuluyor. Raporlar para birimine göre ayrı gösterilir, tutarlar çevrilmez ve toplanmaz.${cur !== defCurSym() ? ' Kestiğin faturalar yalnızca ' + esc(defCurSym()) + ' raporunda görünür.' : ''}</p></div>`;
+    const i = h.indexOf('</p></div>'); return i < 0 ? chips + h : h.slice(0, i + 10) + chips + h.slice(i + 10);
+  };
+  const _csv = csvText;
+  csvText = function () {
+    const t = _csv.apply(this, arguments); const L = t.split('\n');
+    if (L.length !== LEDGER.length + 1 || rcurList().length < 2) return t;
+    return L.map((x, i) => i === 0 ? x + ';Para birimi' : x + ';' + rowCurSym(LEDGER[i - 1])).join('\n');
+  };
+  const _rm = renderModal;
+  renderModal = function () {
+    _rm.apply(this, arguments); const m = S.modal; const root = $('#modal-root');
+    if (!m || m.type !== 'upload' || m.step !== 'result' || !m.sample || !m.sample.cur || !root || typeof root.innerHTML !== 'string') return;
+    const dc = (S.settings && S.settings.cur && S.settings.cur.code) || 'TRY';
+    if (m.sample.cur === dc || root.innerHTML.includes('rc-warn')) return;
+    const w = `<div class="callout warn" id="rc-warn">${ic('alert')}<div>Fişte para birimi <b>${esc(m.sample.cur)}</b> görünüyor, hesabın ${esc(dc)}. Okunan tutarı kontrol et, gerekirse çevirip yaz.</div></div>`;
+    root.innerHTML = root.innerHTML.replace('<dl class="kv"', w + '<dl class="kv"');
+  };
+}
