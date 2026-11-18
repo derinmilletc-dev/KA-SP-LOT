@@ -1267,7 +1267,8 @@ function viewDonem() {
 function viewTablo() { return tabloHTML('muh'); }
 
 /* ---------- gider tablosu ---------- */
-const srcPill = (r) => (r.edited ? '<span class="pill p-warn">Düzenlendi</span>' : r.src === 'Kais' ? '<span class="pill p-info">Kais yazdı</span>' : r.src === 'Ekstre' ? '<span class="pill p-mute">Ekstreden</span>' : '<span class="pill p-mute">Elle</span>');
+const chPill = (r) => (r.ch === 'banka' ? '<span class="pill p-info">Banka</span> ' : r.ch === 'nakit' ? '<span class="pill p-ok">Nakit</span> ' : '');
+const srcPill = (r) => chPill(r) + (r.edited ? '<span class="pill p-warn">Düzenlendi</span>' : r.src === 'Kais' ? '<span class="pill p-info">Kais yazdı</span>' : r.src === 'Ekstre' ? '<span class="pill p-mute">Ekstreden</span>' : '<span class="pill p-mute">Elle</span>');
 const CELL_LAB = { date: 'tarih', desc: 'açıklama', doc: 'belge', total: 'toplam' };
 
 

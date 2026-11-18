@@ -308,7 +308,7 @@ H.mxapply = () => {
     if (r.kind === 'debt') { r.ref.paid = true; r.ref.paidAt = t.iso; b++; return; }
     if (r.kind === 'led') { r.ref.bk = t.key; c++; return; }
     const dir = t.amt > 0 ? 'gelir' : 'gider'; const g = r.guess;
-    LEDGER.push({ id: 'g' + ++seq, date: mxDM(t.iso), iso: t.iso, desc: t.desc, acc: g ? g.acc : dir === 'gelir' ? INCATS[2] : 'Diğer', doc: 'Banka', rate: g ? mxN(g.rate) : dir === 'gelir' ? 0 : 20, total: Math.abs(t.amt), dir, src: 'Banka', bk: t.key }); c++;
+    LEDGER.push({ id: 'g' + ++seq, date: mxDM(t.iso), iso: t.iso, desc: t.desc, acc: g ? g.acc : dir === 'gelir' ? INCATS[2] : 'Diğer', doc: 'Banka', ch: 'banka', rate: g ? mxN(g.rate) : dir === 'gelir' ? 0 : 20, total: Math.abs(t.amt), dir, src: 'Banka', bk: t.key }); c++;
   });
   try { pSched(); } catch (e) {} MX.res = null; MX.sel = {}; MX.txt = ''; MX.fn = ''; S.modal = null; render();
   toast(a + ' fatura tahsil, ' + b + ' borç ödendi, ' + c + ' kayıt işlendi.', 'ok');
@@ -377,6 +377,7 @@ NEWM.mxfis = () => {
     <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-t">Tutar (₺)</label><input id="mf-t" inputmode="decimal" style="${mxInp}" value="${esc(String(p.total).replace('.', ','))}"></div><div class="field" style="margin:0;flex:1"><label for="mf-i">Tarih</label><input id="mf-i" type="date" style="${mxInp}" value="${esc(p.iso)}"></div></div>
     <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-r">KDV %</label><select id="mf-r" style="${mxInp}">${[0, 1, 8, 10, 20].map((x) => `<option ${x === p.rate ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="field" style="margin:0;flex:1"><label for="mf-a">Hesap</label><select id="mf-a" style="${mxInp}">${accs.map((a) => `<option ${a === p.acc ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div></div>
     ${BRANCHES.length ? `<div class="field" style="margin:0"><label for="mf-b">Şube</label><select id="mf-b" style="${mxInp}"><option value="">Belirtme</option>${BRANCHES.map((b) => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}</select></div>` : ''}
+    <div class="field" style="margin:0"><label for="mf-w">Nereye kaydedilsin? *</label><select id="mf-w" style="${mxInp}"><option value="">Seç…</option><option value="nakit">Nakit gider (kasadan çıktı)</option><option value="banka">Banka / kart gideri</option><option value="borc">Ödenecek borç (vadeli fatura)</option><option value="gelir">Gelir (kestiğim fatura / satış fişi)</option></select></div>
     <p class="small muted">KDV tutarı yaklaşık ${fmt(kdv)}. Kayıt doğrudan tabloya girer, ayrıca onay beklemez.</p>
     <div class="row wrap" style="gap:8px"><button class="btn grow" data-a="mxfsave">Kaydet</button><button class="btn sec" data-a="mxfnew">Vazgeç</button></div></div>`);
   }
@@ -403,7 +404,10 @@ H.mxfsave = () => {
   if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return;
   const g = (id) => ($('#' + id) || {}).value || ''; const total = trNum(g('mf-t')); const iso = g('mf-i') || fiIso(); const desc = g('mf-d').trim();
   if (!(total > 0)) return toast('Tutarı yaz.', 'warn'); if (desc.length < 2) return toast('Satıcıyı yaz.', 'warn');
-  const row = { id: 'g' + ++seq, date: mxDM(iso), iso, desc, acc: g('mf-a') || 'Diğer', doc: 'Fiş', rate: parseInt(g('mf-r'), 10) || 0, total, dir: 'gider', src: 'Fiş' }; const b = g('mf-b'); if (b) row.br = b;
+  const w = g('mf-w'); if (!w) return toast('Nereye kaydedileceğini seç.', 'warn');
+  const row = { id: 'g' + ++seq, date: mxDM(iso), iso, desc, acc: g('mf-a') || 'Diğer', doc: 'Fiş', rate: parseInt(g('mf-r'), 10) || 0, total, dir: w === 'gelir' ? 'gelir' : 'gider', src: 'Fiş' }; const b = g('mf-b'); if (b) row.br = b;
+  if (w === 'nakit' || w === 'banka') row.ch = w;
+  if (w === 'borc') { const due = addDays(iso, 30); DEBTS.push({ id: 'd' + ++seq, who: desc, note: 'Fiş / fatura', amt: total, due, rem: 3, on: true, paid: false }); try { pSched(); } catch (e) {} MXF.n++; MXF.step = 'pick'; MXF.p = null; toast('Borçlar ekranına eklendi (vade 30 gün).', 'ok'); render(); S.modal = { type: 'mxfis' }; renderModal(); return; }
   LEDGER.push(row); try { pSched(); } catch (e) {} MXF.n++; MXF.step = 'pick'; MXF.p = null; toast('Fiş kaydedildi.', 'ok'); render(); S.modal = { type: 'mxfis' }; renderModal();
 };
 
@@ -1117,4 +1121,28 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
       if (bi !== MXI.si) { ixSetSheet(bi); renderModal(); } else renderModal();
     } catch (e) {}
   };
+}
+
+
+/* v211: Excel sayfası banka mı nakit mi, sayfalar geride kalmasın */
+{
+  MXI.ch = '';
+  const chGuess = (n) => { const x = ixNorm(n); return /banka|ekstre|havale|eft|pos|kredi kart/.test(x) ? 'banka' : /nakit|kasa/.test(x) ? 'nakit' : ''; };
+  const _ss = ixSetSheet; ixSetSheet = function (i) { const r = _ss.apply(this, arguments); const sh = ixCur(); MXI.ch = sh ? (sh._ch != null ? sh._ch : chGuess(sh.name)) : ''; return r; };
+  const _m = NEWM.mximp;
+  NEWM.mximp = function () {
+    let out = _m.apply(this, arguments);
+    if (MXI.step === 'done') { const rest = MXI.sheets.filter((x) => !x._done && x.rows && x.rows.length); if (rest.length) out = out.replace('data-a="mximp">Başka sayfa', 'data-a="ixnext">Sıradaki sayfa (' + rest.length + ' kaldı)'); return out; }
+    if (MXI.step !== 'map' || MXI.type !== 'defter') return out;
+    const ch = `<div class="field" style="margin:10px 0 0"><label for="ix-ch">Bu sayfadaki hareketler nerede?</label><select id="ix-ch" style="${mxInp}"><option value="">Belirtme</option><option value="banka" ${MXI.ch === 'banka' ? 'selected' : ''}>Banka akışı (hesap hareketi)</option><option value="nakit" ${MXI.ch === 'nakit' ? 'selected' : ''}>Nakit akışı (kasa)</option></select></div>`;
+    return out.replace(/(<label for="ix-t">[\s\S]*?<\/select><\/div>)/, '$1' + ch);
+  };
+  document.addEventListener('change', (e) => { const t = e.target; if (t && t.id === 'ix-ch' && S.modal && S.modal.type === 'mximp') { MXI.ch = t.value; const sh = ixCur(); if (sh) sh._ch = t.value; renderModal(); } });
+  const _im = H.iximport;
+  H.iximport = function () {
+    const n0 = LEDGER.length, sh = ixCur(), ch = MXI.ch, ty = MXI.type; const was = sh && sh._done; if (sh) sh._done = true; const r = _im.apply(this, arguments);
+    if (MXI.step === 'done') { if (ty === 'defter' && ch) for (let i = n0; i < LEDGER.length; i++) if (LEDGER[i].src === 'Excel') LEDGER[i].ch = ch; try { pSched(); render(); } catch (e) {} } else if (sh) sh._done = was;
+    return r;
+  };
+  H.ixnext = () => { const i = MXI.sheets.findIndex((x) => !x._done && x.rows && x.rows.length); if (i < 0) return; ixSetSheet(i); MXI.step = 'map'; MXI.done = null; renderModal(); };
 }

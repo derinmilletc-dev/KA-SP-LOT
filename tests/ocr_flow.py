@@ -32,7 +32,7 @@ with sync_playwright() as p:
         check('Tarama: tarih 12.11.2026', p_['iso'] == '2026-11-12', p_)
         check('Tarama: satici Turkce karakterli', 'Özdemir' in p_['desc'] and 'Market' in p_['desc'], p_)
         check('Tarama: KDV %10 (kalem satirlarindan)', p_['rate'] == 10, p_)
-        ev("()=>H.mxfsave()")
+        ev("()=>{document.getElementById('mf-w').value='nakit';H.mxfsave()}")
         row = ev("()=>LEDGER[LEDGER.length-1]")
         check('Tarama: deftere gider olarak yazildi', row and row['dir'] == 'gider' and row['total'] == 54.4 and row['iso'] == '2026-11-12' and row['doc'] == 'Fiş' and row['rate'] == 10, row)
         K = ev("()=>{const K=mxKdv('2026-11');return [K.ind]}")
