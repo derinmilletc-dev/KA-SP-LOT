@@ -637,6 +637,7 @@ function ixBuild(type, map, P) {
     const ex = {}; extraI.slice(0, 12).forEach((i) => { const v = ixTxt(r[i]); if (v) ex[ixTxt(P.heads[i]).slice(0, 30)] = v.slice(0, 80); });
     const cur = ixTxt(g(r, 'cur')).toUpperCase(); if (cur && !/^(TL|TRY|₺|TÜRK)/.test(cur)) { skip.push({ n, why: 'Para birimi ' + cur + ' (TL değil)' }); return; }
     if (type === 'defter') {
+      if (!['gelir', 'gider', 'total', 'matrah'].some((k) => ixN(g(r, k)))) { skip.push({ n, why: 'Tutar yok' }); return; }
       let iso = ixDate(g(r, 'date'), fmt);
       if (iso) lastIso = iso;
       else {
@@ -1166,10 +1167,10 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
   function ixBal(P, map) {
     const bi = P.heads.findIndex((h, i) => /bakiye/.test(ixNorm(h)) && i !== map.gelir && i !== map.gider && i !== map.total);
     if (bi < 0 || (map.gelir == null && map.gider == null)) return null;
-    let prev = null, n = 0, last = null, lastN = 0; const bad = [];
-    P.data.forEach((r) => { const b = ixN(r[bi]); if (b === null) return; const d = (map.gelir != null ? ixN(r[map.gelir]) || 0 : 0) - (map.gider != null ? Math.abs(ixN(r[map.gider]) || 0) : 0);
+    let prev = null, n = 0, last = null, lastN = 0, lastIso = ''; const bad = [];
+    P.data.forEach((r) => { const b = ixN(r[bi]); if (b === null) return; if (map.date != null) { const di = ixDate(r[map.date], 'dmy') || ixDate(r[map.date], 'mdy'); if (di && (!lastIso || di >= lastIso)) lastIso = di; } const d = (map.gelir != null ? ixN(r[map.gelir]) || 0 : 0) - (map.gider != null ? Math.abs(ixN(r[map.gider]) || 0) : 0);
       if (prev !== null) { n++; if (Math.abs(b - prev - d) > 0.05) bad.push(r.__n); } prev = b; last = b; lastN = r.__n; });
-    return n ? { n, bad, last, lastN } : null;
+    return n ? { n, bad, last, lastN, lastIso } : null;
   }
   function planBuild() {
     MXI.pdec = MXI.pdec || {};
@@ -1219,6 +1220,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
       ${pl.map && pl.role !== 'atla' ? `<div class="small muted" style="margin-top:2px">${[['date', 'Tarih'], ['desc', 'Açıklama'], ['acc', 'Hesap'], ['gelir', 'Gelir'], ['gider', 'Gider'], ['total', 'Tutar']].filter((x) => pl.map[x[0]] != null).map((x) => x[1] + ': ' + esc(String(sh._p.heads[pl.map[x[0]]]).slice(0, 18))).join(' · ')}</div>` : ''}
       ${pl.sum && pl.role !== 'atla' ? `<div class="small" style="margin-top:2px">Gelir <b class="num" style="color:#15803d">${fmt0(pl.sum.g)}</b> · Gider <b class="num" style="color:#b42318">${fmt0(pl.sum.d)}</b></div>` : ''}
       ${pl.warn ? `<div class="small" style="margin-top:4px;color:#b42318">${esc(pl.warn)}</div>` : ''}
+      ${pl.R && pl.role !== 'atla' && pl.R.out.length ? `<div class="small muted" style="margin-top:2px">Tarih aralığı: ${mxDmy(pl.R.out.map((o) => o.iso).sort()[0])} – ${mxDmy(pl.R.out.map((o) => o.iso).sort().slice(-1)[0])}${pl.R.out.filter((o) => /açıklamasız/.test(o.desc)).length ? ' · <span style="color:#b45309">' + pl.R.out.filter((o) => /açıklamasız/.test(o.desc)).length + ' hareketin açıklaması boş</span>' : ''}</div>` : ''}
       ${b ? (b.bad.length ? `<div class="small" style="margin-top:4px;color:#b45309">Bakiye ${b.bad.length} satırda tutmuyor (ilk: satır ${b.bad[0]}). Dosyadaki hesapta fark olabilir.</div>` : `<div class="small" style="margin-top:4px;color:#15803d">Bakiye tuttu ✓ (${b.n} satır) · son bakiye ${fmt0(b.last)}</div>`) : ''}</div>`; }).join('');
     return sheet('Excel aktar', `<div class="callout">${ic('sparkle')}<div><b>${MXI.sheets.length} sayfa bulundu</b><p style="margin-top:2px">${esc(MXI.fn || 'Dosya')} · Kais her sayfanın ne olduğunu anladı. Yanlış olanı değiştir, sonra hepsini tek seferde aktar.</p></div></div>
     ${dq ? `<h3 style="margin-top:14px">Senin kararın gerekiyor</h3>${dq}` : ''}${rows}
@@ -1241,7 +1243,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
       const sh = MXI.sheets[pl.i]; if (pl.role === 'atla') { sh._done = true; return; }
       ixSetSheet(pl.i); const cs = ixCur(); const type = rType(pl.role); MXI.type = type; MXI.map = ixAuto(type, cs._p); MXI.dec = Object.assign({}, pd); MXI.ch = pl.role === 'nakit' ? 'nakit' : pl.role === 'banka' ? 'banka' : '';
       const R = ixBuild(type, MXI.map, cs._p); if (!R.out.length || R.need.dfmt) return;
-      const bl = pl.bal; const chn = MXI.ch; H.iximport(); if (MXI.step === 'done' && MXI.done) { if (bl && bl.last != null && (chn === 'nakit' || chn === 'banka') && bl.bad.length / bl.n < 0.05) { const kb = (S.settings.kbal = S.settings.kbal || {}); kb[chn] = { v: bl.last, seq: seq, from: 'Excel', n: bl.lastN, t: fiIso() }; } tot += MXI.done.n; dup += MXI.done.dup || 0; bad += MXI.done.bad || 0; parts.push(cs.name + ': ' + MXI.done.n); if (S.settings.xlast) ids.push(S.settings.xlast.b); }
+      const bl = pl.bal; const chn = MXI.ch; H.iximport(); if (MXI.step === 'done' && MXI.done) { if (bl && bl.last != null && (chn === 'nakit' || chn === 'banka') && bl.bad.length / bl.n < 0.05) { const kb = (S.settings.kbal = S.settings.kbal || {}); kb[chn] = { v: bl.last, seq: seq, from: 'Excel', n: bl.lastN, iso: bl.lastIso || '', t: fiIso() }; } tot += MXI.done.n; dup += MXI.done.dup || 0; bad += MXI.done.bad || 0; parts.push(cs.name + ': ' + MXI.done.n); if (S.settings.xlast) ids.push(S.settings.xlast.b); }
     });
     if (ids.length) { const c = 'x' + Date.now().toString(36) + 'p'; [LEDGER, INV, DEBTS, FCUST].forEach((a) => a.forEach((r) => { if (ids.includes(r.xb)) r.xb = c; })); const h = (S.settings.xhist || []).filter((x) => !ids.includes(x.b)); h.push({ b: c, n: tot, t: fiIso() }); S.settings.xhist = h; S.settings.xlast = h[h.length - 1]; try { pSched(); } catch (e) {} }
     MXI.plan = null; MXI.done = { n: tot, dup, bad, txt: parts.join(' · ') || 'Aktarılacak satır bulunamadı' }; MXI.step = 'done'; render(); S.modal = { type: 'mximp' }; renderModal();
@@ -1262,7 +1264,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
   const rnum = (r) => parseInt(String(r.id).replace(/\D/g, ''), 10) || 0;
   const kbCur = (k) => { const a = ((S.settings && S.settings.kbal) || {})[k]; if (!a) return null; return { v: a.v + agg(LEDGER.filter((r) => chOf(r) === k && rnum(r) > a.seq)).n, a }; };
   const kbHtml = () => {
-    const one = (k, l) => { const c = kbCur(k); return `<div class="card" style="padding:12px;flex:1;min-width:0"><div class="small muted">${l} · güncel</div>${c ? `<div class="num" style="font-size:22px;font-weight:700;color:${c.v >= 0 ? '#15803d' : '#b42318'}">${fmt0(c.v)}</div><div class="small muted">${c.a.from === 'Excel' ? 'Excel\'deki son bakiye (satır ' + c.a.n + ') üzerine sonraki hareketler' : 'Elle girdiğin bakiye üzerine sonraki hareketler'}</div>` : '<div style="font-size:15px;font-weight:600;margin-top:2px">Bilinmiyor</div><div class="small muted">Dosyada bakiye sütunu yok ya da tutmadı. Aşağıdan gir.</div>'}</div>`; };
+    const one = (k, l) => { const c = kbCur(k); const lastD = c ? [c.a.iso || ''].concat(LEDGER.filter((r) => chOf(r) === k && rnum(r) > c.a.seq && r.iso).map((r) => r.iso)).sort().slice(-1)[0] : ''; const old = lastD ? mxDiff(fiIso(), lastD) : 0; return `<div class="card" style="padding:12px;flex:1;min-width:0"><div class="small muted">${l} · güncel</div>${c ? `<div class="num" style="font-size:22px;font-weight:700;color:${c.v >= 0 ? '#15803d' : '#b42318'}">${fmt0(c.v)}</div><div class="small muted">${lastD ? mxDmy(lastD) + ' itibarıyla' : (c.a.from === 'Elle' ? mxDmy(c.a.t) + ' tarihinde girildi' : 'Excel\'deki son bakiye')}</div>${old > 14 ? `<div class="small" style="color:#b45309;margin-top:2px">Son hareket ${old} gün önce, güncel olmayabilir.</div>` : ''}` : '<div style="font-size:15px;font-weight:600;margin-top:2px">Bilinmiyor</div><div class="small muted">Dosyada bakiye sütunu yok ya da tutmadı. Aşağıdan gir.</div>'}</div>`; };
     const kb = (S.settings && S.settings.kbal) || {};
     return `<div class="row" style="gap:8px;margin-bottom:8px">${one('nakit', 'Nakit kasa')}${one('banka', 'Banka hesabı')}</div>
     <details style="margin-bottom:8px"><summary style="cursor:pointer" class="small"><b>Bakiyeyi elle düzelt</b></summary><div class="row" style="gap:8px;margin-top:8px"><div class="field" style="margin:0;flex:1"><label for="kb-n">Nakit şu an</label><input id="kb-n" inputmode="decimal" style="${mxInp}" placeholder="${kbCur('nakit') ? fmt0(kbCur('nakit').v) : 'Örn. 5000'}"></div><div class="field" style="margin:0;flex:1"><label for="kb-b">Banka şu an</label><input id="kb-b" inputmode="decimal" style="${mxInp}" placeholder="${kbCur('banka') ? fmt0(kbCur('banka').v) : 'Örn. 18500'}"></div></div><button class="btn sm" style="margin-top:8px" data-a="mxkbset">Kaydet</button><p class="small muted" style="margin-top:6px">Bugünkü gerçek bakiyeyi yaz. Kais bundan sonraki hareketleri üstüne ekler.</p></details>`;
