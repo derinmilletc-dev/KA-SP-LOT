@@ -465,7 +465,7 @@ H.mxcpdf = () => {
    ===================================================================== */
 const MXI = { step: 'pick', sheets: [], si: 0, type: 'defter', map: {}, defDir: 'gider', defRate: 20, fn: '', err: '', done: null };
 const IX_F = {
-  defter: [['date', 'Tarih', /tarih|date|^gün$/, 1], ['desc', 'Açıklama', /açıklama|aciklama|detay|ürün|urun|hizmet|konu|isim|ad[ıi]|ünvan|unvan|başlık|baslik|not/, 0], ['total', 'Tutar', /tutar|toplam|miktar|bedel|fiyat|amount|genel/, 1], ['gelir', 'Gelir sütunu', /^gelir|giren|tahsilat|alacak|satış|satis/, 0], ['gider', 'Gider sütunu', /^gider|çıkan|cikan|ödeme|odeme|alış|alis|borç|borc/, 0], ['dir', 'Tür (gelir/gider)', /^(?:tür|tur|tip|yön|yon)$|gelir\s*\/\s*gider|işlem|islem|hareket\s*t/, 0], ['rate', 'KDV oranı', /kdv|oran|vergi/, 0], ['acc', 'Hesap / kategori', /hesap\s*ad|kategori|kalem|grup|cins|hesap/, 0], ['doc', 'Belge türü', /belge|fatura|fiş|fis/, 0]],
+  defter: [['date', 'Tarih', /tarih|date|^gün$|valör|valor|booking|posted|işlem\s*zaman|islem\s*zaman/, 1], ['desc', 'Açıklama', /açıklama|aciklama|detay|ürün|urun|hizmet|konu|isim|ad[ıi]|ünvan|unvan|başlık|baslik|not|description|narration|memo|details|particulars|payee|merchant|beneficiary|reference|referans/, 0], ['total', 'Tutar', /tutar|toplam|miktar|bedel|fiyat|amount|genel|^sum$|^value$/, 1], ['gelir', 'Gelir sütunu', /^gelir|giren|tahsilat|alacak|satış|satis|credit|income|deposit|paid\s*in|money\s*in|receipt|^giriş|^giris|^cr$/, 0], ['gider', 'Gider sütunu', /^gider|çıkan|cikan|ödeme|odeme|alış|alis|borç|borc|debit|expense|withdraw|paid\s*out|money\s*out|payment|^çıkış|^cikis|^dr$/, 0], ['dir', 'Tür (gelir/gider)', /^(?:tür|tur|tip|yön|yon|type|dr\s*\/\s*cr|cr\s*\/\s*dr)$|gelir\s*\/\s*gider|işlem\s*t|islem\s*t|hareket\s*t|transaction\s*type|borç\s*\/\s*alacak|borc\s*\/\s*alacak/, 0], ['rate', 'KDV oranı', /kdv|oran|vergi/, 0], ['acc', 'Hesap / kategori', /hesap\s*ad|kategori|kalem|grup|cins|hesap/, 0], ['doc', 'Belge türü', /belge|fatura|fiş|fis/, 0]],
   fatura: [['cust', 'Müşteri', /müşteri|musteri|cari|ünvan|unvan|firma|alıcı|alici|ad[ıi]|isim/, 1], ['no', 'Fatura no', /fatura\s*n|belge\s*n|^no$|numara|seri/, 0], ['date', 'Fatura tarihi', /tarih|date/, 0], ['due', 'Vade', /vade|son\s*öde|son\s*ode/, 0], ['tot', 'Tutar', /tutar|toplam|bakiye|alacak|bedel|genel/, 1], ['st', 'Durum (ödendi mi)', /durum|öden|oden|tahsil|kapan/, 0]],
   borc: [['who', 'Tedarikçi / kime', /tedarik|kime|alacaklı|alacakli|firma|cari|ünvan|unvan|ad[ıi]|isim/, 1], ['note', 'Açıklama', /açıklama|aciklama|not|detay|konu/, 0], ['amt', 'Tutar', /tutar|toplam|borç|borc|bakiye|bedel|genel/, 1], ['due', 'Vade', /vade|son\s*öde|son\s*ode|tarih/, 0], ['st', 'Durum (ödendi mi)', /durum|öden|oden|kapan/, 0]],
 };
@@ -477,6 +477,7 @@ const IX_MON = { oca: 1, şub: 2, sub: 2, mar: 3, nis: 4, may: 5, haz: 6, tem: 7
 function ixPrep(sh) {
   const rows = sh.rows; let hi = 0, best = -1;
   rows.slice(0, 15).forEach((r, i) => { const t = r.filter((c) => { const x = ixTxt(c); return x && ixN(c) === null && !ixDate(c); }).length; if (t > best && t >= 2) { best = t; hi = i; } });
+  { const KW = /^(tarih|date|a[çc][ıi]klama|description|narration|details|memo|tutar|amount|gelir|gider|income|expense|debit|credit|borç|borc|alacak|bakiye|balance|hesap|kategori|belge|işlem|islem|valör|valor|giriş|çıkış|giris|cikis|type|tür|reference|referans|fiş|sıra)/; let kb = 0, ki = -1; rows.slice(0, 40).forEach((r, i) => { const k = r.filter((c) => { const x = ixNorm(c); return x && x.length <= 40 && ixN(c) === null && KW.test(x); }).length; if (k > kb) { kb = k; ki = i; } }); if (kb >= 3 && ki >= 0) hi = ki; }
   const heads = (rows[hi] || []).map((c, i) => ixTxt(c) || 'Sütun ' + (i + 1)); const data = rows.slice(hi + 1).filter((r) => r.some((c) => ixTxt(c)));
   return { heads, data };
 }
@@ -510,7 +511,7 @@ NEWM.mximp = () => {
     const xl = S.settings && S.settings.xlast;
     return sheet('Excel aktar', `<p class="muted small">Şimdiye kadar Excel'de tuttuğun kayıtları Kais'e taşı. Dosyayı yükle, Kais sütunları kendisi tanır ve eşler. Sen önizlemeyi kontrol edip onaylarsın. Dosya cihazından çıkmaz.</p>
     ${MXI.err ? `<div class="callout warn" style="margin:8px 0">${ic('alert')}<div><p>${esc(MXI.err)}</p></div></div>` : ''}
-    <label class="btn block" style="cursor:pointer;margin-top:10px">${ic('file', 18)} Excel ya da CSV seç<input id="ix-file" type="file" accept=".xlsx,.csv,.txt" style="display:none"></label>
+    <label class="btn block" style="cursor:pointer;margin-top:10px">${ic('file', 18)} Excel ya da CSV seç<input id="ix-file" type="file" accept=".xlsx,.xls,.csv,.txt" style="display:none"></label>
     <div class="field" style="margin:10px 0 0"><label for="ix-txt">Ya da tabloyu kopyalayıp yapıştır</label><textarea id="ix-txt" rows="4" style="${mxInp}" placeholder="Tarih;Açıklama;Tutar"></textarea></div><button class="btn sec block" style="margin-top:8px" data-a="ixpaste">Yapıştırılanı oku</button>
     <p class="small muted" style="margin-top:10px">Gelir gider hareketleri, faturalar (alacaklar) ve borçlar aktarılabilir. Birden çok sayfa varsa her biri ayrı seçilir. Eski .xls dosyasını .xlsx olarak kaydet.</p>
     ${xl ? `<div class="card" style="margin-top:12px;padding:10px 12px"><div class="small muted">Son aktarım: ${xl.n} kayıt · ${mxDM(xl.t)}</div><button class="btn sm sec" style="margin-top:6px" data-a="ixundo">Son aktarımı geri al</button></div>` : ''}`);
@@ -547,9 +548,9 @@ document.addEventListener('change', async (e) => {
         const X = await xlLoad(); const wb = new X.Workbook(); await wb.xlsx.load(await f.arrayBuffer()); const sheets = [];
         wb.worksheets.forEach((ws) => { const rows = []; const nfc = {}; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (c.numFmt) nfc[c.numFmt] = (nfc[c.numFmt] || 0) + 1; if (c.isMerged && c.master && c.master.address !== c.address) v = ''; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else v = ''; } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows, cur: ixCurOf(nfc) }); });
         ixLoadSheets(sheets, f.name);
-      } else if (/\.xls$/i.test(f.name)) { MXI.step = 'pick'; MXI.err = 'Eski .xls dosyası okunamıyor. Excel\'de "Farklı kaydet" ile .xlsx yapıp yükle.'; renderModal(); }
-      else { ixLoadSheets([{ name: f.name, rows: mxCsv(await f.text()) }], f.name); }
-    } catch (x) { MXI.step = 'pick'; MXI.err = 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
+      } else if (/\.xls$/i.test(f.name)) { ixLoadSheets(await ixReadXls(await f.arrayBuffer()), f.name); }
+      else { const buf = await f.arrayBuffer(); const u8 = new Uint8Array(buf.slice(0, 4)); if (u8[0] === 0xD0 && u8[1] === 0xCF) ixLoadSheets(await ixReadXls(buf), f.name); else ixLoadSheets([{ name: f.name, rows: mxCsv(ixDecode(buf)) }], f.name); }
+    } catch (x) { MXI.step = 'pick'; MXI.err = /password|encrypt|protect/i.test(String(x && x.message)) ? 'Dosya parolalı görünüyor. Parolayı kaldırıp tekrar yükle.' : 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
     return;
   }
   if (MXI.step !== 'map') return;
@@ -617,7 +618,7 @@ function ixDfmt(P, idx) {
 }
 const IX_RATES = [0, 1, 8, 10, 18, 20];
 const ixRateOf = (v) => { if (v == null || v === '') return null; let n = typeof v === 'number' ? v : ixN(String(v).replace('%', '')); if (n === null) return null; if (n > 0 && n < 1) n = Math.round(n * 100); return n; };
-const ixSumRow = (r) => r.some((c) => { const t = ixNorm(c); return t && ixN(c) === null && /^(genel\s*)?(ara\s*)?toplam\b|^total\b|^devir\b|^aktarma\b/.test(t); });
+const ixSumRow = (r) => r.some((c) => { const t = ixNorm(c); return t && ixN(c) === null && /^(genel\s*)?(ara\s*)?toplam\b|^(grand\s*|sub\s*)?total\b|^devir\b|^aktarma\b|^(açılış|acilis|kapanış|kapanis|opening|closing)\s*(bakiye|balance)|^(brought|carried)\s*forward|^dönem\s*(sonu|başı|basi)\b|^sayfa\s*toplam/.test(t); });
 const ixSnap = (x) => (x >= 0 ? IX_RATES.find((k) => Math.abs(k - x) <= 0.6) : undefined);
 const ixStOf = (t) => { t = ixNorm(t); if (!t) return null; if (/ödenmedi|odenmedi|bekl|açık|acik|hayır|hayir|tahsil edilmedi|vadesi|kısmi|kismi/.test(t)) return 'bekliyor'; if (/öden|oden|tahsil|kapa|evet|paid|✓|^x$/.test(t)) return 'odendi'; return null; };
 function ixBuild(type, map, P) {
@@ -630,6 +631,8 @@ function ixBuild(type, map, P) {
   const amtKeys = type === 'defter' ? ['gelir', 'gider', 'total', 'matrah'] : type === 'fatura' ? ['tot', 'matrah'] : ['amt']; const colSum = {}; const hasM = map.matrah != null, hasK = map.kdvamt != null;
   const tcol = [map.total, map.tot, map.amt, map.gelir, map.gider].find((x) => x != null); const hint = tcol != null ? ixNorm(P.heads[tcol]) : '';
   const hintIn = /dahil|genel|ödenecek|odenecek|brüt|brut/.test(hint), hintEx = /hariç|haric|net|matrah|kdvsiz/.test(hint);
+  const balI = P.heads.findIndex((h, i) => /bakiye|balance|kalan/.test(ixNorm(h)) && !Object.values(map).includes(i)); const bdMap = new Map(); let warnBal = 0;
+  if (balI >= 0) { const L = P.data.map((r) => ({ r, b: ixN(r[balI]), iso: map.date != null ? (ixDate(r[map.date], 'dmy') || ixDate(r[map.date], 'mdy')) : null })); const ds = L.filter((x) => x.iso); const desc = ds.length > 1 && ds[0].iso > ds[ds.length - 1].iso; const B = L.filter((x) => x.b !== null); B.forEach((x, i) => { const o = desc ? B[i + 1] : B[i - 1]; if (o) bdMap.set(x.r, x.b - o.b); }); }
   let lastIso = null, ndCount = 0; const firstIso = (() => { for (const r of P.data) { const x = ixDate(g(r, 'date'), fmt); if (x) return x; } return null; })();
   P.data.forEach((r) => {
     const n = r.__n; if (ixSumRow(r)) { skip.push({ n, why: 'Toplam satırı (aktarılmaz)', sum: true }); sumRows.push(r); return; }
@@ -648,8 +651,10 @@ function ixBuild(type, map, P) {
       }
       let tv = null, dir = null; const a = ixN(g(r, 'gelir')), b = ixN(g(r, 'gider')); const mv = ixN(g(r, 'matrah')), kv = ixN(g(r, 'kdvamt'));
       if (map.gelir != null || map.gider != null) { if (a > 0) { tv = a; dir = 'gelir'; } else if (b > 0) { tv = b; dir = 'gider'; } else if (a < 0 || b < 0) { skip.push({ n, why: 'Negatif tutar (iade/ters kayıt)' }); return; } }
-      else { const t = ixN(g(r, 'total')); if (t) tv = t; const dt = ixNorm(g(r, 'dir')); if (/gelir|satış|satis|tahsilat|giren|alacak/.test(dt)) dir = 'gelir'; else if (/gider|alış|alis|ödeme|odeme|çıkan|cikan|borç|borc/.test(dt)) dir = 'gider'; }
+      else { const t = ixN(g(r, 'total')); if (t) tv = t; const dt = ixNorm(g(r, 'dir')); if (/gelir|satış|satis|tahsilat|giren|alacak|credit|income|deposit|^cr$|^c$|giriş|giris/.test(dt)) dir = 'gelir'; else if (/gider|alış|alis|ödeme|odeme|çıkan|cikan|borç|borc|debit|expense|withdraw|payment|^dr$|^d$|çıkış|cikis/.test(dt)) dir = 'gider'; }
       if (tv == null && mv) tv = mv + (kv || 0); if (!tv) { skip.push({ n, why: 'Tutar yok' }); return; }
+      const bd = bdMap.has(r) ? bdMap.get(r) : null; if (dir == null && bd != null && Math.abs(Math.abs(bd) - Math.abs(tv)) < 0.05) dir = bd > 0 ? 'gelir' : 'gider';
+      else if (dir && bd != null && Math.abs(bd - (dir === 'gelir' ? Math.abs(tv) : -Math.abs(tv))) > 0.05 && warnBal++ < 30) warn.push({ n, why: 'Bakiye değişimi (' + fmt0(bd) + ') tutarla uyuşmuyor, satırı kontrol et' });
       if (dir == null) { if (dec.dir == null) { pend.dir++; need.dir = true; return; } if (dec.dir === 'skip') { skip.push({ n, why: 'Tür belirsiz (atlandı)' }); return; } dir = dec.dir === 'sign' ? (tv < 0 ? 'gider' : 'gelir') : dec.dir; }
       tv = Math.abs(tv); let rate = ixRateOf(g(r, 'rate')); if (rate != null && !IX_RATES.includes(rate)) rate = null;
       if (rate == null && mv && kv != null) { const s = ixSnap(Math.abs(kv) / Math.abs(mv) * 100); if (s != null) rate = s; }
@@ -1420,4 +1425,43 @@ function ixCurOf(nfc) {
     ['nakit', 'banka'].forEach((k) => { const x = D[k]; L.push('', CH[k] + ': gelir ' + fmt0(x.g) + ', gider ' + fmt0(x.d) + ', net ' + fmt0(x.n) + (x.known ? ', kapanış ' + fmt0(x.close) : '')); const t = top(x.rows, 'gider', 3); if (t.length) L.push('En büyük giderler: ' + t.map(([a, v]) => a + ' ' + fmt0(v)).join(', ')); });
     cpy(L.join('\n'), 'Özet kopyalandı.');
   };
+}
+
+/* v225: farklı biçimli dosyalar: kodlama, ayraç, .xls */
+function ixDecode(buf) {
+  const u = new Uint8Array(buf); let t;
+  try { t = new TextDecoder('utf-8', { fatal: true }).decode(u); }
+  catch (e) { try { t = new TextDecoder('windows-1254').decode(u); } catch (e2) { t = new TextDecoder().decode(u); } }
+  return t.replace(/^﻿/, '');
+}
+mxCsv = function (txt) {
+  txt = String(txt).replace(/\r\n?/g, '\n'); const head = txt.split('\n').filter((l) => l.trim()).slice(0, 8);
+  const cnt = (ch) => { let tot = 0; head.forEach((l) => { let q = false; for (const c of l) { if (c === '"') q = !q; else if (c === ch && !q) tot++; } }); return tot; };
+  const cands = [';', '\t', '|', ','].map((c) => [c, cnt(c)]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]); const sep = cands.length ? cands[0][0] : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"' && cur === '') q = true;
+    else if (ch === sep) { row.push(cur); cur = ''; }
+    else if (ch === '\n') { row.push(cur); cur = ''; if (row.some((c) => String(c).trim())) rows.push(row); row = []; }
+    else cur += ch;
+  }
+  row.push(cur); if (row.some((c) => String(c).trim())) rows.push(row);
+  return rows;
+};
+let IX_SJ = null;
+function ixSheetJs() {
+  if (typeof XLSX !== 'undefined') return Promise.resolve(XLSX);
+  if (IX_SJ) return IX_SJ;
+  IX_SJ = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/sheetjs-0.18.5/xlsx.full.min.js'; s.onload = () => (typeof XLSX !== 'undefined' ? res(XLSX) : rej(new Error('SheetJS yok'))); s.onerror = () => { IX_SJ = null; rej(new Error('Excel kitaplığı yüklenemedi')); }; document.head.appendChild(s); });
+  return IX_SJ;
+}
+async function ixReadXls(buf) {
+  const X = await ixSheetJs(); const wb = X.read(buf, { type: 'array', cellDates: true });
+  const iso = (d) => { const x = new Date(d.getTime() + 12 * 36e5); return x.getUTCFullYear() + '-' + String(x.getUTCMonth() + 1).padStart(2, '0') + '-' + String(x.getUTCDate()).padStart(2, '0'); };
+  return wb.SheetNames.map((name) => {
+    const rows = X.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }).map((r) => r.map((v) => (v instanceof Date ? iso(v) : v == null ? '' : v)));
+    return { name, rows };
+  }).filter((s) => s.rows.length > 1);
 }
