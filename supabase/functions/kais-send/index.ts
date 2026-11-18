@@ -24,7 +24,7 @@ export const safeName = (s: unknown): string => String(s ?? '').replace(/[\r\n"<
 export function fromWithName(from: string, name: string): string {
   const m = /<([^>]+)>/.exec(from); const addr = (m ? m[1] : from).trim();
   if (!validEmail(addr)) return from;
-  const n = safeName(name); return n ? `${n} <${addr}>` : addr;
+  const n = safeName(name); return n ? n + ' <' + addr + '>' : addr;
 }
 export const personalize = (t: string, name: string): string => t.replace(/\{ad\}/gi, (String(name || '').trim().split(/\s+/)[0]) || 'Müşterimiz');
 export const textToHtml = (t: string): string => escH(t).replace(/\n/g, '<br>');
@@ -56,17 +56,17 @@ const dayLimit = (): number => { const n = Number(env('MAIL_DAY')); return Numbe
 
 // ---------- e-posta içeriği ----------
 function shell(bizName: string, innerHtml: string, footHtml: string): string {
-  return `<!doctype html><html lang="tr"><body style="margin:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1c2430"><div style="max-width:560px;margin:0 auto;padding:24px 16px"><div style="background:#fff;border-radius:12px;padding:24px;font-size:15px;line-height:1.55">${innerHtml}</div><p style="font-size:12px;color:#6b7684;margin:14px 4px 0;line-height:1.5">${footHtml}</p></div></body></html>`;
+  return '<!doctype html><html lang="tr"><body style="margin:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1c2430"><div style="max-width:560px;margin:0 auto;padding:24px 16px"><div style="background:#fff;border-radius:12px;padding:24px;font-size:15px;line-height:1.55">' + innerHtml + '</div><p style="font-size:12px;color:#6b7684;margin:14px 4px 0;line-height:1.5">' + footHtml + '</p></div></body></html>';
 }
 export function buildRemind(biz: string, name: string, amount: number, text: string) {
   const body = personalize(text, name);
-  const html = shell(biz, textToHtml(body), `Bu mesaj ${escH(biz)} tarafından gönderildi. Yanıtlarsan doğrudan işletmeye ulaşır.`);
-  return { subject: `Ödeme hatırlatması · ${safeName(biz)}`, html, text: body + `\n\n— ${biz}` };
+  const html = shell(biz, textToHtml(body), 'Bu mesaj ' + escH(biz) + ' tarafından gönderildi. Yanıtlarsan doğrudan işletmeye ulaşır.');
+  return { subject: 'Ödeme hatırlatması · ' + safeName(biz), html, text: body + '\n\n— ' + biz };
 }
 export function buildCampaign(biz: string, name: string, subject: string, text: string, unsubUrl: string) {
   const body = personalize(text, name);
-  const foot = `Bu iletiyi ${escH(biz)} ile iletişim izniniz olduğu için aldınız. Almak istemiyorsanız <a href="${escH(unsubUrl)}" style="color:#6b7684">buradan listeden çıkabilirsiniz</a>.`;
-  return { subject: clean(subject, 150).replace(/\n/g, ' '), html: shell(biz, textToHtml(body), foot), text: body + `\n\n—\n${biz}\nListeden çıkmak için: ${unsubUrl}` };
+  const foot = 'Bu iletiyi ' + escH(biz) + ' ile iletişim izniniz olduğu için aldınız. Almak istemiyorsanız <a href="' + escH(unsubUrl) + '" style="color:#6b7684">buradan listeden çıkabilirsiniz</a>.';
+  return { subject: clean(subject, 150).replace(/\n/g, ' '), html: shell(biz, textToHtml(body), foot), text: body + '\n\n—\n' + biz + '\nListeden çıkmak için: ' + unsubUrl };
 }
 
 // ---------- Resend ----------
@@ -141,7 +141,7 @@ async function actRemind(srv: any, req: Request, body: any) {
   const text = clean(body.text, 3000); if (text.length < 5) return ERR('Mesaj boş.', 422);
   const amount = Number(recv.amt) || 0;
   const used = await sentToday(srv, bid); if (used >= dayLimit()) return ERR('Bugünlük gönderim sınırına ulaştın. Yarın tekrar dene.', 429);
-  const key = `remind:${rid}:${today()}`;
+  const key = 'remind:' + rid + ':' + today();
   if (!(await claim(srv, bid, key, 'remind', to))) return ERR('Bu alacak için bugün zaten hatırlatma gönderildi.', 409);
   const m = buildRemind(w.biz, String(recv.name || ''), amount, text);
   const payload: Record<string, unknown> = { from: fromWithName(env('RESEND_FROM'), w.biz), to: [to], subject: m.subject, html: m.html, text: m.text };
@@ -177,14 +177,14 @@ async function actCampaign(srv: any, req: Request, body: any) {
   let sent = 0, failed = 0, dup = 0; const limited = list.length > left;
   const from = fromWithName(env('RESEND_FROM'), w.biz); const fnUrl = env('SUPABASE_URL') + '/functions/v1/kais-send';
   for (const c of list.slice(0, left)) {
-    const key = `camp:${cid}:${c.email}`;
+    const key = 'camp:' + cid + ':' + c.email;
     if (!(await claim(srv, bid, key, 'campaign', c.email))) { dup++; continue; }
     const tok = await signUnsub(bid, c.email, secretKey());
-    const page = `${appUrl()}/cikis/?u=${encodeURIComponent(tok)}`;
+    const page = appUrl() + '/cikis/?u=' + encodeURIComponent(tok);
     const m = buildCampaign(w.biz, c.name, subject, text, page);
     const payload: Record<string, unknown> = {
       from, to: [c.email], subject: m.subject, html: m.html, text: m.text,
-      headers: { 'List-Unsubscribe': `<${fnUrl}?u=${encodeURIComponent(tok)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+      headers: { 'List-Unsubscribe': '<' + fnUrl + '?u=' + encodeURIComponent(tok) + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     };
     if (w.email) payload.reply_to = w.email;
     const s = await resendSend(payload);
