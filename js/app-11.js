@@ -487,7 +487,8 @@ function ixAuto(type, P) {
   IX_F[type].forEach((f) => { if (map[f[0]] != null) return; let i = pri[f[0]] && type === 'defter' ? hn.findIndex((h, j) => !used.has(j) && pri[f[0]].test(h)) : -1; if (i < 0) i = hn.findIndex((h, j) => !used.has(j) && f[2].test(h)); if (i >= 0) { map[f[0]] = i; used.add(i); } });
   const col = (i) => P.data.slice(0, 40).map((r) => r[i]);
   const frac = (i, fn) => { const c = col(i).filter((x) => ixTxt(x)); return c.length ? c.filter(fn).length / c.length : 0; };
-  const need = (k, fn) => { if (map[k] != null) return; let b = -1, bs = 0.6; P.heads.forEach((_, i) => { if (used.has(i)) return; const s = frac(i, fn); if (s > bs) { bs = s; b = i; } }); if (b >= 0) { map[k] = b; used.add(b); } };
+  const isSeq = (i) => { if (/sıra|sira|s\.\s*no|^no$|^#$/.test(hn[i])) return true; const v = col(i).map(ixN).filter((x) => x !== null); if (v.length < 5) return false; if (!v.every((x) => Number.isInteger(x))) return false; let st = 0; for (let j = 1; j < v.length; j++) if (Math.abs(v[j] - v[j - 1]) === 1) st++; return st / (v.length - 1) > 0.8; };
+  const need = (k, fn) => { if (map[k] != null) return; let b = -1, bs = 0.6; P.heads.forEach((_, i) => { if (used.has(i) || (k === 'total' || k === 'tot' || k === 'amt') && isSeq(i)) return; const s = frac(i, fn); if (s > bs) { bs = s; b = i; } }); if (b >= 0) { map[k] = b; used.add(b); } };
   const dk = type === 'defter' ? 'date' : type === 'fatura' ? 'date' : 'due'; need(dk, (x) => !!(ixDate(x, 'dmy') || ixDate(x, 'mdy')));
   const ak = type === 'defter' ? 'total' : type === 'fatura' ? 'tot' : 'amt'; if (!(type === 'defter' && (map.gelir != null || map.gider != null))) need(ak, (x) => ixN(x) !== null && !ixDate(x));
   const tk = type === 'defter' ? 'desc' : type === 'fatura' ? 'cust' : 'who'; need(tk, (x) => ixN(x) === null && ixTxt(x).length > 2);
@@ -1165,10 +1166,10 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
   function ixBal(P, map) {
     const bi = P.heads.findIndex((h, i) => /bakiye/.test(ixNorm(h)) && i !== map.gelir && i !== map.gider && i !== map.total);
     if (bi < 0 || (map.gelir == null && map.gider == null)) return null;
-    let prev = null, n = 0; const bad = [];
+    let prev = null, n = 0, last = null, lastN = 0; const bad = [];
     P.data.forEach((r) => { const b = ixN(r[bi]); if (b === null) return; const d = (map.gelir != null ? ixN(r[map.gelir]) || 0 : 0) - (map.gider != null ? Math.abs(ixN(r[map.gider]) || 0) : 0);
-      if (prev !== null) { n++; if (Math.abs(b - prev - d) > 0.05) bad.push(r.__n); } prev = b; });
-    return n ? { n, bad } : null;
+      if (prev !== null) { n++; if (Math.abs(b - prev - d) > 0.05) bad.push(r.__n); } prev = b; last = b; lastN = r.__n; });
+    return n ? { n, bad, last, lastN } : null;
   }
   function planBuild() {
     MXI.pdec = MXI.pdec || {};
@@ -1176,7 +1177,8 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
       const P = ixPrep(sh); const t = ixDetect(sh); const m = ixAuto(t, P); const title = ((sh.rows && sh.rows[0]) || []).join(' ');
       const amt = t === 'defter' ? (m.gelir != null || m.gider != null || m.total != null) : t === 'fatura' ? m.tot != null : m.amt != null;
       const dt = (t === 'borc' ? m.due : m.date) != null; let role = 'atla';
-      if (P.data.length >= 2 && amt && !(/açıklama|aciklama|kullanım|kullanim|talimat|özet|ozet|readme|yardım|yardim/.test(ixNorm(sh.name)) && !dt)) role = t === 'defter' ? (chG(sh.name) || chG(title) || 'defter') : t;
+      const clear = t !== 'defter' || m.gelir != null || m.gider != null || (m.total != null && m.dir != null);
+      if (P.data.length >= 2 && amt && clear && !(/açıklama|aciklama|kullanım|kullanim|talimat|özet|ozet|readme|yardım|yardim/.test(ixNorm(sh.name)) && !dt)) role = t === 'defter' ? (chG(sh.name) || chG(title) || 'defter') : t;
       return { i, role, dt };
     });
   }
@@ -1185,6 +1187,8 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
     const sh = MXI.sheets[pl.i]; const P = sh._p || (sh._p = ixPrep(sh)); const type = rType(pl.role); const map = ixAuto(type, P);
     const sv = MXI.dec; MXI.dec = Object.assign({}, MXI.pdec); let R; try { R = ixBuild(type, map, P); } finally { MXI.dec = sv; }
     pl.R = R; pl.bal = type === 'defter' ? ixBal(P, map) : null; pl.map = map; pl.type = type;
+    pl.sum = { g: 0, d: 0 }; R.out.forEach((o) => { if (o.dir === 'gelir') pl.sum.g += o.total || 0; else if (o.dir === 'gider') pl.sum.d += o.total || 0; });
+    pl.warn = type === 'defter' && ((map.gider != null && !pl.sum.d && R.out.length > 5) || (map.gelir != null && !pl.sum.g && R.out.length > 5)) ? 'Gelir ya da gider sütunu boş okundu, bu sayfayı kontrol et.' : '';
     if (R.need.dfmt) return { ok: false, txt: 'Tarih biçimi sorulacak', cls: 'p-warn' };
     if (!R.out.length) return { ok: false, txt: R.pend.dir + R.pend.rate + R.pend.incl + R.pend.st ? 'Karar bekliyor' : 'Aktarılacak satır yok', cls: 'p-warn' };
     return { ok: true, txt: R.out.length + ' kayıt' + (R.dup ? ' · ' + R.dup + ' zaten var' : ''), cls: 'p-ok' };
@@ -1211,8 +1215,11 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
     const rows = MXI.plan.map((pl, k) => { const sh = MXI.sheets[pl.i]; const s = st[k]; const b = pl.bal;
       return `<div class="card" style="padding:10px 12px;margin-top:8px"><div class="row between" style="gap:8px;align-items:center"><b style="min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(sh.name)}</b><span class="pill ${s.cls}">${esc(s.txt)}</span></div>
       <div class="row" style="gap:8px;margin-top:6px;align-items:center"><select data-ixp="role:${pl.i}" style="${mxInp};padding:9px 10px;flex:1">${Object.keys(RL).map((r) => `<option value="${r}" ${r === pl.role ? 'selected' : ''}>${RL[r]}</option>`).join('')}</select><button class="btn sm sec" data-a="ixplanedit" data-i="${pl.i}">Düzenle</button></div>
-      <div class="small muted" style="margin-top:4px">${sh.rows.length} satır${pl.role !== 'atla' ? (pl.dt ? ' · tarih ✓' : ' · tarih yok') : ''}</div>
-      ${b ? (b.bad.length ? `<div class="small" style="margin-top:4px;color:#b45309">Bakiye ${b.bad.length} satırda tutmuyor (ilk: satır ${b.bad[0]}). Dosyadaki hesapta fark olabilir.</div>` : `<div class="small" style="margin-top:4px;color:#15803d">Bakiye tuttu ✓ (${b.n} satır kontrol edildi)</div>`) : ''}</div>`; }).join('');
+      <div class="small muted" style="margin-top:4px">${sh.rows.length} satır${pl.role !== 'atla' ? (pl.dt ? ' · tarih ✓' : ' · tarih yok') : ' · gelir/gider sütunu bulunamadı ya da emin değilim'}</div>
+      ${pl.map && pl.role !== 'atla' ? `<div class="small muted" style="margin-top:2px">${[['date', 'Tarih'], ['desc', 'Açıklama'], ['acc', 'Hesap'], ['gelir', 'Gelir'], ['gider', 'Gider'], ['total', 'Tutar']].filter((x) => pl.map[x[0]] != null).map((x) => x[1] + ': ' + esc(String(sh._p.heads[pl.map[x[0]]]).slice(0, 18))).join(' · ')}</div>` : ''}
+      ${pl.sum && pl.role !== 'atla' ? `<div class="small" style="margin-top:2px">Gelir <b class="num" style="color:#15803d">${fmt0(pl.sum.g)}</b> · Gider <b class="num" style="color:#b42318">${fmt0(pl.sum.d)}</b></div>` : ''}
+      ${pl.warn ? `<div class="small" style="margin-top:4px;color:#b42318">${esc(pl.warn)}</div>` : ''}
+      ${b ? (b.bad.length ? `<div class="small" style="margin-top:4px;color:#b45309">Bakiye ${b.bad.length} satırda tutmuyor (ilk: satır ${b.bad[0]}). Dosyadaki hesapta fark olabilir.</div>` : `<div class="small" style="margin-top:4px;color:#15803d">Bakiye tuttu ✓ (${b.n} satır) · son bakiye ${fmt0(b.last)}</div>`) : ''}</div>`; }).join('');
     return sheet('Excel aktar', `<div class="callout">${ic('sparkle')}<div><b>${MXI.sheets.length} sayfa bulundu</b><p style="margin-top:2px">${esc(MXI.fn || 'Dosya')} · Kais her sayfanın ne olduğunu anladı. Yanlış olanı değiştir, sonra hepsini tek seferde aktar.</p></div></div>
     ${dq ? `<h3 style="margin-top:14px">Senin kararın gerekiyor</h3>${dq}` : ''}${rows}
     ${names.length ? `<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Hesap adları (${names.length})</summary><p class="small muted" style="margin:6px 0">Dosyandaki hesap adlarını Kais kategorisine bağlayabilirsin. Dokunmazsan aynen kullanılır. Seçtiğini hatırlarım.</p><div class="card" style="padding:8px 12px">${names.map((n) => `<div class="row" style="gap:8px;align-items:center;padding:4px 0"><span class="small" style="flex:0 0 42%">${esc(n)} <span class="muted">(${accs[n]})</span></span><select data-ixp="map:${esc(n)}" style="${mxInp};padding:9px 10px;flex:1"><option value="">Aynen kullan</option>${cats.filter((c) => c !== n).map((c) => `<option ${mm[mxLK(n)] === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>`).join('')}</div></details>` : ''}
@@ -1234,7 +1241,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
       const sh = MXI.sheets[pl.i]; if (pl.role === 'atla') { sh._done = true; return; }
       ixSetSheet(pl.i); const cs = ixCur(); const type = rType(pl.role); MXI.type = type; MXI.map = ixAuto(type, cs._p); MXI.dec = Object.assign({}, pd); MXI.ch = pl.role === 'nakit' ? 'nakit' : pl.role === 'banka' ? 'banka' : '';
       const R = ixBuild(type, MXI.map, cs._p); if (!R.out.length || R.need.dfmt) return;
-      H.iximport(); if (MXI.step === 'done' && MXI.done) { tot += MXI.done.n; dup += MXI.done.dup || 0; bad += MXI.done.bad || 0; parts.push(cs.name + ': ' + MXI.done.n); if (S.settings.xlast) ids.push(S.settings.xlast.b); }
+      const bl = pl.bal; const chn = MXI.ch; H.iximport(); if (MXI.step === 'done' && MXI.done) { if (bl && bl.last != null && (chn === 'nakit' || chn === 'banka') && bl.bad.length / bl.n < 0.05) { const kb = (S.settings.kbal = S.settings.kbal || {}); kb[chn] = { v: bl.last, seq: seq, from: 'Excel', n: bl.lastN, t: fiIso() }; } tot += MXI.done.n; dup += MXI.done.dup || 0; bad += MXI.done.bad || 0; parts.push(cs.name + ': ' + MXI.done.n); if (S.settings.xlast) ids.push(S.settings.xlast.b); }
     });
     if (ids.length) { const c = 'x' + Date.now().toString(36) + 'p'; [LEDGER, INV, DEBTS, FCUST].forEach((a) => a.forEach((r) => { if (ids.includes(r.xb)) r.xb = c; })); const h = (S.settings.xhist || []).filter((x) => !ids.includes(x.b)); h.push({ b: c, n: tot, t: fiIso() }); S.settings.xhist = h; S.settings.xlast = h[h.length - 1]; try { pSched(); } catch (e) {} }
     MXI.plan = null; MXI.done = { n: tot, dup, bad, txt: parts.join(' · ') || 'Aktarılacak satır bulunamadı' }; MXI.step = 'done'; render(); S.modal = { type: 'mximp' }; renderModal();
@@ -1252,6 +1259,17 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
   const agg = (rs) => { let g = 0, d = 0; rs.forEach((r) => { const t = mxN(r.total); if (dirOf(r) === 'gelir') g += t; else d += t; }); return { g, d, n: g - d, c: rs.length }; };
   const bars = (rs, dir, k) => { const m = {}; rs.filter((r) => dirOf(r) === dir).forEach((r) => { const a = r.acc || 'Diğer'; m[a] = (m[a] || 0) + mxN(r.total); }); const L = Object.keys(m).map((a) => [a, m[a]]).sort((a, b) => b[1] - a[1]).slice(0, k); const mx = L.length ? L[0][1] : 1; const col = dir === 'gelir' ? '#15803d' : '#b42318';
     return L.length ? L.map(([a, v]) => `<div style="margin-top:8px"><div class="row between small" style="gap:8px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a)}</span><b class="num">${fmt0(v)}</b></div><div style="height:6px;border-radius:4px;background:var(--line,#e5e8ee);margin-top:3px"><div style="height:6px;border-radius:4px;width:${Math.max(3, Math.round(v / mx * 100))}%;background:${col}"></div></div></div>`).join('') : '<p class="small muted" style="margin-top:6px">Bu ay kayıt yok.</p>'; };
+  const rnum = (r) => parseInt(String(r.id).replace(/\D/g, ''), 10) || 0;
+  const kbCur = (k) => { const a = ((S.settings && S.settings.kbal) || {})[k]; if (!a) return null; return { v: a.v + agg(LEDGER.filter((r) => chOf(r) === k && rnum(r) > a.seq)).n, a }; };
+  const kbHtml = () => {
+    const one = (k, l) => { const c = kbCur(k); return `<div class="card" style="padding:12px;flex:1;min-width:0"><div class="small muted">${l} · güncel</div>${c ? `<div class="num" style="font-size:22px;font-weight:700;color:${c.v >= 0 ? '#15803d' : '#b42318'}">${fmt0(c.v)}</div><div class="small muted">${c.a.from === 'Excel' ? 'Excel\'deki son bakiye (satır ' + c.a.n + ') üzerine sonraki hareketler' : 'Elle girdiğin bakiye üzerine sonraki hareketler'}</div>` : '<div style="font-size:15px;font-weight:600;margin-top:2px">Bilinmiyor</div><div class="small muted">Dosyada bakiye sütunu yok ya da tutmadı. Aşağıdan gir.</div>'}</div>`; };
+    const kb = (S.settings && S.settings.kbal) || {};
+    return `<div class="row" style="gap:8px;margin-bottom:8px">${one('nakit', 'Nakit kasa')}${one('banka', 'Banka hesabı')}</div>
+    <details style="margin-bottom:8px"><summary style="cursor:pointer" class="small"><b>Bakiyeyi elle düzelt</b></summary><div class="row" style="gap:8px;margin-top:8px"><div class="field" style="margin:0;flex:1"><label for="kb-n">Nakit şu an</label><input id="kb-n" inputmode="decimal" style="${mxInp}" placeholder="${kbCur('nakit') ? fmt0(kbCur('nakit').v) : 'Örn. 5000'}"></div><div class="field" style="margin:0;flex:1"><label for="kb-b">Banka şu an</label><input id="kb-b" inputmode="decimal" style="${mxInp}" placeholder="${kbCur('banka') ? fmt0(kbCur('banka').v) : 'Örn. 18500'}"></div></div><button class="btn sm" style="margin-top:8px" data-a="mxkbset">Kaydet</button><p class="small muted" style="margin-top:6px">Bugünkü gerçek bakiyeyi yaz. Kais bundan sonraki hareketleri üstüne ekler.</p></details>`;
+  };
+  H.mxkbset = () => { const g = (id) => ((document.getElementById(id) || {}).value || '').trim(); if (!S.settings) S.settings = {}; const kb = (S.settings.kbal = S.settings.kbal || {}); let n = 0;
+    [['kb-n', 'nakit'], ['kb-b', 'banka']].forEach(([id, k]) => { const v = g(id); if (v === '') return; const x = trNum(v); if (x === null || isNaN(x)) return; kb[k] = { v: x, seq: seq, from: 'Elle', t: fiIso() }; n++; });
+    if (!n) return toast('Bir tutar yaz.', 'warn'); try { pSched(); } catch (e) {} toast('Bakiye kaydedildi.', 'ok'); renderModal(); };
   NEWM.mxkb = () => {
     const ym = ymOf(); const all = LEDGER.filter((r) => r.iso && inCh(r, MKB.ch)); const mon = all.filter((r) => r.iso.slice(0, 7) === ym); const A = agg(mon);
     const upto = agg(all.filter((r) => r.iso.slice(0, 7) <= ym)); const prev = agg(all.filter((r) => r.iso.slice(0, 7) === shift(ym, -1)));
@@ -1263,9 +1281,9 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
     const dlt = prev.c ? (A.n - prev.n) : null;
     return sheet('Nakit ve banka', `<div class="row" style="gap:6px;margin-bottom:10px">${tab('hepsi', 'Hepsi')}${tab('nakit', 'Nakit')}${tab('banka', 'Banka')}</div>
     <div class="row between" style="align-items:center;margin-bottom:8px"><button class="btn sm sec" data-a="mxkbm" data-d="-1" aria-label="Önceki ay">‹</button><b style="font-size:17px">${AY[+ym.slice(5, 7) - 1]} ${ym.slice(0, 4)}</b><button class="btn sm sec" data-a="mxkbm" data-d="1" aria-label="Sonraki ay">›</button></div>
-    <div class="card" style="padding:14px"><div class="small muted">Bu ay net</div><div class="num" style="font-size:28px;font-weight:700;color:${clr(A.n)}">${sg(A.n)} ₺</div>${dlt === null ? '' : `<div class="small muted">Geçen aya göre ${dlt >= 0 ? '+' : '−'}${fmt0(Math.abs(dlt))} ₺</div>`}
+    <div class="card" style="padding:14px"><div class="small muted">Bu ay net</div><div class="num" style="font-size:28px;font-weight:700;color:${clr(A.n)}">${sg(A.n)}</div>${dlt === null ? '' : `<div class="small muted">Geçen aya göre ${dlt >= 0 ? '+' : '−'}${fmt0(Math.abs(dlt))}</div>`}
       <div class="row" style="gap:10px;margin-top:10px"><div style="flex:1"><div class="small muted">Gelir</div><b class="num" style="color:#15803d">${fmt0(A.g)}</b></div><div style="flex:1"><div class="small muted">Gider</div><b class="num" style="color:#b42318">${fmt0(A.d)}</b></div><div style="flex:1"><div class="small muted">Hareket</div><b class="num">${A.c}</b></div></div></div>
-    <div class="card" style="padding:12px;margin-top:8px"><div class="small muted">${MKB.ch === 'hepsi' ? 'Tüm kayıtlardan' : MKB.ch === 'nakit' ? 'Nakit kayıtlarından' : 'Banka kayıtlarından'} bakiye (ay sonu)</div><div class="num" style="font-size:22px;font-weight:700;color:${clr(upto.n)}">${sg(upto.n)} ₺</div><div class="small muted">Gelir − gider toplamı. Açılış bakiyesi dahil değil.</div></div>
+    ${kbHtml()}
     ${MKB.ch === 'hepsi' ? `<div class="row" style="gap:8px;margin-top:8px">${chCard('nakit', 'Nakit')}${chCard('banka', 'Banka')}</div>${nolab ? `<p class="small muted" style="margin-top:6px">${nolab} kayıtta nakit/banka belirtilmemiş, sadece "Hepsi"nde sayılır.</p>` : ''}` : ''}
     <h3 style="margin-top:14px">Gider kalemleri</h3>${bars(mon, 'gider', 6)}<h3 style="margin-top:14px">Gelir kalemleri</h3>${bars(mon, 'gelir', 4)}
     <h3 style="margin-top:14px">Son hareketler</h3>${last.length ? last.map((r) => `<div class="row between small" style="gap:8px;padding:7px 0;border-top:1px solid var(--line,#e5e8ee)"><span style="min-width:0"><span class="muted">${mxDmy(r.iso)}</span> · ${esc(String(r.desc).slice(0, 36))}${MKB.ch === 'hepsi' && chOf(r) ? ` <span class="pill ${chOf(r) === 'banka' ? 'p-info' : 'p-ok'}">${chOf(r) === 'banka' ? 'Banka' : 'Nakit'}</span>` : ''}</span><b class="num" style="color:${dirOf(r) === 'gelir' ? '#15803d' : '#b42318'}">${dirOf(r) === 'gelir' ? '+' : '−'}${fmt0(mxN(r.total))}</b></div>`).join('') : '<p class="small muted">Bu ay kayıt yok. Excel\'den aktar ya da fiş kaydet.</p>'}`);
