@@ -32,6 +32,13 @@ with sync_playwright() as p:
     check('Fis: hesap secmeden kaydedilmez', ev("()=>!LEDGER.some(r=>r.desc==='Yeni Firma')"))
     ev("()=>{document.getElementById('mf-a').value='Malzeme';document.getElementById('mf-w').value='nakit';H.mxfsave()}")
     check('Fis: kaydedildi ve ogrenildi', ev("()=>LEDGER.some(r=>r.desc==='Yeni Firma')") and ev("()=>mxLearnGet('Yeni Firma')")=='Malzeme')
+    r = ev("""()=>{const rows=[['BANKA MUHASEBE TAKİBATI','','','','',''],['HESAP ADI','SIRA NO','GELİRLER','GİDERLER','BAKİYE','AÇIKLAMA'],
+    ['BANKA GİDERLERİ','','','R 0.00','R 10,668.89','BANKA KESİNTİSİ'],['KERMES GELİRİ','','R 400.00','','R 11,068.89','KERMES GELİRİ'],['HAYVAN BAKIMI','','','R 1,300.00','R 12,270.75','VTF TRANSPORT ÖDEME']].map((r,i)=>{r.__n=i+1;return r});
+    ixLoadSheets([{name:'BUYUK CAMLICA 3017',rows}],'m.xlsx');MXI.dec={rate:'0',incl:'yes'};const R=ixBuild('defter',MXI.map,ixCur()._p);
+    return {map:MXI.map,ch:MXI.ch,n:R.out.length,sk:R.skip.map(x=>x.why),o:R.out.map(o=>[o.desc,o.acc,o.dir,o.total])}}""")
+    check('Banka sayfasi esleme', r['map'].get('acc')==0 and r['map'].get('gelir')==2 and r['map'].get('gider')==3 and r['map'].get('desc')==5 and r['map'].get('total') is None, r['map'])
+    check('Banka sayfasi: baslik satirindan banka akisi', r['ch']=='banka', r['ch'])
+    check('Banka: 2 gercek satir, sifir tutarli atlanir', r['n']==2 and len(r['sk'])==1, r)
     check('Sayfa hatasi yok', not er, er)
     b.close()
 print('\nHEPSI GECTI' if not f else 'FAIL: %d' % len(f))

@@ -1132,7 +1132,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
 {
   MXI.ch = '';
   const chGuess = (n) => { const x = ixNorm(n); return /banka|ekstre|havale|eft|pos|kredi kart/.test(x) ? 'banka' : /nakit|kasa/.test(x) ? 'nakit' : ''; };
-  const _ss = ixSetSheet; ixSetSheet = function (i) { const r = _ss.apply(this, arguments); const sh = ixCur(); MXI.ch = sh ? (sh._ch != null ? sh._ch : chGuess(sh.name)) : ''; return r; };
+  const _ss = ixSetSheet; ixSetSheet = function (i) { const r = _ss.apply(this, arguments); const sh = ixCur(); MXI.ch = sh ? (sh._ch != null ? sh._ch : chGuess(sh.name) || chGuess(((sh.rows && sh.rows[0]) || []).join(' '))) : ''; return r; };
   const _m = NEWM.mximp;
   NEWM.mximp = function () {
     let out = _m.apply(this, arguments);
