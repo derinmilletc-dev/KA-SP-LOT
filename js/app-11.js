@@ -545,7 +545,7 @@ document.addEventListener('change', async (e) => {
     try {
       if (/\.xlsx$/i.test(f.name)) {
         const X = await xlLoad(); const wb = new X.Workbook(); await wb.xlsx.load(await f.arrayBuffer()); const sheets = [];
-        wb.worksheets.forEach((ws) => { const rows = []; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else v = ''; } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows }); });
+        wb.worksheets.forEach((ws) => { const rows = []; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (c.isMerged && c.master && c.master.address !== c.address) v = ''; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else v = ''; } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows }); });
         ixLoadSheets(sheets, f.name);
       } else if (/\.xls$/i.test(f.name)) { MXI.step = 'pick'; MXI.err = 'Eski .xls dosyası okunamıyor. Excel\'de "Farklı kaydet" ile .xlsx yapıp yükle.'; renderModal(); }
       else { ixLoadSheets([{ name: f.name, rows: mxCsv(await f.text()) }], f.name); }
@@ -1161,7 +1161,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
   /* hesap adı → Kais kategorisi: öğrenilen eşleme */
   const xm = () => ((S.settings && S.settings.xmap) || {});
   const _bld = ixBuild;
-  ixBuild = function (type, map, P) { const R = _bld.apply(this, arguments); try { if (type === 'defter') { const m = xm(); R.out.forEach((o) => { const k = mxLK(o.acc); if (k && m[k]) o.acc = m[k]; }); } } catch (e) {} return R; };
+  ixBuild = function (type, map, P) { const R = _bld.apply(this, arguments); try { if (type === 'defter' && R.out && R.out.length) { const keep = []; R.out.forEach((o) => { if (/devr/.test(ixNorm(o.acc) + ' ' + ixNorm(o.desc).slice(0, 40))) R.skip.push({ n: o.n, why: 'Devir (açılış) bakiyesi, gelir sayılmaz' }); else keep.push(o); }); R.out = keep; } if (type === 'defter') { const m = xm(); R.out.forEach((o) => { const k = mxLK(o.acc); if (k && m[k]) o.acc = m[k]; }); } } catch (e) {} return R; };
   /* bakiye kontrolü: dosyadaki bakiye sütunu ile gelir-gider hareketi tutuyor mu */
   function ixBal(P, map) {
     const bi = P.heads.findIndex((h, i) => /bakiye/.test(ixNorm(h)) && i !== map.gelir && i !== map.gider && i !== map.total);
@@ -1177,7 +1177,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
       const P = ixPrep(sh); const t = ixDetect(sh); const m = ixAuto(t, P); const title = ((sh.rows && sh.rows[0]) || []).join(' ');
       const amt = t === 'defter' ? (m.gelir != null || m.gider != null || m.total != null) : t === 'fatura' ? m.tot != null : m.amt != null;
       const dt = (t === 'borc' ? m.due : m.date) != null; let role = 'atla';
-      const clear = t !== 'defter' || m.gelir != null || m.gider != null || (m.total != null && m.dir != null);
+      const hs = P.heads.map(ixNorm); const strict = hs.some((h) => /gelir|tahsilat/.test(h)) && hs.some((h) => /gider|ödeme|odeme/.test(h)); const clear = t !== 'defter' || !!(chG(sh.name) || chG(title)) || strict;
       if (P.data.length >= 2 && amt && clear && !(/açıklama|aciklama|kullanım|kullanim|talimat|özet|ozet|readme|yardım|yardim/.test(ixNorm(sh.name)) && !dt)) role = t === 'defter' ? (chG(sh.name) || chG(title) || 'defter') : t;
       return { i, role, dt };
     });
