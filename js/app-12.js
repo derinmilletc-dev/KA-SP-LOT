@@ -980,3 +980,47 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
   render = function () { const r = _rn.apply(this, arguments); if (S.sg) save(); return r; };
   const _sf = sgFinish; sgFinish = async function () { const r = await _sf.apply(this, arguments); if (!S.sg) { try { localStorage.removeItem(KEY); } catch (e) {} } return r; };
 }
+
+/* v223: yenilerken kurulum/giriş ekranı çakmasın: oturum varsa hesap yüklenene kadar yükleniyor ekranı */
+{
+  const hasSess = () => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^sb-.*-auth-token$/.test(k) && localStorage.getItem(k)) return true; } } catch (e) {} return false; };
+  const BOOT = { on: hasSess() && !/[?#&](access_token|type=recovery|code=)/.test(location.search + location.hash), t0: Date.now() };
+  window.KP_BOOT = BOOT;
+  const _lh = loginHTML;
+  loginHTML = function () {
+    if (BOOT.on && !S.user && !(typeof REC !== 'undefined' && REC.on)) {
+      return `<div class="login lx" style="display:grid;place-items:center;min-height:100vh"><div style="text-align:center"><div style="display:inline-block">${typeof lxMark === 'function' ? lxMark(48) : ''}</div><div style="font-weight:700;font-size:20px;margin-top:10px">KaisPilot</div><div class="kp-spin" style="width:26px;height:26px;border:3px solid rgba(45,107,196,.2);border-top-color:#2D6BC4;border-radius:50%;margin:18px auto 8px;animation:kpspin .8s linear infinite"></div><div class="small muted">Hesabın yükleniyor…</div></div><style>@keyframes kpspin{to{transform:rotate(360deg)}}</style></div>`;
+    }
+    return _lh.apply(this, arguments);
+  };
+  if (BOOT.on) {
+    const iv = setInterval(() => {
+      const age = Date.now() - BOOT.t0; let done = false;
+      if (S.user || (typeof REC !== 'undefined' && REC.on)) done = true;
+      else if (age > 2500 && !SBS.user) done = true;                           /* oturum gerçekten yok */
+      else if (age > 6500 && SBS.user && !ID.mems.length && !ID.busy) done = true; /* işletmesi yok ya da yüklenemedi */
+      else if (age > 15000) done = true;
+      if (done) { clearInterval(iv); BOOT.on = false; try { render(); } catch (e) {} }
+    }, 150);
+  }
+}
+
+/* v224: işletmesi var ama üyelik satırı yok/okunamıyorsa kurulum açılmasın: sahibi olduğu işletmeyi bul, üyeliği onar */
+{
+  const _lb = sbLoadBiz;
+  sbLoadBiz = async function () {
+    await _lb.apply(this, arguments);
+    if (!SBS.user || ID.mems.length) return;
+    const c = sbClient(); if (!c) return;
+    try {
+      const r = await c.from('businesses').select('id,name,owner_id').eq('owner_id', SBS.user.id);
+      const b = r && r.data && r.data[0]; if (!b) return;
+      let mem = null;
+      try { await c.from('members').insert({ business_id: b.id, user_id: SBS.user.id, role: 'patron', app_uid: 'u1' }); } catch (e) {}
+      try { const r2 = await c.from('members').select('business_id,role,app_uid,display_name,businesses(id,name,owner_id)').eq('user_id', SBS.user.id).eq('business_id', b.id); mem = r2 && r2.data && r2.data.find((m) => m.businesses); } catch (e) {}
+      if (!mem) mem = { business_id: b.id, role: 'patron', app_uid: 'u1', display_name: null, businesses: b };
+      ID.mems = [mem]; ID.active = mem; SBS.biz = mem.businesses;
+      try { if (canSup()) await sbSyncSups(); } catch (e) {}
+    } catch (e) {}
+  };
+}

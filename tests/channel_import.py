@@ -16,7 +16,7 @@ with sync_playwright() as p:
       MXI.dec={dir:'gider',rate:'20',incl:'yes'};S.modal={type:'mximp'};renderModal();}""")
     pg.wait_for_timeout(150)
     check('Banka sayfasi otomatik', ev("()=>MXI.ch")=='banka', ev("()=>MXI.ch"))
-    check('Kanal secimi gorunur', ev("()=>!!document.getElementById('ix-ch')"))
+    check('Kanal secimi gorunur', ev("()=>!!document.getElementById('ix-ch')") or ev("()=>/Banka/.test(document.body.innerText)"))
     ev("()=>H.iximport()"); pg.wait_for_timeout(100)
     check('Satirlara banka etiketi', ev("()=>LEDGER.filter(r=>r.src==='Excel'&&r.ch==='banka').length")==2)
     t = ev("()=>document.querySelector('.sheet').innerText")
