@@ -342,7 +342,7 @@ function kaOrderAct() {
 }
 function kaUidFrom(f) {
   if (/\b(herkes|ekip|tum calisan|calisanlara)/.test(f)) return 'all';
-  const us = USERS.filter((u) => u.role !== 'patron' || u.id !== (S.user && S.user.id)).sort((a, b) => b.name.length - a.name.length);
+  const us = liveUsers().filter((u) => u.role !== 'patron' || u.id !== (S.user && S.user.id)).sort((a, b) => b.name.length - a.name.length);
   for (const u of us) { const fn = kaFold(u.name.split(' ')[0]); if (fn.length >= 3 && new RegExp('(^|[^a-z])' + fn + "([^a-z]|$)").test(f)) return u.id; }
   return null;
 }
@@ -416,7 +416,7 @@ function kaIntent(text) {
   const _c = aiActCard;
   aiActCard = function (a, i, j) {
     if (a.type === 'gorev_ver' && a.st === 'open') {
-      const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`; const us = USERS.filter((u) => u.id !== S.user.id);
+      const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`; const us = liveUsers().filter((u) => u.id !== S.user.id);
       return `<div class="card stack kc-act"><div class="kc-h"><span>${ic('check', 16)}</span><div><b>Görev</b><div class="small muted">Verilince çalışana bildirim gider</div></div></div>
       <div class="field"><label for="${id('t')}">Ne yapılacak?</label><input id="${id('t')}" type="text" value="${esc(g.t)}"></div>
       <div class="row wrap"><div class="field grow"><label for="${id('u')}">Kime</label><select id="${id('u')}"><option value="all"${g.uid === 'all' ? ' selected' : ''}>Herkes</option>${us.map((u) => `<option value="${u.id}"${g.uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></div>
@@ -965,7 +965,7 @@ const kaLvTxt = (a, b) => (a === b ? isoShort(a) : isoShort(a) + '–' + isoShor
     }
     if (a.type === 'izin_ver') {
       if (a.st !== 'open') return a.st === 'done' ? `<div class="callout info">${ic('info')}<div>${esc(a.msg || 'Kaydedildi.')}</div></div>` : '<div class="small muted">Vazgeçildi.</div>';
-      const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`; const us = USERS.filter((u) => u.role !== 'patron');
+      const g = a.args; const id = (k) => `aa-${i}-${j}-${k}`; const us = liveUsers().filter((u) => u.role !== 'patron');
       return `<div class="card stack kc-act"><div class="kc-h"><span>${ic('calendar', 16)}</span><div><b>İzin kaydı</b><div class="small muted">Vardiya planında o günler izinli görünür</div></div></div>
       <div class="row wrap"><div class="field grow"><label for="${id('u')}">Kim</label><select id="${id('u')}">${us.map((u) => `<option value="${u.id}"${g.uid === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></div>
       <div class="field grow"><label for="${id('y')}">Tür</label><select id="${id('y')}">${Object.keys(LV_KIND).map((k) => `<option value="${k}"${g.type === k ? ' selected' : ''}>${LV_KIND[k]}</option>`).join('')}</select></div></div>

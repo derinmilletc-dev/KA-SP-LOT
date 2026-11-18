@@ -235,9 +235,9 @@ function tbCard(r, dis) {
 }
 tabloHTML = function (role) {
   const kind = S.sub.tablo === 'gelir' ? 'gelir' : 'gider'; const dis = S.closed ? 'disabled' : ''; const gelir = kind === 'gelir'; const view = S.tview === 'tablo' ? 'tablo' : 'kart';
-  const all = LEDGER.filter((r) => dirOf(r) === kind && inPer(r)); const q = (S.tq || '').trim().toLocaleLowerCase('tr');
+  const all = LEDGER.filter((r) => dirOf(r) === kind && inPer(r) && tbChOk(r)); const q = (S.tq || '').trim().toLocaleLowerCase('tr');
   const rows = q ? all.filter((r) => [r.desc, r.acc, r.doc].join(' ').toLocaleLowerCase('tr').includes(q)) : all;
-  const sum = (k) => LEDGER.filter((r) => dirOf(r) === k && inPer(r)).reduce((a, r) => a + (Number(r.total) || 0), 0);
+  const sum = (k) => LEDGER.filter((r) => dirOf(r) === k && inPer(r) && tbChOk(r)).reduce((a, r) => a + (Number(r.total) || 0), 0);
   const inn = sum('gelir'); const out = sum('gider'); const fark = inn - out; const mx = Math.max(inn, out, 1);
   const sumT = rows.reduce((a, r) => a + (Number(r.total) || 0), 0); const sumK = rows.reduce((a, r) => a + kdv(r), 0); const nf = all.filter((r) => r.fresh).length;
   const by = {}; all.forEach((r) => { by[r.acc] = (by[r.acc] || 0) + (Number(r.total) || 0); }); const tot = Object.values(by).reduce((a, b) => a + b, 0) || 1; const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -247,7 +247,7 @@ tabloHTML = function (role) {
   if (!gelir && fark < 0) ins.push(['warn', 'Bu dönemde giderler geliri aşıyor.']);
   const html = `<div class="stack-lg tb">
   ${seg('tablo', [['gider', 'Giderler'], ['gelir', 'Gelirler']], kind)}
-  ${perChips()}${misBanner()}
+  ${perChips()}${tbChChips()}${misBanner()}
   <section class="tb-h"><div class="tb-hr"><div><small>Gelir</small><b>${fmt0(inn)}</b></div><div><small>Gider</small><b>${fmt0(out)}</b></div><div class="${fark >= 0 ? 'pos' : 'neg'}"><small>Fark</small><b>${fark >= 0 ? '+' : '−'}${fmt0(Math.abs(fark))}</b></div></div>
     <div class="tb-bars"><i class="g" style="width:${Math.round(inn / mx * 100)}%"></i><i class="r" style="width:${Math.round(out / mx * 100)}%"></i></div></section>
   ${top.length ? `<section class="tb-bk"><div class="tb-bh"><h3>${gelir ? 'Gelir dağılımı' : 'Gider dağılımı'}</h3><span>${esc(S.tper === 'hepsi' ? 'Tüm dönemler' : S.tper)}</span></div>${top.map(([k, v]) => `<div class="tb-br"><span>${esc(k)}</span><div class="tb-kb"><i style="width:${Math.round(v / tot * 100)}%;background:hsl(${tbHue(k)} 60% 52%)"></i></div><b>${fmt0(v)}</b></div>`).join('')}</section>` : ''}
@@ -263,6 +263,7 @@ tabloHTML = function (role) {
   if (role === 'patron') { LEDGER.forEach((r) => { r.fresh = false; }); RECEIPTS.forEach((f) => { f.fresh = false; }); }
   return html;
 };
+H.tbch = (el) => { S.tch = el.dataset.v; render(); };
 H.tview = (el) => { S.tview = el.dataset.v; render(); };
 H.tcopen = (el) => { S.tcOpen = S.tcOpen || {}; S.tcOpen[el.dataset.id] = !S.tcOpen[el.dataset.id]; render(); };
 const _och73 = onChange;

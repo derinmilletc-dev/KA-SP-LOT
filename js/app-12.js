@@ -1084,3 +1084,48 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
     }, 200);
   }
 }
+
+/* v236: bulut hesabında davet edilmemiş Müdür/Muhasebeci koltukları seçim listelerinde görünmez */
+function liveUsers() {
+  try {
+    if (!(typeof SBS !== 'undefined' && SBS.biz && ID.active && !S.demoMode)) return USERS;
+    const T = ID.team; if (!T || T.err) return USERS;
+    return USERS.filter((u) => u.role === 'patron' || u.role === 'calisan' ? (u.role === 'patron' || EMP_IDS.includes(u.id)) : T.members.some((m) => m.app_uid === u.id));
+  } catch (e) { return USERS; }
+}
+
+/* v236: kasa/banka filtresi (defter) ve hesap bazında para birimi */
+const KCURS = [['₺', 'TRY', 'Türk lirası'], ['$', 'USD', 'Dolar'], ['€', 'EUR', 'Euro'], ['£', 'GBP', 'Sterlin'], ['R', 'ZAR', 'Rand']];
+function withCh(k, fn) { const o = CHCTX; CHCTX = (k === 'nakit' || k === 'banka') ? k : ''; try { return fn(); } finally { CHCTX = o; } }
+function tbChOf(r) { return r.ch || (r.src === 'Banka' ? 'banka' : ''); }
+function tbChOk(r) { const f = S.tch || 'hepsi'; if (f === 'hepsi') return true; if (f === 'yok') return !tbChOf(r); return tbChOf(r) === f; }
+function kcurSym(k) { try { const c = S.settings && S.settings.kcur && S.settings.kcur[k]; return c ? c.sym : curSym(); } catch (e) { return '₺'; } }
+function kcurDiff() { const a = withCh('', () => curSym()); return ['nakit', 'banka'].some((k) => kcurSym(k) !== a); }
+function tbChChips() {
+  try {
+    const kind = S.sub && S.sub.tablo === 'gelir' ? 'gelir' : 'gider';
+    const base = LEDGER.filter((r) => dirOf(r) === kind && inPer(r));
+    const n = { hepsi: base.length, nakit: 0, banka: 0, yok: 0 }; base.forEach((r) => { n[tbChOf(r) || 'yok']++; });
+    if (!n.nakit && !n.banka) { S.tch = 'hepsi'; return ''; }
+    const f = S.tch || 'hepsi';
+    const L = [['hepsi', 'Hepsi'], ['nakit', 'Nakit'], ['banka', 'Banka']].concat(n.yok ? [['yok', 'Belirtilmemiş']] : []);
+    const warn = f === 'hepsi' && kcurDiff() ? `<div class="tb-in"><div class="warn">${ic('alert', 16)}<span>Nakit ${esc(kcurSym('nakit'))}, banka ${esc(kcurSym('banka'))} ile tutuluyor. Toplamlar karışık olabilir, tek tek bakmak için Nakit ya da Banka seç.</span></div></div>` : '';
+    return `<div class="chips" role="group" aria-label="Kasa ve banka">${L.map(([k, l]) => `<button class="chip" data-a="tbch" data-v="${k}" aria-pressed="${f === k}">${l} (${n[k]})</button>`).join('')}</div>${warn}`;
+  } catch (e) { return ''; }
+}
+{
+  const _tb = tabloHTML;
+  tabloHTML = function () { const f = S.tch; return withCh(f === 'nakit' || f === 'banka' ? f : '', () => _tb.apply(this, arguments)); };
+  const _kb = NEWM.mxkb;
+  NEWM.mxkb = function () { const f = window.MKB_CHV ? window.MKB_CHV() : ''; return withCh(f === 'nakit' || f === 'banka' ? f : '', () => _kb.apply(this, arguments)); };
+}
+function kcurHtml() {
+  const sel = (k, l) => `<div class="field" style="margin:0;flex:1"><label for="kc-${k}">${l} para birimi</label><select id="kc-${k}" data-ch="kcur" data-k="${k}" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line,#d6dbe3);background:var(--card,#fff);font:inherit">${KCURS.map((c) => `<option value="${c[0]}" ${kcurSym(k) === c[0] ? 'selected' : ''}>${c[0]} · ${c[2]}</option>`).join('')}</select></div>`;
+  return `<details style="margin-bottom:8px"><summary style="cursor:pointer" class="small"><b>Hesap para birimi</b></summary><div class="row" style="gap:8px;margin-top:8px">${sel('nakit', 'Nakit')}${sel('banka', 'Banka')}</div><p class="small muted" style="margin-top:6px">Her hesap kendi para biriminde gösterilir. Tutarlar çevrilmez, sadece simge değişir.</p></details>`;
+}
+document.addEventListener('change', (e) => {
+  const t = e.target; if (!t || !t.dataset || t.dataset.ch !== 'kcur') return;
+  const c = KCURS.find((x) => x[0] === t.value); if (!c) return; if (!S.settings) S.settings = {};
+  const k = S.settings.kcur = S.settings.kcur || {}; k[t.dataset.k] = { sym: c[0], code: c[1], name: c[2] };
+  try { pSched(); } catch (x) {} toast('Para birimi güncellendi.', 'ok'); try { renderModal(); } catch (x) {} try { render(); } catch (x) {}
+});

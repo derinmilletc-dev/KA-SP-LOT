@@ -13,7 +13,8 @@ const MARKET_ON = (() => { try { const m = /[?&]market=([01])/.exec(location.sea
 /* ---------- yardımcılar ---------- */
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const curSym = () => { try { return (S.settings && S.settings.cur && S.settings.cur.sym) || '₺'; } catch (e) { return '₺'; } };
+let CHCTX = '';
+const curSym = () => { try { if (CHCTX && S.settings && S.settings.kcur && S.settings.kcur[CHCTX]) return S.settings.kcur[CHCTX].sym; } catch (e) {} try { return (S.settings && S.settings.cur && S.settings.cur.sym) || '₺'; } catch (e) { return '₺'; } };
 const curPut = (t) => { const c = curSym(); return c === '₺' ? t + ' ₺' : c + ' ' + t; };
 const fmt = (n) => (n < 0 ? '−' : '') + curPut(Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const fmt0 = (n) => (Math.round(n) < 0 ? '−' : '') + curPut(Math.abs(Math.round(n)).toLocaleString('tr-TR'));
