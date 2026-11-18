@@ -1129,3 +1129,186 @@ document.addEventListener('change', (e) => {
   const k = S.settings.kcur = S.settings.kcur || {}; k[t.dataset.k] = { sym: c[0], code: c[1], name: c[2] };
   try { pSched(); } catch (x) {} toast('Para birimi güncellendi.', 'ok'); try { renderModal(); } catch (x) {} try { render(); } catch (x) {}
 });
+
+/* ======================================================================
+   Gmail bağlantısı (gerçek). Sunucu: supabase/functions/kais-mail, tablolar: supabase/sql/mail_gmail.sql
+   Durum sunucudadır (mail_connections, mail_docs); burada yalnızca okunur ve gösterilir.
+   ====================================================================== */
+var MAILX = { scanErr: '', loaded: false, busy: false, scanning: false, starting: false, err: '', setup: false, at: 0, conn: null, rows: 0, prog: 0, limited: false, confirm: false };
+const MAIL_ERR = {
+  iptal: 'Gmail bağlantısı iptal edildi.',
+  izin: 'Gmail bağlanamadı: "e-postaları görüntüle" iznini vermen gerekiyor. Tekrar dene ve izin kutusunu işaretle.',
+  anahtar: 'Google bağlantı anahtarı vermedi. myaccount.google.com/permissions sayfasından KaisPilot erişimini kaldırıp yeniden dene.',
+  oturum: 'Bağlantı süresi doldu. Yeniden dene.',
+  yetki: 'E-postayı yalnızca patron bağlayabilir.',
+  kurulum: 'Gmail bağlantısı sunucuda henüz kurulmamış. Kurulum adımları tamamlanmalı.',
+  hata: 'Gmail bağlanamadı. Biraz sonra tekrar dene.',
+};
+function mailBid() { try { return (SBS.biz && SBS.biz.id) || ''; } catch (e) { return ''; } }
+function mailCloud() { try { return !!(SBS && SBS.user && mailBid() && sbClient()); } catch (e) { return false; } }
+function mailDate(v) {
+  if (!v) return '';
+  const s = String(v); const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (m) return m[3] + ' ' + MON[+m[2] - 1];
+  const d = new Date(s); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + ' ' + MON[d.getMonth()];
+}
+function mailCurOk(d) {
+  if (!d.cur) return true;
+  const map = { TRY: ['₺', 'TL'], ZAR: ['R', 'ZAR'], USD: ['$'], EUR: ['€'], GBP: ['£'] };
+  let sym = '₺'; try { sym = curSym(); } catch (e) {}
+  return (map[d.cur] || [d.cur]).includes(sym);
+}
+function mailAddable(d) { return d.total != null && mailCurOk(d); }
+function mailStatusX(d) {
+  if (d.src !== 'gmail') return d.bank && RECEIPTS.some((f) => f.bank === d.bank) ? 'var' : d.total == null ? 'atla' : 'yeni';
+  if (d.st0 === 'eklendi' || RECEIPTS.some((f) => f.mailId === d.id)) return 'var';
+  if (d.total == null) return 'atla';
+  return 'yeni';
+}
+function mailDupHint(d) { return d.src === 'gmail' && d.total != null && RECEIPTS.some((f) => !f.mailId && Math.abs(Number(f.total) - d.total) < 0.01 && f.date === d.date); }
+async function mailInvoke(action, extra) {
+  const c = sbClient();
+  const r = await c.functions.invoke('kais-mail', { body: Object.assign({ action, business_id: mailBid() }, extra || {}) });
+  if (r.error) { let m = ''; try { m = (await r.error.context.json()).error; } catch (e) {} throw new Error(m || (/not found|404|FunctionsFetch|Failed to send/i.test(String(r.error.message)) ? 'E-posta sunucusu kurulmamış. Kurulum adımları tamamlanmalı.' : 'E-posta hizmeti şu an yanıt vermedi.')); }
+  if (r.data && r.data.error) { const e = new Error(r.data.error); e.revoked = !!r.data.revoked; throw e; }
+  return r.data || {};
+}
+async function mailLoad(force) {
+  if (!mailCloud() || MAILX.busy) return;
+  if (!force && MAILX.loaded && Date.now() - MAILX.at < 15000) return;
+  MAILX.busy = true;
+  try {
+    const c = sbClient(); const bid = mailBid();
+    const cr = await c.from('mail_connections').select('id,email,provider,status,last_error,last_scan_at,created_at').eq('business_id', bid).order('created_at', { ascending: true });
+    if (cr.error) throw cr.error;
+    const list = cr.data || []; const conn = list.find((x) => x.status !== 'revoked') || list[0] || null;
+    let rows = [];
+    if (conn) {
+      const dr = await c.from('mail_docs').select('id,from_name,from_addr,subject,received_at,kind,seller,invoice_no,invoice_date,total,currency,tax_rate,category,confidence,status').eq('connection_id', conn.id).order('received_at', { ascending: false }).limit(300);
+      if (dr.error) throw dr.error; rows = dr.data || [];
+    }
+    MAILX.setup = false; MAILX.err = ''; MAILX.conn = conn; MAILX.rows = rows.length;
+    S.mail = { on: !!conn && conn.status !== 'revoked', provider: conn ? 'Gmail' : '', addr: conn ? conn.email : '', send: false };
+    MAILDOCS.length = 0;
+    rows.filter((d) => d.kind !== 'none').forEach((d) => {
+      const seller = d.seller || d.from_name || d.from_addr || 'Bilinmeyen gönderen';
+      const rule = RULES.find((r) => seller.toLowerCase().includes(String(r.k).toLowerCase()));
+      MAILDOCS.push({ id: d.id, src: 'gmail', from: seller, subj: d.subject || '', date: mailDate(d.invoice_date || d.received_at), total: d.total == null ? null : Number(d.total), rate: d.tax_rate == null ? null : Number(d.tax_rate), cat: d.category || (rule && rule.v) || 'Diğer', bank: null, cur: d.currency || '', st0: d.status, conf: d.confidence, no: d.invoice_no || '' });
+    });
+  } catch (e) {
+    const m = String((e && (e.message || e.code)) || e);
+    if (/42P01|does not exist|schema cache|mail_connections|mail_docs/i.test(m)) { MAILX.setup = true; MAILX.err = ''; MAILX.conn = null; S.mail = { on: false, provider: '', addr: '', send: false }; MAILDOCS.length = 0; } else MAILX.err = 'E-posta bilgisi okunamadı. Biraz sonra tekrar dene.';
+  }
+  MAILX.busy = false; MAILX.at = Date.now(); MAILX.loaded = true;
+  try { if (!S.modal && S.user && (S.view === 'muhasebe' || S.view === 'bugun')) render(); } catch (e) {}
+}
+function mailMark(ids, st) { if (mailCloud() && ids.length) mailInvoke('mark', { doc_ids: ids, status: st }).catch(() => {}); }
+
+addMailDoc = function (d) {
+  RECEIPTS.push({ id: 'f' + ++seq, seller: d.from, date: d.date, total: d.total, rate: d.rate == null ? 0 : d.rate, cat: d.cat, status: 'musavirde', by: S.user.id, bank: d.bank || null, at: 'e-posta', items: [], mailId: d.src === 'gmail' ? d.id : undefined });
+  if (d.src === 'gmail') { d.st0 = 'eklendi'; mailMark([d.id], 'eklendi'); }
+};
+H.mailadd = (el) => {
+  if (locked()) return;
+  const d = MAILDOCS.find((x) => x.id === el.dataset.id); if (!d || !mailAddable(d) || mailStatus(d) !== 'yeni') return;
+  addMailDoc(d); render(); toast('Belge muhasebeye eklendi.', 'ok');
+};
+H.mailall = () => {
+  if (locked()) return;
+  const ys = MAILDOCS.filter((d) => mailStatus(d) === 'yeni');
+  const list = ys.filter((d) => mailAddable(d) && d.conf !== 'dusuk');
+  list.forEach(addMailDoc); render();
+  const left = ys.length - list.length;
+  toast(list.length + ' belge eklendi.' + (left ? ' ' + left + ' belgeyi tek tek kontrol et (güven düşük ya da para birimi farklı).' : ''), left ? 'warn' : 'ok');
+};
+H.mailscan = async () => {
+  if (MAILX.scanning || !mailCloud()) return;
+  MAILX.scanning = true; MAILX.scanErr = ''; MAILX.prog = 0; MAILX.limited = false; try { render(); } catch (e) {}
+  try {
+    for (let i = 0; i < 12; i++) {
+      const r = await mailInvoke('scan'); MAILX.prog += r.processed || 0; MAILX.limited = !!r.limited;
+      if (r.done || !(r.processed > 0)) { if (r.rate) MAILX.scanErr = 'Gmail şu an yoğun. Biraz sonra tekrar tara.'; break; }
+      await mailLoad(true);
+    }
+  } catch (e) { MAILX.scanErr = e.message || 'Tarama yapılamadı.'; }
+  MAILX.scanning = false; await mailLoad(true); try { render(); } catch (e) {}
+};
+H.mailconnect = () => { if (!mailCloud()) { toast('E-posta bağlantısı için bulut hesabıyla giriş yapmalısın.', 'warn'); return; } S.modal = { type: 'gmailc' }; renderModal(); };
+H.gmailgo = async () => {
+  if (MAILX.starting) return; MAILX.starting = true;
+  try { try { renderModal(); } catch (e) {} try { if (typeof pFlush === 'function') await pFlush(); } catch (e) {} const r = await mailInvoke('start'); if (!r.url) throw new Error('Google bağlantısı hazırlanamadı.'); location.href = r.url; }
+  catch (e) { MAILX.starting = false; S.modal = null; try { renderModal(); } catch (x) {} toast(e.message || 'Bağlanamadı.', 'bad'); }
+};
+H.maildisc = () => { MAILX.confirm = true; render(); };
+H.maildiscno = () => { MAILX.confirm = false; render(); };
+H.maildiscok = async () => {
+  try { await mailInvoke('disconnect'); MAILX.confirm = false; MAILDOCS.length = 0; S.mail = { on: false, provider: '', addr: '', send: false }; MAILX.conn = null; MAILX.rows = 0; toast('Gmail bağlantısı kaldırıldı.', 'ok'); }
+  catch (e) { MAILX.confirm = false; toast(e.message || 'Bağlantı kaldırılamadı.', 'bad'); }
+  await mailLoad(true); render();
+};
+H.mailsave = () => { H.mailconnect(); };
+
+NEWM.gmailc = () => sheet("Gmail'ini bağla", `<div class="stack">
+  <p>Kais, gelen kutundaki <b>fatura, e-arşiv ve makbuz</b> e-postalarını bulur, tutarı okur ve sen onaylayınca muhasebeye ekler.</p>
+  <div class="check"><span class="dot tone-ok">${ic('check', 16)}</span><div><b style="font-weight:600">Yalnızca okuma izni</b><div class="small muted">Kais e-posta göndermez, silmez, değiştirmez.</div></div></div>
+  <div class="check"><span class="dot tone-ok">${ic('check', 16)}</span><div><b style="font-weight:600">Son 90 gün, yalnızca fatura gibi görünenler</b><div class="small muted">Diğer yazışmalar incelenmez.</div></div></div>
+  <div class="check"><span class="dot tone-ok">${ic('check', 16)}</span><div><b style="font-weight:600">KaisPilot e-posta metnini ve ekleri saklamaz</b><div class="small muted">Yalnızca gönderen, konu, satıcı, tarih, tutar ve KDV oranı kaydedilir.</div></div></div>
+  <div class="callout">${ic('info')}<div class="small">Tutarı okumak için fatura metni ve eki yapay zekâ hizmetine (Anthropic) gönderilir, KaisPilot bunları saklamaz. KaisPilot'un Google'dan aldığı bilgileri kullanması ve başka bir uygulamaya aktarması, Sınırlı Kullanım gereklilikleri dahil, Google API Hizmetleri Kullanıcı Verisi Politikası'na uygundur. Bilgiyi satmaz, reklam için kullanmaz.</div></div>
+  <p class="small muted">Google bu aşamada "Bu uygulama doğrulanmadı" uyarısı gösterebilir. "Gelişmiş" bağlantısına basıp devam edebilirsin. Bağlantıyı istediğin an kaldırabilirsin.</p>
+  <button class="btn block" data-a="gmailgo"${MAILX.starting ? ' disabled' : ''}>${MAILX.starting ? 'Google açılıyor…' : 'Google ile devam et'}</button><button class="btn sec block" data-a="closemodal">Vazgeç</button></div>`);
+
+function mailFmt(d) { if (d.total == null) return ''; return d.cur && !mailCurOk(d) ? Number(d.total).toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' ' + d.cur : fmt(d.total); }
+function mailRowHTML(d) {
+  const st = mailStatus(d); const dup = st === 'yeni' && mailDupHint(d); const addable = mailAddable(d);
+  const pill = st === 'yeni' ? '<span class="pill p-info">Yeni</span>' : st === 'var' ? '<span class="pill p-mute">Muhasebeye eklendi</span>' : '<span class="pill p-warn">Tutar okunamadı</span>';
+  const notes = [];
+  if (st === 'yeni' && d.conf === 'dusuk') notes.push('Okuma güveni düşük, tutarı kontrol et.');
+  if (st === 'yeni' && d.rate == null) notes.push('KDV oranı belgede okunamadı, muhasebeci kontrol etmeli.');
+  if (st === 'yeni' && !mailCurOk(d)) notes.push('Para birimi ' + d.cur + ', bu işletmeninkinden farklı. Elle ekle.');
+  if (st === 'yeni' && !d.cur) notes.push('Para birimi belgede yazmıyor.');
+  if (dup) notes.push('Aynı tarih ve tutarda bir kayıt var, tekrar eklemeden önce kontrol et.');
+  if (st === 'atla') notes.push('Belgeyi e-postadan açıp tutarı elle ekleyebilirsin.');
+  return `<div class="rrow"><div><b style="font-weight:600">${esc(d.from)}</b><div class="small muted">${esc(d.subj)}${d.date ? ' · ' + esc(d.date) : ''}${d.no ? ' · ' + esc(d.no) : ''}</div></div><div class="num" style="font-weight:600">${esc(mailFmt(d))}</div>
+  <div class="rfoot">${pill}${notes.map((n) => `<span class="small muted">${esc(n)}</span>`).join('')}${st === 'yeni' && addable ? `<button class="btn sm" data-a="mailadd" data-id="${esc(d.id)}">Ekle</button>` : ''}</div></div>`;
+}
+epostaHTML = function () {
+  if (mailCloud() && !MAILX.busy && (!MAILX.loaded || Date.now() - MAILX.at > 30000)) setTimeout(() => mailLoad(), 0);
+  const isP = S.user && S.user.role === 'patron';
+  if (!mailCloud()) return `<div class="card stack"><div><h3>İşyeri e-postanı bağla</h3><p class="muted" style="margin-top:4px">E-posta bağlantısı için bulut hesabıyla giriş yapmış olmalısın.</p></div></div>`;
+  if (MAILX.setup) return `<div class="card stack"><div><h3>E-posta bağlantısı kurulumu eksik</h3><p class="muted" style="margin-top:4px">Sunucu tarafında e-posta tabloları henüz oluşturulmamış. Kurulum adımları tamamlanınca burası çalışır.</p></div></div>`;
+  if (!MAILX.loaded) return `<div class="card stack"><p class="muted">E-posta durumu yükleniyor…</p></div>`;
+  const conn = MAILX.conn;
+  if (!conn || !S.mail.on) {
+    const bad = conn && conn.status === 'revoked' ? `<div class="callout warn">${ic('alert')}<div>${esc(conn.last_error || 'Google erişimi kaldırılmış.')} Yeniden bağlayabilirsin.</div></div>` : '';
+    return `<div class="stack-lg"><div class="card stack"><div><h3>Gmail'ini bağla</h3><p class="muted" style="margin-top:4px">Kais gelen kutundaki fatura ve fişleri bulur, tutarı okur, sen onaylayınca muhasebeye ekler.</p></div>${bad}
+    <div class="stack"><div class="check"><span class="dot tone-ok">${ic('check', 16)}</span><div><b style="font-weight:600">Yalnızca okuma izni</b><div class="small muted">Kais e-posta göndermez, silmez, değiştirmez.</div></div></div>
+    <div class="check"><span class="dot tone-ok">${ic('check', 16)}</span><div><b style="font-weight:600">Eklemeden önce sen onaylarsın</b><div class="small muted">Bulunan belgeler listelenir, "Ekle" dediklerin muhasebeye gider.</div></div></div>
+    <div class="check"><span class="dot tone-ok">${ic('check', 16)}</span><div><b style="font-weight:600">KaisPilot e-posta metnini ve ekleri saklamaz</b><div class="small muted">Yalnızca gönderen, konu, satıcı, tarih, tutar ve KDV oranı kaydedilir.</div></div></div></div>
+    ${isP ? `<button class="btn" style="align-self:flex-start" data-a="mailconnect">${ic('mail')} Gmail'i bağla</button>` : '<p class="small muted">E-postayı patron bağlar.</p>'}
+    <p class="small muted">Şimdilik yalnızca Gmail destekleniyor. Outlook ve diğer sağlayıcılar sonra gelecek.</p></div></div>`;
+  }
+  const docs = MAILDOCS.slice(); const nNew = docs.filter((d) => mailStatus(d) === 'yeni').length;
+  const when = conn.last_scan_at ? new Date(conn.last_scan_at).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const err = MAILX.scanErr || MAILX.err || (conn.status === 'error' ? conn.last_error : '');
+  const info = MAILX.scanning ? `Taranıyor… ${MAILX.prog} e-posta işlendi.` : !conn.last_scan_at ? 'Henüz taranmadı. "Şimdi tara" ile başlat.' : `${MAILX.rows} e-posta incelendi, ${docs.length} belge bulundu. Son tarama: ${when}. Son 90 gün taranır.`;
+  return `<div class="stack-lg"><div class="card stack"><div class="row between wrap"><div><h3>${esc(conn.email)}</h3><p class="muted small">Gmail · bağlı · yalnızca okuma izni</p></div><span class="pill p-ok">Bağlı</span></div>
+  <p class="small muted">${esc(info)}</p>
+  ${err ? `<div class="callout warn">${ic('alert')}<div>${esc(err)}</div></div>` : ''}${MAILX.limited ? `<div class="callout">${ic('info')}<div>Bugünlük belge okuma sınırı doldu. Kalanlar yarın taranır.</div></div>` : ''}
+  <div class="row wrap">${nNew ? `<button class="btn" data-a="mailall"${MAILX.scanning ? ' disabled' : ''}>${nNew} belgeyi muhasebeye ekle</button>` : ''}<button class="btn sec" data-a="mailscan"${MAILX.scanning ? ' disabled' : ''}>${MAILX.scanning ? 'Taranıyor…' : 'Şimdi tara'}</button>${isP ? (MAILX.confirm ? `<span class="small">Bağlantı kaldırılsın mı?</span><button class="btn sm" data-a="maildiscok">Evet, kaldır</button><button class="btn sm sec" data-a="maildiscno">Vazgeç</button>` : '<button class="btn sec" data-a="maildisc">Bağlantıyı kaldır</button>') : ''}</div></div>
+  ${docs.length ? `<div class="card flush">${docs.map(mailRowHTML).join('')}</div>` : (conn.last_scan_at && !MAILX.scanning ? `<div class="card"><p class="muted">Son 90 günde fatura ya da makbuz gibi görünen bir e-posta bulunamadı.</p></div>` : '')}</div>`;
+};
+
+(function () {
+  const _ie = idEnter;
+  idEnter = async function () { await _ie(); try { mailBoot(); } catch (e) {} };
+})();
+async function mailBoot() {
+  const q = new URLSearchParams(location.search); const g = q.get('gmail');
+  if (g) { try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {} }
+  if (!mailCloud()) return;
+  await mailLoad(true);
+  if (!g || !S.user) return;
+  if (S.user.role === 'patron') { try { H.nav({ dataset: { v: 'muhasebe', s: 'eposta' } }); } catch (e) {} }
+  if (g === 'ok') { toast('Gmail bağlandı. Faturalar aranıyor…', 'ok'); H.mailscan(); }
+  else toast(MAIL_ERR[q.get('m')] || MAIL_ERR.hata, 'bad');
+}

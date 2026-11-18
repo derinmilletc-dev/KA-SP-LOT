@@ -339,7 +339,7 @@ borcAlacakHTML = function (role) {
   if (lateS) sm.push(['bad', `${lateR.length} kişiden ${fmt0(lateS)} vadesi geçmiş alacak var. Hatırlatma göndererek tahsil edebilirsin.`]);
   if (w7s) sm.push(['wn', `Önümüzdeki 7 günde ${fmt0(w7s)} ödeme var (${w7.map((d) => esc(d.who)).join(', ')}).`]);
   if (lateS && w7s && lateS >= w7s) sm.push(['ok', 'Vadesi geçen alacakları toplarsan önümüzdeki hafta ödemelerini karşılarsın.']);
-  const alacakMail = mailReady() ? '' : `<div class="br-in">${ic('mail', 16)}<span>${role === 'patron' ? 'Hatırlatmayı işyeri adresinden göndermek için e-postanı bağla.' : 'Hatırlatma e-postası için patronun işletme e-postasını bağlaması gerekir.'}</span></div>`;
+  const alacakMail = mailReady() ? '' : `<div class="br-in">${ic('mail', 16)}<span>Müşteriye e-posta gönderme henüz hazır değil.</span></div>`;
   return `<div class="stack-lg br">
   <section class="br-h"><div class="br-hr"><div><small>Ödenecek</small><b>${fmt0(totD)}</b></div><div><small>Tahsil edilecek</small><b>${fmt0(alac)}</b></div></div><div class="br-net ${fark < 0 ? 'neg' : ''}"><span>Net durum</span><b>${fark < 0 ? '−' : '+'}${fmt0(Math.abs(fark))}</b></div></section>
   ${sm.length ? `<section class="br-sm">${sm.map((x) => `<div class="br-in ${x[0]}">${ic(x[0] === 'ok' ? 'check' : x[0] === 'bad' ? 'alert' : 'clock', 16)}<span>${x[1]}</span></div>`).join('')}</section>` : ''}

@@ -78,3 +78,30 @@ Uygulama kapalıyken de çalışır:
 - `kais-admin` yeniden yüklenmeli: Sistem sayfasına yedek sağlığı eklendi.
 - Yeni SQL yok.
 - Şube yetkisi uygulama içi bir görünüm kısıtlamasıdır (Raporlar > Şube yetkisi). Veritabanı düzeyinde ayrım değildir.
+
+
+## Gmail bağlantısı (e-postadaki faturaları bulma) (v239)
+
+Uygulamada Muhasebe > Belgeler > "E-posta ile gelen faturalar" bölümü bunu kullanır. Üç parça: SQL tabloları, `kais-mail` fonksiyonu, Google OAuth istemcisi.
+
+### 1. Google Cloud (giriş projesinden AYRI, yeni bir proje: "KaisPilot Mail")
+Ayrı proje önerilir: Gmail izni "doğrulanmamış" iken 100 yeni kullanıcı sınırı vardır ve bu sınır dolarsa o projedeki Google ile giriş de kapanabilir.
+1. console.cloud.google.com > yeni proje > **Gmail API**'yi etkinleştir.
+2. Google Auth Platform (OAuth onay ekranı): uygulama adı KaisPilot, destek e-postası, logo, yetkili alan adı `kaispilot.com`, gizlilik politikası `https://www.kaispilot.com/gizlilik/`, kullanım şartları `https://www.kaispilot.com/kullanim-sartlari/`. Kitle: **Harici**. Yayın durumu: **Üretimde** (Test durumunda izin 7 günde biter, bağlantı her hafta kopar).
+3. Veri erişimi (Scopes) > ekle: `https://www.googleapis.com/auth/gmail.readonly`
+4. Kimlik bilgileri > OAuth istemci kimliği > Web uygulaması. Yetkili yönlendirme URI'si tam olarak: `https://bbcsbkgbwzciyfymvpxh.supabase.co/functions/v1/kais-mail`
+5. Çıkan **İstemci kimliği** ve **İstemci sırrı**'nı bir yere not et (sohbete yapıştırma).
+
+### 2. Supabase
+1. SQL Editor: `sql/mail_gmail.sql` dosyasını çalıştır. Kontrol: `select relname, relrowsecurity from pg_class where relname in ('mail_connections','mail_secrets','mail_docs');` üç satır, hepsi `true`.
+2. Edge Functions > Secrets: `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `MAIL_SECRET_KEY` (en az 40 karakterlik rastgele bir metin, kaybetme: kayıtlı Gmail anahtarlarını bununla şifreler). `ANTHROPIC_API_KEY` `kais-ai` ile aynı, zaten varsa tekrar eklemene gerek yok. İsteğe bağlı: `MAIL_AI_DAY` (işletme başına günlük belge okuma sınırı, varsayılan 80).
+3. Edge Functions > yeni fonksiyon adı **kais-mail**, içine `functions/kais-mail/index.ts` dosyasının tamamını yapıştır. **Verify JWT KAPALI** olmalı (Google'dan dönüş oturum başlığı taşımaz; fonksiyon oturumu kendisi doğrular). CLI ile: `supabase functions deploy kais-mail --no-verify-jwt`
+4. Deneme: `https://bbcsbkgbwzciyfymvpxh.supabase.co/functions/v1/kais-mail` adresini tarayıcıda aç, `{"ok":true,"service":"kais-mail","configured":true}` görmelisin. `configured:false` ise bir sır eksik.
+
+### Nasıl çalışır
+- Patron "Gmail'i bağla" der, Google'a gider, yalnızca okuma izni verir, geri döner. Yenileme anahtarı AES-GCM ile şifrelenip `mail_secrets` tablosunda durur; istemci bu tabloyu okuyamaz.
+- "Şimdi tara" son 90 günde fatura, makbuz gibi görünen e-postaları bulur. e-Fatura XML'i (UBL) kesin okunur. PDF, görsel ve düz metin yapay zekâ ile okunur; tutar açıkça yazmıyorsa boş bırakılır, tahmin edilmez. E-posta metni ve ekler saklanmaz.
+- Belgeler listelenir, patron "Ekle" deyince fiş olarak muhasebeciye gider.
+
+### Google doğrulaması (sonra)
+`gmail.readonly` Google'ın "kısıtlı" izni. Doğrulanana kadar: kullanıcılar "Bu uygulama doğrulanmadı" uyarısı görür ve toplam 100 yeni kullanıcı sınırı vardır (sıfırlanmaz). 100'ün üstü için Google doğrulaması ve yıllık üçüncü taraf güvenlik değerlendirmesi (CASA) gerekir.

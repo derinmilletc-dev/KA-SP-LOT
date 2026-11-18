@@ -357,7 +357,7 @@ borcAlacakHTML = function (role) {
   if (lateS) sm.push(['bad', `${lateR.length} kişiden ${fmt0(lateS)} vadesi geçmiş alacak var. Hatırlatma göndererek tahsil edebilirsin.`]);
   if (w7s) sm.push(['wn', `Önümüzdeki 7 günde ${fmt0(w7s)} ödeme var: ${w7.slice(0, 3).map((d) => esc(d.who)).join(', ')}${w7.length > 3 ? ' ve ' + (w7.length - 3) + ' diğer' : ''}.`]);
   if (lateS && w7s) sm.push([lateS >= w7s ? 'ok' : 'wn', lateS >= w7s ? 'Vadesi geçen alacakları toplarsan bu haftaki ödemeleri karşılarsın.' : `Vadesi geçen alacaklar bu haftaki ödemelerin ${fmt0(w7s - lateS)} altında kalıyor.`]);
-  const mail = mailReady() ? '' : `<div class="bz-in">${ic('mail', 16)}<span>${role === 'patron' ? 'Hatırlatmayı işyeri adresinden göndermek için e-postanı bağla.' : 'Hatırlatma e-postası için patronun işletme e-postasını bağlaması gerekir.'}</span></div>`;
+  const mail = mailReady() ? '' : `<div class="bz-in">${ic('mail', 16)}<span>Müşteriye e-posta gönderme henüz hazır değil.</span></div>`;
   const dG = f === 'hepsi' ? bzGroup('Gecikenler', shown.filter((d) => daysTo(d.due) < 0), bzDebt) + bzGroup('Bu hafta', shown.filter((d) => { const n = daysTo(d.due); return n >= 0 && n <= 7; }), bzDebt) + bzGroup('Sonra', shown.filter((d) => daysTo(d.due) > 7), bzDebt) : shown.map(bzDebt).join('');
   return `<div class="stack-lg bz">
   <section class="bz-h"><div class="bz-hr"><div><small>Ödenecek</small><b>${fmt0(totD)}</b></div><div><small>Tahsil edilecek</small><b>${fmt0(alac)}</b></div></div><div class="bz-bar" aria-hidden="true"><i style="width:${pD}%"></i></div><div class="bz-net ${fark < 0 ? 'neg' : ''}"><span>Net durum</span><b>${fark < 0 ? '−' : '+'}${fmt0(Math.abs(fark))}</b></div></section>

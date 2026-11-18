@@ -207,7 +207,7 @@ const S = {
   user: null,
   view: 'bugun',
   sub: { muhasebe: 'ozet', ekip: 'bugun', belgeler: 'ekstre', musteri: 'kampanya' },
-  mail: { on: false, provider: '', addr: '', send: true },
+  mail: { on: false, provider: '', addr: '', send: false },
   camp: { seg: 'all', subj: '', body: '' },
   filter: 'hepsi',
   modal: null,
@@ -382,8 +382,9 @@ const thread = (arr) => `<div class="thread">${arr.map((m) => { const u = byId(m
 const nowT = () => 'Bugün ' + hhmm(new Date());
 const itPill = (it) => ({ inceleniyor: '<span class="pill p-warn">İşveren inceliyor</span>', 'cevap bekleniyor': '<span class="pill p-info">Cevap bekleniyor</span>', 'kabul edildi': '<span class="pill p-ok">Kabul edildi</span>', reddedildi: '<span class="pill p-mute">Reddedildi</span>' }[it.status] || '');
 const waitingNotes = () => Object.keys(NOTES).filter((id) => { const a = NOTES[id]; return a.length && byId(a[a.length - 1].by).role === 'muhasebeci'; });
-const mailStatus = (d) => (d.bank && RECEIPTS.some((f) => f.bank === d.bank) ? 'var' : d.total == null ? 'atla' : 'yeni');
-const mailReady = () => S.mail.on && S.mail.send;
+const mailStatus = (d) => (typeof mailStatusX === 'function' ? mailStatusX(d) : d.bank && RECEIPTS.some((f) => f.bank === d.bank) ? 'var' : d.total == null ? 'atla' : 'yeni');
+// Müşteriye e-posta gönderme henüz yok (yalnızca Gmail'den fatura okuma var). Sahte "gönderildi" göstermemek için her zaman false.
+const mailReady = () => false;
 
 /* Bugün: patron */
 function bugunPatron() {
@@ -414,7 +415,7 @@ function bugunPatron() {
   if (wn.length) items.unshift(todo('chat', 'warn', `Muhasebecinin ${wn.length} sorusu cevap bekliyor`, `${byId('u3').name}: ${NOTES[wn[0]][NOTES[wn[0]].length - 1].text}`, 'muhasebe', 'ekstre'));
   const itr = EMP_IDS.filter((id) => EMPDATA[id].itiraz && EMPDATA[id].itiraz.unreadBoss);
   if (itr.length) items.unshift(todo('alert', 'warn', `${byId(itr[0]).name} itirazı için yazdı`, 'Puanı inceleyip cevap ver', 'ekip', 'siralama'));
-  if (!S.mail.on) items.push(todo('mail', 'info', 'E-postanı bağla', 'Faturalar kendiliğinden gelsin, müşterilere e-posta gönderebil', 'muhasebe', 'eposta'));
+  if (!S.mail.on) items.push(todo('mail', 'info', 'E-postanı bağla', 'Faturalar e-postandan kendiliğinden bulunsun', 'muhasebe', 'eposta'));
   else if (MAILDOCS.some((d) => mailStatus(d) === 'yeni')) items.push(todo('mail', 'info', `${MAILDOCS.filter((d) => mailStatus(d) === 'yeni').length} fatura e-postanda bulundu`, 'Tek dokunuşla muhasebeye ekle', 'muhasebe', 'eposta'));
   const late = RECV.filter((a) => !a.paid && a.days > 0);
   if (late.length) items.push(todo('trend', 'bad', `${late.length} alacağın vadesi geçti`, `${late.map((a) => a.name).join(', ')}: ${fmt0(late.reduce((x, a) => x + a.amt, 0))}`, 'muhasebe', 'alacak'));
@@ -690,7 +691,7 @@ function alacakHTML() {
     return `<div class="rrow"><div><b style="font-weight:600">${esc(a.name)}</b><div class="small muted">${esc(a.note)} · ${esc(a.email)}</div></div><div class="num" style="font-weight:600">${fmt(a.amt)}</div>
     <div class="rfoot">${p}${a.reminded ? `<span class="pill p-info">Hatırlatıldı · ${esc(a.reminded)}</span>` : ''}<button class="btn sm" data-a="remind" data-id="${a.id}">${ic('send', 16)} ${a.reminded ? 'Tekrar hatırlat' : 'Hatırlatma gönder'}</button><button class="btn sm sec" data-a="paid" data-id="${a.id}">Tahsil edildi</button></div></div>`;
   }).join('') : '<div class="empty">Açık alacak yok.</div>'}</div>
-  ${mailReady() ? '' : `<div class="callout">${ic('mail')}<div>Hatırlatmayı işyeri adresinden göndermek için e-postanı bağla. Metni göndermeden önce sen düzenlersin.</div></div>`}</div>`;
+  ${mailReady() ? '' : `<div class="callout">${ic('mail')}<div>Müşteriye e-posta gönderme henüz hazır değil. Hatırlatmayı şimdilik kendin ilet.</div></div>`}</div>`;
 }
 function viewMusteri() {
   const cur = S.sub.musteri;
@@ -1011,7 +1012,7 @@ H.mailall = () => {
   list.forEach(addMailDoc); render(); toast(`${list.length} belge eklendi, ekstreyle eşleşti.`, 'ok');
 };
 H.remind = (el) => {
-  if (!mailReady()) { toast('Önce e-postanı bağla.', 'warn'); S.sub.muhasebe = 'eposta'; render(); return; }
+  if (!mailReady()) { toast('Müşteriye e-posta gönderme henüz hazır değil.', 'warn'); return; }
   S.modal = { type: 'remind', id: el.dataset.id }; renderModal();
 };
 H.remindsend = (el) => {
@@ -1040,7 +1041,7 @@ H.campsend = () => {
   const ok = segList(c.seg).filter((x) => x.iys === 'onayli');
   if (!c.subj.trim() || !c.body.trim()) { toast('Konu ve mesajı yaz.', 'bad'); return; }
   if (!ok.length) { toast('Bu grupta izinli müşteri yok.', 'bad'); return; }
-  if (!mailReady()) { toast('Önce e-postanı bağla.', 'warn'); S.view = 'muhasebe'; S.sub.muhasebe = 'eposta'; render(); return; }
+  if (!mailReady()) { toast('Müşteriye e-posta gönderme henüz hazır değil. Kampanya gönderilmedi.', 'warn'); return; }
   CAMPAIGNS.push({ subj: c.subj.trim(), date: 'Bugün', sent: ok.length, open: 'yeni gitti' });
   S.camp = { seg: 'all', subj: '', body: '' }; render(); toast(`Kampanya ${ok.length} kişiye gönderildi.`, 'ok');
 };

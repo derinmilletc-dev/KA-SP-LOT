@@ -359,7 +359,7 @@ function kampanyaHTML() {
     <div class="cm-pv">${ic('mail', 22)}<div><b>Önizleme</b><p style="white-space:pre-line">${esc(prev) || 'Mesajın yazınca burada görünür.'}</p><small>Bu iletiyi almak istemiyorsanız buradan listeden çıkabilirsiniz.</small></div>${env}</div>
     <hr class="cm-hr">
     <button type="button" class="cm-go" data-a="campsend">${ic('send', 22)}<b>${ok.length} kişiye gönder</b></button>
-    <p class="cm-f">Gönderen: ${mailReady() ? esc(S.mail.addr) : 'e-posta bağlı değil'}. Ticari elektronik ileti için alıcı onayı ve çıkış bağlantısı gerekir, kapsamı iş hukukçusuyla doğrula.</p>
+    <p class="cm-f">Müşteriye e-posta gönderme henüz hazır değil, kampanya şimdilik gönderilmez. Ticari elektronik ileti için alıcı onayı ve çıkış bağlantısı gerekir, kapsamı iş hukukçusuyla doğrula.</p>
   </div>
   <div class="card cm-g"><div class="cm-gh"><span class="cm-gi">${ic('layers', 22)}</span><h3>Gönderilen kampanyalar</h3></div>${CAMPAIGNS.length ? CAMPAIGNS.slice().reverse().map((x) => `<div class="cm-r"><div><b>${esc(x.subj)}</b><span>${esc(x.date)} · ${x.sent} kişiye gitti · açılma ${esc(x.open)}</span></div>${ic('chevron', 18)}</div>`).join('') : '<p class="muted" style="padding:4px 14px 14px">Henüz kampanya göndermedin.</p>'}</div></div>`;
 }

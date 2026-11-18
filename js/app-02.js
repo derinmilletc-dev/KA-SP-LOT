@@ -267,7 +267,7 @@ H.debtok = () => {
 H.debtrem = (el) => { const d = DEBTS.find((x) => x.id === el.dataset.id); d.on = !d.on; render(); toast(d.on ? 'Hatırlatma açıldı.' : 'Hatırlatma kapatıldı.'); };
 H.debtpaid = (el) => { const d = DEBTS.find((x) => x.id === el.dataset.id); d.paid = true; render(); toast('Ödendi olarak işaretlendi.', 'ok'); };
 const _rem = H.remind;
-H.remind = (el) => { if (S.user.role !== 'patron' && !mailReady()) { toast('Hatırlatma e-postası, patron işletme e-postasını bağlayınca gider.', 'warn'); return; } _rem(el); };
+H.remind = (el) => { if (S.user.role !== 'patron' && !mailReady()) { toast('Müşteriye e-posta gönderme henüz hazır değil.', 'warn'); return; } _rem(el); };
 
 /* ---------- belge metinleri ---------- */
 function contractText(d) {
