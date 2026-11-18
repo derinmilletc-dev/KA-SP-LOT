@@ -39,6 +39,9 @@ with sync_playwright() as p:
     check('Banka sayfasi esleme', r['map'].get('acc')==0 and r['map'].get('gelir')==2 and r['map'].get('gider')==3 and r['map'].get('desc')==5 and r['map'].get('total') is None, r['map'])
     check('Banka sayfasi: baslik satirindan banka akisi', r['ch']=='banka', r['ch'])
     check('Banka: 2 gercek satir, sifir tutarli atlanir', r['n']==2 and len(r['sk'])==1, r)
+    r = ev("""()=>{const rows=[['','BÜYÜK ÇAMLICA NAKİT','','','','',''],['','HESAP TÜRÜ','HESAP ADI','BELGE NUMARASI','GELİRLER','GİDERLER','AÇIKLAMA'],['9/26/2026','ÖN MUHASEBE','İŞÇİ GİDERİ','','','R 100.00','x'],['9/27/2026','ÖN MUHASEBE','KERMES GELİRİ','','R 760.00','','y'],['10/3/2026','ÖN MUHASEBE','KERMES GELİRİ','','R 600.00','','z']].map((r,i)=>{r.__n=i+1;return r});
+    ixLoadSheets([{name:'NAKİT',rows}],'m.xlsx');MXI.dec={rate:'0',incl:'yes'};const R=ixBuild('defter',MXI.map,ixCur()._p);return {date:MXI.map.date,d:R.out.map(o=>o.iso),nd:R.nd}}""")
+    check('Basligi bos tarih sutunu (ay/gun/yil) okunur', r['date']==0 and r['d']==['2026-09-26','2026-09-27','2026-10-03'] and r['nd']==0, r)
     check('Sayfa hatasi yok', not er, er)
     b.close()
 print('\nHEPSI GECTI' if not f else 'FAIL: %d' % len(f))

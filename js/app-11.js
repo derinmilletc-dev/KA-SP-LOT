@@ -487,7 +487,7 @@ function ixAuto(type, P) {
   const col = (i) => P.data.slice(0, 40).map((r) => r[i]);
   const frac = (i, fn) => { const c = col(i).filter((x) => ixTxt(x)); return c.length ? c.filter(fn).length / c.length : 0; };
   const need = (k, fn) => { if (map[k] != null) return; let b = -1, bs = 0.6; P.heads.forEach((_, i) => { if (used.has(i)) return; const s = frac(i, fn); if (s > bs) { bs = s; b = i; } }); if (b >= 0) { map[k] = b; used.add(b); } };
-  const dk = type === 'defter' ? 'date' : type === 'fatura' ? 'date' : 'due'; need(dk, (x) => !!ixDate(x));
+  const dk = type === 'defter' ? 'date' : type === 'fatura' ? 'date' : 'due'; need(dk, (x) => !!(ixDate(x, 'dmy') || ixDate(x, 'mdy')));
   const ak = type === 'defter' ? 'total' : type === 'fatura' ? 'tot' : 'amt'; if (!(type === 'defter' && (map.gelir != null || map.gider != null))) need(ak, (x) => ixN(x) !== null && !ixDate(x));
   const tk = type === 'defter' ? 'desc' : type === 'fatura' ? 'cust' : 'who'; need(tk, (x) => ixN(x) === null && ixTxt(x).length > 2);
   return map;
