@@ -1435,6 +1435,9 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 .fp-pw{position:relative}.fp-pw input{width:100%;padding-right:46px}.fp-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--ink-2);padding:8px;cursor:pointer}
 .fp-m{display:flex;align-items:center;gap:10px;margin-top:8px}.fp-m i{flex:1;height:6px;border-radius:9px;background:#E3EAF4;position:relative;overflow:hidden}.fp-m i:after{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--w,0);border-radius:9px;background:#D64545;transition:width .2s,background .2s}.fp-m i[data-s="2"]:after{background:#E5A100}.fp-m i[data-s="3"]:after{background:#3FA66B}.fp-m i[data-s="4"]:after{background:#1E8F55}.fp-m span{font-size:12.5px;font-weight:600;color:var(--ink-2);min-width:44px;text-align:right}
 .lx-note.ok{background:#E8F6EE;color:#17653A;border-color:#BFE3CF}
+
+/* v227: Raporlar geniş ekranda iki sütun, boşluk kalmasın */
+@media(min-width:1000px){.main:has(.rx){max-width:1240px}.rx{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;align-items:stretch}.rx>div:first-child,.rx>.cb-chips,.rx>div:first-child+.card,.rx>.cb-chips+.card,.rx>.card:last-child{grid-column:1/-1}}
 </style></head>
 <body>
 <div id="app"></div>
@@ -1450,7 +1453,7 @@ input[type=file]::file-selector-button{min-height:40px;margin-right:10px;padding
 <script src="js/app-07.js?v=1e6800afee"></script>
 <script src="js/app-08.js?v=df76accce3"></script>
 <script src="js/app-09.js?v=8de99f02a9"></script>
-<script src="js/app-10.js?v=9e5b7cef26"></script>
+<script src="js/app-10.js?v=15c01921c9"></script>
 <script src="js/app-11.js?v=d52c1fa2e8"></script>
 <script src="js/app-12.js?v=19c2c9a4d9"></script>
 </body>
