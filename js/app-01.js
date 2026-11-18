@@ -13,8 +13,10 @@ const MARKET_ON = (() => { try { const m = /[?&]market=([01])/.exec(location.sea
 /* ---------- yardımcılar ---------- */
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = (n) => (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
-const fmt0 = (n) => Math.round(n).toLocaleString('tr-TR') + ' ₺';
+const curSym = () => { try { return (S.settings && S.settings.cur && S.settings.cur.sym) || '₺'; } catch (e) { return '₺'; } };
+const curPut = (t) => { const c = curSym(); return c === '₺' ? t + ' ₺' : c + ' ' + t; };
+const fmt = (n) => (n < 0 ? '−' : '') + curPut(Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const fmt0 = (n) => (Math.round(n) < 0 ? '−' : '') + curPut(Math.abs(Math.round(n)).toLocaleString('tr-TR'));
 const hhmm = (d) => d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 const mmss = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
