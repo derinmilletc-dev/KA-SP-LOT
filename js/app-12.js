@@ -1045,6 +1045,7 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
   };
   const _r = render;
   render = function () {
+    try { document.documentElement.dataset.view = S.view || ''; } catch (e) {}
     try { seatSync(); if (cloudBiz() && !ID.team && !ID.teamBusy && sbClient()) teamLoad().then(() => render()); } catch (e) {}
     return _r.apply(this, arguments);
   };
