@@ -483,7 +483,8 @@ function ixPrep(sh) {
 function ixAuto(type, P) {
   const map = {}; const used = new Set(); const hn = P.heads.map(ixNorm);
   const pri = { desc: /açıklama|aciklama|detay/, acc: /hesap\s*ad|kategori|kalem/ };
-  IX_F[type].forEach((f) => { let i = pri[f[0]] && type === 'defter' ? hn.findIndex((h, j) => !used.has(j) && pri[f[0]].test(h)) : -1; if (i < 0) i = hn.findIndex((h, j) => !used.has(j) && f[2].test(h)); if (i >= 0) { map[f[0]] = i; used.add(i); } });
+  if (type === 'defter') ['acc', 'desc'].forEach((k) => { const i = hn.findIndex((h, j) => !used.has(j) && pri[k].test(h)); if (i >= 0) { map[k] = i; used.add(i); } });
+  IX_F[type].forEach((f) => { if (map[f[0]] != null) return; let i = pri[f[0]] && type === 'defter' ? hn.findIndex((h, j) => !used.has(j) && pri[f[0]].test(h)) : -1; if (i < 0) i = hn.findIndex((h, j) => !used.has(j) && f[2].test(h)); if (i >= 0) { map[f[0]] = i; used.add(i); } });
   const col = (i) => P.data.slice(0, 40).map((r) => r[i]);
   const frac = (i, fn) => { const c = col(i).filter((x) => ixTxt(x)); return c.length ? c.filter(fn).length / c.length : 0; };
   const need = (k, fn) => { if (map[k] != null) return; let b = -1, bs = 0.6; P.heads.forEach((_, i) => { if (used.has(i)) return; const s = frac(i, fn); if (s > bs) { bs = s; b = i; } }); if (b >= 0) { map[k] = b; used.add(b); } };
@@ -1149,4 +1150,93 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
     return r;
   };
   H.ixnext = () => { const i = MXI.sheets.findIndex((x) => !x._done && x.rows && x.rows.length); if (i < 0) return; ixSetSheet(i); MXI.step = 'map'; MXI.done = null; renderModal(); };
+}
+
+/* v216: Tüm sayfalar tek seferde: sayfa özeti (nakit/banka/diğer), hesap adı eşleme, bakiye kontrolü */
+{
+  const RL = { nakit: 'Nakit akışı', banka: 'Banka akışı', defter: 'Gelir gider (kanal belirtme)', fatura: 'Faturalar, alacaklar', borc: 'Borçlar', atla: 'Aktarma' };
+  const rType = (r) => (r === 'fatura' ? 'fatura' : r === 'borc' ? 'borc' : 'defter');
+  const chG = (n) => { const x = ixNorm(n); return /banka|ekstre|havale|eft|kredi kart/.test(x) ? 'banka' : /nakit|kasa/.test(x) ? 'nakit' : ''; };
+  /* hesap adı → Kais kategorisi: öğrenilen eşleme */
+  const xm = () => ((S.settings && S.settings.xmap) || {});
+  const _bld = ixBuild;
+  ixBuild = function (type, map, P) { const R = _bld.apply(this, arguments); try { if (type === 'defter') { const m = xm(); R.out.forEach((o) => { const k = mxLK(o.acc); if (k && m[k]) o.acc = m[k]; }); } } catch (e) {} return R; };
+  /* bakiye kontrolü: dosyadaki bakiye sütunu ile gelir-gider hareketi tutuyor mu */
+  function ixBal(P, map) {
+    const bi = P.heads.findIndex((h, i) => /bakiye/.test(ixNorm(h)) && i !== map.gelir && i !== map.gider && i !== map.total);
+    if (bi < 0 || (map.gelir == null && map.gider == null)) return null;
+    let prev = null, n = 0; const bad = [];
+    P.data.forEach((r) => { const b = ixN(r[bi]); if (b === null) return; const d = (map.gelir != null ? ixN(r[map.gelir]) || 0 : 0) - (map.gider != null ? Math.abs(ixN(r[map.gider]) || 0) : 0);
+      if (prev !== null) { n++; if (Math.abs(b - prev - d) > 0.05) bad.push(r.__n); } prev = b; });
+    return n ? { n, bad } : null;
+  }
+  function planBuild() {
+    MXI.pdec = MXI.pdec || {};
+    MXI.plan = MXI.sheets.map((sh, i) => {
+      const P = ixPrep(sh); const t = ixDetect(sh); const m = ixAuto(t, P); const title = ((sh.rows && sh.rows[0]) || []).join(' ');
+      const amt = t === 'defter' ? (m.gelir != null || m.gider != null || m.total != null) : t === 'fatura' ? m.tot != null : m.amt != null;
+      const dt = (t === 'borc' ? m.due : m.date) != null; let role = 'atla';
+      if (P.data.length >= 2 && amt && !(/açıklama|aciklama|kullanım|kullanim|talimat|özet|ozet|readme|yardım|yardim/.test(ixNorm(sh.name)) && !dt)) role = t === 'defter' ? (chG(sh.name) || chG(title) || 'defter') : t;
+      return { i, role, dt };
+    });
+  }
+  function planStat(pl) {
+    if (pl.role === 'atla') return { ok: false, txt: 'Aktarılmayacak', cls: 'p-mute' };
+    const sh = MXI.sheets[pl.i]; const P = sh._p || (sh._p = ixPrep(sh)); const type = rType(pl.role); const map = ixAuto(type, P);
+    const sv = MXI.dec; MXI.dec = Object.assign({}, MXI.pdec); let R; try { R = ixBuild(type, map, P); } finally { MXI.dec = sv; }
+    pl.R = R; pl.bal = type === 'defter' ? ixBal(P, map) : null; pl.map = map; pl.type = type;
+    if (R.need.dfmt) return { ok: false, txt: 'Tarih biçimi sorulacak', cls: 'p-warn' };
+    if (!R.out.length) return { ok: false, txt: R.pend.dir + R.pend.rate + R.pend.incl + R.pend.st ? 'Karar bekliyor' : 'Aktarılacak satır yok', cls: 'p-warn' };
+    return { ok: true, txt: R.out.length + ' kayıt' + (R.dup ? ' · ' + R.dup + ' zaten var' : ''), cls: 'p-ok' };
+  }
+  const _lp = ixLoadSheets;
+  ixLoadSheets = function () {
+    _lp.apply(this, arguments);
+    try { if (MXI.step === 'map' && MXI.sheets.length >= 2) { MXI.pdec = {}; planBuild(); MXI.step = 'plan'; renderModal(); } } catch (e) {}
+  };
+  const dsel2 = (k, lab, opts, cur, why) => `<div class="card" style="padding:10px 12px;margin-top:8px;border-color:#E0A526"><div class="small"><b style="font-weight:600">${lab}</b></div><div class="small muted" style="margin:2px 0 6px">${why}</div><select data-ixp="${k}" style="${mxInp};padding:10px">${[['', 'Seç…']].concat(opts).map((o) => `<option value="${o[0]}" ${String(cur == null ? '' : cur) === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>`;
+  const _pm = NEWM.mximp;
+  NEWM.mximp = function () {
+    if (MXI.step !== 'plan' || !MXI.plan) { let o = _pm.apply(this, arguments); if (MXI.step === 'map' && MXI.plan) o = o.replace('data-a="ixreset">Vazgeç</button>', 'data-a="ixreset">Vazgeç</button><button class="btn sec" data-a="ixplanback">Özete dön</button>'); return o; }
+    const st = MXI.plan.map(planStat); const ready = st.filter((x) => x.ok).length; const D = MXI.pdec;
+    let need = { dir: 0, rate: 0, incl: 0, st: 0, dfmt: 0 }; MXI.plan.forEach((pl) => { if (pl.R && pl.role !== 'atla') { ['dir', 'rate', 'incl', 'st'].forEach((k) => { if (pl.R.need[k]) need[k] = 1; }); if (pl.R.need.dfmt) need.dfmt = 1; } });
+    let dq = '';
+    if (need.dfmt) dq += dsel2('dfmt', 'Tarih biçimi', [['dmy', 'Gün/Ay/Yıl (16/11/2026)'], ['mdy', 'Ay/Gün/Yıl (11/16/2026)']], D.dfmt, 'Bazı sayfalarda tarihin gün mü ay mı olduğu belli değil.');
+    if (need.dir) dq += dsel2('dir', 'Gelir mi gider mi?', [['sign', 'Artı gelir, eksi gider'], ['gider', 'Hepsi gider'], ['gelir', 'Hepsi gelir']], D.dir, 'Bazı sayfalarda gelir/gider ayrımı yok.');
+    if (need.rate) dq += dsel2('rate', 'KDV oranı', [['0', '%0 (KDV yok)'], ['1', '%1'], ['10', '%10'], ['20', '%20']], D.rate, 'Dosyada KDV oranı yok. Nakit defterinde KDV yazmıyorsa %0 seç.');
+    if (need.incl) dq += dsel2('incl', 'Tutarlar KDV dahil mi?', [['yes', 'KDV dahil'], ['no', 'KDV hariç']], D.incl, 'Sütun adından anlaşılmıyor.');
+    if (need.st) dq += dsel2('st', 'Ödeme durumu', [['odendi', 'Hepsi ödenmiş'], ['bekliyor', 'Hepsi açık']], D.st, 'Durum sütunu yok.');
+    const accs = {}; MXI.plan.forEach((pl) => { if (pl.R && pl.role !== 'atla' && pl.type === 'defter') pl.R.out.forEach((o) => { if (o.acc && o.acc !== 'Diğer') accs[o.acc] = (accs[o.acc] || 0) + 1; }); });
+    const names = Object.keys(accs).sort((a, b) => accs[b] - accs[a]).slice(0, 40); const cats = mxAccs(); const mm = xm();
+    const rows = MXI.plan.map((pl, k) => { const sh = MXI.sheets[pl.i]; const s = st[k]; const b = pl.bal;
+      return `<div class="card" style="padding:10px 12px;margin-top:8px"><div class="row between" style="gap:8px;align-items:center"><b style="min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(sh.name)}</b><span class="pill ${s.cls}">${esc(s.txt)}</span></div>
+      <div class="row" style="gap:8px;margin-top:6px;align-items:center"><select data-ixp="role:${pl.i}" style="${mxInp};padding:9px 10px;flex:1">${Object.keys(RL).map((r) => `<option value="${r}" ${r === pl.role ? 'selected' : ''}>${RL[r]}</option>`).join('')}</select><button class="btn sm sec" data-a="ixplanedit" data-i="${pl.i}">Düzenle</button></div>
+      <div class="small muted" style="margin-top:4px">${sh.rows.length} satır${pl.role !== 'atla' ? (pl.dt ? ' · tarih ✓' : ' · tarih yok') : ''}</div>
+      ${b ? (b.bad.length ? `<div class="small" style="margin-top:4px;color:#b45309">Bakiye ${b.bad.length} satırda tutmuyor (ilk: satır ${b.bad[0]}). Dosyadaki hesapta fark olabilir.</div>` : `<div class="small" style="margin-top:4px;color:#15803d">Bakiye tuttu ✓ (${b.n} satır kontrol edildi)</div>`) : ''}</div>`; }).join('');
+    return sheet('Excel aktar', `<div class="callout">${ic('sparkle')}<div><b>${MXI.sheets.length} sayfa bulundu</b><p style="margin-top:2px">${esc(MXI.fn || 'Dosya')} · Kais her sayfanın ne olduğunu anladı. Yanlış olanı değiştir, sonra hepsini tek seferde aktar.</p></div></div>
+    ${dq ? `<h3 style="margin-top:14px">Senin kararın gerekiyor</h3>${dq}` : ''}${rows}
+    ${names.length ? `<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Hesap adları (${names.length})</summary><p class="small muted" style="margin:6px 0">Dosyandaki hesap adlarını Kais kategorisine bağlayabilirsin. Dokunmazsan aynen kullanılır. Seçtiğini hatırlarım.</p><div class="card" style="padding:8px 12px">${names.map((n) => `<div class="row" style="gap:8px;align-items:center;padding:4px 0"><span class="small" style="flex:0 0 42%">${esc(n)} <span class="muted">(${accs[n]})</span></span><select data-ixp="map:${esc(n)}" style="${mxInp};padding:9px 10px;flex:1"><option value="">Aynen kullan</option>${cats.filter((c) => c !== n).map((c) => `<option ${mm[mxLK(n)] === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>`).join('')}</div></details>` : ''}
+    <div class="row wrap" style="margin-top:12px;gap:8px"><button class="btn grow" data-a="ixplanrun" ${ready ? '' : 'disabled'}>${ready} sayfayı aktar</button><button class="btn sec" data-a="ixreset">Vazgeç</button></div>`);
+  };
+  document.addEventListener('change', (e) => {
+    const t = e.target; if (!t || !t.dataset || !t.dataset.ixp || !S.modal || S.modal.type !== 'mximp' || MXI.step !== 'plan') return; const k = t.dataset.ixp;
+    if (k.indexOf('role:') === 0) { const pl = MXI.plan[+k.slice(5)]; if (pl) pl.role = t.value; }
+    else if (k.indexOf('map:') === 0) { const n = k.slice(4); if (!S.settings) S.settings = {}; const m = (S.settings.xmap = S.settings.xmap || {}); if (t.value) m[mxLK(n)] = t.value; else delete m[mxLK(n)]; try { pSched(); } catch (x) {} }
+    else { if (t.value === '') delete MXI.pdec[k]; else MXI.pdec[k] = t.value; }
+    renderModal();
+  });
+  H.ixplanedit = (el) => { const pl = MXI.plan[+el.dataset.i]; if (!pl) return; ixSetSheet(pl.i); MXI.type = rType(pl.role === 'atla' ? 'defter' : pl.role); MXI.map = ixAuto(MXI.type, ixCur()._p); MXI.ch = pl.role === 'nakit' ? 'nakit' : pl.role === 'banka' ? 'banka' : ''; MXI.dec = Object.assign({}, MXI.pdec); MXI.step = 'map'; renderModal(); };
+  H.ixplanback = () => { planBuild(); MXI.step = 'plan'; renderModal(); };
+  H.ixplanrun = () => {
+    if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return;
+    const ids = [], parts = []; let tot = 0, dup = 0, bad = 0; const plan = MXI.plan.slice(); const pd = Object.assign({}, MXI.pdec);
+    plan.forEach((pl) => {
+      const sh = MXI.sheets[pl.i]; if (pl.role === 'atla') { sh._done = true; return; }
+      ixSetSheet(pl.i); const cs = ixCur(); const type = rType(pl.role); MXI.type = type; MXI.map = ixAuto(type, cs._p); MXI.dec = Object.assign({}, pd); MXI.ch = pl.role === 'nakit' ? 'nakit' : pl.role === 'banka' ? 'banka' : '';
+      const R = ixBuild(type, MXI.map, cs._p); if (!R.out.length || R.need.dfmt) return;
+      H.iximport(); if (MXI.step === 'done' && MXI.done) { tot += MXI.done.n; dup += MXI.done.dup || 0; bad += MXI.done.bad || 0; parts.push(cs.name + ': ' + MXI.done.n); if (S.settings.xlast) ids.push(S.settings.xlast.b); }
+    });
+    if (ids.length) { const c = 'x' + Date.now().toString(36) + 'p'; [LEDGER, INV, DEBTS, FCUST].forEach((a) => a.forEach((r) => { if (ids.includes(r.xb)) r.xb = c; })); const h = (S.settings.xhist || []).filter((x) => !ids.includes(x.b)); h.push({ b: c, n: tot, t: fiIso() }); S.settings.xhist = h; S.settings.xlast = h[h.length - 1]; try { pSched(); } catch (e) {} }
+    MXI.plan = null; MXI.done = { n: tot, dup, bad, txt: parts.join(' · ') || 'Aktarılacak satır bulunamadı' }; MXI.step = 'done'; render(); S.modal = { type: 'mximp' }; renderModal();
+  };
 }
