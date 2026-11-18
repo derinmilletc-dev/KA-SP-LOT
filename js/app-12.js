@@ -1024,3 +1024,44 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
     } catch (e) {}
   };
 }
+
+/* v226: bulut işletmesinde gerçek (davet edilmiş/bağlı) olmayan çalışan yerleri Ekip'te görünmesin; boşsa "Çalışan ekle" */
+{
+  const cloudBiz = () => !!(typeof SBS !== 'undefined' && SBS.biz && ID.active && !S.demoMode);
+  window.seatSync = function () {
+    try {
+      if (!cloudBiz()) return;
+      const all = USERS.filter((u) => u.role === 'calisan').map((u) => u.id); const T = ID.team;
+      let sel;
+      if (T && T.err) sel = all;
+      else if (!T) sel = [];
+      else {
+        sel = all.filter((id) => T.members.some((m) => m.app_uid === id) || T.invites.some((i) => i.app_uid === id));
+        T.members.forEach((m) => { if (m.display_name && m.app_uid && m.app_uid !== 'u1' && byId(m.app_uid)) { const cur = NAMES[m.app_uid] || {}; if (cur.name !== m.display_name) NAMES[m.app_uid] = { name: m.display_name, title: cur.title || byId(m.app_uid).title }; } });
+        applyNames();
+      }
+      if (EMP_IDS.length !== sel.length || EMP_IDS.some((x, i) => x !== sel[i])) { EMP_IDS.length = 0; sel.forEach((x) => EMP_IDS.push(x)); }
+    } catch (e) {}
+  };
+  const _r = render;
+  render = function () {
+    try { seatSync(); if (cloudBiz() && !ID.team && !ID.teamBusy && sbClient()) teamLoad().then(() => render()); } catch (e) {}
+    return _r.apply(this, arguments);
+  };
+  const _ve = viewEkip;
+  viewEkip = function () {
+    let h = _ve.apply(this, arguments);
+    if (cloudBiz() && ID.team && !ID.team.err && !EMP_IDS.length && S.sub && S.sub.ekip === 'bugun') {
+      const pat = ID.active.role === 'patron';
+      h = `<div class="card stack"><div class="row" style="gap:12px;align-items:flex-start">${ic('users', 24)}<div><h3>Ekibini kur</h3><p class="muted small" style="margin-top:2px">Henüz çalışanın yok. İlk çalışanı ekle; vardiya, izin, mola ve maaş sayfaları onunla birlikte dolar.</p></div></div>${pat ? '<button class="btn" data-a="empadd">Çalışan ekle</button>' : ''}</div>` + h;
+    }
+    return h;
+  };
+  H.empadd = () => {
+    const act = new Set(EMP_IDS); let u = USERS.filter((x) => x.role === 'calisan').find((x) => !act.has(x.id));
+    if (!u) { H.seatadd(); u = USERS.filter((x) => x.role === 'calisan').find((x) => !act.has(x.id)); }
+    if (!u) return; S.modal = { type: 'invnew', uid: u.id, blank: true }; renderModal();
+  };
+  const _in = NEWM.invnew;
+  NEWM.invnew = function (m) { let h = _in.apply(this, arguments); if (m && m.blank) { const u = byId(m.uid); h = h.replace('id="iv-name" value="' + esc(u.name) + '"', 'id="iv-name" value="" placeholder="Örn. Ali Yılmaz"').replace('id="iv-title" value="' + esc(u.title || '') + '"', 'id="iv-title" value="" placeholder="Örn. Garson"'); } return h; };
+}
