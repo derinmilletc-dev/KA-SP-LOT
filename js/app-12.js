@@ -925,3 +925,20 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
   };
   if (REC.on) setTimeout(() => { try { render(); } catch (e) {} }, 0);
 }
+
+/* v212: sayfa yenilenince kaldığın ekrana dön (Bugün'e atma) */
+{
+  let rst = false;
+  const ok = (u, v) => { try { return !!(NAV[u.role] || []).some((n) => n[0] === v); } catch (e) { return false; } };
+  const _la = loginAs;
+  loginAs = function (u) {
+    let o = null; if (rst) { rst = false; try { o = JSON.parse(sessionStorage.getItem('kp_v') || 'null'); } catch (e) {} }
+    _la.apply(this, arguments);
+    if (!o) return;
+    try { if (o && o.v && o.u === u.id && ok(u, o.v)) { S.view = o.v; if (o.s) Object.assign(S.sub, o.s); render(); } } catch (e) {}
+  };
+  const _ie = idEnter;
+  idEnter = async function () { rst = true; try { return await _ie.apply(this, arguments); } finally { rst = false; } };
+  const _r = render;
+  render = function () { const r = _r.apply(this, arguments); try { if (S.user && S.view) sessionStorage.setItem('kp_v', JSON.stringify({ u: S.user.id, v: S.view, s: S.sub })); } catch (e) {} return r; };
+}
