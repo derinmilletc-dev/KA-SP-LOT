@@ -214,7 +214,7 @@ H.mxrecdel = (el) => { const R = mxRecs(); const i = R.findIndex((x) => x.id ===
 
 /* --- banka ekstresi eşleştirme --- */
 function mxNum(s) {
-  s = String(s == null ? '' : s).trim().replace(/[₺\sTLtl]/g, ''); if (!s || !/\d/.test(s)) return null; let neg = false;
+  s = String(s == null ? '' : s).trim().replace(/[₺$€£\s]|\b(?:TL|TRY|ZAR|USD|EUR|R)\b/gi, '').replace(/^(?:TL|tl)|(?:TL|tl)$/g, ''); if (!s || !/\d/.test(s)) return null; let neg = false;
   if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); } if (/-$/.test(s)) { neg = true; s = s.slice(0, -1); } if (/^-/.test(s)) { neg = true; s = s.slice(1); } s = s.replace(/^\+/, '');
   if (!/^[\d.,]+$/.test(s)) return null; const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
   if (lc >= 0 && ld >= 0) { s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); } else if (lc >= 0) { s = /,\d{1,2}$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); } else if (ld >= 0) { s = /\.\d{1,2}$/.test(s) && (s.match(/\./g) || []).length === 1 ? s : s.replace(/\./g, ''); }
@@ -364,6 +364,9 @@ function mxFisDate(text) {
   if (m) { const d = +m[1], mo = +m[2]; let y = +m[3]; if (y < 100) y += 2000; if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12 && y >= 2000 && y <= +t.slice(0, 4)) { const iso = y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (iso <= addDays(t, 1)) return { iso, guess: false }; } }
   return { iso: t, guess: true };
 }
+const mxLK = (t) => String(t || '').toLocaleLowerCase('tr').replace(/[^a-zçğıöşü0-9 ]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+function mxLearnGet(t) { const k = mxLK(t); if (!k) return ''; const m = (S.settings && S.settings.xlearn) || {}; if (m[k]) return m[k]; const w = k.split(' ')[0]; if (w.length >= 4) { const f = Object.keys(m).find((x) => x.split(' ')[0] === w); if (f) return m[f]; } return ''; }
+function mxLearnSet(t, acc) { const k = mxLK(t); if (!k || !acc) return; if (!S.settings) S.settings = {}; (S.settings.xlearn = S.settings.xlearn || {})[k] = acc; }
 const mxAccs = () => Array.from(new Set(['Akaryakıt', 'Telefon / internet', 'Elektrik', 'Su', 'Kira', 'Yemek', 'Malzeme', 'Diğer'].concat(LEDGER.filter((r) => dirOf(r) === 'gider').map((r) => r.acc).filter(Boolean)))).slice(0, 40);
 function mxFisDup(p) { return LEDGER.find((r) => dirOf(r) === 'gider' && Math.abs(mxN(r.total) - mxN(p.total)) < 0.015 && r.iso && Math.abs(mxDiff(r.iso, p.iso)) <= 1); }
 NEWM.mxfis = () => {
@@ -375,10 +378,10 @@ NEWM.mxfis = () => {
     ${dup ? `<div class="callout warn" style="margin-bottom:10px">${ic('alert')}<div><b>Benzer kayıt var</b><p style="margin-top:2px">${esc(dup.desc)} · ${fmt0(dup.total)} · ${mxDM(dup.iso)}. Aynı fişse kaydetme.</p></div></div>` : ''}
     <div class="stack"><div class="field" style="margin:0"><label for="mf-d">Satıcı</label><input id="mf-d" style="${mxInp}" value="${esc(p.desc)}"></div>
     <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-t">Tutar (₺)</label><input id="mf-t" inputmode="decimal" style="${mxInp}" value="${esc(String(p.total).replace('.', ','))}"></div><div class="field" style="margin:0;flex:1"><label for="mf-i">Tarih</label><input id="mf-i" type="date" style="${mxInp}" value="${esc(p.iso)}"></div></div>
-    <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-r">KDV %</label><select id="mf-r" style="${mxInp}">${[0, 1, 8, 10, 20].map((x) => `<option ${x === p.rate ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="field" style="margin:0;flex:1"><label for="mf-a">Hesap</label><select id="mf-a" style="${mxInp}">${accs.map((a) => `<option ${a === p.acc ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div></div>
+    <div class="row" style="gap:8px"><div class="field" style="margin:0;flex:1"><label for="mf-r">KDV %</label><select id="mf-r" style="${mxInp}">${[0, 1, 8, 10, 20].map((x) => `<option ${x === p.rate ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="field" style="margin:0;flex:1"><label for="mf-a">Hesap</label><select id="mf-a" style="${mxInp}">${p.acc ? '' : '<option value="">Seç…</option>'}${accs.map((a) => `<option ${a === p.acc ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div></div>
     ${BRANCHES.length ? `<div class="field" style="margin:0"><label for="mf-b">Şube</label><select id="mf-b" style="${mxInp}"><option value="">Belirtme</option>${BRANCHES.map((b) => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}</select></div>` : ''}
     <div class="field" style="margin:0"><label for="mf-w">Nereye kaydedilsin? *</label><select id="mf-w" style="${mxInp}"><option value="">Seç…</option><option value="nakit">Nakit gider (kasadan çıktı)</option><option value="banka">Banka / kart gideri</option><option value="borc">Ödenecek borç (vadeli fatura)</option><option value="gelir">Gelir (kestiğim fatura / satış fişi)</option></select></div>
-    <p class="small muted">KDV tutarı yaklaşık ${fmt(kdv)}. Kayıt doğrudan tabloya girer, ayrıca onay beklemez.</p>
+    ${p.learned ? '' : '<p class="small" style="color:#b45309">Bunu daha önce görmedim. Hangi hesaba yazayım? Seçtiğini hatırlarım, bir dahaki sefere sormam.</p>'}<p class="small muted">KDV tutarı yaklaşık ${fmt(kdv)}. Kayıt doğrudan tabloya girer, ayrıca onay beklemez.</p>
     <div class="row wrap" style="gap:8px"><button class="btn grow" data-a="mxfsave">Kaydet</button><button class="btn sec" data-a="mxfnew">Vazgeç</button></div></div>`);
   }
   return sheet('Fişten kayıt', `<p class="muted small">Fişin fotoğrafını çek ya da galeriden seç. Kais satıcıyı, tutarı, tarihi ve KDV oranını okur. Sen kontrol edip kaydedince doğrudan tabloya girer.</p>${MXF.err ? `<div class="callout warn" style="margin:8px 0">${ic('alert')}<div><p>${esc(MXF.err)}</p></div></div>` : ''}
@@ -395,7 +398,7 @@ document.addEventListener('change', (e) => {
       const p = ocrParse(r.text, r.conf); if (S.modal !== m0) return; if (p.total == null) throw new Error('no_total');
       const dt = mxFisDate(r.text); const miss = []; if (dt.guess) miss.push('tarih bugün olarak alındı'); if (/okunamad/.test(p.seller)) miss.push('satıcı okunamadı'); if (p.rateGuess) miss.push('KDV oranı tahmin');
       const sim = LEDGER.find((x) => x.desc && p.seller && x.desc.toLocaleLowerCase('tr').indexOf(p.seller.toLocaleLowerCase('tr').split(' ')[0]) >= 0);
-      MXF.p = { desc: /okunamad/.test(p.seller) ? '' : p.seller, total: p.total, iso: dt.iso, rate: p.rate, acc: p.cat || (sim && sim.acc) || 'Diğer', guess: miss.join(', ') }; MXF.step = 'form';
+      MXF.p = { desc: /okunamad/.test(p.seller) ? '' : p.seller, total: p.total, iso: dt.iso, rate: p.rate, acc: mxLearnGet(p.seller) || (sim && sim.acc) || p.cat || '', learned: !!(mxLearnGet(p.seller) || (sim && sim.acc)), guess: miss.join(', ') }; MXF.step = 'form';
     } catch (err) { if (S.modal !== m0) return; MXF.step = 'pick'; MXF.err = err && err.message === 'ocr_load' ? 'Okuma motoru yüklenemedi. İnternet bağlantını kontrol et.' : 'Fişten toplam tutar okunamadı. Daha aydınlık ve düz bir fotoğraf dene.'; }
     renderModal();
   })();
@@ -404,7 +407,7 @@ H.mxfsave = () => {
   if (mxRestricted()) return toast('Şube kısıtlı hesapta bu işlem kapalı.', 'warn'); if (locked()) return;
   const g = (id) => ($('#' + id) || {}).value || ''; const total = trNum(g('mf-t')); const iso = g('mf-i') || fiIso(); const desc = g('mf-d').trim();
   if (!(total > 0)) return toast('Tutarı yaz.', 'warn'); if (desc.length < 2) return toast('Satıcıyı yaz.', 'warn');
-  const w = g('mf-w'); if (!w) return toast('Nereye kaydedileceğini seç.', 'warn');
+  const w = g('mf-w'); if (!w) return toast('Nereye kaydedileceğini seç.', 'warn'); if (!g('mf-a')) return toast('Hesabı seç.', 'warn'); mxLearnSet(desc, g('mf-a'));
   const row = { id: 'g' + ++seq, date: mxDM(iso), iso, desc, acc: g('mf-a') || 'Diğer', doc: 'Fiş', rate: parseInt(g('mf-r'), 10) || 0, total, dir: w === 'gelir' ? 'gelir' : 'gider', src: 'Fiş' }; const b = g('mf-b'); if (b) row.br = b;
   if (w === 'nakit' || w === 'banka') row.ch = w;
   if (w === 'borc') { const due = addDays(iso, 30); DEBTS.push({ id: 'd' + ++seq, who: desc, note: 'Fiş / fatura', amt: total, due, rem: 3, on: true, paid: false }); try { pSched(); } catch (e) {} MXF.n++; MXF.step = 'pick'; MXF.p = null; toast('Borçlar ekranına eklendi (vade 30 gün).', 'ok'); render(); S.modal = { type: 'mxfis' }; renderModal(); return; }
@@ -462,7 +465,7 @@ H.mxcpdf = () => {
    ===================================================================== */
 const MXI = { step: 'pick', sheets: [], si: 0, type: 'defter', map: {}, defDir: 'gider', defRate: 20, fn: '', err: '', done: null };
 const IX_F = {
-  defter: [['date', 'Tarih', /tarih|date|^gün$/, 1], ['desc', 'Açıklama', /açıklama|aciklama|detay|ürün|urun|hizmet|konu|isim|ad[ıi]|ünvan|unvan|başlık|baslik|not/, 0], ['total', 'Tutar', /tutar|toplam|miktar|bedel|fiyat|amount|genel/, 1], ['gelir', 'Gelir sütunu', /^gelir|giren|tahsilat|alacak|satış|satis/, 0], ['gider', 'Gider sütunu', /^gider|çıkan|cikan|ödeme|odeme|alış|alis|borç|borc/, 0], ['dir', 'Tür (gelir/gider)', /tür|tur|tip|yön|yon|işlem|islem/, 0], ['rate', 'KDV oranı', /kdv|oran|vergi/, 0], ['acc', 'Hesap / kategori', /hesap|kategori|grup|kalem|cins/, 0], ['doc', 'Belge türü', /belge|fatura|fiş|fis/, 0]],
+  defter: [['date', 'Tarih', /tarih|date|^gün$/, 1], ['desc', 'Açıklama', /açıklama|aciklama|detay|ürün|urun|hizmet|konu|isim|ad[ıi]|ünvan|unvan|başlık|baslik|not/, 0], ['total', 'Tutar', /tutar|toplam|miktar|bedel|fiyat|amount|genel/, 1], ['gelir', 'Gelir sütunu', /^gelir|giren|tahsilat|alacak|satış|satis/, 0], ['gider', 'Gider sütunu', /^gider|çıkan|cikan|ödeme|odeme|alış|alis|borç|borc/, 0], ['dir', 'Tür (gelir/gider)', /^(?:tür|tur|tip|yön|yon)$|gelir\s*\/\s*gider|işlem|islem|hareket\s*t/, 0], ['rate', 'KDV oranı', /kdv|oran|vergi/, 0], ['acc', 'Hesap / kategori', /hesap\s*ad|kategori|kalem|grup|cins|hesap/, 0], ['doc', 'Belge türü', /belge|fatura|fiş|fis/, 0]],
   fatura: [['cust', 'Müşteri', /müşteri|musteri|cari|ünvan|unvan|firma|alıcı|alici|ad[ıi]|isim/, 1], ['no', 'Fatura no', /fatura\s*n|belge\s*n|^no$|numara|seri/, 0], ['date', 'Fatura tarihi', /tarih|date/, 0], ['due', 'Vade', /vade|son\s*öde|son\s*ode/, 0], ['tot', 'Tutar', /tutar|toplam|bakiye|alacak|bedel|genel/, 1], ['st', 'Durum (ödendi mi)', /durum|öden|oden|tahsil|kapan/, 0]],
   borc: [['who', 'Tedarikçi / kime', /tedarik|kime|alacaklı|alacakli|firma|cari|ünvan|unvan|ad[ıi]|isim/, 1], ['note', 'Açıklama', /açıklama|aciklama|not|detay|konu/, 0], ['amt', 'Tutar', /tutar|toplam|borç|borc|bakiye|bedel|genel/, 1], ['due', 'Vade', /vade|son\s*öde|son\s*ode|tarih/, 0], ['st', 'Durum (ödendi mi)', /durum|öden|oden|kapan/, 0]],
 };
@@ -479,7 +482,8 @@ function ixPrep(sh) {
 }
 function ixAuto(type, P) {
   const map = {}; const used = new Set(); const hn = P.heads.map(ixNorm);
-  IX_F[type].forEach((f) => { const i = hn.findIndex((h, j) => !used.has(j) && f[2].test(h)); if (i >= 0) { map[f[0]] = i; used.add(i); } });
+  const pri = { desc: /açıklama|aciklama|detay/, acc: /hesap\s*ad|kategori|kalem/ };
+  IX_F[type].forEach((f) => { let i = pri[f[0]] && type === 'defter' ? hn.findIndex((h, j) => !used.has(j) && pri[f[0]].test(h)) : -1; if (i < 0) i = hn.findIndex((h, j) => !used.has(j) && f[2].test(h)); if (i >= 0) { map[f[0]] = i; used.add(i); } });
   const col = (i) => P.data.slice(0, 40).map((r) => r[i]);
   const frac = (i, fn) => { const c = col(i).filter((x) => ixTxt(x)); return c.length ? c.filter(fn).length / c.length : 0; };
   const need = (k, fn) => { if (map[k] != null) return; let b = -1, bs = 0.6; P.heads.forEach((_, i) => { if (used.has(i)) return; const s = frac(i, fn); if (s > bs) { bs = s; b = i; } }); if (b >= 0) { map[k] = b; used.add(b); } };
@@ -734,7 +738,7 @@ function ixFixRate() { const sh = ixCur(); if (!sh || MXI.map.rate == null) retu
     const R = ixBuild(MXI.type, MXI.map, sh._p); if (!R.out.length || R.need.dfmt) return; const b = 'x' + Date.now().toString(36); let paid = 0, newC = 0; const sn = sh.name;
     R.out.forEach((o) => {
       const exs = o.ex && Object.keys(o.ex).length ? o.ex : undefined;
-      if (MXI.type === 'defter') { const row = { id: 'g' + ++seq, date: mxDM(o.iso), iso: o.iso, desc: o.desc, acc: o.acc, doc: o.doc, rate: o.rate, total: o.total, dir: o.dir, src: 'Excel', ixk: o.key, xb: b, xr: o.n }; if (o.br) row.br = o.br; if (exs) row.ex = exs; LEDGER.push(row); }
+      if (MXI.type === 'defter') { const row = { id: 'g' + ++seq, date: mxDM(o.iso), iso: o.iso, desc: o.desc, acc: o.acc, doc: o.doc, rate: o.rate, total: o.total, dir: o.dir, src: 'Excel', ixk: o.key, xb: b, xr: o.n }; if (o.br) row.br = o.br; if (exs) row.ex = exs; LEDGER.push(row); if (o.acc && o.acc !== 'Diğer' && o.desc) mxLearnSet(o.desc, o.acc); }
       else if (MXI.type === 'fatura') {
         const lines = o.net != null && o.rate != null ? [{ d: o.desc || 'Aktarılan fatura', q: 1, p: o.net, r: o.rate }] : [];
         const v = { id: 'iv' + ++seq, no: o.no || '—', date: o.iso ? mxDM(o.iso) : '—', iso: o.iso, due: o.due, st: o.st, cust: o.cust, vkn: o.vkn, adr: o.adr, lines, tot: o.tot, by: S.user.id, imp: true, xb: b, xr: o.n }; if (o.net != null) v.net = o.net; if (o.st === 'odendi') { v.paidAt = ''; paid++; } if (exs) v.ex = exs; INV.push(v);
