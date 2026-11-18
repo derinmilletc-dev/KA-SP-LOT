@@ -986,6 +986,7 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
   const hasSess = () => { try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^sb-.*-auth-token$/.test(k) && localStorage.getItem(k)) return true; } } catch (e) {} return false; };
   const BOOT = { on: hasSess() && !/[?#&](access_token|type=recovery|code=)/.test(location.search + location.hash), t0: Date.now() };
   window.KP_BOOT = BOOT;
+  if (!BOOT.on) { try { document.documentElement.classList.remove('kp-boot'); } catch (e) {} }
   const _lh = loginHTML;
   loginHTML = function () {
     if (BOOT.on && !S.user && !(typeof REC !== 'undefined' && REC.on)) {
@@ -1000,7 +1001,7 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
       else if (age > 2500 && !SBS.user) done = true;                           /* oturum gerçekten yok */
       else if (age > 6500 && SBS.user && !ID.mems.length && !ID.busy) done = true; /* işletmesi yok ya da yüklenemedi */
       else if (age > 15000) done = true;
-      if (done) { clearInterval(iv); BOOT.on = false; try { render(); } catch (e) {} }
+      if (done) { clearInterval(iv); BOOT.on = false; try { render(); } catch (e) {} try { document.documentElement.classList.remove('kp-boot'); } catch (e) {} }
     }, 150);
   }
 }
@@ -1065,4 +1066,21 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
   };
   const _in = NEWM.invnew;
   NEWM.invnew = function (m) { let h = _in.apply(this, arguments); if (m && m.blank) { const u = byId(m.uid); h = h.replace('id="iv-name" value="' + esc(u.name) + '"', 'id="iv-name" value="" placeholder="Örn. Ali Yılmaz"').replace('id="iv-title" value="' + esc(u.title || '') + '"', 'id="iv-title" value="" placeholder="Örn. Garson"'); } return h; };
+}
+
+/* v235: yenilemede kaydırma konumu korunur */
+{
+  let t = null;
+  const save = () => { try { sessionStorage.setItem('kp_sy', JSON.stringify({ v: S.view || '', y: Math.round(window.scrollY || 0) })); } catch (e) {} };
+  window.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(save, 150); }, { passive: true });
+  let want = null; try { want = JSON.parse(sessionStorage.getItem('kp_sy') || 'null'); } catch (e) {}
+  if (want && want.y > 40) {
+    const t0 = Date.now();
+    const iv = setInterval(() => {
+      if (Date.now() - t0 > 12000) return clearInterval(iv);
+      if (!S.user || (window.KP_BOOT && window.KP_BOOT.on)) return;
+      if ((S.view || '') !== want.v) { clearInterval(iv); return; }
+      if (document.documentElement.scrollHeight - innerHeight >= want.y) { window.scrollTo(0, want.y); clearInterval(iv); }
+    }, 200);
+  }
 }
