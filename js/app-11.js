@@ -1240,3 +1240,39 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
     MXI.plan = null; MXI.done = { n: tot, dup, bad, txt: parts.join(' · ') || 'Aktarılacak satır bulunamadı' }; MXI.step = 'done'; render(); S.modal = { type: 'mximp' }; renderModal();
   };
 }
+
+/* v217: Nakit ve banka ekranı (aylık gelir, gider, bakiye, kategori, son hareketler) */
+{
+  const MKB = { ym: '', ch: 'hepsi' };
+  const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const chOf = (r) => r.ch || (r.src === 'Banka' ? 'banka' : '');
+  const inCh = (r, ch) => ch === 'hepsi' || chOf(r) === ch;
+  const ymOf = () => MKB.ym || fiIso().slice(0, 7);
+  const shift = (ym, d) => { let y = +ym.slice(0, 4), m = +ym.slice(5, 7) + d; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); };
+  const agg = (rs) => { let g = 0, d = 0; rs.forEach((r) => { const t = mxN(r.total); if (dirOf(r) === 'gelir') g += t; else d += t; }); return { g, d, n: g - d, c: rs.length }; };
+  const bars = (rs, dir, k) => { const m = {}; rs.filter((r) => dirOf(r) === dir).forEach((r) => { const a = r.acc || 'Diğer'; m[a] = (m[a] || 0) + mxN(r.total); }); const L = Object.keys(m).map((a) => [a, m[a]]).sort((a, b) => b[1] - a[1]).slice(0, k); const mx = L.length ? L[0][1] : 1; const col = dir === 'gelir' ? '#15803d' : '#b42318';
+    return L.length ? L.map(([a, v]) => `<div style="margin-top:8px"><div class="row between small" style="gap:8px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a)}</span><b class="num">${fmt0(v)}</b></div><div style="height:6px;border-radius:4px;background:var(--line,#e5e8ee);margin-top:3px"><div style="height:6px;border-radius:4px;width:${Math.max(3, Math.round(v / mx * 100))}%;background:${col}"></div></div></div>`).join('') : '<p class="small muted" style="margin-top:6px">Bu ay kayıt yok.</p>'; };
+  NEWM.mxkb = () => {
+    const ym = ymOf(); const all = LEDGER.filter((r) => r.iso && inCh(r, MKB.ch)); const mon = all.filter((r) => r.iso.slice(0, 7) === ym); const A = agg(mon);
+    const upto = agg(all.filter((r) => r.iso.slice(0, 7) <= ym)); const prev = agg(all.filter((r) => r.iso.slice(0, 7) === shift(ym, -1)));
+    const tab = (k, l) => `<button class="btn sm ${MKB.ch === k ? '' : 'sec'}" data-a="mxkbch" data-k="${k}" style="flex:1">${l}</button>`;
+    const sg = (v) => (v >= 0 ? '+' : '−') + fmt0(Math.abs(v)); const clr = (v) => (v >= 0 ? '#15803d' : '#b42318');
+    const chCard = (k, l) => { const a = agg(LEDGER.filter((r) => r.iso && r.iso.slice(0, 7) === ym && chOf(r) === k)); return `<button class="card" data-a="mxkbch" data-k="${k}" style="padding:10px 12px;text-align:left;flex:1;min-width:0"><div class="small muted">${l}</div><div class="num" style="font-weight:700;font-size:18px;color:${clr(a.n)}">${sg(a.n)}</div><div class="small muted">+${fmt0(a.g)} · −${fmt0(a.d)}</div></button>`; };
+    const nolab = LEDGER.filter((r) => r.iso && r.iso.slice(0, 7) === ym && !chOf(r)).length;
+    const last = mon.slice().sort((a, b) => (a.iso < b.iso ? 1 : a.iso > b.iso ? -1 : 0)).slice(0, 10);
+    const dlt = prev.c ? (A.n - prev.n) : null;
+    return sheet('Nakit ve banka', `<div class="row" style="gap:6px;margin-bottom:10px">${tab('hepsi', 'Hepsi')}${tab('nakit', 'Nakit')}${tab('banka', 'Banka')}</div>
+    <div class="row between" style="align-items:center;margin-bottom:8px"><button class="btn sm sec" data-a="mxkbm" data-d="-1" aria-label="Önceki ay">‹</button><b style="font-size:17px">${AY[+ym.slice(5, 7) - 1]} ${ym.slice(0, 4)}</b><button class="btn sm sec" data-a="mxkbm" data-d="1" aria-label="Sonraki ay">›</button></div>
+    <div class="card" style="padding:14px"><div class="small muted">Bu ay net</div><div class="num" style="font-size:28px;font-weight:700;color:${clr(A.n)}">${sg(A.n)} ₺</div>${dlt === null ? '' : `<div class="small muted">Geçen aya göre ${dlt >= 0 ? '+' : '−'}${fmt0(Math.abs(dlt))} ₺</div>`}
+      <div class="row" style="gap:10px;margin-top:10px"><div style="flex:1"><div class="small muted">Gelir</div><b class="num" style="color:#15803d">${fmt0(A.g)}</b></div><div style="flex:1"><div class="small muted">Gider</div><b class="num" style="color:#b42318">${fmt0(A.d)}</b></div><div style="flex:1"><div class="small muted">Hareket</div><b class="num">${A.c}</b></div></div></div>
+    <div class="card" style="padding:12px;margin-top:8px"><div class="small muted">${MKB.ch === 'hepsi' ? 'Tüm kayıtlardan' : MKB.ch === 'nakit' ? 'Nakit kayıtlarından' : 'Banka kayıtlarından'} bakiye (ay sonu)</div><div class="num" style="font-size:22px;font-weight:700;color:${clr(upto.n)}">${sg(upto.n)} ₺</div><div class="small muted">Gelir − gider toplamı. Açılış bakiyesi dahil değil.</div></div>
+    ${MKB.ch === 'hepsi' ? `<div class="row" style="gap:8px;margin-top:8px">${chCard('nakit', 'Nakit')}${chCard('banka', 'Banka')}</div>${nolab ? `<p class="small muted" style="margin-top:6px">${nolab} kayıtta nakit/banka belirtilmemiş, sadece "Hepsi"nde sayılır.</p>` : ''}` : ''}
+    <h3 style="margin-top:14px">Gider kalemleri</h3>${bars(mon, 'gider', 6)}<h3 style="margin-top:14px">Gelir kalemleri</h3>${bars(mon, 'gelir', 4)}
+    <h3 style="margin-top:14px">Son hareketler</h3>${last.length ? last.map((r) => `<div class="row between small" style="gap:8px;padding:7px 0;border-top:1px solid var(--line,#e5e8ee)"><span style="min-width:0"><span class="muted">${mxDmy(r.iso)}</span> · ${esc(String(r.desc).slice(0, 36))}${MKB.ch === 'hepsi' && chOf(r) ? ` <span class="pill ${chOf(r) === 'banka' ? 'p-info' : 'p-ok'}">${chOf(r) === 'banka' ? 'Banka' : 'Nakit'}</span>` : ''}</span><b class="num" style="color:${dirOf(r) === 'gelir' ? '#15803d' : '#b42318'}">${dirOf(r) === 'gelir' ? '+' : '−'}${fmt0(mxN(r.total))}</b></div>`).join('') : '<p class="small muted">Bu ay kayıt yok. Excel\'den aktar ya da fiş kaydet.</p>'}`);
+  };
+  H.mxkb = () => { S.modal = { type: 'mxkb' }; renderModal(); };
+  H.mxkbch = (el) => { MKB.ch = el.dataset.k; renderModal(); };
+  H.mxkbm = (el) => { MKB.ym = shift(ymOf(), +el.dataset.d); renderModal(); };
+  const _mc = mxCard;
+  mxCard = function () { const h = _mc.apply(this, arguments); if (!h) return h; const r = `<button class="mxc-r" data-a="mxkb"><span class="mxc-ic">${ic('wallet', 18)}</span><span class="t"><b>Nakit ve banka</b><span class="s">Bu ay gelir, gider, bakiye</span></span><span class="chev" aria-hidden="true">›</span></button>`; return h.replace('<div class="mxc-g">Takip</div><div class="mxc-l">', '<div class="mxc-g">Takip</div><div class="mxc-l">' + r); };
+}
