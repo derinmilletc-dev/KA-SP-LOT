@@ -116,6 +116,17 @@ with sync_playwright() as p:
     pg.evaluate("()=>H.remind({dataset:{id:'a2'}})"); pg.wait_for_timeout(300); pg.evaluate("()=>H.remindsend({dataset:{id:'a2'},disabled:false})"); pg.wait_for_timeout(400)
     check('Adressiz alacaga gonderilmez', len(calls('remind')) == 2 and 'adresi yok' in toast(), toast())
 
+    # --- fatura e-postayla (PDF ekli) ---
+    pg.evaluate("""()=>{ window.__mt=[]; window.fiPdf=async()=>new Blob(['%PDF-1.4 x'],{type:'application/pdf'}); window.confirm=()=>true;
+      INV.length=0; FCUST.length=0; INV.push({id:'iv9',no:'KF-9',cust:'Mavi Ofis',tot:100,st:'bekliyor'}); FCUST.push({id:'fc9',name:'Mavi Ofis',eposta:'muh@mavi.com'});
+      __inv.invoice={ok:true,sent:1}; SENDX.ready=true; SENDX.probed=true; SENDX.at=Date.now(); SENDX.busy=false; }""")
+    pg.evaluate("()=>H.fimail({dataset:{id:'iv9'},textContent:'E-posta',disabled:false})"); pg.wait_for_timeout(900)
+    ic = calls('invoice')
+    check('Fatura sunucuya kimlik ve PDF ile gitti, adres gitmedi', len(ic) == 1 and ic[0]['invoice_id'] == 'iv9' and ic[0]['pdf'] == __import__('base64').b64encode(b'%PDF-1.4 x').decode() and 'to' not in ic[0], ic)
+    check('Fatura gonderildi bilgisi kaydedildi', pg.evaluate("()=>INV[0].mailedTo==='muh@mavi.com'") is True and 'gönderildi' in toast(), toast())
+    pg.evaluate("()=>{FCUST[0].eposta=''}"); pg.evaluate("()=>H.fimail({dataset:{id:'iv9'},textContent:'E-posta',disabled:false})"); pg.wait_for_timeout(400)
+    check('Adressiz musteriye fatura gonderilmez', len(calls('invoice')) == 1 and 'e-postası kayıtlı değil' in toast(), toast())
+
     check('Sayfa hatasi yok', not er, er)
     b.close()
 print('\nBASARISIZ: %d' % len(fails) if fails else '\nALL OK'); sys.exit(1 if fails else 0)

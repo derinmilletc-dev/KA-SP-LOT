@@ -34,6 +34,9 @@ const db = {
   app_state: [{ business_id: BID, scope: 'stok', state: JSON.stringify({
     RECV: [{ id: 'a1', name: 'Mavi Ofis', email: 'info@mavi.com', amt: 3200, days: 5 }, { id: 'a2', name: 'Eksik', email: '', amt: 10 }, { id: 'a3', name: 'Ödenmiş', email: 'p@p.com', amt: 5, paid: true }],
     CUSTOMERS: [{ id: 'k1', name: 'Selin Aydın', email: 'selin@x.com', iys: 'onayli' }, { id: 'k2', name: 'Can', email: 'can@x.com', iys: 'onayli' }, { id: 'k3', name: 'Murat', email: 'murat@x.com', iys: 'yok' }, { id: 'k4', name: 'Oğuz', email: 'oguz@x.com', iys: 'onayli' }, { id: 'k5', name: 'Bozuk', email: 'bozuk', iys: 'onayli' }, { id: 'k6', name: 'Selin2', email: 'SELIN@x.com', iys: 'onayli' }, { id: 'k7', name: 'Ece', email: 'ece@x.com', iys: 'onayli' }, { id: 'k8', name: 'Tolga', email: 'tolga@x.com', iys: 'onayli' }],
+  }) }, { business_id: BID, scope: 'muh', state: JSON.stringify({
+    INV: [{ id: 'iv1', no: 'KF-2026-001', cust: 'Mavi Ofis', tot: 1200, due: '2026-12-01' }, { id: 'iv2', no: 'KF-2026-002', cust: 'Adressiz', tot: 50 }],
+    FCUST: [{ id: 'fc1', name: 'mavi ofis', eposta: 'muh@mavi.com' }, { id: 'fc2', name: 'Adressiz', eposta: '' }],
   }) }],
   mail_sends: [], mail_optout: [{ business_id: BID, email: 'oguz@x.com' }],
 };
@@ -82,6 +85,20 @@ eq((await rd(await call({ action: 'remind', business_id: BID, rid: 'a1', to: 'ba
 failNext = 1; db.app_state[0].state = db.app_state[0].state.replace('"id":"a2","name":"Eksik","email":""', '"id":"a2","name":"Eksik","email":"e@e.com"');
 r = await rd(await call({ action: 'remind', business_id: BID, rid: 'a2', text: 'merhaba sana' })); eq(r.s, 502, 'Resend hatası -> 502');
 r = await rd(await call({ action: 'remind', business_id: BID, rid: 'a2', text: 'merhaba sana' })); eq([r.s, r.j.sent], [200, 1], 'hata sonrası tekrar denenebilir (kayıt geri alındı)');
+
+// ---- fatura (PDF ekli) ----
+sentMails.length = 0; db.mail_sends.length = 0;
+const pdf64 = btoa('%PDF-1.4 test dosyasi');
+r = await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'iv1', pdf: pdf64, note: 'Teşekkürler', to: 'baska@x.com' }));
+eq([r.s, r.j.sent, r.j.to], [200, 1, 'muh@mavi.com'], 'fatura kayıtlı müşteri adresine gitti (istemci adresi yok sayıldı)');
+ok(sentMails[0].attachments && sentMails[0].attachments[0].filename === 'KF-2026-001.pdf' && sentMails[0].attachments[0].content === pdf64, 'PDF ek olarak gitti');
+ok(sentMails[0].subject.includes('KF-2026-001') && sentMails[0].html.includes('1.200,00 TL'), 'konu ve tutar');
+eq((await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'iv1', pdf: pdf64 }))).s, 409, 'aynı fatura aynı gün ikinci kez gitmez');
+eq((await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'iv2', pdf: pdf64 }))).s, 422, 'müşteri adresi yoksa gitmez');
+eq((await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'yok', pdf: pdf64 }))).s, 404, 'kayıtsız fatura');
+eq((await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'iv1', pdf: btoa('MZ not a pdf') }))).s, 422, 'PDF olmayan dosya reddedilir');
+eq((await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'iv1', pdf: '' }))).s, 422, 'dosya yoksa');
+eq((await rd(await call({ action: 'invoice', business_id: BID, invoice_id: 'iv1', pdf: pdf64 }, 'tok-cal'))).s, 403, 'çalışan fatura gönderemez');
 
 // ---- kampanya ----
 sentMails.length = 0; db.mail_sends.length = 0;

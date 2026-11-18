@@ -1462,3 +1462,28 @@ H.rcur = (el) => { S.rcur = el.dataset.v; render(); };
     root.innerHTML = root.innerHTML.replace('<dl class="kv"', w + '<dl class="kv"');
   };
 }
+
+/* ===== v242: faturayı e-postayla (PDF ekli) gerçekten gönder (kais-send, Resend) ===== */
+{
+  const _fimail = H.fimail;
+  const blobB64 = (b) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = () => no(new Error('Dosya okunamadı.')); r.readAsDataURL(b); });
+  H.fimail = async (el) => {
+    const v = INV.find((x) => x.id === el.dataset.id); if (!v) return;
+    if (SENDX.busy) return;
+    try { await sendProbe(false); } catch (e) {}
+    const c = FCUST.find((x) => x.name.toLocaleLowerCase('tr') === String(v.cust).toLocaleLowerCase('tr'));
+    const to = c && c.eposta ? String(c.eposta).trim() : '';
+    if (!SENDX.ready || !mailCloud()) { _fimail(el); return; }
+    if (!/^\S+@\S+\.\S+$/.test(to)) { toast('Bu müşterinin e-postası kayıtlı değil. Müşteriler sekmesinden ya da yeni faturada yaz.', 'warn'); return; }
+    if (!window.confirm(`${v.no} faturası PDF ekli olarak ${to} adresine gönderilsin mi?`)) return;
+    SENDX.busy = true; const old = el.textContent; el.disabled = true; el.textContent = 'Gönderiliyor…';
+    try {
+      try { if (typeof pFlush === 'function') await pFlush(); } catch (e) {}
+      const pdf = await blobB64(await fiPdf(v));
+      await sendInvoke('invoice', { invoice_id: v.id, pdf });
+      v.mailedAt = fiIso(); v.mailedTo = to; try { pSched(); } catch (e) {}
+      toast(`Fatura ${to} adresine gönderildi.`, 'ok'); sendProbe(true);
+    } catch (e) { toast(e.message || 'Gönderilemedi.', 'bad'); }
+    finally { SENDX.busy = false; el.disabled = false; el.textContent = old; }
+  };
+}

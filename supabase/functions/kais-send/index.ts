@@ -1,5 +1,5 @@
 // kais-send: müşteriye e-posta gönderme (Resend). Tek dosya, Supabase panelinden yapıştırılabilir.
-// İşlemler (POST, giriş gerekir): status, remind (tek alacak hatırlatması), campaign (izinli müşterilere toplu), optouts
+// İşlemler (POST, giriş gerekir): status, remind (tek alacak hatırlatması), invoice (faturayı PDF ekli gönderir), campaign (izinli müşterilere toplu), optouts
 // Abonelikten çıkış: POST ?u=<imzalı bağlantı> (e-postadaki tek tık başlığı ve kaispilot.com/cikis sayfası kullanır)
 //
 // Gerekli sırlar: RESEND_API_KEY, RESEND_FROM (kais-cron ile aynı). İsteğe bağlı: APP_URL, MAIL_DAY (günlük sınır, varsayılan 50)
@@ -67,6 +67,14 @@ export function buildCampaign(biz: string, name: string, subject: string, text: 
   const body = personalize(text, name);
   const foot = 'Bu iletiyi ' + escH(biz) + ' ile iletişim izniniz olduğu için aldınız. Almak istemiyorsanız <a href="' + escH(unsubUrl) + '" style="color:#6b7684">buradan listeden çıkabilirsiniz</a>.';
   return { subject: clean(subject, 150).replace(/\n/g, ' '), html: shell(biz, textToHtml(body), foot), text: body + '\n\n—\n' + biz + '\nListeden çıkmak için: ' + unsubUrl };
+}
+
+export function buildInvoice(biz: string, cust: string, no: string, total: number, due: string, note: string) {
+  const lines = ['Merhaba ' + (cust || 'Müşterimiz') + ',', '', no + ' numaralı belgeniz ektedir.', 'Toplam: ' + fmtMoney(total) + ' TL' + (due ? '\nSon ödeme tarihi: ' + due : '')];
+  if (note) lines.push('', note);
+  const body = lines.join('\n');
+  const html = shell(biz, textToHtml(body), 'Bu mesaj ' + escH(biz) + ' tarafından gönderildi. Yanıtlarsan doğrudan işletmeye ulaşır. Belge PDF olarak ektedir.');
+  return { subject: safeName(biz) + ' · ' + clean(no, 40).replace(/\n/g, ' '), html, text: body + '\n\n— ' + biz };
 }
 
 // ---------- Resend ----------
@@ -150,6 +158,31 @@ async function actRemind(srv: any, req: Request, body: any) {
   if (!s.ok) { await unclaim(srv, bid, key); console.error('kais-send remind', s.err); return ERR('E-posta gönderilemedi. Adresi ve gönderen ayarını kontrol et.', 502); }
   return J({ ok: true, sent: 1 });
 }
+async function actInvoice(srv: any, req: Request, body: any) {
+  if (!configured()) return ERR('E-posta servisi kurulmamış (RESEND_API_KEY ve RESEND_FROM yok).', 503);
+  const bid = String(body.business_id || ''); const w: any = await who(srv, req, bid); if (w.err) return w.err;
+  const iid = String(body.invoice_id || '').slice(0, 60);
+  const inv = (await loadState(srv, bid, 'INV')).find((x: any) => x && String(x.id) === iid);
+  if (!inv) return ERR('Bu fatura kayıtlı değil. Birkaç saniye bekleyip tekrar dene.', 404);
+  const cname = String(inv.cust || '').trim().toLocaleLowerCase('tr');
+  const cu = (await loadState(srv, bid, 'FCUST')).find((x: any) => x && String(x.name || '').trim().toLocaleLowerCase('tr') === cname);
+  const to = String((cu && cu.eposta) || '').trim();
+  if (!validEmail(to)) return ERR('Bu müşterinin e-posta adresi yok ya da hatalı.', 422);
+  const b64 = String(body.pdf || '').replace(/\s+/g, '');
+  if (!b64 || b64.length > 4_000_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return ERR('Belge dosyası okunamadı.', 422);
+  let head = ''; try { head = atob(b64.slice(0, 16)).slice(0, 4); } catch { head = ''; }
+  if (head !== '%PDF') return ERR('Belge PDF değil.', 422);
+  const used = await sentToday(srv, bid); if (used >= dayLimit()) return ERR('Bugünlük gönderim sınırına ulaştın. Yarın tekrar dene.', 429);
+  const key = 'inv:' + iid + ':' + to.toLowerCase() + ':' + today();
+  if (!(await claim(srv, bid, key, 'invoice', to))) return ERR('Bu fatura bugün bu adrese zaten gönderildi.', 409);
+  const no = String(inv.no || 'Fatura'); const m = buildInvoice(w.biz, String(inv.cust || ''), no, Number(inv.tot) || 0, String(inv.due || ''), clean(body.note, 500));
+  const fn = no.replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 40) || 'fatura';
+  const payload: Record<string, unknown> = { from: fromWithName(env('RESEND_FROM'), w.biz), to: [to], subject: m.subject, html: m.html, text: m.text, attachments: [{ filename: fn + '.pdf', content: b64 }] };
+  if (w.email) payload.reply_to = w.email;
+  const s = await resendSend(payload);
+  if (!s.ok) { await unclaim(srv, bid, key); console.error('kais-send invoice', s.err); return ERR('E-posta gönderilemedi. Adresi ve gönderen ayarını kontrol et.', 502); }
+  return J({ ok: true, sent: 1, to });
+}
 async function actCampaign(srv: any, req: Request, body: any) {
   if (!configured()) return ERR('E-posta servisi kurulmamış (RESEND_API_KEY ve RESEND_FROM yok).', 503);
   const bid = String(body.business_id || ''); const w: any = await who(srv, req, bid); if (w.err) return w.err;
@@ -213,6 +246,7 @@ export async function handle(req: Request, srvOverride?: any): Promise<Response>
     switch (String(body?.action || '')) {
       case 'status': return await actStatus(srv, req, body);
       case 'remind': return await actRemind(srv, req, body);
+      case 'invoice': return await actInvoice(srv, req, body);
       case 'campaign': return await actCampaign(srv, req, body);
       case 'optouts': return await actOptouts(srv, req, body);
       case 'unsub': return await actUnsub(srv, String(body.u || ''));
