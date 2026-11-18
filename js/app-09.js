@@ -924,7 +924,7 @@ function ppWeekText() {
 function ppHome() {
   const t = totals(); const net = t.in - t.out; const tot = (t.in + t.out) || 1; const empty = !t.in && !t.out;
   const hero = `<section class="pp-hero pp-fade"><small>${esc(ppHello())} · ${esc(PERIOD)}</small><div class="pp-net ${net < 0 ? 'neg' : ''}">${empty ? '₺0' : (net < 0 ? '−' : '') + fmt0(Math.abs(net))}</div><small>${empty ? 'Fiş ya da ekstre ekledikçe burada net durumun görünür' : 'Net durum'}</small>${empty ? '' : `<div class="pp-bar"><i style="width:${Math.round(t.in / tot * 100)}%"></i><i style="width:${Math.round(t.out / tot * 100)}%"></i></div><div class="pp-io"><div><span>Gelen</span><b>${fmt0(t.in)}</b></div><div><span>Giden</span><b>${fmt0(t.out)}</b></div></div>`}</section>`;
-  const q = `<div class="pp-q pp-fade"><button type="button" data-a="nav" data-v="muhasebe">${ic('receipt', 16)}Fiş ekle</button><button type="button" data-a="ppinv">${ic('users', 16)}Muhasebeci davet et</button><button type="button" data-a="nav" data-v="satinalma">${ic('box', 16)}Satın alma</button><button type="button" data-a="nav" data-v="kaisai">${ic('sparkle', 16)}Kais'e sor</button></div>`;
+  const q = `<div class="pp-q pp-fade"><button type="button" data-a="nav" data-v="muhasebe">${ic('receipt', 16)}Fiş ekle</button>${ppAccChip()}<button type="button" data-a="nav" data-v="satinalma">${ic('box', 16)}Satın alma</button><button type="button" data-a="nav" data-v="kaisai">${ic('sparkle', 16)}Kais'e sor</button></div>`;
   const pr = pendingReceipts(); const lv = LVREQ.filter((r) => ['bekliyor', 'yanit'].includes(r.status)); const pa = (typeof pendingAtt === 'function') ? pendingAtt() : [];
   const n = pr.length + lv.length + pa.length;
   const recRow = (f) => `<div class="pp-r"><span class="pp-ic">${ic('receipt', 17)}</span><div class="grow"><b>${esc(f.seller)}</b><small>${esc(f.cat)} · ${fmt0(f.total)} · ${esc(f.date)}</small></div><div class="pp-b"><button type="button" data-a="reject" data-id="${f.id}">Reddet</button><button type="button" class="ok" data-a="approve" data-id="${f.id}">Onayla</button></div></div>`;
@@ -938,6 +938,10 @@ function ppHome() {
 H.ppwk = () => { PPW.on = !PPW.on; try { pSched(); } catch (e) {} render(); toast(PPW.on ? 'Haftalık özet açıldı.' : 'Haftalık özet kapatıldı.', 'ok'); };
 H.ppshare = async () => { const tx = ppWeekText(); try { if (navigator.share) { await navigator.share({ text: tx }); return; } await navigator.clipboard.writeText(tx); toast('Özet kopyalandı.', 'ok'); } catch (e) {} };
 H.ppappall = () => { if (typeof locked === 'function' && locked()) return; const l = pendingReceipts(); l.forEach((f) => { f.status = 'onayli'; }); render(); toast(l.length + ' fiş onaylandı.', 'ok'); };
+function ppAccChip() {
+  try { const T = typeof ID !== 'undefined' && ID.team; if (T && !T.err) { const m = T.members.find((x) => x.app_uid === 'u3'); if (m) return ''; const i = T.invites.find((x) => x.app_uid === 'u3'); if (i) return `<button type="button" data-a="ppinv">${ic('users', 16)}Muhasebeci daveti bekliyor</button>`; } } catch (e) {}
+  return `<button type="button" data-a="ppinv">${ic('users', 16)}Muhasebeci davet et</button>`;
+}
 H.ppinv = () => { if (ID.active) { S.view = 'ekip'; S.sub.ekip = 'hesap'; render(); } else toast('Muhasebeci daveti işletme hesabıyla çalışır. Giriş yapınca buradan davet edebilirsin.'); };
 const bugunPatronV129 = bugunPatron;
 bugunPatron = function () { const h = bugunPatronV129(); const add = ppHome(); const m = h.match(/^\s*<div class="stack-lg dash">/); return m ? h.replace(m[0], m[0] + add) : h.replace(/<div class="stack-lg dash">/, '<div class="stack-lg dash">' + add); };
