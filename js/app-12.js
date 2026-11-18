@@ -942,3 +942,41 @@ if (!S.lgEm) { try { const le = localStorage.getItem('kp_last_em'); if (le) S.lg
   const _r = render;
   render = function () { const r = _r.apply(this, arguments); try { if (S.user && S.view) sessionStorage.setItem('kp_v', JSON.stringify({ u: S.user.id, v: S.view, s: S.sub })); } catch (e) {} return r; };
 }
+
+/* v221: yenilemede işletme kaybolmasın: yükleme hatasını gösterme, yeniden dene, kurulum adımlarını hatırla */
+{
+  SBS.loadErr = '';
+  const _lb = sbLoadBiz;
+  sbLoadBiz = async function () { try { SBS.loadErr = ''; return await _lb.apply(this, arguments); } catch (e) { SBS.loadErr = String((e && e.message) || e || 'bilinmeyen hata').slice(0, 160); throw e; } };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function retryLoad() {
+    for (let a = 0; a < 2 && SBS.user && !ID.mems.length && !S.user; a++) {
+      try { const c = sbClient(); if (c) { const x = await c.auth.refreshSession(); if (x && x.data && x.data.session) SBS.user = x.data.session.user; } } catch (e) {}
+      try { await sbLoadBiz(); } catch (e) {}
+      if (ID.mems.length) { try { await idEnter(); } catch (e) {} render(); return true; }
+      await sleep(700 * (a + 1));
+    }
+    return false;
+  }
+  const watch = async () => { if (!SBS.user || S.user || ID.mems.length || REC.on || (S.sg && S.sg.step > 2) || ID.busy) return; SBS.retrying = true; render(); await retryLoad(); SBS.retrying = false; render(); };
+  setTimeout(watch, 1800); setTimeout(watch, 5000);
+  H.sgretry = async () => { SBS.loadErr = ''; SBS.retrying = true; render(); const ok = await retryLoad(); SBS.retrying = false; if (!ok && !SBS.loadErr && !ID.mems.length) SBS.loadErr = ''; render(); };
+  /* yükleme hatası varsa kurulum ekranı yerine açık bir uyarı */
+  const _lh = loginHTML;
+  loginHTML = function () {
+    if (sbOK() && SBS.user && !S.user && !ID.active && !ID.mems.length && (SBS.loadErr || SBS.retrying)) {
+      return `<div class="login lx"><section class="lx-card" style="margin:auto"><div class="lx-cin"><h1>${SBS.retrying ? 'İşletmen yükleniyor…' : 'İşletmen yüklenemedi'}</h1>
+      <p class="lx-sub">${esc(SBS.user.email || '')} hesabıyla giriş yapıldı.${SBS.loadErr ? '<br>Sebep: ' + esc(SBS.loadErr) : ''}</p>
+      ${SBS.retrying ? '' : '<div class="row wrap" style="gap:8px;margin-top:14px"><button class="lx-go" type="button" data-a="sgretry"><span>Tekrar dene</span></button><button class="lx-link" type="button" data-a="idout">Çıkış yap</button></div>'}</div></section></div>`;
+    }
+    return _lh.apply(this, arguments);
+  };
+  /* kurulum adımları yenilemede kaybolmasın (şifre saklanmaz) */
+  const KEY = 'kp_sg';
+  const save = () => { try { if (S.sg) { const o = Object.assign({}, S.sg); delete o.pw; o.u = SBS.user ? SBS.user.id : ''; localStorage.setItem(KEY, JSON.stringify(o)); } } catch (e) {} };
+  const _si = sgInit;
+  sgInit = function () { _si.apply(this, arguments); try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && S.sg && (o.u || '') === (SBS.user ? SBS.user.id : '')) { const st = o.step; Object.assign(S.sg, o, { pw: '' }); delete S.sg.u; if (!SBS.user && st > 1) S.sg.step = 1; } } catch (e) {} };
+  const _rn = render;
+  render = function () { const r = _rn.apply(this, arguments); if (S.sg) save(); return r; };
+  const _sf = sgFinish; sgFinish = async function () { const r = await _sf.apply(this, arguments); if (!S.sg) { try { localStorage.removeItem(KEY); } catch (e) {} } return r; };
+}
