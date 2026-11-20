@@ -2164,3 +2164,6 @@ H.tourdo = (el) => { tourDone(); const a = el.dataset.act, v = el.dataset.v; S.m
 document.addEventListener('touchstart', (e) => { if (S.modal && S.modal.type === 'tour' && e.touches[0]) S.tx = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
 document.addEventListener('touchend', (e) => { if (!(S.modal && S.modal.type === 'tour') || !S.tx || !e.changedTouches[0]) return; const dx = e.changedTouches[0].clientX - S.tx[0], dy = e.changedTouches[0].clientY - S.tx[1]; S.tx = null; if (Math.abs(dx) > 60 && Math.abs(dy) < 50) (dx < 0 ? H.tournext : H.tourprev)(); }, { passive: true });
 document.addEventListener('keydown', (e) => { if (S.modal && S.modal.type === 'tour' && !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) { if (e.key === 'ArrowRight') H.tournext(); else if (e.key === 'ArrowLeft') H.tourprev(); } });
+
+/* v255: yatay kaydirmali seritlerde dikey oynama olmasin */
+(function () { try { const st = document.createElement('style'); st.textContent = '.pp-q,.kz-s,.ek-f,.dr-tabs,.ls,.tl-ds,.yq-f,.sbr-chips,.dash-st,.dash-stats,.mg-st,.kb-st{overflow-y:hidden!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}'; document.head.appendChild(st); } catch (e) {} })();
