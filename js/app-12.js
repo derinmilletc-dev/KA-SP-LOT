@@ -2190,3 +2190,22 @@ let RV_PHOTO = null;
   const _ro = H.revok;
   H.revok = function () { const m = S.modal; const f = m && m.type === 'rev' && RECEIPTS.find((x) => x.id === m.id); if (f) { const s = String(m.seller == null ? '' : m.seller).trim(); const d = String(m.date == null ? '' : m.date).trim(); if (m.seller != null && !s) { toast('Satıcı adını boş bırakma.', 'warn'); return; } if (s) f.seller = s; if (d) f.date = d; } return _ro.apply(this, arguments); };
 })();
+
+/* v259: muhasebeci yoksa patron fisleri kendisi inceleyip onaylar */
+function noMuh() { try { if (!S.user || S.user.role !== 'patron') return false; const T = typeof ID !== 'undefined' && ID.team; if (T && !T.err && Array.isArray(T.members)) return !T.members.some((m) => m.app_uid === 'u3'); } catch (e) {} return false; }
+(function () {
+  const _rr = receiptRow;
+  receiptRow = function (f, role) { let h = _rr.apply(this, arguments); if (role === 'patron' && f.status === 'musavirde' && noMuh() && !h.includes('data-a="review"')) h = h.replace(/<\/div>\s*$/, `<div class="bg-a"><button class="btn sm" data-a="review" data-id="${f.id}">${ic('check', 16)} İncele ve onayla</button></div></div>`); return h; };
+  const _bp = belgelerPatron;
+  belgelerPatron = function () {
+    let h = _bp.apply(this, arguments); if (!noMuh()) return h;
+    h = h.replace("Muhasebecine anında bildirim gider, kalemleri ve KDV'yi kontrol edip onaylar, gider tabloya kendiliğinden yazılır.", 'Kalemleri ve KDV’yi kontrol edip onaylarsın, gider tabloya kendiliğinden yazılır.').replace('Muhasebeci inceler', 'Sen onaylarsın');
+    const w = RECEIPTS.filter((f) => f.status === 'musavirde').reverse(); if (!w.length) return h;
+    const card = `<div class="card flush"><div style="padding:16px 16px 0"><h3>İncelemeni bekleyen belgeler</h3><p class="muted small">Muhasebecin yok. Kontrol edip onaylayınca gider tabloya yazılır.</p></div>${w.map((f) => receiptRow(f, 'patron')).join('')}</div>`;
+    const i = h.indexOf('data-a="upload"'); const j = i < 0 ? -1 : h.indexOf('</button></div>', i); return j < 0 ? h : h.slice(0, j + 15) + card + h.slice(j + 15);
+  };
+  const _rm = renderModal;
+  renderModal = function () { _rm.apply(this, arguments); const m = S.modal; const root = document.getElementById('modal-root'); if (m && m.type === 'upload' && m.step === 'result' && noMuh() && root && root.innerHTML.includes('Muhasebeciye gönder')) root.innerHTML = root.innerHTML.replace('Muhasebeciye gönder', 'Kaydet ve incele').replace('Kaydedince fiş muhasebeciye anında bildirim olarak gider. Gider, muhasebeci onaylayınca tabloya yazılır.', 'Kaydedince fişi kontrol edip onaylarsın, gider tabloya o zaman yazılır.'); };
+  const _sv = H.savereceipt;
+  H.savereceipt = function () { const nm = noMuh(); const n0 = RECEIPTS.length; const r = _sv.apply(this, arguments); if (nm && RECEIPTS.length > n0) { const f = RECEIPTS[RECEIPTS.length - 1]; if (f.status === 'musavirde') setTimeout(() => { try { H.review({ dataset: { id: f.id } }); } catch (e) {} }, 60); } return r; };
+})();
