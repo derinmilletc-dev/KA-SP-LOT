@@ -256,11 +256,12 @@ function comboFix() {
       Array.from(sel.attributes).forEach((a) => { if (!['class', 'type'].includes(a.name)) inp.setAttribute(a.name, a.value); });
       const op = sel.options[sel.selectedIndex]; let v = op ? (k === 'rate' ? op.value : op.text) : ''; inp.value = k === 'rate' ? String(v) : v; inp.placeholder = k === 'rate' ? 'Oran yaz' : 'Seç ya da yaz'; inp.autocomplete = 'off'; if (k === 'rate') inp.inputMode = 'decimal';
       sel.replaceWith(inp);
-      if (inp.closest('.tb-f, .sheet') && !inp.closest('td')) { const row = document.createElement('div'); row.className = 'cb-chips'; (k === 'rate' ? cbList('rate') : cbList(k)).slice(0, 14).forEach((c) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = k === 'rate' ? '%' + c : c; if (String(c) === String(inp.value)) b.className = 'on'; b.addEventListener('click', () => { inp.value = String(c); inp.dispatchEvent(new Event('change', { bubbles: true })); }); row.appendChild(b); }); inp.after(row); const h = document.createElement('div'); h.className = 'cb-hint'; h.textContent = 'Listede yoksa yaz, listene eklenir.'; row.after(h); }
+      if (inp.closest('.tb-f, .sheet') && !inp.closest('td')) { const row = document.createElement('div'); row.className = 'cb-chips'; (k === 'rate' ? cbList('rate') : cbList(k)).slice(0, 14).forEach((c) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = k === 'rate' ? '%' + c : c; if (String(c) === String(inp.value)) b.className = 'on'; b.dataset.cbv = String(c); row.appendChild(b); }); inp.after(row); const h = document.createElement('div'); h.className = 'cb-hint'; h.textContent = 'Listede yoksa yaz, listene eklenir.'; row.after(h); }
     });
     document.querySelectorAll('main input[data-k="doc"]').forEach((i) => { i.setAttribute('list', 'cb-doc'); i.autocomplete = 'off'; });
   } catch (e) {}
 }
+document.addEventListener('click', (e) => { const b = e.target && e.target.closest && e.target.closest('.cb-chips button[data-cbv]'); if (!b) return; const row = b.parentElement; const inp = row && row.previousElementSibling; if (!inp || inp.tagName !== 'INPUT') return; inp.value = b.dataset.cbv; row.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); inp.dispatchEvent(new Event('change', { bubbles: true })); });
 { const _r135 = render; render = function () { const r = _r135.apply(this, arguments); comboFix(); return r; }; }
 { const _rm135 = renderModal; renderModal = function () { const r = _rm135.apply(this, arguments); comboFix(); return r; }; }
 { let cbBusy = false; const _oc135 = onChange; onChange = function (e) { if (cbBusy) return; const el = e.target; let k = null; try { k = cbKindOf(el); } catch (x) {} if (k && el.tagName === 'INPUT') { const raw = String(el.value || '').trim(); if (k === 'rate') { const n = Number(raw.replace(',', '.').replace('%', '')); if (!(n >= 0 && n <= 100)) { toast('KDV oranı 0 ile 100 arasında olmalı.', 'warn'); return; } el.value = String(n); } if (!raw && k !== 'doc') return; cbLearn(k, raw); } cbBusy = true; try { return _oc135.apply(this, arguments); } finally { cbBusy = false; } }; }
@@ -589,7 +590,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v256';
+const APP_VER = 'v257';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
