@@ -589,7 +589,7 @@ async function aiuLoad() {
 { const _k = viewKaisAI; viewKaisAI = function () { let h = _k.apply(this, arguments); try { if (S.user && S.user.role === 'patron' && sbOK() && SBS.biz) { aiuLoad(); const u = AIU.d; if (u) { const m = (k) => u[k].month + ' / ' + u.limits[k].month; h = h.replace('<span id="ai-end"></span></div>', '<span id="ai-end"></span></div><p class="small muted" style="margin:0">Bu ay: sohbet ' + m('chat') + ' · fiş ve fiyat okuma ' + m('read') + '</p>'); } } } catch (e) {} return h; }; }
 
 /* ===== v145: kurulum rehberi, boş ekran yönlendirmesi, davet (WhatsApp + QR), hata kaydı, kullanım sayacı, dışa aktarma ===== */
-const APP_VER = 'v251';
+const APP_VER = 'v252';
 const sbLive = () => !!(S.user && S.user.role === 'patron' && !S.demoMode && sbOK() && SBS.biz);
 /* 2) Boş ekran yönlendirmesi */
 function emCard(title, txt, act, lab) { return `<div class="card su-empty"><div class="grow"><b>${esc(title)}</b><p class="small muted" style="margin:4px 0 0">${esc(txt)}</p></div>${act ? `<button class="btn sm" data-a="${act}">${esc(lab)}</button>` : ''}</div>`; }
@@ -777,8 +777,13 @@ const TOUR = {
   ],
 };
 const tourKey = () => 'kp_tour_' + (S.user ? S.user.role : '') + '_' + (SBS && SBS.user ? SBS.user.id : 'x');
-const tourSeen = () => { try { return localStorage.getItem(tourKey()) === '1'; } catch (e) { return true; } };
-const tourDone = () => { try { localStorage.setItem(tourKey(), '1'); } catch (e) {} };
+/* Tur bir kez gösterilir: hem bu tarayıcıda hem kullanıcının bulut hesabında (başka telefon/tarayıcıda tekrar çıkmaz) */
+const tourMeta = () => { try { return (SBS && SBS.user && SBS.user.user_metadata && SBS.user.user_metadata.kp_tour) || {}; } catch (e) { return {}; } };
+const tourSeen = () => { try { if (S.user && tourMeta()[S.user.role]) return true; return localStorage.getItem(tourKey()) === '1'; } catch (e) { return true; } };
+const tourDone = () => {
+  try { localStorage.setItem(tourKey(), '1'); } catch (e) {}
+  try { const u = SBS && SBS.user; const r = S.user && S.user.role; if (!u || !r) return; const cur = Object.assign({}, tourMeta()); if (cur[r]) return; cur[r] = 1; u.user_metadata = Object.assign({}, u.user_metadata, { kp_tour: cur }); const q = sbClient().auth.updateUser({ data: { kp_tour: cur } }); if (q && q.catch) q.catch(() => {}); } catch (e) {}
+};
 NEWM.tour = (m) => {
   const L = TOUR[S.user && S.user.role] || []; const i = Math.min(m.i || 0, L.length - 1); const x = L[i]; if (!x) return sheet('Hoş geldin', '');
   const last = i === L.length - 1; const nm = ((S.user && S.user.name) || '').split(' ')[0];
@@ -800,7 +805,7 @@ function k8TourCard() { if (!S.user) return ''; return `<div class="card stack" 
     try {
       if (!tried && S.user && !S.modal && !S.demoMode && SBS && SBS.user && !tourSeen() && TOUR[S.user.role]) {
         const wiz = S.user.role === 'patron' && !S.settings.setupHide && !suSteps().every((x) => x.done) && (S.suForce || suFresh());
-        if (!wiz) { tried = true; setTimeout(() => { if (!S.modal && S.user) { S.modal = { type: 'tour', i: 0 }; renderModal(); } }, 900); }
+        if (!wiz) { tried = true; setTimeout(() => { if (!S.modal && S.user) { tourDone(); S.modal = { type: 'tour', i: 0 }; renderModal(); } }, 900); }
       }
     } catch (e) {}
     return r;
