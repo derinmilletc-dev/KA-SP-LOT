@@ -1630,3 +1630,42 @@ function ixPayCol(rows) {
   rows.forEach((r) => { const kind = ixPayKind((r.ex || {})[best]); if (kind) { r.ch = kind; if (kind === 'nakit') nakit++; else banka++; } else none++; });
   return { key: best, nakit, banka, none };
 }
+
+/* ===== v248: Aktarım kontrol özeti, kopya uyarısı, kategori önerisi ===== */
+{
+  const nk = (t) => String(t == null ? '' : t).toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim().slice(0, 20);
+  const _b2 = ixBuild;
+  ixBuild = function (type, map, P) {
+    const R = _b2.apply(this, arguments);
+    try {
+      if (type !== 'defter' || !R || !R.out) return R;
+      /* 1) Kategori önerisi: hesap sütunu eşlenmediyse, daha önce aynı açıklamayla girilmiş kayıtların hesabı önerilir (kendi geçmişin) */
+      R.sug = 0;
+      if (map.acc == null) {
+        const h = {}; LEDGER.forEach((r) => { if (!r.acc || r.acc === 'Diğer' || r.src === 'Excel' && r.sugd) return; const k = nk(r.desc) + '|' + dirOf(r); (h[k] = h[k] || {})[r.acc] = ((h[k] || {})[r.acc] || 0) + 1; });
+        R.out.forEach((o) => { const c = h[nk(o.desc) + '|' + o.dir]; if (!c) return; const best = Object.keys(c).sort((x, y) => c[y] - c[x])[0]; if (best && best !== o.acc) { o.acc = best; o.sug = true; R.sug++; } });
+      }
+      /* 2) Elle girilmiş kayıtla aynı gün/tutar/yön: aktarılır ama uyarılır */
+      R.near = 0;
+      R.out.forEach((o) => { if (LEDGER.some((r) => !r.ixk && r.iso === o.iso && Math.abs((+r.total || 0) - o.total) < 0.005 && dirOf(r) === o.dir)) { R.near++; R.warn.push({ n: o.n, why: 'Aynı gün ve tutarda elle girilmiş bir kayıt var (' + o.desc.slice(0, 24) + '), çift olabilir' }); } });
+      R.devir = (R.skip || []).filter((x) => /^Devir/.test(x.why)).length + (P && P.data ? P.data.filter((r) => ixSumRow(r) && r.some((c) => /^(devir|açılış|acilis|opening|brought|carried)/.test(ixNorm(c)))).length : 0);
+      /* 3) Özet */
+      const sm = { n: R.out.length, gelir: 0, gider: 0, nakit: 0, banka: 0, none: 0 };
+      R.out.forEach((o) => { if (o.dir === 'gelir') sm.gelir += o.total; else sm.gider += o.total; });
+      const ch = (typeof MXI !== 'undefined' && MXI.ch) || '';
+      if (ch) { if (ch === 'nakit') sm.nakit = sm.n; else sm.banka = sm.n; } else { const rc = ixPayCol(R.out.map((o) => ({ ex: o.ex, o }))); if (rc) { sm.nakit = rc.nakit; sm.banka = rc.banka; sm.none = rc.none; } else sm.none = sm.n; }
+      R.sm = sm;
+    } catch (e) {}
+    return R;
+  };
+  window.ixSumHtml = function (R) {
+    const sm = R && R.sm; if (!sm || !sm.n) return '';
+    const m = (v) => fmt0(Math.round(v * 100) / 100);
+    const cell = (l, v, c) => '<div class="kpi"><div class="l">' + l + '</div><div class="v num"' + (c ? ' style="color:' + c + '"' : '') + '>' + v + '</div></div>';
+    return '<div class="kpis" style="margin-top:8px">' + cell('Gelir', m(sm.gelir), 'var(--ok,#1a8f4b)') + cell('Gider', m(sm.gider), 'var(--bad,#c0392b)') + cell('Net', m(sm.gelir - sm.gider)) + '</div>'
+      + '<p class="small muted" style="margin-top:6px">Kasa dağılımı: ' + sm.nakit + ' nakit, ' + sm.banka + ' banka' + (sm.none ? ', ' + sm.none + ' belirtilmemiş' : '') + '.</p>'
+      + (R.sug ? '<div class="callout" style="margin-top:6px">' + ic('check') + '<div><p>' + R.sug + ' satırın hesabı, daha önce kendi girdiğin aynı açıklamalardan alındı. Önizlemede kontrol edebilirsin.</p></div></div>' : '')
+      + (R.devir ? '<p class="small muted" style="margin-top:6px">' + R.devir + ' devir/açılış satırı gelir sayılmadı.</p>' : '')
+      + (R.near ? '<div class="callout warn" style="margin-top:6px">' + ic('alert') + '<div><p>' + R.near + ' satır, elle girdiğin bir kayıtla aynı gün ve tutarda. Aynı işlemse aktarmadan önce kontrol et.</p></div></div>' : '');
+  };
+}

@@ -69,6 +69,7 @@ jobs:
         run: python3 tests/currency_client.py
       - run: python3 tests/excel_kasa.py
       - run: python3 tests/import_pay.py
+      - run: python3 tests/import_smart.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
