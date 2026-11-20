@@ -2167,3 +2167,26 @@ document.addEventListener('keydown', (e) => { if (S.modal && S.modal.type === 't
 
 /* v255: yatay kaydirmali seritlerde dikey oynama olmasin */
 (function () { try { const st = document.createElement('style'); st.textContent = '.pp-q,.kz-s,.ek-f,.dr-tabs,.ls,.tl-ds,.yq-f,.sbr-chips,.dash-st,.dash-stats,.mg-st,.kb-st{overflow-y:hidden!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* v258: fis fotografi saklanir; muhasebeci fotografa bakip satici/tarih/tutari duzeltebilir */
+let RV_PHOTO = null;
+(function () {
+  try { const st = document.createElement('style'); st.textContent = '.rv-ph{margin:8px 0}.rv-ph img{display:block;width:100%;max-height:170px;object-fit:cover;border-radius:12px;border:1px solid #DDE5F1;cursor:zoom-in}.rv-ph.big img{max-height:none;object-fit:contain;cursor:zoom-out}.rv-ph small{display:block;margin-top:4px}'; document.head.appendChild(st); } catch (e) {}
+  document.addEventListener('change', (e) => { const el = e.target; if (!el || el.id !== 'file-in' || !el.files || !el.files[0]) return; RV_PHOTO = null; try { opImg(el.files[0]).then((u) => { RV_PHOTO = u; }, () => {}); } catch (x) {} });
+  const _sv = H.savereceipt;
+  H.savereceipt = function () { const m = S.modal; const ph = (m && m.type === 'upload' ? m.photo : null) || RV_PHOTO; const n0 = RECEIPTS.length; const r = _sv.apply(this, arguments); if (ph && RECEIPTS.length > n0) { RECEIPTS[RECEIPTS.length - 1].photo = ph; RV_PHOTO = null; try { pSched(); } catch (x) {} } return r; };
+  const _rm = renderModal;
+  renderModal = function () {
+    _rm.apply(this, arguments); const m = S.modal; const root = document.getElementById('modal-root');
+    if (!m || m.type !== 'rev' || !root || typeof root.innerHTML !== 'string') return;
+    const f = RECEIPTS.find((x) => x.id === m.id); if (!f) return; let h = root.innerHTML; if (h.includes('id="rv-seller"')) return;
+    const k = h.indexOf('<div class="field"><label for="rv-cat">'); if (k < 0) return;
+    const ph = f.photo ? `<div class="rv-ph"><img src="${f.photo}" alt="Fişin fotoğrafı" data-a="rvphoto"><small class="muted">Fotoğrafa dokun, büyür. Bilgiler yanlışsa aşağıdan düzelt.</small></div>` : '<p class="small muted">Bu fişin fotoğrafı yok.</p>';
+    const fld = `<div class="row"><div class="field grow"><label for="rv-seller">Satıcı</label><input id="rv-seller" type="text" value="${esc(m.seller != null ? m.seller : f.seller)}" data-ch="rvsd" data-k="seller"></div><div class="field" style="width:110px"><label for="rv-date">Tarih</label><input id="rv-date" type="text" value="${esc(m.date != null ? m.date : f.date)}" data-ch="rvsd" data-k="date"></div></div>`;
+    root.innerHTML = h.slice(0, k) + ph + fld + h.slice(k);
+  };
+  document.addEventListener('input', (e) => { const el = e.target; if (el && el.dataset && el.dataset.ch === 'rvsd' && S.modal && S.modal.type === 'rev') S.modal[el.dataset.k] = el.value; });
+  H.rvphoto = (el) => { const b = el.closest('.rv-ph'); if (b) b.classList.toggle('big'); };
+  const _ro = H.revok;
+  H.revok = function () { const m = S.modal; const f = m && m.type === 'rev' && RECEIPTS.find((x) => x.id === m.id); if (f) { const s = String(m.seller == null ? '' : m.seller).trim(); const d = String(m.date == null ? '' : m.date).trim(); if (m.seller != null && !s) { toast('Satıcı adını boş bırakma.', 'warn'); return; } if (s) f.seller = s; if (d) f.date = d; } return _ro.apply(this, arguments); };
+})();
