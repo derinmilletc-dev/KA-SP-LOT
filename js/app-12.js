@@ -2089,18 +2089,62 @@ function tourSlides() {
     L.push({ ico: 'check', t: todo.length ? 'Başlamak için 2 dakika' : 'Her şey hazır', s: todo.length ? 'Sana kalan adımlar bunlar. Birine dokun, kaldığın yerden devam edersin.' : 'Kurulum adımlarını tamamlamışsın. İyi çalışmalar!', v: '', bl: [], hero: 'son', todo });
     return L;
   }
-  const T = TOUR[r] || []; const L = T.map((x, i) => mk(x.ico, i === 0 && nm ? 'Hoş geldin, ' + esc(nm) : x.t, x.s, x.v, [], 'ico', i === 0 ? '' : 'Şuraya git'));
-  if (L.length) { L[0].t = nm ? 'Hoş geldin, ' + esc(nm) : 'Hoş geldin'; L[0].s = x0(T[0]) ; L.push({ ico: 'check', t: 'Hazırsın', s: 'İstediğin zaman Yardım bölümünden turu yeniden izleyebilirsin.', v: '', bl: [], hero: 'son', todo: [] }); }
-  function x0(a) { return a.t + ': ' + a.s; }
-  return L;
+  const hi = (s, chips) => Object.assign(mk('sparkle', 'Hoş geldin' + (nm ? ', ' + esc(nm) : ''), s, '', [], 'hi'), { chips });
+  const fin = (title, s, todo) => ({ ico: 'check', t: todo.length ? title : 'Her şey hazır', s: todo.length ? s : 'Bugünlük bekleyen bir şey görünmüyor. İyi çalışmalar!', v: '', bl: [], hero: 'son', todo });
+  const td = (ico, t, s, v) => ({ ico, t, s, a: 'nav', v });
+  const n = (c, one, many) => c + ' ' + (c === 1 ? one : many);
+  if (r === 'mudur') {
+    const low = lowStock().length, pend = LVREQ.filter((x) => x.status === 'bekliyor').length;
+    const todo = []; if (pend) todo.push(td('users', n(pend, 'talep seni bekliyor', 'talep seni bekliyor'), 'İzin ve mesai taleplerine bak, onayla ya da cevap yaz.', 'ekip')); if (low) todo.push(td('box', n(low, 'ürün azaldı', 'ürün azaldı'), 'Stoğa bak, gerekiyorsa sipariş ver.', 'stok'));
+    todo.push(td('megaphone', 'Ekibe duyuru gönder', 'Tek dokunuşla herkese ulaş.', 'duyuru')); todo.push(td('home', 'Bugün ekranını aç', 'Vardiya ve günün işleri burada.', 'bugun'));
+    return [
+      hi(esc(BIZ) + ' ekibini ve günlük işleri buradan yönetirsin. 1 dakikada gösteriyorum.', ['Vardiya', 'İzin', 'Stok', 'Duyuru']),
+      mk('users', 'Vardiya ve ekip', 'Çalışanların vardiyasını, izin ve mesai taleplerini tek yerden yönet.', 'ekip', ['Vardiya planını buradan düzenle', 'İzin ve mesai taleplerini onayla ya da reddet', 'Giriş çıkış saatleri otomatik kaydolur'].concat(pend ? ['Şu an ' + n(pend, 'talep', 'talep') + ' seni bekliyor'] : []), 'ekip', 'Ekibe git'),
+      mk('box', 'Stok ve sayım', 'Azalan ürünleri Kais takip eder. Barkod okutarak sayım yap, sipariş ver.', 'stok', ['Barkodla hızlı sayım', 'Son kullanma tarihi yaklaşınca uyarı'].concat(low ? ['Şu an ' + n(low, 'ürün', 'ürün') + ' azalmış'] : []), 'stok', 'Stoğa git'),
+      mk('megaphone', 'Duyuru', 'Ekibe tek dokunuşla duyuru gönder.', 'duyuru', [], 'duy', 'Duyuruya git'),
+      fin('Bugün seni bekleyenler', 'Birine dokun, doğrudan oraya gidelim.', todo.slice(0, 4)),
+    ];
+  }
+  if (r === 'muhasebeci') {
+    const pend = RECEIPTS.filter((x) => x.status === 'bekliyor').length;
+    const todo = []; if (pend) todo.push(td('receipt', n(pend, 'belge onay bekliyor', 'belge onay bekliyor'), 'Fişleri kontrol et, onayla ya da not ekle.', 'belgeler'));
+    todo.push(td('wallet', 'Borç ve alacaklara bak', 'Vadesi geçenlere hatırlatma gönder.', 'borc')); todo.push(td('table', 'Defter tablosunu aç', 'Düzenle, Excel olarak indir.', 'tablo')); todo.push(td('home', 'Dönem özetini gör', 'Gelir, gider ve KDV tek bakışta.', 'donem'));
+    return [
+      hi('Defter, belgeler ve KDV özeti burada. 1 dakikada gösteriyorum.', ['Dönem', 'Belgeler', 'Excel', 'Borç']),
+      mk('home', 'Dönem özeti', 'Bu ayın gelir, gider ve KDV durumunu tek bakışta gör.', 'donem', ['Gelir ve gider kayıtları nakit ve banka ayrı izlenir'], 'donem', 'Özeti aç'),
+      mk('receipt', 'Belgeler', 'Çalışanların yüklediği fişleri onayla ya da müşteri notu ekle.', 'belgeler', ['Fişi okunmuş haliyle kontrol et', 'Eksik varsa not bırak'].concat(pend ? ['Şu an ' + n(pend, 'belge', 'belge') + ' onay bekliyor'] : []), 'fis', 'Belgelere git'),
+      mk('table', 'Tablo ve Excel', 'Defter tablosunu düzenle, Excel olarak indir. Hangi düzende Excel getirirlerse getirsinler Kais gelir ve gider kısmını okur.', 'tablo', ['Günlük, haftalık, aylık, yıllık çıktı', 'Nakit ve banka ayrı sütunlarda'], 'xl', 'Tabloyu aç'),
+      mk('wallet', 'Borç ve alacak', 'Vadesi geçen faturalar için tek dokunuşla hatırlatma gönder.', 'borc', ['Müşteriye e-postayla PDF ekli fatura'], 'borc', 'Borç ve alacaklara git'),
+      fin('Şimdi nereden başlayalım?', 'Birine dokun, doğrudan oraya gidelim.', todo.slice(0, 4)),
+    ];
+  }
+  if (r === 'calisan') {
+    const mine = LVREQ.filter((x) => x.uid === (S.user && S.user.id) && x.status === 'bekliyor').length;
+    const todo = [td('home', 'Bugün ekranını aç', 'Vardiyan ve giriş çıkış burada.', 'bugun'), td('receipt', 'Masraf fişi gönder', 'İşletme için ödediğin bir şeyin fotoğrafını yükle.', 'masraf'), td('wallet', 'Maaşım', 'Hak edişini ve ödemelerini gör.', 'maasim')];
+    return [
+      hi('Vardiyan, giriş çıkışın ve maaşın cebinde. 1 dakikada gösteriyorum.', ['Vardiya', 'Giriş çıkış', 'Masraf', 'Maaş']),
+      mk('clock', 'Giriş ve çıkış', 'Vardiyan başlayınca giriş yap, bitince çıkış yap. Mesai kendiliğinden hesaplanır.', 'bugun', ['Saatlerin otomatik kaydolur', 'Ne kadar çalıştığını her an görürsün'], 'clock', 'Bugün ekranına git'),
+      mk('calendar', 'Vardiya ve izin', 'Vardiyanı gör, izin talebini buradan gönder. Cevabı yine buradan görürsün.', 'bugun', ['Haftalık vardiya planın'].concat(mine ? ['İzin talebin şu an beklemede'] : ['İzin talebi tek dokunuşla']), 'ekip', 'Bugün ekranına git'),
+      mk('receipt', 'Masraf', 'İşletme için ödediğin bir şeyin fişini fotoğraf çekerek gönder, Kais okusun.', 'masraf', ['Elle yazmana gerek yok', 'Fişin durumunu buradan görürsün'], 'fis', 'Masrafa git'),
+      mk('trend', 'Puanım ve maaşım', 'Performans puanını, hak edişini ve ödemelerini şeffaf biçimde gör.', 'puanim', ['Geri bildirimlerin burada', 'Kalan tutar ve ödemeler açık açık'], 'ring', 'Puanıma git'),
+      fin('Başlamak için', 'Birine dokun, doğrudan oraya gidelim.', todo),
+    ];
+  }
+  return [];
 }
 function tourHero(h, x) {
-  if (h === 'hi') return `<div class="tr-hero"><div class="tr-float" style="text-align:center"><img src="/icon-192.png" width="64" height="64" alt="" style="border-radius:18px;box-shadow:0 10px 28px rgba(0,0,0,.3)"><div style="margin-top:12px">${['Muhasebe', 'Stok', 'Ekip', 'Kais'].map((c) => `<span class="tr-chip">${c}</span>`).join('')}</div></div></div>`;
+  if (h === 'hi') return `<div class="tr-hero"><div class="tr-float" style="text-align:center"><img src="/icon-192.png" width="64" height="64" alt="" style="border-radius:18px;box-shadow:0 10px 28px rgba(0,0,0,.3)"><div style="margin-top:12px">${(x.chips || ['Muhasebe', 'Stok', 'Ekip', 'Kais']).map((c) => `<span class="tr-chip">${c}</span>`).join('')}</div></div></div>`;
   if (h === 'muh') return `<div class="tr-hero"><div class="tr-row"><div class="tr-c" style="width:128px"><span style="opacity:.6">Nakit kasa</span><b>12.500 ₺</b><div class="tr-bars">${[40, 55, 35, 70, 60, 85, 75].map((v) => `<i style="height:${v}%"></i>`).join('')}</div></div><div class="tr-c" style="width:128px"><span style="opacity:.6">Banka</span><b>3.000 ₺</b><div class="tr-bars">${[70, 50, 60, 45, 65, 55, 80].map((v) => `<i style="height:${v}%"></i>`).join('')}</div></div></div><span style="position:absolute;right:12px;bottom:8px;font-size:10px;opacity:.7;z-index:2">örnek</span></div>`;
   if (h === 'fis') return `<div class="tr-hero"><div class="tr-row" style="align-items:center"><div class="tr-c" style="width:120px"><span style="opacity:.6">Migros</span><div style="height:6px;border-radius:3px;background:#e3e7ee;margin:6px 0"></div><div style="height:6px;width:70%;border-radius:3px;background:#e3e7ee"></div><b style="margin-top:8px">248,90 ₺</b></div><div style="text-align:left"><span class="tr-pill">✓ Okundu</span><br><span class="tr-pill w" style="margin-top:6px">KDV %10</span></div></div></div>`;
   if (h === 'stok') return `<div class="tr-hero"><div class="tr-c" style="text-align:center"><div class="tr-bc" style="margin:0 auto 8px"></div><span class="tr-pill w">SKT 3 gün</span> <span class="tr-pill">24 adet</span></div></div>`;
   if (h === 'ekip') return `<div class="tr-hero"><div class="tr-gr">${['a b c a b c a', 'b a a c a b b', 'c c a b b a c'].map((r) => r.split(' ').map((c) => `<span class="${c}"></span>`).join('')).join('')}</div></div>`;
   if (h === 'ai') return `<div class="tr-hero"><div style="display:flex;flex-direction:column;gap:8px;width:86%"><div class="tr-bub u">Bu ay neden zarardayım?</div><div class="tr-bub k">Kira ve hammadde geçen aya göre arttı. Detayını göstereyim mi?</div></div></div>`;
+  if (h === 'duy') return `<div class="tr-hero"><div style="display:flex;flex-direction:column;gap:8px;width:86%"><div class="tr-c"><span style="opacity:.6">Duyuru · Tüm ekip</span><b style="font-size:14px">Cumartesi stok sayımı var</b></div><div style="align-self:flex-end"><span class="tr-pill">Gönderildi</span></div></div></div>`;
+  if (h === 'donem') return `<div class="tr-hero"><div class="tr-row"><div class="tr-c" style="width:84px"><span style="opacity:.6">Gelir</span><b style="color:#15803d">48.200</b></div><div class="tr-c" style="width:84px"><span style="opacity:.6">Gider</span><b style="color:#b42318">31.750</b></div><div class="tr-c" style="width:84px"><span style="opacity:.6">KDV</span><b>2.940</b></div></div><span style="position:absolute;right:12px;bottom:8px;font-size:10px;opacity:.7;z-index:2">örnek</span></div>`;
+  if (h === 'xl') return `<div class="tr-hero"><div class="tr-c" style="width:250px;padding:0;overflow:hidden"><div style="background:#15803d;color:#fff;display:grid;grid-template-columns:1.3fr 1fr 1fr;padding:6px 10px;font-weight:700"><span>Açıklama</span><span>Nakit</span><span>Banka</span></div>${[['Satış', '1.200', ''], ['Kira', '', '6.000'], ['Un', '550', '']].map((r) => `<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;padding:5px 10px;border-top:1px solid #eef1f5"><span>${r[0]}</span><span>${r[1]}</span><span>${r[2]}</span></div>`).join('')}</div></div>`;
+  if (h === 'borc') return `<div class="tr-hero"><div class="tr-c" style="width:240px"><span style="opacity:.6">Yılmaz Ltd. · Fatura 1042</span><b>4.800 ₺</b><div class="tr-row" style="margin-top:8px;align-items:center"><span class="tr-pill w">12 gün gecikti</span><span class="tr-pill" style="background:#e8efff;color:#1d4ed8">Hatırlat</span></div></div></div>`;
+  if (h === 'clock') return `<div class="tr-hero"><div class="tr-c" style="text-align:center;width:200px"><span style="opacity:.6">Bugün · Vardiya 09:00–17:00</span><b style="font-size:30px;margin:2px 0">08:58</b><span class="tr-pill">Giriş yap</span></div></div>`;
+  if (h === 'ring') return `<div class="tr-hero"><div class="tr-row" style="align-items:center;gap:16px"><div style="width:92px;height:92px;border-radius:50%;background:conic-gradient(#fff 0 86%,rgba(255,255,255,.25) 86% 100%);display:grid;place-items:center"><div style="width:70px;height:70px;border-radius:50%;background:#4c5cf0;display:grid;place-items:center;font-weight:800;font-size:22px">86</div></div><div class="tr-c" style="width:120px"><span style="opacity:.6">Bu ay hak ediş</span><b>18.400 ₺</b></div></div><span style="position:absolute;right:12px;bottom:8px;font-size:10px;opacity:.7;z-index:2">örnek</span></div>`;
   if (h === 'son') return `<div class="tr-hero" style="height:120px"><div class="tr-float">${ic('check', 54)}</div></div>`;
   return `<div class="tr-hero" style="height:140px"><div class="tr-float" style="width:76px;height:76px;border-radius:24px;background:rgba(255,255,255,.2);display:grid;place-items:center">${ic(x.ico, 38)}</div></div>`;
 }

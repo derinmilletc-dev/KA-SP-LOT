@@ -38,6 +38,18 @@ with sync_playwright() as p:
     ev("()=>{S.user={role:'calisan',id:'x',name:'Ayşe K'};H.tourshow()}"); pg.wait_for_timeout(150)
     pg.click('[data-a="tournext"]'); pg.click('[data-a="tourprev"]'); pg.wait_for_timeout(100)
     check('Calisan: geri ileri calisir', 'Ayşe' in txt(), txt()[:80])
+    # rol bazli akilli icerik
+    r = ev("""()=>{S.user={role:'mudur',id:'m1',name:'Murat Y'};LVREQ.length=0;LVREQ.push({id:'q1',uid:'e1',type:'izin',txt:'x',days:1,status:'bekliyor',thread:[]},{id:'q2',uid:'e2',type:'izin',txt:'y',days:1,status:'bekliyor',thread:[]});STOCK.length=0;STOCK.push({id:'a',name:'A',qty:1,min:5,unit:'kg'});const L=tourSlides();return {n:L.length,todo:L[L.length-1].todo.map(t=>t.t),eks:L[1].bl.join('|')}}""")
+    check('Mudur: bekleyen talep sayisi listede', any('2 talep' in t for t in r['todo']) and any('1 ürün azaldı' in t for t in r['todo']), r)
+    check('Mudur: ekip slaydinda sayi', '2 talep' in r['eks'], r)
+    r = ev("""()=>{S.user={role:'muhasebeci',id:'x1',name:'Zeynep'};RECEIPTS.length=0;RECEIPTS.push({id:'f1',seller:'A',date:'1 Kas',total:10,rate:10,cat:'Diğer',status:'bekliyor',by:'e1'});const L=tourSlides();return {n:L.length,todo:L[L.length-1].todo.map(t=>t.t)}}""")
+    check('Muhasebeci: onay bekleyen belge', any('1 belge onay bekliyor' in t for t in r['todo']), r)
+    r = ev("""()=>{RECEIPTS.length=0;const L=tourSlides();return L[L.length-1].todo.map(t=>t.t)}""")
+    check('Muhasebeci: bekleyen yoksa o madde yok', not any('onay bekliyor' in t for t in r), r)
+    r = ev("""()=>{S.user={role:'calisan',id:'e9',name:'Ayşe K'};LVREQ.length=0;LVREQ.push({id:'q9',uid:'e9',type:'izin',txt:'x',days:1,status:'bekliyor',thread:[]});const L=tourSlides();return L[2].bl.join('|')}""")
+    check('Calisan: bekleyen izin talebi bilgisi', 'beklemede' in r, r)
+    for role, i in (('mudur', 1), ('muhasebeci', 3), ('calisan', 1)):
+        ev("(a)=>{S.user={role:a[0],id:'m1',name:'Test K'};H.tourshow();S.modal.i=a[1];renderModal()}", [role, i]); pg.wait_for_timeout(150); pg.screenshot(path='/tmp/r_%s.png' % role)
     check('Sayfa hatasi yok', not er, er)
     b.close()
 print('\nHEPSI GECTI' if not f else 'FAIL: %d' % len(f))
