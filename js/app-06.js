@@ -355,7 +355,7 @@ H.bf = (el) => { S.bf = el.dataset.v; render(); };
 paketHTML = function (role) {
   const mode = role === 'patron' ? 'patron' : 'muh';
   const missRows = ROWS.filter((r) => rowStatus(r) === 'eksik'); const open = openReceipts(); const empty = !RECEIPTS.length && !ROWS.length; const ready = !empty && !missRows.length && !open.length; const t = totals();
-  const gsum = gp().reduce((a, r) => a + (Number(r.total) || 0), 0); const noDoc = countStatus('belgesiz');
+  const gsum = gp().filter((r) => curOkAll(r)).reduce((a, r) => a + (Number(r.total) || 0), 0); const noDoc = countStatus('belgesiz');
   const steps = 4; const done = 2 + (missRows.length ? 0 : 1) + (open.length ? 0 : 1) - 0; const pct = empty ? 0 : Math.round(Math.min(steps, done) / steps * 100);
   const it = (ok, title, sub, body, id) => {
     const ic1 = `<span class="pk-d ${ok ? 'ok' : 'bad'}">${ic(ok ? 'check' : 'alert', 16)}</span>`;

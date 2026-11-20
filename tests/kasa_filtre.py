@@ -14,7 +14,7 @@ with sync_playwright() as p:
     assert 'xg1' in r['nakit'] and 'xg2' not in r['nakit'] and 'xg3' not in r['nakit']
     assert 'xg2' in r['banka'] and 'xg1' not in r['banka'] and '$' in r['banka'] and '2.000' in r['banka']
     assert 'xg3' in r['yok'] and 'xg1' not in r['yok']
-    assert 'karışık' in r['hepsi2']
+    assert 'birbirine eklenmez' in r['hepsi2'] and 'xg2' not in r['hepsi2'] and 'xg1' in r['hepsi2'] and 'xg3' in r['hepsi2'], 'hepsi: yalniz varsayilan para birimi'
     assert r['sym']=='₺','ctx leak'
     print(pg.evaluate("()=>{S.settings.kcur.nakit={sym:'€'};S.tch='hepsi';const h=NEWM.mxkb?String(NEWM.mxkb()).includes('Hesap para birimi'):false;return h}"))
     assert not er,er

@@ -1098,18 +1098,20 @@ function liveUsers() {
 const KCURS = [['₺', 'TRY', 'Türk lirası'], ['$', 'USD', 'Dolar'], ['€', 'EUR', 'Euro'], ['£', 'GBP', 'Sterlin'], ['R', 'ZAR', 'Rand']];
 function withCh(k, fn) { const o = CHCTX; CHCTX = (k === 'nakit' || k === 'banka') ? k : ''; try { return fn(); } finally { CHCTX = o; } }
 function tbChOf(r) { return r.ch || (r.src === 'Banka' ? 'banka' : ''); }
-function tbChOk(r) { const f = S.tch || 'hepsi'; if (f === 'hepsi') return true; if (f === 'yok') return !tbChOf(r); return tbChOf(r) === f; }
+/* Farklı para birimli hesaplar varsa "Hepsi" yalnızca varsayılan para birimini toplar; farklı para birimleri hiçbir yerde birbirine eklenmez. */
+function curOkAll(r) { try { return !kcurDiff() || rowCurSym(r) === defCurSym(); } catch (e) { return true; } }
+function tbChOk(r) { const f = S.tch || 'hepsi'; if (f === 'hepsi') return curOkAll(r); if (f === 'yok') return !tbChOf(r); return tbChOf(r) === f; }
 function kcurSym(k) { try { const c = S.settings && S.settings.kcur && S.settings.kcur[k]; return c ? c.sym : curSym(); } catch (e) { return '₺'; } }
 function kcurDiff() { const a = withCh('', () => curSym()); return ['nakit', 'banka'].some((k) => kcurSym(k) !== a); }
 function tbChChips() {
   try {
     const kind = S.sub && S.sub.tablo === 'gelir' ? 'gelir' : 'gider';
     const base = LEDGER.filter((r) => dirOf(r) === kind && inPer(r));
-    const n = { hepsi: base.length, nakit: 0, banka: 0, yok: 0 }; base.forEach((r) => { n[tbChOf(r) || 'yok']++; });
+    const n = { hepsi: 0, nakit: 0, banka: 0, yok: 0 }; base.forEach((r) => { n[tbChOf(r) || 'yok']++; if (curOkAll(r)) n.hepsi++; });
     if (!n.nakit && !n.banka) { S.tch = 'hepsi'; return ''; }
     const f = S.tch || 'hepsi';
     const L = [['hepsi', 'Hepsi'], ['nakit', 'Nakit'], ['banka', 'Banka']].concat(n.yok ? [['yok', 'Belirtilmemiş']] : []);
-    const warn = f === 'hepsi' && kcurDiff() ? `<div class="tb-in"><div class="warn">${ic('alert', 16)}<span>Nakit ${esc(kcurSym('nakit'))}, banka ${esc(kcurSym('banka'))} ile tutuluyor. Toplamlar karışık olabilir, tek tek bakmak için Nakit ya da Banka seç.</span></div></div>` : '';
+    const warn = f === 'hepsi' && kcurDiff() ? `<div class="tb-in"><div class="warn">${ic('alert', 16)}<span>Nakit ${esc(kcurSym('nakit'))}, banka ${esc(kcurSym('banka'))} ile tutuluyor. Para birimleri birbirine eklenmez: "Hepsi" yalnızca ${esc(defCurSym())} kayıtlarını toplar. Diğerleri için Nakit ya da Banka seç.</span></div></div>` : '';
     return `<div class="chips" role="group" aria-label="Kasa ve banka">${L.map(([k, l]) => `<button class="chip" data-a="tbch" data-v="${k}" aria-pressed="${f === k}">${l} (${n[k]})</button>`).join('')}</div>${warn}`;
   } catch (e) { return ''; }
 }
@@ -1493,4 +1495,122 @@ H.rcur = (el) => { S.rcur = el.dataset.v; render(); };
   const st = document.createElement('style');
   st.textContent = '.lx-brand img{width:52px;height:52px;border-radius:15px;box-shadow:0 8px 22px rgba(10,42,96,.32),0 0 0 1px rgba(255,255,255,.14);flex:none}.side .brand img,.onb-top .brand img{box-shadow:0 4px 12px rgba(10,42,96,.25)}';
   document.head.appendChild(st);
+}
+
+/* ===== v246: Excel: nakit/banka (kasa) ve para birimi ayrımı, günlük/haftalık/aylık/yıllık sayfalar ===== */
+const XL_KASA = { nakit: 'Nakit', banka: 'Banka' };
+const xlKasa = (r) => XL_KASA[tbChOf(r)] || 'Belirtilmemiş';
+const xlFmtOf = (s) => '#,##0.00 "' + String(s || '₺').replace(/"/g, '') + '"';
+const XL_AYAD = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+function xlCurList() {
+  const d = defCurSym(); const l = [d];
+  LEDGER.forEach((r) => { const c = rowCurSym(r); if (!l.includes(c)) l.push(c); });
+  return l;
+}
+/* Her satırın gerçek tarihi: kayıtlı ISO, yoksa "14 Kas" gibi metinden (yıl referans yıl) */
+function xlIso(r) {
+  if (r.iso && /^\d{4}-\d{2}-\d{2}$/.test(String(r.iso))) return String(r.iso);
+  const d = xlDate(rDateY(r));
+  return d instanceof Date && !isNaN(d) ? d.toISOString().slice(0, 10) : '';
+}
+const xlUtc = (iso) => new Date(iso + 'T00:00:00Z');
+function xlRowsAll() {
+  return LEDGER.map((r) => { const total = Number(r.total) || 0, rt = Number(r.rate) || 0; return { r, iso: xlIso(r), dir: dirOf(r), kasa: xlKasa(r), cur: rowCurSym(r), total, kd: total - total / (1 + rt / 100) }; });
+}
+const xlSum = (rows, f) => rows.reduce((a, x) => a + f(x), 0);
+const xlBorder = { bottom: { style: 'thin', color: { argb: 'FFE3E9F2' } } };
+
+function xlOzet(wb, X) {
+  const { NAVY, SOFT, INK, MUT, stamp, hdr } = X; const curs = xlCurList(); const multi = curs.length > 1; const all = xlRowsAll();
+  const sm = wb.addWorksheet('Özet', { properties: { tabColor: { argb: NAVY } }, views: [{ showGridLines: false }] });
+  sm.columns = [{ width: 26 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }];
+  sm.mergeCells('A1:F1'); const t1 = sm.getCell('A1'); t1.value = BIZ + ' · Muhasebe özeti'; t1.font = { size: 18, bold: true, color: { argb: 'FFFFFFFF' } }; t1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NAVY } }; t1.alignment = { vertical: 'middle', indent: 1 }; sm.getRow(1).height = 36;
+  sm.mergeCells('A2:F2'); const t2 = sm.getCell('A2'); t2.value = 'Güncellendi: ' + stamp + ' · KaisPilot tarafından otomatik hazırlanır. Gelirler ve Giderler sayfalarındaki tablolar buraya, Günlük, Haftalık, Aylık ve Yıllık sayfalarına kendiliğinden yansır.' + (multi ? ' Hesaplar farklı para biriminde tutulduğu için her para birimi ayrı gösterilir, birbirine eklenmez.' : ''); t2.font = { size: 10, color: { argb: MUT } }; t2.alignment = { indent: 1, wrapText: true, vertical: 'top' }; sm.getRow(2).height = multi ? 44 : 30;
+  let row = 4;
+  curs.forEach((cur) => {
+    const F = xlFmtOf(cur); const CQ = '"' + cur + '"'; const my = all.filter((x) => x.cur === cur); const gel = my.filter((x) => x.dir === 'gelir'), gid = my.filter((x) => x.dir !== 'gelir');
+    const sIf = (sh, col, extra) => `SUMIFS(${sh}!$${col}:$${col},${sh}!$L:$L,${CQ}${extra || ''})`;
+    // KPI
+    const kr = row, vr = row + 1; sm.getRow(kr).height = 22; sm.getRow(vr).height = 30;
+    const inn = xlSum(gel, (x) => x.total), out = xlSum(gid, (x) => x.total), kin = xlSum(gel, (x) => x.kd), kout = xlSum(gid, (x) => x.kd);
+    const kp = [['Toplam gelir', sIf('Gelirler', 'H'), inn], ['Toplam gider', sIf('Giderler', 'H'), out], ['Net durum', `B${vr}-C${vr}`, inn - out], ['Hesaplanan KDV', sIf('Gelirler', 'G'), kin], ['İndirilecek KDV', sIf('Giderler', 'G'), kout]];
+    kp.forEach((x, i) => { const c = sm.getCell(kr, i + 2), v = sm.getCell(vr, i + 2); c.value = x[0]; c.font = { size: 10, bold: true, color: { argb: MUT } }; c.alignment = { horizontal: 'center', vertical: 'bottom' }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SOFT } }; v.value = { formula: x[1], result: x[2] }; v.numFmt = F; v.font = { size: 14, bold: true, color: { argb: INK } }; v.alignment = { horizontal: 'center', vertical: 'middle' }; v.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: SOFT } }; });
+    sm.getCell('A' + kr).value = multi ? 'Dönem toplamı · ' + cur : 'Dönem toplamı'; sm.getCell('A' + kr).font = { bold: true, color: { argb: MUT }, size: 10 };
+    sm.getCell('A' + vr).value = multi ? 'Tüm veriler (' + cur + ')' : 'Tüm veriler'; sm.getCell('A' + vr).font = { bold: true, color: { argb: INK } };
+    row = vr + 3;
+    // Nakit ve banka
+    sm.getCell('A' + (row - 1)).value = 'Nakit ve banka' + (multi ? ' (' + cur + ')' : ''); sm.getCell('A' + (row - 1)).font = { size: 13, bold: true, color: { argb: INK } };
+    hdr(sm, row, ['Kasa', 'Gelir', 'Gider', 'Net']);
+    const kasas = ['Nakit', 'Banka'].concat(my.some((x) => x.kasa === 'Belirtilmemiş') ? ['Belirtilmemiş'] : []);
+    kasas.forEach((k, i) => { const rw = row + 1 + i; const g = xlSum(gel.filter((x) => x.kasa === k), (x) => x.total), d = xlSum(gid.filter((x) => x.kasa === k), (x) => x.total);
+      sm.getCell('A' + rw).value = k; sm.getCell('A' + rw).alignment = { indent: 1 }; sm.getCell('A' + rw).font = { bold: true, color: { argb: INK } };
+      [[sIf('Gelirler', 'H', `,Gelirler!$K:$K,$A${rw}`), g], [sIf('Giderler', 'H', `,Giderler!$K:$K,$A${rw}`), d], [`B${rw}-C${rw}`, g - d]].forEach((x, j) => { const c = sm.getCell(rw, j + 2); c.value = { formula: x[0], result: x[1] }; c.numFmt = F; c.border = xlBorder; }); sm.getCell('A' + rw).border = xlBorder; });
+    const kt = row + 1 + kasas.length; sm.getCell('A' + kt).value = 'Toplam'; sm.getCell('A' + kt).font = { bold: true }; sm.getCell('A' + kt).alignment = { indent: 1 };
+    ['B', 'C', 'D'].forEach((l, j) => { const c = sm.getCell(l + kt); c.value = { formula: `SUM(${l}${row + 1}:${l}${kt - 1})`, result: [inn, out, inn - out][j] }; c.numFmt = F; c.font = { bold: true }; c.border = { top: { style: 'thin', color: { argb: INK } } }; });
+    row = kt + 3;
+    // Aylık özet
+    sm.getCell('A' + (row - 1)).value = 'Aylık özet' + (multi ? ' (' + cur + ')' : ''); sm.getCell('A' + (row - 1)).font = { size: 13, bold: true, color: { argb: INK } };
+    hdr(sm, row, ['Dönem', 'Gelir', 'Gider', 'Net', 'Gelir KDV', 'Gider KDV']);
+    const months = []; my.forEach((x) => { if (x.iso) { const m = x.iso.slice(0, 7); if (!months.includes(m)) months.push(m); } }); months.sort();
+    months.forEach((m, i) => { const rw = row + 1 + i; const gg = gel.filter((x) => x.iso.slice(0, 7) === m), dd = gid.filter((x) => x.iso.slice(0, 7) === m);
+      const A = sm.getCell('A' + rw); A.value = xlUtc(m + '-01'); A.numFmt = 'mmmm yyyy'; A.alignment = { indent: 1, horizontal: 'left' }; A.font = { bold: true, color: { argb: INK } }; A.border = xlBorder;
+      const rg = (sh, col) => sIf(sh, col, `,${sh}!$B:$B,">="&$A${rw},${sh}!$B:$B,"<"&EDATE($A${rw},1)`);
+      [[rg('Gelirler', 'H'), xlSum(gg, (x) => x.total)], [rg('Giderler', 'H'), xlSum(dd, (x) => x.total)], [`B${rw}-C${rw}`, xlSum(gg, (x) => x.total) - xlSum(dd, (x) => x.total)], [rg('Gelirler', 'G'), xlSum(gg, (x) => x.kd)], [rg('Giderler', 'G'), xlSum(dd, (x) => x.kd)]].forEach((x, j) => { const c = sm.getCell(rw, j + 2); c.value = { formula: x[0], result: x[1] }; c.numFmt = F; c.border = xlBorder; }); });
+    if (months.length) { try { sm.addConditionalFormatting({ ref: `D${row + 1}:D${row + months.length}`, rules: [{ type: 'cellIs', operator: 'lessThan', formulae: [0], style: { font: { color: { argb: 'FFC0392B' }, bold: true } } }, { type: 'cellIs', operator: 'greaterThanOrEqual', formulae: [0], style: { font: { color: { argb: 'FF1E9E5A' }, bold: true } } }] }); } catch (e) {} }
+    row = row + months.length + 4;
+    // Gider dağılımı
+    sm.getCell('A' + (row - 1)).value = 'Gider dağılımı (hesaba göre)' + (multi ? ' (' + cur + ')' : ''); sm.getCell('A' + (row - 1)).font = { size: 13, bold: true, color: { argb: INK } };
+    hdr(sm, row, ['Hesap', 'Tutar', 'Pay']); const used = []; gid.forEach((x) => { const a = String(x.r.acc || ''); if (!used.includes(a)) used.push(a); });
+    used.forEach((a, i) => { const rw = row + 1 + i; const v = xlSum(gid.filter((x) => String(x.r.acc || '') === a), (x) => x.total);
+      sm.getCell('A' + rw).value = a; sm.getCell('A' + rw).alignment = { indent: 1 }; sm.getCell('A' + rw).border = xlBorder;
+      const b = sm.getCell('B' + rw); b.value = { formula: sIf('Giderler', 'H', `,Giderler!$D:$D,$A${rw}`), result: v }; b.numFmt = F; b.border = xlBorder;
+      const c = sm.getCell('C' + rw); c.value = { formula: `IF($C$${vr}=0,0,B${rw}/$C$${vr})`, result: out ? v / out : 0 }; c.numFmt = '0.0%'; c.border = xlBorder; });
+    if (used.length) { try { sm.addConditionalFormatting({ ref: `B${row + 1}:B${row + used.length}`, rules: [{ type: 'dataBar', gradient: false, cfvo: [{ type: 'num', value: 0 }, { type: 'max' }], color: { argb: 'FF9FC5F8' } }] }); } catch (e) {} }
+    row = row + used.length + 4;
+  });
+}
+
+function xlPeriods(wb, X) {
+  const { NAVY, hdr } = X; const all = xlRowsAll().filter((x) => x.iso); const curs = xlCurList();
+  const dstr = (d) => String(d.getUTCDate()).padStart(2, '0') + '.' + String(d.getUTCMonth() + 1).padStart(2, '0') + '.' + d.getUTCFullYear();
+  const addD = (d, n) => new Date(d.getTime() + n * 864e5);
+  const isoWeek = (d) => { const t = new Date(d.getTime()); t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7)); const y = t.getUTCFullYear(); const w = Math.ceil(((t - new Date(Date.UTC(y, 0, 1))) / 864e5 + 1) / 7); return [y, w]; };
+  const G = {
+    'Günlük': (iso) => { const d = xlUtc(iso); return { key: iso, a: dstr(d), s: d, e: d }; },
+    'Haftalık': (iso) => { const d = xlUtc(iso); const s = addD(d, -((d.getUTCDay() + 6) % 7)); const e = addD(s, 6); const [y, w] = isoWeek(s); return { key: s.toISOString().slice(0, 10), a: y + '-H' + String(w).padStart(2, '0') + ' (' + dstr(s).slice(0, 5) + ' – ' + dstr(e).slice(0, 5) + ')', s, e }; },
+    'Aylık': (iso) => { const d = xlUtc(iso); const s = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)); const e = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)); return { key: s.toISOString().slice(0, 10), a: XL_AYAD[s.getUTCMonth()] + ' ' + s.getUTCFullYear(), s, e }; },
+    'Yıllık': (iso) => { const y = +iso.slice(0, 4); return { key: String(y), a: String(y), s: new Date(Date.UTC(y, 0, 1)), e: new Date(Date.UTC(y, 11, 31)) }; },
+  };
+  const heads = ['Dönem', 'Başlangıç', 'Bitiş', 'Para birimi', 'Nakit gelir', 'Nakit gider', 'Banka gelir', 'Banka gider', 'Belirtilmemiş gelir', 'Belirtilmemiş gider', 'Toplam gelir', 'Toplam gider', 'Net'];
+  const cols = [['Nakit', 'gelir'], ['Nakit', 'gider'], ['Banka', 'gelir'], ['Banka', 'gider'], ['Belirtilmemiş', 'gelir'], ['Belirtilmemiş', 'gider']];
+  Object.keys(G).forEach((name) => {
+    const ws = wb.addWorksheet(name, { properties: { tabColor: { argb: 'FF2B73D6' } }, views: [{ state: 'frozen', ySplit: 1, xSplit: 1, showGridLines: false }] });
+    ws.columns = [{ width: 26 }, { width: 12 }, { width: 12 }, { width: 11 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 17 }, { width: 17 }, { width: 16 }, { width: 16 }, { width: 16 }];
+    hdr(ws, 1, heads); ws.getRow(1).height = 30; ws.getRow(1).alignment = { wrapText: true, vertical: 'middle' };
+    const map = new Map(); all.forEach((x) => { const g = G[name](x.iso); const k = g.key + '|' + x.cur; if (!map.has(k)) map.set(k, { g, cur: x.cur, rows: [] }); map.get(k).rows.push(x); });
+    const items = [...map.values()].sort((p, q) => (p.g.key < q.g.key ? -1 : p.g.key > q.g.key ? 1 : curs.indexOf(p.cur) - curs.indexOf(q.cur)));
+    items.forEach((it, i) => {
+      const rw = i + 2; const F = xlFmtOf(it.cur);
+      ws.getCell('A' + rw).value = it.g.a; ws.getCell('A' + rw).font = { bold: true }; ws.getCell('A' + rw).alignment = { indent: 1 };
+      ws.getCell('B' + rw).value = it.g.s; ws.getCell('C' + rw).value = it.g.e; ws.getCell('B' + rw).numFmt = ws.getCell('C' + rw).numFmt = 'dd.mm.yyyy'; ws.getCell('D' + rw).value = it.cur; ws.getCell('D' + rw).alignment = { horizontal: 'center' };
+      const vals = cols.map(([k, d]) => xlSum(it.rows.filter((x) => x.kasa === k && (d === 'gelir' ? x.dir === 'gelir' : x.dir !== 'gelir')), (x) => x.total));
+      cols.forEach(([k, d], j) => { const sh = d === 'gelir' ? 'Gelirler' : 'Giderler'; const c = ws.getCell(rw, 5 + j);
+        c.value = { formula: `SUMIFS(${sh}!$H:$H,${sh}!$L:$L,$D${rw},${sh}!$K:$K,"${k}",${sh}!$B:$B,">="&$B${rw},${sh}!$B:$B,"<="&$C${rw})`, result: vals[j] }; c.numFmt = F; });
+      const gi = vals[0] + vals[2] + vals[4], gd = vals[1] + vals[3] + vals[5];
+      [['K', `E${rw}+G${rw}+I${rw}`, gi], ['L', `F${rw}+H${rw}+J${rw}`, gd], ['M', `K${rw}-L${rw}`, gi - gd]].forEach(([l, f, v]) => { const c = ws.getCell(l + rw); c.value = { formula: f, result: v }; c.numFmt = F; c.font = { bold: true }; });
+      for (let c = 1; c <= 13; c++) ws.getCell(rw, c).border = xlBorder;
+    });
+    const n = items.length + 1;
+    if (items.length) {
+      try { ws.addConditionalFormatting({ ref: `M2:M${n}`, rules: [{ type: 'cellIs', operator: 'lessThan', formulae: [0], style: { font: { color: { argb: 'FFC0392B' }, bold: true } } }, { type: 'cellIs', operator: 'greaterThanOrEqual', formulae: [0], style: { font: { color: { argb: 'FF1E9E5A' }, bold: true } } }] }); } catch (e) {}
+      try { ws.autoFilter = { from: 'A1', to: 'M' + n }; } catch (e) {}
+      let tr = n + 2; ws.getCell('A' + tr).value = 'Toplam (para birimi ayrı)'; ws.getCell('A' + tr).font = { bold: true, color: { argb: NAVY } };
+      curs.filter((c) => items.some((it) => it.cur === c)).forEach((cur) => { tr++; const mine = items.filter((it) => it.cur === cur); const F = xlFmtOf(cur);
+        ws.getCell('A' + tr).value = 'Toplam'; ws.getCell('A' + tr).alignment = { indent: 1 }; ws.getCell('A' + tr).font = { bold: true }; ws.getCell('D' + tr).value = cur; ws.getCell('D' + tr).alignment = { horizontal: 'center' }; ws.getCell('D' + tr).font = { bold: true };
+        const tv = cols.map((_, j) => xlSum(mine, (it) => xlSum(it.rows.filter((x) => x.kasa === cols[j][0] && (cols[j][1] === 'gelir' ? x.dir === 'gelir' : x.dir !== 'gelir')), (x) => x.total)));
+        'EFGHIJ'.split('').forEach((l, j) => { const c = ws.getCell(l + tr); c.value = { formula: `SUMIFS(${l}$2:${l}$${n},$D$2:$D$${n},$D${tr})`, result: tv[j] }; c.numFmt = F; c.font = { bold: true }; c.border = { top: { style: 'thin', color: { argb: 'FF0E2B4D' } } }; });
+        const gi = tv[0] + tv[2] + tv[4], gd = tv[1] + tv[3] + tv[5];
+        [['K', `E${tr}+G${tr}+I${tr}`, gi], ['L', `F${tr}+H${tr}+J${tr}`, gd], ['M', `K${tr}-L${tr}`, gi - gd]].forEach(([l, f, v]) => { const c = ws.getCell(l + tr); c.value = { formula: f, result: v }; c.numFmt = F; c.font = { bold: true }; c.border = { top: { style: 'thin', color: { argb: 'FF0E2B4D' } } }; }); });
+    } else { ws.getCell('A2').value = 'Henüz kayıt yok.'; ws.getCell('A2').font = { color: { argb: 'FF5B6B82' } }; }
+  });
 }

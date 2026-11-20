@@ -120,7 +120,7 @@ function mxForecast(days) {
   for (let i = 1; i <= days; i++) { const d = addDays(today, i); cum += by[d] || 0; pts.push({ d, v: cum }); if (cum < min) { min = cum; minD = d; } }
   const at = (n) => (pts[Math.min(n, days)] || pts[pts.length - 1]).v - start;
   const inn = f.filter((e) => e.amt > 0).reduce((t, e) => t + e.amt, 0); const out = f.filter((e) => e.amt < 0).reduce((t, e) => t - e.amt, 0);
-  const l90 = addDays(today, -90); const rows = LEDGER.filter((r) => r.iso && r.iso >= l90 && r.iso <= today); const avg = rows.reduce((t, r) => t + (dirOf(r) === 'gelir' ? 1 : -1) * mxN(r.total), 0) / 90;
+  const l90 = addDays(today, -90); const rows = LEDGER.filter((r) => r.iso && r.iso >= l90 && r.iso <= today && curOkAll(r)); const avg = rows.reduce((t, r) => t + (dirOf(r) === 'gelir' ? 1 : -1) * mxN(r.total), 0) / 90;
   return { pts, ev: f, start, min, minD, d30: at(30), d60: at(60), d90: at(90), inn, out, avg, today, neg: start !== 0 || true ? min < 0 : false };
 }
 function mxChart(F) {
@@ -1260,7 +1260,7 @@ document.addEventListener('visibilitychange', () => { try { if (document.visibil
   const MKB = { ym: '', ch: 'hepsi' };
   const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   const chOf = (r) => r.ch || (r.src === 'Banka' ? 'banka' : '');
-  const inCh = (r, ch) => ch === 'hepsi' || chOf(r) === ch;
+  const inCh = (r, ch) => (ch === 'hepsi' ? curOkAll(r) : chOf(r) === ch);
   const ymOf = () => MKB.ym || fiIso().slice(0, 7);
   const shift = (ym, d) => { let y = +ym.slice(0, 4), m = +ym.slice(5, 7) + d; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); };
   const agg = (rs) => { let g = 0, d = 0; rs.forEach((r) => { const t = mxN(r.total); if (dirOf(r) === 'gelir') g += t; else d += t; }); return { g, d, n: g - d, c: rs.length }; };

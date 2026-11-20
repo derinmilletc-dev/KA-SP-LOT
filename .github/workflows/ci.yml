@@ -67,6 +67,7 @@ jobs:
         run: python3 tests/send_client.py
       - name: Para birimi ve fiş KDV (istemci)
         run: python3 tests/currency_client.py
+      - run: python3 tests/excel_kasa.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22

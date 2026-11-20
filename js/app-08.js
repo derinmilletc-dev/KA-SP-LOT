@@ -1041,7 +1041,7 @@ function kaWeekly() {
   const a0 = addDays(REF_ISO, -6), b1 = addDays(REF_ISO, -7), b0 = addDays(REF_ISO, -13); const by = kbSales();
   const sum = (x, y) => Object.keys(by).filter((d) => d >= x && d <= y).reduce((t, d) => t + by[d], 0);
   const cur = sum(a0, REF_ISO), prev = sum(b0, b1);
-  const gid = (x, y) => LEDGER.filter((r) => r.iso && r.iso >= x && r.iso <= y && dirOf(r) === 'gider').reduce((t, r) => t + (Number(r.total) || 0), 0);
+  const gid = (x, y) => LEDGER.filter((r) => r.iso && r.iso >= x && r.iso <= y && dirOf(r) === 'gider' && curOkAll(r)).reduce((t, r) => t + (Number(r.total) || 0), 0);
   const gc = gid(a0, REF_ISO), gp = gid(b0, b1);
   const pct = (c, p) => (p > 0 ? Math.round((c / p - 1) * 100) : null); const sg = (n) => (n == null ? '' : ' (' + (n >= 0 ? '+' : '') + n + '% geçen haftaya göre)');
   const tops = {}; SALES.filter((s) => s.date >= a0 && s.date <= REF_ISO).forEach((s) => { const k = prodKey(s.prod); tops[k] = tops[k] || { n: s.prod, q: 0, t: 0 }; tops[k].q += Number(s.qty) || 0; tops[k].t += Number(s.total) || 0; });

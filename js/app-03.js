@@ -886,7 +886,7 @@ function aiContext() {
     c.recete_marji = t(() => costRows().slice(0, 15).map((o) => ({ urun: o.name, maliyet: Math.round(o.cost * 100) / 100, marj_yuzde: o.margin == null ? null : Math.round(o.margin * 100), fiyat_zammi_yuzde: Math.round(o.drift) })));
   }
   if (mgr) c.siparisler = t(() => ORDERS.slice(0, 15).map((o) => ({ durum: o.status, tedarikci: (supById(o.supId) || {}).name })));
-  if (money) c.defter = t(() => ({ kayit_sayisi: LEDGER.length, toplam: Math.round(LEDGER.reduce((a, x) => a + (x.total || 0), 0)), son: LEDGER.slice(-25).map((x) => ({ tarih: x.date, aciklama: x.desc, hesap: x.acc, tutar: x.total })) }));
+  if (money) c.defter = t(() => ({ kayit_sayisi: LEDGER.length, toplam: Math.round(LEDGER.filter((x) => curOkAll(x)).reduce((a, x) => a + (x.total || 0), 0)), son: LEDGER.slice(-25).map((x) => ({ tarih: x.date, aciklama: x.desc, hesap: x.acc, tutar: x.total })) }));
   return c;
 }
 

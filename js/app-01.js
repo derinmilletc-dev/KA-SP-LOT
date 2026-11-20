@@ -1297,7 +1297,7 @@ function paketHTML(role) {
   ${plain(true, 'Tüm fişler okundu', `${RECEIPTS.length} fiş ve fatura kayıtlı`)}
   ${missRows.length ? exp('miss', `${missRows.length} işlemin belgesi eksik`, 'Hangileri olduğunu görmek için dokun', missBody) : plain(true, 'Eksik belge yok', 'Tüm harcamalar belgeyle eşleşti')}
   ${open.length ? exp('open', `${open.length} belge onay bekliyor`, 'Patron ya da muhasebeci onayında olanlar', openBody) : plain(true, 'Bekleyen onay yok', 'Tüm belgeler onaylandı')}
-  ${plain(true, 'Gider tablosu güncel', `${gp().length} gider satırı yazıldı, toplam ${fmt0(gp().reduce((a, r) => a + (Number(r.total) || 0), 0))}`)}
+  ${plain(true, 'Gider tablosu güncel', `${gp().length} gider satırı yazıldı, toplam ${fmt0(gp().filter((r) => curOkAll(r)).reduce((a, r) => a + (Number(r.total) || 0), 0))}`)}
   ${plain(true, 'Maaş ödemeleri listelendi', 'Maaşlar ekstreden okunur. Bordro hesabı bu üründe yok.')}
   <div class="kpis" style="margin-top:12px"><div class="kpi"><div class="l">Gelen</div><div class="v num">${fmt0(t.in)}</div></div><div class="kpi"><div class="l">Giden</div><div class="v num">${fmt0(t.out)}</div></div><div class="kpi"><div class="l">Belgesiz</div><div class="v num">${countStatus('belgesiz')}</div></div></div></div>
   <div class="card stack"><div><h3>Excel / CSV çıktısı</h3><p class="muted small">Gider tablosundan üretilir. Noktalı virgülle ayrılmış, Türkçe Excel'de doğrudan açılır.</p></div>
