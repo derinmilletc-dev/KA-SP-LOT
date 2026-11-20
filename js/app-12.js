@@ -2051,3 +2051,72 @@ NEWM.mbasla = function () {
   };
   const _ss2 = ixSetSheet; ixSetSheet = function () { const r = _ss2.apply(this, arguments); try { const m = S.settings && S.settings.kdvMode; if (m === 'muaf') { MXI.dec = MXI.dec || {}; if (MXI.dec.rate == null) MXI.dec.rate = '0'; } else if (m === 'kdvli' && S.settings.kdvRate) MXI.defRate = S.settings.kdvRate; } catch (e) {} return r; };
 }
+
+/* ===== v253: yeni tanıtım turu (rol ve duruma göre, görsel, kaydırmalı, son adımda kişisel başlangıç listesi) ===== */
+{
+  const st = document.createElement('style'); st.textContent = `
+  .tr-top{display:flex;gap:5px;align-items:center;margin:0 0 12px}.tr-top i{flex:1;height:5px;border-radius:3px;background:var(--line,#e5e8ee);cursor:pointer;transition:background .25s}.tr-top i.on{background:var(--acc,#2f6fed)}
+  .tr-skip{background:none;border:0;color:inherit;opacity:.6;font-size:13px;padding:4px 6px;margin-left:6px;cursor:pointer}
+  .tr-hero{height:168px;border-radius:22px;background:linear-gradient(135deg,var(--acc,#2f6fed) 0%,#6d5dfc 100%);display:grid;place-items:center;overflow:hidden;position:relative;margin-bottom:16px;color:#fff}
+  .tr-hero:before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12);right:-60px;top:-80px}.tr-hero:after{content:"";position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.1);left:-40px;bottom:-60px}
+  .tr-hero>*{position:relative;z-index:1}
+  .tr-c{background:#fff;color:#14213d;border-radius:14px;padding:9px 12px;box-shadow:0 10px 26px rgba(10,20,60,.25);font-size:12px;line-height:1.35}.tr-c b{display:block;font-size:15px}
+  .tr-pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:#e7f6ec;color:#15803d}.tr-pill.w{background:#fff3d6;color:#a35a00}
+  .tr-row{display:flex;gap:8px}.tr-bars{display:flex;gap:3px;align-items:flex-end;height:28px;margin-top:6px}.tr-bars i{flex:1;background:linear-gradient(#6d5dfc,#2f6fed);border-radius:3px 3px 0 0}
+  .tr-bc{height:34px;width:120px;background:repeating-linear-gradient(90deg,#14213d 0 2px,#fff 2px 4px,#14213d 4px 5px,#fff 5px 8px,#14213d 8px 11px,#fff 11px 13px);border-radius:3px}
+  .tr-gr{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:250px}.tr-gr span{height:16px;border-radius:5px;background:rgba(255,255,255,.2)}.tr-gr span.a{background:#fff}.tr-gr span.b{background:#ffd166}.tr-gr span.c{background:#7ee0b0}
+  .tr-bub{max-width:78%;padding:8px 11px;border-radius:14px;font-size:12.5px;line-height:1.35}.tr-bub.u{background:rgba(255,255,255,.95);color:#14213d;border-bottom-right-radius:4px;align-self:flex-end}.tr-bub.k{background:rgba(20,33,61,.55);color:#fff;border-bottom-left-radius:4px;align-self:flex-start}
+  .tr-bl{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:7px;text-align:left}.tr-bl li{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.4}.tr-bl li svg{flex:none;margin-top:2px;color:var(--acc,#2f6fed)}
+  .tr-chip{display:inline-block;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.2);font-size:12px;font-weight:600;margin:3px}
+  .tr-todo{display:flex;gap:10px;align-items:center;text-align:left;width:100%;padding:11px 12px;border-radius:14px;border:1px solid var(--line,#e5e8ee);background:var(--card,#fff);color:inherit;margin-top:8px;cursor:pointer}.tr-todo b{display:block;font-size:14px}.tr-todo span.s{font-size:12px;opacity:.65}
+  .tr-in-r{animation:trR .28s ease both}.tr-in-l{animation:trL .28s ease both}@keyframes trR{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}@keyframes trL{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+  .tr-float{animation:trF 3.2s ease-in-out infinite}@keyframes trF{50%{transform:translateY(-6px)}}
+  @media (prefers-reduced-motion:reduce){.tr-in-r,.tr-in-l,.tr-float{animation:none}}`; document.head.appendChild(st);
+}
+function tourSlides() {
+  const r = S.user && S.user.role; const nm = ((S.user && S.user.name) || '').split(' ')[0]; const done = {}; try { suSteps().forEach((x) => { done[x.k] = x.done; }); } catch (e) {}
+  const mk = (ico, t, s, v, bl, hero, go) => ({ ico, t, s, v, bl: bl || [], hero: hero || '', go: go || '' });
+  if (r === 'patron') {
+    const L = [
+      mk('sparkle', 'Hoş geldin' + (nm ? ', ' + esc(nm) : ''), esc(BIZ) + ' artık cebinde. 1 dakikada seni nelerin beklediğini göstereyim.', '', [], 'hi'),
+      mk('wallet', 'Muhasebe: nakit ve banka ayrı', 'Her gelir ve gider nakit ya da banka olarak işlenir. Bakiyelerin kayıtlarla birlikte kendiliğinden güncellenir.', 'muhasebe', ['Excel\'in varsa içeri alırsın, hangi düzende olursa olsun', 'Excel\'in yoksa Kais sıfırdan düzenli tutar', 'Günlük, haftalık, aylık, yıllık Excel çıktısı'], 'muh', 'Muhasebeyi aç'),
+      mk('receipt', 'Fiş ve fatura kendiliğinden', 'Fişin fotoğrafını çek, Kais okusun. Emin olamazsa sana sorar, tahmin yürütmez.', 'muhasebe', ['Faturayı müşterine PDF ekli e-postayla gönder', 'Vadesi geçenlere tek dokunuşla hatırlatma'], 'fis'),
+      done.stok ? null : mk('box', 'Stok, barkod ve son kullanma', 'Barkod okutarak sayım yap. Azalan ve tarihi yaklaşan ürünleri Kais takip eder.', 'stok', ['Barkodla hızlı stok sayımı', 'SKT yaklaşınca uyarı'], 'stok', 'Stoğa git'),
+      done.team ? null : mk('users', 'Ekip aynı sistemde', 'Vardiya, izin ve giriş çıkış saatleri otomatik. Çalışanlar davet koduyla kendi hesabıyla girer, yetkileri sen belirlersin.', 'ekip', ['Vardiya planı ve izin talepleri', 'Giriş çıkış ve mesai otomatik hesaplanır'], 'ekip', 'Ekibe git'),
+      mk('sparkle', 'Kais\'e sor', '"Bu ay neden zarardayım?" gibi sorular sor, Kais senin verinden cevap versin.', 'kaisai', [], 'ai', 'Kais\'e sor'),
+    ].filter(Boolean);
+    const todo = []; try { suSteps().filter((x) => !x.done).slice(0, 4).forEach((x) => todo.push(x)); } catch (e) {}
+    L.push({ ico: 'check', t: todo.length ? 'Başlamak için 2 dakika' : 'Her şey hazır', s: todo.length ? 'Sana kalan adımlar bunlar. Birine dokun, kaldığın yerden devam edersin.' : 'Kurulum adımlarını tamamlamışsın. İyi çalışmalar!', v: '', bl: [], hero: 'son', todo });
+    return L;
+  }
+  const T = TOUR[r] || []; const L = T.map((x, i) => mk(x.ico, i === 0 && nm ? 'Hoş geldin, ' + esc(nm) : x.t, x.s, x.v, [], 'ico', i === 0 ? '' : 'Şuraya git'));
+  if (L.length) { L[0].t = nm ? 'Hoş geldin, ' + esc(nm) : 'Hoş geldin'; L[0].s = x0(T[0]) ; L.push({ ico: 'check', t: 'Hazırsın', s: 'İstediğin zaman Yardım bölümünden turu yeniden izleyebilirsin.', v: '', bl: [], hero: 'son', todo: [] }); }
+  function x0(a) { return a.t + ': ' + a.s; }
+  return L;
+}
+function tourHero(h, x) {
+  if (h === 'hi') return `<div class="tr-hero"><div class="tr-float" style="text-align:center"><img src="/icon-192.png" width="64" height="64" alt="" style="border-radius:18px;box-shadow:0 10px 28px rgba(0,0,0,.3)"><div style="margin-top:12px">${['Muhasebe', 'Stok', 'Ekip', 'Kais'].map((c) => `<span class="tr-chip">${c}</span>`).join('')}</div></div></div>`;
+  if (h === 'muh') return `<div class="tr-hero"><div class="tr-row"><div class="tr-c" style="width:128px"><span style="opacity:.6">Nakit kasa</span><b>12.500 ₺</b><div class="tr-bars">${[40, 55, 35, 70, 60, 85, 75].map((v) => `<i style="height:${v}%"></i>`).join('')}</div></div><div class="tr-c" style="width:128px"><span style="opacity:.6">Banka</span><b>3.000 ₺</b><div class="tr-bars">${[70, 50, 60, 45, 65, 55, 80].map((v) => `<i style="height:${v}%"></i>`).join('')}</div></div></div><span style="position:absolute;right:12px;bottom:8px;font-size:10px;opacity:.7;z-index:2">örnek</span></div>`;
+  if (h === 'fis') return `<div class="tr-hero"><div class="tr-row" style="align-items:center"><div class="tr-c" style="width:120px"><span style="opacity:.6">Migros</span><div style="height:6px;border-radius:3px;background:#e3e7ee;margin:6px 0"></div><div style="height:6px;width:70%;border-radius:3px;background:#e3e7ee"></div><b style="margin-top:8px">248,90 ₺</b></div><div style="text-align:left"><span class="tr-pill">✓ Okundu</span><br><span class="tr-pill w" style="margin-top:6px">KDV %10</span></div></div></div>`;
+  if (h === 'stok') return `<div class="tr-hero"><div class="tr-c" style="text-align:center"><div class="tr-bc" style="margin:0 auto 8px"></div><span class="tr-pill w">SKT 3 gün</span> <span class="tr-pill">24 adet</span></div></div>`;
+  if (h === 'ekip') return `<div class="tr-hero"><div class="tr-gr">${['a b c a b c a', 'b a a c a b b', 'c c a b b a c'].map((r) => r.split(' ').map((c) => `<span class="${c}"></span>`).join('')).join('')}</div></div>`;
+  if (h === 'ai') return `<div class="tr-hero"><div style="display:flex;flex-direction:column;gap:8px;width:86%"><div class="tr-bub u">Bu ay neden zarardayım?</div><div class="tr-bub k">Kira ve hammadde geçen aya göre arttı. Detayını göstereyim mi?</div></div></div>`;
+  if (h === 'son') return `<div class="tr-hero" style="height:120px"><div class="tr-float">${ic('check', 54)}</div></div>`;
+  return `<div class="tr-hero" style="height:140px"><div class="tr-float" style="width:76px;height:76px;border-radius:24px;background:rgba(255,255,255,.2);display:grid;place-items:center">${ic(x.ico, 38)}</div></div>`;
+}
+NEWM.tour = (m) => {
+  const L = tourSlides(); if (!L.length) return sheet('Hoş geldin', ''); const i = Math.max(0, Math.min(m.i || 0, L.length - 1)); const x = L[i]; const last = i === L.length - 1;
+  const dots = `<div class="tr-top">${L.map((_, j) => `<i class="${j <= i ? 'on' : ''}" data-a="tourat" data-i="${j}"></i>`).join('')}${last ? '' : '<button class="tr-skip" data-a="tourskip">Atla</button>'}</div>`;
+  const bl = x.bl.length ? `<ul class="tr-bl">${x.bl.map((b) => `<li>${ic('check', 16)}<span>${b}</span></li>`).join('')}</ul>` : '';
+  const todo = (x.todo || []).map((t) => `<button type="button" class="tr-todo" data-a="tourdo" data-act="${t.a}" data-v="${t.v || ''}">${ic(t.ico || 'check', 20)}<span><b>${esc(t.t)}</b><span class="s">${esc(t.s)}</span></span></button>`).join('');
+  const go = x.v && x.go ? `<button class="btn sec block" style="margin-top:10px" data-a="tourgo" data-v="${x.v}">${esc(x.go)}</button>` : '';
+  const nav = `<div class="row" style="gap:8px;margin-top:14px">${i > 0 ? '<button class="btn sec" style="flex:1" data-a="tourprev">Geri</button>' : ''}<button class="btn" style="flex:2" data-a="${last ? 'tourend' : 'tournext'}">${last ? (x.todo && x.todo.length ? 'Sonra yaparım' : 'Başla') : (i === 0 ? 'Turu başlat' : 'İleri')}</button></div>`;
+  return sheet('Kais ile tanış', `${dots}<div class="${m.dir === 'l' ? 'tr-in-l' : 'tr-in-r'}">${tourHero(x.hero, x)}<h2 style="margin:0 0 6px;font-size:21px;line-height:1.25">${x.t}</h2><p class="muted" style="margin:0;line-height:1.5">${x.s}</p>${bl}${todo}${go}</div>${nav}`);
+};
+H.tournext = () => { const n = tourSlides().length; S.modal.i = Math.min((S.modal.i || 0) + 1, n - 1); S.modal.dir = 'r'; renderModal(); };
+H.tourprev = () => { S.modal.i = Math.max(0, (S.modal.i || 0) - 1); S.modal.dir = 'l'; renderModal(); };
+H.tourat = (el) => { const j = +el.dataset.i; S.modal.dir = j < (S.modal.i || 0) ? 'l' : 'r'; S.modal.i = j; renderModal(); };
+H.tourdo = (el) => { tourDone(); const a = el.dataset.act, v = el.dataset.v; S.modal = null; if (a === 'nav') H.nav({ dataset: { v } }); else if (H[a]) H[a](el); else render(); };
+document.addEventListener('touchstart', (e) => { if (S.modal && S.modal.type === 'tour' && e.touches[0]) S.tx = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
+document.addEventListener('touchend', (e) => { if (!(S.modal && S.modal.type === 'tour') || !S.tx || !e.changedTouches[0]) return; const dx = e.changedTouches[0].clientX - S.tx[0], dy = e.changedTouches[0].clientY - S.tx[1]; S.tx = null; if (Math.abs(dx) > 60 && Math.abs(dy) < 50) (dx < 0 ? H.tournext : H.tourprev)(); }, { passive: true });
+document.addEventListener('keydown', (e) => { if (S.modal && S.modal.type === 'tour' && !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) { if (e.key === 'ArrowRight') H.tournext(); else if (e.key === 'ArrowLeft') H.tourprev(); } });
