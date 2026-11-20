@@ -79,6 +79,7 @@ jobs:
       - run: python3 tests/roles_flow.py
       - run: python3 tests/rev_photo.py
       - run: python3 tests/patron_solo.py
+      - run: python3 tests/kurye.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22

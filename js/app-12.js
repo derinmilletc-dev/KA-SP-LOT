@@ -2229,3 +2229,217 @@ function rvSmart(f, m) {
 }
 H.rvsug = (el) => { const m = S.modal; if (!m || m.type !== 'rev') return; m.cat = el.dataset.v; const i = document.querySelector('#modal-root input[data-ch="rcat"], #modal-root select[data-ch="rcat"]'); if (i) { i.value = el.dataset.v; } const r = el.closest('.rv-sr'); if (r) r.remove(); toast('Kategori: ' + el.dataset.v, 'ok'); };
 (function () { try { const st = document.createElement('style'); st.textContent = '.rv-sm{margin:10px 0;padding:12px 14px;border-radius:14px;background:#EEF6EF;border:1px solid #CFE6D3}.rv-sm.w{background:#FFF6E6;border-color:#F3DDAE}.rv-sh{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:14px}.rv-sr{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;color:#2b3a4d}.rv-sr i{flex:0 0 8px;height:8px;border-radius:50%;background:#9aa7b8}.rv-sr.ok i{background:#2e9e5b}.rv-sr.warn i{background:#e08a00}.rv-sr.warn{font-weight:600}.rv-sr.sug{justify-content:space-between;gap:10px;padding-top:6px}'; document.head.appendChild(st); } catch (e) {} })();
+
+/* ===== v261: Kurye takibi (canlı konum, yardım çağrısı, çarpma algılama, patron haritası) ===== */
+ICONS.pin = '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>';
+ICONS.siren = '<path d="M7 18v-6a5 5 0 0110 0v6"/><path d="M5 18h14v3H5z"/><path d="M12 3v2M4.5 6.5L6 8M19.5 6.5L18 8"/>';
+const KT = { mem: { pos: {}, alarms: [], trail: {}, seq: 0 }, on: false, watch: null, hb: null, last: null, lastSend: 0, lastTrail: 0, still: null, wl: null, err: '', bat: null, sos: null, hold: null, tried: false, poll: null, rows: [], alarms: [], sel: null, showTrail: false, map: null, mk: {}, line: null, fitted: false, setupErr: '', tick: null, mo: null, impactT: null, askT: null, fail: 0 };
+const ktIs = (uid) => !!(S.settings && S.settings.kur && S.settings.kur[uid]);
+const ktMe = () => !!S.user && S.user.role === 'calisan' && ktIs(S.user.id);
+const ktBoss = () => !!S.user && ['patron', 'mudur'].includes(S.user.role);
+const ktAny = () => !!(S.settings && S.settings.kur && Object.keys(S.settings.kur).some((k) => S.settings.kur[k]));
+const ktCtx = () => { try { return pushCtx(); } catch (e) { return null; } };
+const ktConsent = () => { try { return !!localStorage.getItem('kp_kurcons_' + S.user.id); } catch (e) { return true; } };
+const ktWorking = () => { const a = typeof ATT !== 'undefined' && S.user && ATT[S.user.id]; return !!a && (a.state === 'working' || a.state === 'break'); };
+const ktErr = (e) => { const m = String((e && e.message) || e || ''); KT.setupErr = /relation .*kurye|schema cache|does not exist/i.test(m) ? 'Kurye tabloları kurulmamış. kurye_konum.sql dosyasını Supabase’de çalıştır.' : ''; return m; };
+const KTX = {
+  async send(p) { const x = ktCtx(); const row = Object.assign({ business_id: x ? x.bid : 'demo', app_uid: S.user.id, at: new Date().toISOString() }, p); KT.mem.pos[S.user.id] = Object.assign({ name: S.user.name }, row); if (!x) return; const r = await x.c.from('kurye_konum').upsert(row, { onConflict: 'business_id,app_uid' }); if (r.error) throw r.error; },
+  async trail(p) { const x = ktCtx(); const row = { business_id: x ? x.bid : 'demo', app_uid: S.user.id, lat: p.lat, lng: p.lng, spd: p.spd, at: new Date().toISOString() }; (KT.mem.trail[S.user.id] = KT.mem.trail[S.user.id] || []).push(row); if (!x) return; const r = await x.c.from('kurye_iz').insert(row); if (r.error) throw r.error; },
+  async alarm(kind, lat, lng) { const x = ktCtx(); const row = { business_id: x ? x.bid : 'demo', app_uid: S.user.id, kind, lat, lng, at: new Date().toISOString() }; if (!x) { row.id = ++KT.mem.seq; KT.mem.alarms.unshift(row); return; } const r = await x.c.from('kurye_alarm').insert(row); if (r.error) throw r.error; },
+  async all() { const x = ktCtx(); if (!x) return Object.values(KT.mem.pos); const r = await x.c.from('kurye_konum').select('*').eq('business_id', x.bid); if (r.error) throw r.error; return r.data || []; },
+  async alarms() { const x = ktCtx(); if (!x) return KT.mem.alarms.slice(); const r = await x.c.from('kurye_alarm').select('*').eq('business_id', x.bid).gte('at', new Date(Date.now() - 864e5).toISOString()).order('at', { ascending: false }).limit(20); if (r.error) throw r.error; return r.data || []; },
+  async ack(id) { const x = ktCtx(); if (!x) { const a = KT.mem.alarms.find((q) => q.id === id); if (a) { a.ack_by = S.user.id; a.ack_at = new Date().toISOString(); } return; } const r = await x.c.from('kurye_alarm').update({ ack_by: S.user.id, ack_at: new Date().toISOString() }).eq('id', id); if (r.error) throw r.error; },
+  async trailOf(uid) { const x = ktCtx(); if (!x) return (KT.mem.trail[uid] || []).slice(); const r = await x.c.from('kurye_iz').select('lat,lng,spd,at').eq('business_id', x.bid).eq('app_uid', uid).gte('at', new Date(Date.now() - 864e5).toISOString()).order('at', { ascending: true }).limit(1500); if (r.error) throw r.error; return r.data || []; },
+};
+/* --- kurye telefonu --- */
+function ktPush(onDuty) {
+  const l = KT.last; if (!l) return; KT.lastSend = Date.now();
+  KTX.send({ lat: l.lat, lng: l.lng, acc: l.acc, spd: l.spd, hdg: l.hdg, bat: KT.bat, on_duty: onDuty !== false, still_since: KT.still ? new Date(KT.still).toISOString() : null }).then(() => { KT.fail = 0; if (KT.err) { KT.err = ''; ktCardRefresh(); } }, (e) => { KT.fail++; ktErr(e); if (KT.fail >= 2) { KT.err = KT.setupErr ? 'Kurye sistemi henüz kurulmamış. Patronuna haber ver.' : 'Konum gönderilemiyor. İnternetini kontrol et.'; ktCardRefresh(); } });
+  if (Date.now() - KT.lastTrail >= 30000 && onDuty !== false) { KT.lastTrail = Date.now(); KTX.trail(l).catch(() => {}); }
+}
+function ktPos(p) {
+  const c = p.coords; const prev = KT.last; const kmh = c.speed != null && c.speed >= 0 ? c.speed * 3.6 : (prev ? Math.max(0, (typeof gDist === 'function' ? gDist(prev.lat, prev.lng, c.latitude, c.longitude) : 0) / Math.max(1, (p.timestamp - prev.t) / 1000) * 3.6) : 0);
+  KT.last = { lat: c.latitude, lng: c.longitude, acc: Math.round(c.accuracy || 0), spd: Math.round(kmh * 10) / 10, hdg: c.heading != null && !isNaN(c.heading) ? c.heading : null, t: p.timestamp };
+  if (kmh < 3) { if (!KT.still) KT.still = Date.now(); } else KT.still = null;
+  if (KT.err && /izin|konum alınamıyor/i.test(KT.err)) KT.err = '';
+  if (Date.now() - KT.lastSend >= 10000) ktPush();
+  ktCardRefresh();
+}
+function ktPosErr(e) { KT.err = e && e.code === 1 ? 'Konum izni kapalı. Telefon ayarlarından izin ver.' : 'Konum alınamıyor. Açık alana çık ya da biraz bekle.'; ktCardRefresh(); }
+async function ktWake() { try { if (navigator.wakeLock && KT.on && document.visibilityState === 'visible') KT.wl = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function ktStart() {
+  if (KT.on || !ktMe()) return;
+  if (!navigator.geolocation) { KT.err = 'Bu telefon konumu desteklemiyor.'; render(); return; }
+  if (!ktConsent()) { S.modal = { type: 'ktcons' }; renderModal(); return; }
+  KT.on = true; KT.err = ''; KT.fail = 0; KT.lastSend = 0; KT.lastTrail = 0; KT.still = null;
+  try { navigator.getBattery && navigator.getBattery().then((b) => { KT.bat = Math.round(b.level * 100); b.addEventListener('levelchange', () => { KT.bat = Math.round(b.level * 100); }); }); } catch (e) {}
+  KT.watch = navigator.geolocation.watchPosition(ktPos, ktPosErr, { enableHighAccuracy: true, maximumAge: 4000, timeout: 25000 });
+  KT.hb = setInterval(() => { if (KT.last && Date.now() - KT.lastSend >= 9500) ktPush(); }, 5000);
+  KT.tick = setInterval(ktCardTick, 1000);
+  ktWake(); ktMotionOn(); render();
+}
+function ktStop(send) {
+  if (KT.watch != null) { try { navigator.geolocation.clearWatch(KT.watch); } catch (e) {} KT.watch = null; }
+  clearInterval(KT.hb); clearInterval(KT.tick); try { KT.wl && KT.wl.release(); } catch (e) {} KT.wl = null; ktMotionOff();
+  const was = KT.on; KT.on = false; if (was && send !== false && KT.last) ktPush(false); KT.last = null; KT.still = null; KT.sos = null; if (was) render();
+}
+function ktMotionOn() {
+  if (KT.mo) return; const hit = (e) => { const a = e.accelerationIncludingGravity; if (!a) return; const g = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2); if (g >= 38 && !KT.impactT && !KT.askT && !(S.modal && S.modal.type === 'ktask')) { KT.impactT = setTimeout(() => { KT.impactT = null; if (KT.on && KT.last && (KT.last.spd || 0) < 8) ktAsk(); }, 6000); } };
+  KT.mo = hit; const add = () => window.addEventListener('devicemotion', hit);
+  try { if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then((r) => { if (r === 'granted') add(); }, () => {}); else add(); } catch (e) {}
+}
+function ktMotionOff() { if (KT.mo) { window.removeEventListener('devicemotion', KT.mo); KT.mo = null; } clearTimeout(KT.impactT); KT.impactT = null; }
+function ktAsk() { if (KT.askT) return; const until = Date.now() + 30000; S.modal = { type: 'ktask', until }; renderModal(); try { navigator.vibrate && navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) {} KT.askT = setInterval(() => { const m = S.modal; if (!m || m.type !== 'ktask') { clearInterval(KT.askT); KT.askT = null; return; } const left = Math.max(0, Math.ceil((until - Date.now()) / 1000)); const el = document.getElementById('kt-cd'); if (el) el.textContent = left; if (left <= 0) { clearInterval(KT.askT); KT.askT = null; S.modal = null; ktAlarm('carpma'); } }, 500); }
+H.ktok = () => { clearInterval(KT.askT); KT.askT = null; S.modal = null; renderModal(); toast('Sevindim. Dikkatli sür.', 'ok'); };
+H.ktask = () => { clearInterval(KT.askT); KT.askT = null; S.modal = null; ktAlarm('yardim'); };
+async function ktAlarm(kind) {
+  const l = KT.last; KT.sos = { kind, at: Date.now() }; render();
+  try { await KTX.alarm(kind, l ? l.lat : null, l ? l.lng : null); } catch (e) { ktErr(e); toast('Çağrı gönderilemedi. Telefonla ara.', 'bad'); return; }
+  try { pushSend(opMgrs(), kind === 'yardim' ? 'YARDIM ÇAĞRISI' : 'Olası kaza', S.user.name + (kind === 'yardim' ? ' yardım istedi.' : ' sert bir darbe yaşadı ve cevap vermedi.')); } catch (e) {}
+  try { navigator.vibrate && navigator.vibrate(200); } catch (e) {}
+}
+H.ktgo = () => { if (!ktMe()) return; if (!ktConsent()) { S.modal = { type: 'ktcons' }; renderModal(); return; } const a = ATT[S.user.id]; if (!(a && (a.state === 'working' || a.state === 'break'))) { _ci(); clkIn(S.user.id); if (CLOCK[0]) CLOCK[0].via = 'kurye'; } ktStart(); };
+H.ktend = () => { if (ktWorking()) H.clockout(); ktStop(); };
+H.ktcons = () => { try { localStorage.setItem('kp_kurcons_' + S.user.id, new Date().toISOString()); } catch (e) {} S.modal = null; renderModal(); H.ktgo(); };
+H.ktsosoff = () => { KT.sos = null; render(); };
+/* basılı tut: 2 sn */
+document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest('.kt-sos'); if (!b || KT.sos) return; b.classList.add('hold'); clearTimeout(KT.hold); KT.hold = setTimeout(() => { b.classList.remove('hold'); ktAlarm('yardim'); }, 2000); });
+['pointerup', 'pointercancel', 'pointerleave', 'contextmenu'].forEach((t) => document.addEventListener(t, (e) => { if (!KT.hold) return; const b = e.target.closest && e.target.closest('.kt-sos'); if (t === 'pointerleave' && !b) return; clearTimeout(KT.hold); KT.hold = null; document.querySelectorAll('.kt-sos.hold').forEach((x) => x.classList.remove('hold')); }, true));
+document.addEventListener('visibilitychange', () => { if (!KT.on) return; if (document.visibilityState === 'visible') { ktWake(); if (KT.last) ktPush(); } });
+const ktAgo = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); return s < 5 ? 'şimdi' : s < 60 ? s + ' sn önce' : s < 3600 ? Math.round(s / 60) + ' dk önce' : Math.round(s / 3600) + ' sa önce'; };
+function ktCardHTML() {
+  const sos = KT.sos ? `<div class="kt-sent">${ic('check', 18)}<div><b>${KT.sos.kind === 'yardim' ? 'Yardım çağrısı gönderildi' : 'Çarpma uyarısı gönderildi'}</b><small>Patronuna konumunla birlikte haber verildi. Telefonla da ara.</small></div><button type="button" class="kt-x" data-a="ktsosoff">Tamam</button></div>` : '';
+  if (!KT.on) return `<section class="kt kt-off"><div class="kt-h"><span class="kt-ic">${ic('pin', 22)}</span><div><b>Kurye modu</b><small>Mesaiye başlayınca konumun patronuna açılır.</small></div></div>${KT.err ? `<div class="kt-er">${esc(KT.err)}</div>` : ''}<button type="button" class="kt-go" data-a="ktgo">Mesaiye başla</button><p class="kt-fn">Sadece mesaideyken izlenirsin. Bitirince konum kapanır.</p></section>`;
+  const l = KT.last; const ago = l ? ktAgo(Date.now() - KT.lastSend) : 'konum bekleniyor';
+  return `<section class="kt kt-on"><div class="kt-h"><span class="kt-live"><i></i>Canlı</span><b>Konumun patronuna açık</b></div>
+  <div class="kt-st"><div><span>Son gönderim</span><b id="kt-ago">${ago}</b></div><div><span>Pil</span><b>${KT.bat != null ? '%' + KT.bat : '—'}</b></div><div><span>Sinyal</span><b>${l ? (l.acc <= 25 ? 'İyi' : l.acc <= 80 ? 'Orta' : 'Zayıf') + ' <small>±' + l.acc + ' m</small>' : '—'}</b></div></div>
+  ${KT.err ? `<div class="kt-er">${esc(KT.err)}</div>` : ''}${sos}
+  <p class="kt-fn">Ekranı kapatma ve uygulamayı açık tut. Yoksa konum durur.</p>
+  <div class="kt-act"><button type="button" class="kt-sos" aria-label="Yardım çağır, 2 saniye basılı tut"><svg class="kt-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/></svg><span>${ic('siren', 30)}<b>YARDIM</b><small>2 sn basılı tut</small></span></button><button type="button" class="kt-end" data-a="ktend">Mesaiyi bitir</button></div></section>`;
+}
+function ktCardRefresh() { const c = document.querySelector('.kt'); if (!c || !(S.user && S.user.role === 'calisan')) return; const w = document.createElement('div'); w.innerHTML = ktCardHTML(); const n = w.firstElementChild; if (n && !document.querySelector('.kt-sos.hold')) c.replaceWith(n); }
+function ktCardTick() { const el = document.getElementById('kt-ago'); if (el && KT.lastSend) el.textContent = ktAgo(Date.now() - KT.lastSend); }
+/* --- patron tarafı --- */
+function ktStatus(r) {
+  const age = Date.now() - new Date(r.at).getTime(); const stillMin = r.still_since ? (Date.now() - new Date(r.still_since).getTime()) / 60000 : 0;
+  if (r.on_duty === false) return { k: 'off', t: 'Mesai dışı', c: '#8895A7' };
+  if (age > 180000) return { k: 'lost', t: 'Sinyal yok · ' + ktAgo(age).replace(' önce', ''), c: '#D64545' };
+  if (stillMin >= 10) return { k: 'still', t: 'Duruyor · ' + Math.round(stillMin) + ' dk', c: '#E08A00' };
+  if ((r.spd || 0) >= 5) return { k: 'move', t: 'Yolda · ' + Math.round(r.spd) + ' km/s', c: '#2E9E5B' };
+  return { k: 'idle', t: 'Bekliyor', c: '#2F7BE0' };
+}
+const ktNm = (uid) => { const u = byId(uid); return u ? u.name : uid; };
+const ktIni = (n) => String(n || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase();
+function ktRowsHTML() {
+  const ids = Object.keys((S.settings && S.settings.kur) || {}).filter((k) => S.settings.kur[k]);
+  if (!ids.length) return `<div class="kt-empty">${ic('pin', 28)}<b>Henüz kurye yok</b><p>Ekip sayfasında bir çalışanın kartını aç, “Kurye” anahtarını aç.</p></div>`;
+  return ids.map((uid) => { const r = KT.rows.find((x) => x.app_uid === uid); const st = r ? ktStatus(r) : { k: 'off', t: 'Henüz konum yok', c: '#8895A7' }; const age = r ? ktAgo(Date.now() - new Date(r.at).getTime()) : '';
+    return `<button type="button" class="kt-r${KT.sel === uid ? ' on' : ''}" data-a="ktsel" data-id="${uid}"><span class="kt-av" style="background:${st.c}">${esc(ktIni(ktNm(uid)))}</span><span class="kt-rn"><b>${esc(ktNm(uid))}</b><small>${esc(st.t)}${age && st.k !== 'lost' ? ' · ' + esc(age) : ''}</small></span>${r && r.bat != null ? `<span class="kt-bt${r.bat <= 20 ? ' lo' : ''}">%${r.bat}</span>` : ''}</button>`; }).join('');
+}
+function ktAlarmHTML(a) { return `<div class="kt-al"><span class="kt-ai">${ic('siren', 22)}</span><div class="grow"><b>${esc(ktNm(a.app_uid))} ${a.kind === 'yardim' ? 'yardım istedi' : 'sert darbe yaşadı, cevap vermedi'}</b><small>${esc(ktAgo(Date.now() - new Date(a.at).getTime()))}${a.lat != null ? '' : ' · konum yok'}</small></div><div class="kt-ab">${a.lat != null ? `<button type="button" class="btn sm" data-a="ktsel" data-id="${a.app_uid}">Haritada gör</button>` : ''}<button type="button" class="btn sm sec" data-a="ktack" data-id="${a.id}">Gördüm</button></div></div>`; }
+function viewKurye() {
+  const open = KT.alarms.filter((a) => !a.ack_at);
+  return `<div class="stack-lg kt-pg"><div class="kt-top"><h2>Kuryeler</h2><p class="muted small">Sadece mesaideki kuryeler görünür. Konum 10 saniyede bir yenilenir.</p></div>
+  ${KT.setupErr ? `<div class="callout warn">${ic('alert')}<div>${esc(KT.setupErr)}</div></div>` : ''}
+  <div id="kt-als">${open.map(ktAlarmHTML).join('')}</div>
+  <div class="kt-map-w"><div id="kt-map" class="kt-map"></div><div class="kt-mh" id="kt-mh">Harita yükleniyor</div></div>
+  <div class="kt-tr"${KT.sel ? '' : ' hidden'} id="kt-tr"><button type="button" class="btn sm sec" data-a="kttrail">${KT.showTrail ? 'Rotayı gizle' : 'Son 24 saatlik rotayı göster'}</button></div>
+  <div class="kt-list" id="kt-list">${ktRowsHTML()}</div></div>`;
+}
+H.ktsel = (el) => { KT.sel = KT.sel === el.dataset.id && !(el.closest && el.closest('.kt-al')) ? null : el.dataset.id; KT.showTrail = false; if (S.view !== 'kurye') { S.view = 'kurye'; render(); } else { const l = document.getElementById('kt-list'); if (l) l.innerHTML = ktRowsHTML(); const t = document.getElementById('kt-tr'); if (t) { t.hidden = !KT.sel; t.firstElementChild.textContent = 'Son 24 saatlik rotayı göster'; } ktMarkers(true); } };
+H.kttrail = async () => { KT.showTrail = !KT.showTrail; const b = document.querySelector('#kt-tr button'); if (b) b.textContent = KT.showTrail ? 'Rotayı gizle' : 'Son 24 saatlik rotayı göster'; if (KT.line && KT.map) { KT.map.removeLayer(KT.line); KT.line = null; } if (!KT.showTrail || !KT.sel || !KT.map || !window.L) return; try { const t = await KTX.trailOf(KT.sel); if (!t.length) { toast('Bu kurye için rota kaydı yok.', 'warn'); return; } KT.line = L.polyline(t.map((p) => [p.lat, p.lng]), { color: '#2F7BE0', weight: 4, opacity: 0.8 }).addTo(KT.map); KT.map.fitBounds(KT.line.getBounds(), { padding: [30, 30] }); } catch (e) { toast('Rota alınamadı.', 'warn'); } };
+H.ktack = async (el) => { try { await KTX.ack(isNaN(Number(el.dataset.id)) ? el.dataset.id : Number(el.dataset.id)); } catch (e) { toast('Kaydedilemedi.', 'bad'); return; } const a = KT.alarms.find((q) => String(q.id) === String(el.dataset.id)); if (a) a.ack_at = new Date().toISOString(); ktBanner(); const w = document.getElementById('kt-als'); if (w) w.innerHTML = KT.alarms.filter((q) => !q.ack_at).map(ktAlarmHTML).join(''); };
+function ktLoadLeaflet() { if (window.L) return Promise.resolve(); if (KT.lp) return KT.lp; KT.lp = new Promise((res, rej) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'vendor/leaflet/leaflet.css'; document.head.appendChild(l); const s = document.createElement('script'); s.src = 'vendor/leaflet/leaflet.js'; s.onload = res; s.onerror = () => { KT.lp = null; rej(new Error('leaflet')); }; document.head.appendChild(s); }); return KT.lp; }
+async function ktMapInit() {
+  const el = document.getElementById('kt-map'); if (!el) return; const h = document.getElementById('kt-mh');
+  try { await ktLoadLeaflet(); } catch (e) { if (h) h.textContent = 'Harita yüklenemedi.'; return; }
+  const el2 = document.getElementById('kt-map'); if (!el2) return; if (KT.map) { try { KT.map.remove(); } catch (e) {} KT.map = null; KT.mk = {}; KT.line = null; }
+  const sh = S.settings && S.settings.shop; const c0 = sh && sh.lat ? [sh.lat, sh.lng] : [39, 35];
+  KT.map = L.map(el2, { zoomControl: false, attributionControl: true }).setView(c0, sh && sh.lat ? 14 : 5); L.control.zoom({ position: 'bottomright' }).addTo(KT.map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(KT.map);
+  KT.fitted = false; ktMarkers(true); if (h) h.hidden = true;
+}
+function ktMarkers(fly) {
+  if (!KT.map || !window.L) return; const seen = {}; const pts = [];
+  KT.rows.forEach((r) => { if (r.lat == null) return; const st = ktStatus(r); seen[r.app_uid] = 1; const ll = [r.lat, r.lng]; pts.push(ll);
+    const html = `<div class="kt-pin${KT.sel === r.app_uid ? ' sel' : ''}${st.k === 'move' ? ' mv' : ''}" style="--c:${st.c}"><b>${esc(ktIni(ktNm(r.app_uid)))}</b></div>`; const ic2 = L.divIcon({ html, className: 'kt-pinw', iconSize: [44, 44], iconAnchor: [22, 22] });
+    if (KT.mk[r.app_uid]) { KT.mk[r.app_uid].setLatLng(ll).setIcon(ic2); } else { KT.mk[r.app_uid] = L.marker(ll, { icon: ic2 }).addTo(KT.map).on('click', () => H.ktsel({ dataset: { id: r.app_uid } })); } });
+  Object.keys(KT.mk).forEach((k) => { if (!seen[k]) { KT.map.removeLayer(KT.mk[k]); delete KT.mk[k]; } });
+  const s = KT.sel && KT.rows.find((r) => r.app_uid === KT.sel);
+  if (s && s.lat != null && fly) KT.map.flyTo([s.lat, s.lng], Math.max(KT.map.getZoom(), 16), { duration: 0.6 });
+  else if (!KT.fitted && pts.length) { KT.fitted = true; if (pts.length === 1) KT.map.setView(pts[0], 15); else KT.map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 }); }
+}
+function ktBanner() {
+  let b = document.getElementById('kt-banner'); const open = KT.alarms.filter((a) => !a.ack_at && (Date.now() - new Date(a.at).getTime()) < 864e5); const lost = KT.rows.filter((r) => r.on_duty !== false && ktStatus(r).k === 'lost' && S.settings.kur && S.settings.kur[r.app_uid]);
+  if (!ktBoss() || S.view === 'kurye' || (!open.length && !lost.length)) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'kt-banner'; document.body.appendChild(b); }
+  const a = open[0]; b.className = a ? 'red' : 'amb';
+  b.innerHTML = a ? `<span>${ic('siren', 22)}</span><div class="grow"><b>${esc(ktNm(a.app_uid))} ${a.kind === 'yardim' ? 'YARDIM İSTEDİ' : 'KAZA OLABİLİR'}</b><small>${esc(ktAgo(Date.now() - new Date(a.at).getTime()))}${open.length > 1 ? ' · ' + (open.length - 1) + ' çağrı daha' : ''}</small></div><button type="button" data-a="ktsel" data-id="${a.app_uid}">Haritada gör</button><button type="button" data-a="ktack" data-id="${a.id}">Gördüm</button>` : `<span>${ic('alert', 22)}</span><div class="grow"><b>${esc(ktNm(lost[0].app_uid))} ile bağlantı koptu</b><small>${esc(ktAgo(Date.now() - new Date(lost[0].at).getTime()))} konum gelmedi${lost.length > 1 ? ' · ' + (lost.length - 1) + ' kurye daha' : ''}</small></div><button type="button" data-a="ktsel" data-id="${lost[0].app_uid}">Haritada gör</button>`;
+}
+async function ktPoll() {
+  if (!ktBoss() || !ktAny()) { const b = document.getElementById('kt-banner'); if (b) b.remove(); return; }
+  try { const [rows, al] = await Promise.all([KTX.all(), KTX.alarms()]); KT.rows = rows; KT.alarms = al; KT.setupErr = ''; } catch (e) { ktErr(e); }
+  ktBanner();
+  if (S.view === 'kurye') { const l = document.getElementById('kt-list'); if (l) l.innerHTML = ktRowsHTML(); const w = document.getElementById('kt-als'); if (w) w.innerHTML = KT.alarms.filter((q) => !q.ack_at).map(ktAlarmHTML).join(''); ktMarkers(false); }
+}
+(function () { try { const d = Object.getOwnPropertyDescriptor(NAV, 'mudur'); if (d && d.get && !d.get.__kt) { const g = d.get; const ng = function () { const a = g.call(this); if (ktAny() && !a.some((x) => x[0] === 'kurye')) a.splice(Math.min(3, a.length), 0, ['kurye', 'Kuryeler', 'pin']); return a; }; ng.__kt = 1; Object.defineProperty(NAV, 'mudur', { configurable: true, enumerable: true, get: ng }); } } catch (e) {} })();
+function ktNavSync() { const want = ktAny(); [['patron', 3, true]].forEach(([r, at, more]) => { const n = NAV[r]; if (!n) return; const i = n.findIndex((x) => x[0] === 'kurye'); if (want && i < 0) { const it = ['kurye', 'Kuryeler', 'pin']; if (more) it.push('more'); n.splice(Math.min(at, n.length), 0, it); } else if (!want && i >= 0) n.splice(i, 1); }); }
+{
+  const _r = render;
+  render = function () { try { ktNavSync(); } catch (e) {} const r = _r.apply(this, arguments);
+    try {
+      if (ktBoss() && ktAny() && !KT.poll) { KT.poll = setInterval(ktPoll, 9000); setTimeout(ktPoll, 300); } else if ((!ktBoss() || !ktAny()) && KT.poll) { clearInterval(KT.poll); KT.poll = null; ktBanner(); }
+      ktBanner();
+      if (S.view === 'kurye' && ktBoss()) setTimeout(() => { ktMapInit(); const l = document.getElementById('kt-list'); if (l) l.innerHTML = ktRowsHTML(); }, 0);
+      else if (KT.map && !document.getElementById('kt-map')) { try { KT.map.remove(); } catch (e) {} KT.map = null; KT.mk = {}; }
+      if (ktMe() && !KT.on && !KT.tried && ktWorking() && ktConsent()) { KT.tried = true; setTimeout(ktStart, 400); }
+    } catch (e) {}
+    return r; };
+  const _v = viewHTML;
+  viewHTML = function () {
+    if (S.view === 'kurye' && ktBoss()) return viewKurye();
+    let h = _v.apply(this, arguments);
+    if (S.view === 'bugun' && ktMe() && typeof h === 'string') { const b = document.createElement('div'); b.innerHTML = h; const c = b.firstElementChild; if (c) { c.insertAdjacentHTML('afterbegin', ktCardHTML()); h = b.innerHTML; } }
+    return h; };
+  const _ci = clkIn; clkIn = function (uid) { const r = _ci.apply(this, arguments); if (S.user && uid === S.user.id && ktMe()) setTimeout(() => { if (!KT.on) ktStart(); }, 150); return r; };
+  const _co = clkOut; clkOut = function (uid) { const r = _co.apply(this, arguments); if (S.user && uid === S.user.id && KT.on) setTimeout(() => ktStop(), 0); return r; };
+  const _ed = empDrawer;
+  empDrawer = function (id) { let h = _ed.apply(this, arguments); const u = byId(id); if (!u || u.role !== 'calisan' || !ktBoss()) return h; const on = ktIs(id); const blk = `<div class="kt-sw"><span class="kt-ic">${ic('pin', 18)}</span><div class="grow"><b>Kurye</b><small>${on ? 'Mesaideyken konumu sana görünür.' : 'Açarsan mesaideyken konumunu görürsün.'}</small></div><button type="button" class="kt-tg${on ? ' on' : ''}" data-a="kttog" data-id="${id}" role="switch" aria-checked="${on}" aria-label="Kurye"><i></i></button></div>`; return h.includes('class="dr-tabs"') ? h.replace('<div class="dr-tabs"', blk + '<div class="dr-tabs"') : h; };
+}
+H.kttog = (el) => { const id = el.dataset.id; if (!S.settings.kur) S.settings.kur = {}; S.settings.kur[id] = !S.settings.kur[id]; try { pSched(); } catch (e) {} ktNavSync(); render(); if (S.modal) renderModal(); toast(S.settings.kur[id] ? ktNm(id).split(' ')[0] + ' artık kurye.' : 'Kurye kapatıldı.', 'ok'); };
+NEWM.ktcons = () => sheet('Konum paylaşımı', `<p>Mesaideyken konumun <b>patronuna ve müdüre</b> görünür. Amaç: kaza ya da sorun olursa sana hemen ulaşmak.</p><ul class="kt-ul"><li>Sadece <b>mesaiye başlayınca</b> açılır, <b>mesaiyi bitirince</b> kapanır.</li><li>Konumun 24 saat saklanır, sonra silinir.</li><li>YARDIM düğmesi patronuna konumunla çağrı gönderir.</li><li>Sert bir darbe olursa “İyi misin?” diye sorulur. Cevap vermezsen patronuna haber gider.</li></ul><p class="small muted">Telefon izin isteyecek. “Uygulamayı kullanırken” seçeneğini seç.</p><div class="row"><button class="btn grow" data-a="ktcons">Anladım, başla</button><button class="btn sec" data-a="closemodal">Vazgeç</button></div>`);
+NEWM.ktask = () => sheet('İyi misin?', `<div class="kt-ask"><div class="kt-cdw"><b id="kt-cd">30</b></div><p>Sert bir darbe algıladık. Cevap vermezsen patronuna yardım çağrısı gider.</p><button class="btn block kt-okb" data-a="ktok">İyiyim</button><button class="btn sec block" data-a="ktask">Yardım çağır</button></div>`);
+(function () { try { const st = document.createElement('style'); st.textContent = `
+.kt{margin:0 0 14px;border-radius:22px;padding:18px;color:#fff;background:linear-gradient(135deg,#0F2A52,#1B4F9C);box-shadow:0 10px 26px rgba(15,42,82,.25);position:relative;overflow:hidden}
+.kt-off{background:linear-gradient(135deg,#16355F,#2A63B8)}
+.kt-h{display:flex;align-items:center;gap:12px}.kt-h b{display:block;font-size:17px}.kt-h small{display:block;opacity:.8;font-size:13px;margin-top:2px}
+.kt-ic{flex:0 0 42px;height:42px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.14)}
+.kt-go{width:100%;margin-top:16px;border:0;border-radius:16px;padding:17px;font:700 17px/1 inherit;color:#0F2A52;background:#fff;cursor:pointer}.kt-go:active{transform:scale(.98)}
+.kt-fn{margin:12px 0 0;font-size:12.5px;opacity:.78}
+.kt-live{display:inline-flex;align-items:center;gap:7px;background:rgba(46,158,91,.22);color:#9CF0BE;border-radius:99px;padding:5px 11px;font-size:12.5px;font-weight:700}
+.kt-live i{width:9px;height:9px;border-radius:50%;background:#3DDC84;animation:ktp 1.6s infinite}@keyframes ktp{0%{box-shadow:0 0 0 0 rgba(61,220,132,.7)}100%{box-shadow:0 0 0 12px rgba(61,220,132,0)}}
+.kt-st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.kt-st div{background:rgba(255,255,255,.1);border-radius:14px;padding:10px 11px}.kt-st span{display:block;font-size:11.5px;opacity:.75}.kt-st b{display:block;margin-top:3px;font-size:15px}.kt-st small{font-weight:500;opacity:.8}
+.kt-er{margin-top:12px;background:rgba(214,69,69,.25);border:1px solid rgba(255,160,160,.5);border-radius:12px;padding:10px 12px;font-size:13px}
+.kt-sent{display:flex;gap:10px;align-items:center;margin-top:12px;background:rgba(61,220,132,.2);border-radius:14px;padding:11px 12px;font-size:13px}.kt-sent b{display:block}.kt-sent small{display:block;opacity:.85}.kt-x{margin-left:auto;border:0;border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.2);color:#fff;font-weight:600}
+.kt-act{display:flex;align-items:center;gap:14px;margin-top:14px}
+.kt-sos{position:relative;flex:0 0 132px;height:132px;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FF6B5E,#D93025);color:#fff;box-shadow:0 8px 22px rgba(217,48,37,.5);touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.kt-sos span{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px}.kt-sos b{font-size:17px;letter-spacing:.5px}.kt-sos small{font-size:10.5px;opacity:.9}
+.kt-ring{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);transform:rotate(-90deg);pointer-events:none}.kt-ring circle{fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-dasharray:289;stroke-dashoffset:289}
+.kt-sos.hold .kt-ring circle{animation:ktr 2s linear forwards}@keyframes ktr{to{stroke-dashoffset:0}}.kt-sos.hold{transform:scale(.96)}
+.kt-end{flex:1;border:1.5px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:16px;padding:15px 10px;font:600 15px/1.2 inherit}
+.kt-ask{text-align:center}.kt-cdw{width:110px;height:110px;margin:6px auto 12px;border-radius:50%;display:grid;place-items:center;background:#FFF0E0;border:6px solid #F5A340}.kt-cdw b{font-size:44px;color:#B35C00}.kt-okb{margin-bottom:8px}
+.kt-ul{padding-left:18px;margin:10px 0}.kt-ul li{margin:6px 0}
+.kt-pg h2{margin:0}.kt-top{margin-bottom:2px}
+.kt-map-w{position:relative;border-radius:20px;overflow:hidden;border:1px solid #DDE5F1;background:#E8EEF6}.kt-map{height:min(52vh,430px);min-height:280px;width:100%}.kt-mh{position:absolute;inset:0;display:grid;place-items:center;color:#5B6B80;font-size:14px;pointer-events:none}.kt-mh[hidden]{display:none}
+.kt-list{display:flex;flex-direction:column;gap:8px}
+.kt-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid #E1E8F2;border-radius:16px;padding:11px 13px;cursor:pointer}.kt-r.on{border-color:#2F7BE0;box-shadow:0 0 0 3px rgba(47,123,224,.15)}
+.kt-av{flex:0 0 40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}.kt-rn{flex:1;min-width:0}.kt-rn b{display:block;font-size:15px}.kt-rn small{display:block;color:#5B6B80;font-size:12.5px;margin-top:1px}
+.kt-bt{font-size:12px;font-weight:700;color:#2E7D4F;background:#E6F5EC;border-radius:8px;padding:4px 8px}.kt-bt.lo{color:#B42318;background:#FDECEA}
+.kt-empty{text-align:center;padding:30px 16px;color:#5B6B80}.kt-empty b{display:block;color:#13233A;margin:8px 0 4px;font-size:16px}
+.kt-al{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FDECEA;border:1px solid #F3B6AE;border-radius:16px;padding:12px 14px}.kt-ai{color:#D93025}.kt-al b{display:block;color:#8F1B12}.kt-al small{color:#8F1B12;opacity:.85}.kt-ab{display:flex;gap:8px;width:100%}.kt-ab .btn{flex:1}
+.kt-pinw{background:none;border:0}.kt-pin{width:44px;height:44px;border-radius:50%;background:var(--c);border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.35);display:grid;place-items:center;color:#fff;font-size:14px;transition:transform .2s}.kt-pin.sel{transform:scale(1.2);box-shadow:0 0 0 4px rgba(47,123,224,.4),0 4px 12px rgba(0,0,0,.35)}.kt-pin.mv{animation:ktm 2s infinite}@keyframes ktm{50%{box-shadow:0 0 0 10px rgba(46,158,91,.25),0 4px 12px rgba(0,0,0,.35)}}
+.kt-sw{display:flex;align-items:center;gap:12px;margin:10px 0;padding:12px 14px;border-radius:16px;background:#F3F7FD;border:1px solid #DCE6F4}.kt-sw .kt-ic{background:#DCE9FB;color:#1B5FB8;flex-basis:38px;height:38px}.kt-sw b{display:block}.kt-sw small{display:block;color:#5B6B80;font-size:12.5px}
+.kt-tg{flex:0 0 50px;height:30px;border:0;border-radius:99px;background:#C3CEDD;position:relative;cursor:pointer;transition:background .2s}.kt-tg i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s}.kt-tg.on{background:#2E9E5B}.kt-tg.on i{left:23px}
+#kt-banner{position:fixed;z-index:9999;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;right:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:18px;color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.3);animation:ktb .3s}@keyframes ktb{from{transform:translateY(-20px);opacity:0}}
+#kt-banner.red{background:#D93025}#kt-banner.amb{background:#C97A00}#kt-banner b{display:block}#kt-banner small{display:block;opacity:.9}#kt-banner button{border:0;border-radius:12px;padding:9px 13px;font-weight:700;background:#fff;color:#13233A}#kt-banner button+button{background:rgba(255,255,255,.25);color:#fff}
+@media (prefers-reduced-motion:reduce){.kt-live i,.kt-pin.mv,#kt-banner{animation:none}}`; document.head.appendChild(st); } catch (e) {} })();
