@@ -250,7 +250,7 @@ function bindOut(){const o=$('#out'); if(o) o.onclick=async()=>{await sb.auth.si
 function soonView(sent){
   document.body.classList.add('lg');
   const sv=(b,n)=>`<svg width="${n||20}" height="${n||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
-  const mark=`<svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.6" aria-hidden="true"><circle cx="20" cy="20" r="11"/><circle cx="20" cy="20" r="4.4" fill="#fff" stroke="none"/>${[0,45,90,135,180,225,270,315].map(a=>`<circle cx="${(20+16.5*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(20+16.5*Math.sin(a*Math.PI/180)).toFixed(1)}" r="2.3" fill="#fff" stroke="none"/>`).join('')}</svg>`;
+  const mark=`<img src="/icon-192.png" width="30" height="30" alt="" style="display:block;border-radius:9px">`;
   app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>Üretici ve toptancı ağı yakında</h1><p>İşletmelerle doğrudan buluşacağınız panel çok yakında açılıyor.</p></div>
    <div class="th-ic">${sv('<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.2" r="1.7"/><circle cx="16.5" cy="17.2" r="1.7"/><path d="M5 7V4.5h6V7M8 4.5V7"/>',40)}</div></div></header>
   <section class="tc">${sent?`<h2>Teşekkürler</h2><p class="sub">Bilgilerini aldık. Panel açıldığında seni ilk bilgilendirenlerden biri olacağız.</p><p class="tback"><a href="/">Ana sayfaya dön</a></p>`:`<h2>Bekleme listesi</h2><p class="sub">Bilgilerini bırak, panel açılınca sana haber verelim. Yakındaki işletmelerin ilanlarını görüp teklif vereceksin.</p>
@@ -281,7 +281,7 @@ function loginView(mode){
   document.body.classList.add('lg');
   const prev=(document.getElementById('em')||{}).value||'';
   const sv=(b,n)=>`<svg width="${n||20}" height="${n||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
-  const mark=`<svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="2.6" aria-hidden="true"><circle cx="20" cy="20" r="11"/><circle cx="20" cy="20" r="4.4" fill="#fff" stroke="none"/>${[0,45,90,135,180,225,270,315].map(a=>`<circle cx="${(20+16.5*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(20+16.5*Math.sin(a*Math.PI/180)).toFixed(1)}" r="2.3" fill="#fff" stroke="none"/>`).join('')}</svg>`;
+  const mark=`<img src="/icon-192.png" width="30" height="30" alt="" style="display:block;border-radius:9px">`;
   app.innerHTML=`<header class="th"><div class="th-in"><div><div class="th-brand">${mark}<span>KaisPilot</span></div><h1>KaisPilot Toptancı</h1><p>${mode==='up'?'Yeni toptancı hesabı oluşturun.':'Toptancı hesabınıza giriş yapın.'}</p></div>
    <div class="th-ic">${sv('<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10h4l3 3.2V16h-7"/><circle cx="6.5" cy="17.2" r="1.7"/><circle cx="16.5" cy="17.2" r="1.7"/><path d="M5 7V4.5h6V7M8 4.5V7"/>',40)}</div></div></header>
   <section class="tc"><h2>${mode==='up'?'Hesap oluştur':'Giriş yap'}</h2><p class="sub">${mode==='up'?'Toptancı hesabını birkaç saniyede aç.':'Toptancı hesabınıza devam edin.'}</p>

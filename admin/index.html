@@ -181,7 +181,7 @@ async function api(action, payload) {
 }
 
 /* giriş ve 2FA */
-function shell(inner) { $('#root').innerHTML = `<div class="center"><div class="box stack"><div class="row" style="gap:10px"><span class="logo">K</span><div><h2>KaisPilot Admin</h2><div class="mut sm">Yetkili kişiler için</div></div></div>${inner}</div></div>`; }
+function shell(inner) { $('#root').innerHTML = `<div class="center"><div class="box stack"><div class="row" style="gap:10px"><img class="logo" src="/icon-192.png" alt="" style="display:block"><div><h2>KaisPilot Admin</h2><div class="mut sm">Yetkili kişiler için</div></div></div>${inner}</div></div>`; }
 function viewLogin(signup) {
   shell(`<div class="card stack"><div class="field" style="margin:0"><label for="em">E-posta</label><input id="em" type="email" autocomplete="username" value="${esc(S.em || '')}"></div><div class="field" style="margin:0"><label for="pw">Şifre</label><input id="pw" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}"></div>${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn block" data-a="${signup ? 'signup' : 'login'}">${signup ? 'Hesap oluştur' : 'Giriş yap'}</button><button class="btn sec block" data-a="${signup ? 'tologin' : 'tosignup'}">${signup ? 'Giriş ekranına dön' : 'Hesabım yok (moderatörler için)'}</button></div>`);
 }
@@ -220,7 +220,7 @@ async function viewMfaEnroll() {
     : `<div class="enr two">${qr}<div class="steps">
     <div class="st"><span class="no">1</span><div class="grow"><h4>QR kodu okut</h4><p>Google Authenticator, Microsoft Authenticator ya da 1Password ile. Okutamazsan anahtarı kopyala:</p>${key}</div></div>
     <div class="st"><span class="no">2</span><div class="grow"><h4>Kodu yaz</h4><p>Uygulamadaki 6 haneli kod. Yazınca kendiliğinden doğrulanır.</p><div style="margin-top:8px">${otpBox()}</div></div></div></div></div>`;
-  $('#root').innerHTML = `<div class="center"><div class="box ${ph ? '' : 'wide'} stack"><div class="row" style="gap:10px"><span class="logo">K</span><div><h2>KaisPilot Admin</h2><div class="mut sm">Yetkili kişiler için</div></div></div><div class="card stack"><div><span class="lock">${ICO.moon.replace('<svg', '<svg width="14" height="14"')} Güvenlik adımı · bir kez</span><h3 style="margin-top:6px">İki adımlı doğrulamayı kur</h3><p class="mut sm" style="margin:4px 0 0">Admin girişi için zorunlu. Sonraki girişlerde sadece uygulamadaki kodu yazacaksın.</p></div>${steps}${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn sec block" data-a="logout">Çıkış</button></div></div></div>`;
+  $('#root').innerHTML = `<div class="center"><div class="box ${ph ? '' : 'wide'} stack"><div class="row" style="gap:10px"><img class="logo" src="/icon-192.png" alt="" style="display:block"><div><h2>KaisPilot Admin</h2><div class="mut sm">Yetkili kişiler için</div></div></div><div class="card stack"><div><span class="lock">${ICO.moon.replace('<svg', '<svg width="14" height="14"')} Güvenlik adımı · bir kez</span><h3 style="margin-top:6px">İki adımlı doğrulamayı kur</h3><p class="mut sm" style="margin:4px 0 0">Admin girişi için zorunlu. Sonraki girişlerde sadece uygulamadaki kodu yazacaksın.</p></div>${steps}${S.err ? `<div class="err">${esc(S.err)}</div>` : ''}<button class="btn sec block" data-a="logout">Çıkış</button></div></div></div>`;
   otpPaint();
 }
 async function mfaVerify() {
@@ -265,7 +265,7 @@ function moreHtml() {
 function render() {
   if (!S.admin) return;
   const L = navItems();
-  $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><span class="logo">K</span>KaisPilot Admin</div>${L.map((x) => navBtn(x)).join('')}<div class="sp"></div><div class="card" style="padding:10px 12px"><div class="sm" style="font-weight:600;word-break:break-all">${esc(S.admin.email)}</div><div style="margin-top:4px"><span class="pill ${S.admin.role === 'super' ? '' : 'gray'}">${S.admin.role === 'super' ? 'Ana admin' : 'Moderatör'}</span></div></div><button class="nav" data-a="theme"><i class="ni">${ICO.moon}</i><span>Tema</span></button><button class="nav" data-a="logout"><i class="ni">${ICO.out}</i><span>Çıkış</span></button></aside>
+  $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><img class="logo" src="/icon-192.png" alt="" style="display:block">KaisPilot Admin</div>${L.map((x) => navBtn(x)).join('')}<div class="sp"></div><div class="card" style="padding:10px 12px"><div class="sm" style="font-weight:600;word-break:break-all">${esc(S.admin.email)}</div><div style="margin-top:4px"><span class="pill ${S.admin.role === 'super' ? '' : 'gray'}">${S.admin.role === 'super' ? 'Ana admin' : 'Moderatör'}</span></div></div><button class="nav" data-a="theme"><i class="ni">${ICO.moon}</i><span>Tema</span></button><button class="nav" data-a="logout"><i class="ni">${ICO.out}</i><span>Çıkış</span></button></aside>
   <main class="main"><div class="top"><h2 id="ttl"></h2><div class="row"><button class="btn sec sm" data-a="reload">Yenile</button></div></div><div id="page">${skel()}</div></main></div>${tabsHtml(L)}<div id="dr-root"></div><div id="more-root"></div>`;
   setTitle(); loadPage();
 }
