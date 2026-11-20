@@ -1614,3 +1614,19 @@ function xlPeriods(wb, X) {
     } else { ws.getCell('A2').value = 'Henüz kayıt yok.'; ws.getCell('A2').font = { color: { argb: 'FF5B6B82' } }; }
   });
 }
+
+/* ===== v247: Excel aktarımı: satır bazında "Ödeme şekli" sütunundan nakit/banka ayrımı ===== */
+const IX_PAY_NAKIT = /^(nakit|cash|pe[sş]in|kasa|elden)(\b|$)/;
+const IX_PAY_BANKA = /havale|\beft\b|\bfast\b|banka|bank|kredi\s*kart|kart|\bpos\b|[cç]ek\b|transfer|virman|\bach\b|card|swift|sepa/;
+function ixPayKind(v) {
+  const t = String(v == null ? '' : v).toLocaleLowerCase('tr').replace(/İ/g, 'i').trim(); if (!t) return '';
+  if (IX_PAY_NAKIT.test(t)) return 'nakit'; if (IX_PAY_BANKA.test(t)) return 'banka'; return '';
+}
+/* Aktarılan satırların ek sütunlarında (ex) ödeme şekli sütununu bulur, satırlara ch yazar. Bulamazsa null döner, hiçbir şey yazmaz. */
+function ixPayCol(rows) {
+  const keys = {}; rows.forEach((r) => { const ex = r.ex || {}; Object.keys(ex).forEach((k) => { const v = ex[k]; if (v == null || v === '') return; (keys[k] = keys[k] || { n: 0, hit: 0 }).n++; if (ixPayKind(v)) keys[k].hit++; }); });
+  let best = null; Object.keys(keys).forEach((k) => { const q = keys[k]; if (q.n >= 2 && q.hit / q.n >= 0.6 && (!best || q.hit > keys[best].hit)) best = k; });
+  if (!best) return null; let nakit = 0, banka = 0, none = 0;
+  rows.forEach((r) => { const kind = ixPayKind((r.ex || {})[best]); if (kind) { r.ch = kind; if (kind === 'nakit') nakit++; else banka++; } else none++; });
+  return { key: best, nakit, banka, none };
+}
