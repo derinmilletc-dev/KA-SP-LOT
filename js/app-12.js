@@ -2183,7 +2183,7 @@ let RV_PHOTO = null;
     const k = h.indexOf('<div class="field"><label for="rv-cat">'); if (k < 0) return;
     const ph = f.photo ? `<div class="rv-ph"><img src="${f.photo}" alt="Fişin fotoğrafı" data-a="rvphoto"><small class="muted">Fotoğrafa dokun, büyür. Bilgiler yanlışsa aşağıdan düzelt.</small></div>` : '<p class="small muted">Bu fişin fotoğrafı yok.</p>';
     const fld = `<div class="row"><div class="field grow"><label for="rv-seller">Satıcı</label><input id="rv-seller" type="text" value="${esc(m.seller != null ? m.seller : f.seller)}" data-ch="rvsd" data-k="seller"></div><div class="field" style="width:110px"><label for="rv-date">Tarih</label><input id="rv-date" type="text" value="${esc(m.date != null ? m.date : f.date)}" data-ch="rvsd" data-k="date"></div></div>`;
-    root.innerHTML = h.slice(0, k) + ph + fld + h.slice(k);
+    root.innerHTML = h.slice(0, k) + ph + rvSmart(f, m) + fld + h.slice(k);
   };
   document.addEventListener('input', (e) => { const el = e.target; if (el && el.dataset && el.dataset.ch === 'rvsd' && S.modal && S.modal.type === 'rev') S.modal[el.dataset.k] = el.value; });
   H.rvphoto = (el) => { const b = el.closest('.rv-ph'); if (b) b.classList.toggle('big'); };
@@ -2209,3 +2209,23 @@ function noMuh() { try { if (!S.user || S.user.role !== 'patron') return false; 
   const _sv = H.savereceipt;
   H.savereceipt = function () { const nm = noMuh(); const n0 = RECEIPTS.length; const r = _sv.apply(this, arguments); if (nm && RECEIPTS.length > n0) { const f = RECEIPTS[RECEIPTS.length - 1]; if (f.status === 'musavirde') setTimeout(() => { try { H.review({ dataset: { id: f.id } }); } catch (e) {} }, 60); } return r; };
 })();
+
+/* v260: akilli fis kontrolu */
+function rvSmart(f, m) {
+  const out = []; const tot = Number(m.total != null ? m.total : f.total) || 0; const sel = m.seller != null ? String(m.seller).trim() : f.seller;
+  try {
+    if (f.bank) out.push(['ok', 'Ekstredeki bir işlemle eşleşti.']); else out.push(['info', 'Ekstrede eşleşen işlem yok. Nakit olabilir.']);
+    const dup = RECEIPTS.some((x) => x.id !== f.id && x.status !== 'reddedildi' && x.seller === sel && Math.abs(Number(x.total) - tot) < 0.01 && x.date === f.date) || LEDGER.some((g) => g.rc !== f.id && g.desc === sel && Math.abs(Number(g.total) - tot) < 0.01 && g.date === f.date);
+    if (dup) out.push(['warn', 'Aynı gün, aynı tutarda benzer bir kayıt var. İki kere eklenmiş olabilir.']);
+    const rate = Number(m.rate != null ? m.rate : f.rate);
+    if (!(tot > 0)) out.push(['warn', 'Toplam tutar okunamadı.']); else if (rate === 0 && !['Vergi', 'Sigorta', 'Banka'].some((w) => String(m.cat || f.cat).includes(w))) out.push(['warn', 'KDV %0 görünüyor. Fişte KDV yazıyorsa oranı düzelt.']); else out.push(['ok', 'KDV: %' + rate + ' · ' + fmt(kdv({ total: tot, rate }))]);
+    const same = LEDGER.filter((g) => g.acc === (m.cat || f.cat) && Number(g.total) > 0); if (same.length >= 4) { const avg = same.reduce((a, g) => a + Number(g.total), 0) / same.length; if (tot > avg * 3) out.push(['warn', 'Bu kategoride genelde ' + fmt(Math.round(avg)) + ' civarı harcıyorsun. Bu fiş çok yüksek, tutarı kontrol et.']); }
+    let sug = (RULES.find((r) => r.k === sel) || {}).v; if (!sug) { const c = {}; LEDGER.filter((g) => g.desc === sel).forEach((g) => { c[g.acc] = (c[g.acc] || 0) + 1; }); sug = Object.keys(c).sort((a, b) => c[b] - c[a])[0]; }
+    if (sug && sug !== (m.cat || f.cat)) out.push(['sug', sug]);
+  } catch (e) {}
+  if (!out.length) return '';
+  const warn = out.filter((x) => x[0] === 'warn').length;
+  return `<div class="rv-sm${warn ? ' w' : ''}"><div class="rv-sh">${ic(warn ? 'alert' : 'sparkle', 16)}<b>${warn ? warn + ' noktaya bak' : 'Kais kontrol etti, her şey yolunda'}</b></div>${out.map((x) => x[0] === 'sug' ? `<div class="rv-sr sug"><span>Bu satıcıyı genelde <b>${esc(x[1])}</b> yaptın.</span><button type="button" class="btn sm sec" data-a="rvsug" data-v="${esc(x[1])}">Kategoriyi değiştir</button></div>` : `<div class="rv-sr ${x[0]}"><i></i><span>${esc(x[1])}</span></div>`).join('')}</div>`;
+}
+H.rvsug = (el) => { const m = S.modal; if (!m || m.type !== 'rev') return; m.cat = el.dataset.v; const i = document.querySelector('#modal-root input[data-ch="rcat"], #modal-root select[data-ch="rcat"]'); if (i) { i.value = el.dataset.v; } const r = el.closest('.rv-sr'); if (r) r.remove(); toast('Kategori: ' + el.dataset.v, 'ok'); };
+(function () { try { const st = document.createElement('style'); st.textContent = '.rv-sm{margin:10px 0;padding:12px 14px;border-radius:14px;background:#EEF6EF;border:1px solid #CFE6D3}.rv-sm.w{background:#FFF6E6;border-color:#F3DDAE}.rv-sh{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:14px}.rv-sr{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;color:#2b3a4d}.rv-sr i{flex:0 0 8px;height:8px;border-radius:50%;background:#9aa7b8}.rv-sr.ok i{background:#2e9e5b}.rv-sr.warn i{background:#e08a00}.rv-sr.warn{font-weight:600}.rv-sr.sug{justify-content:space-between;gap:10px;padding-top:6px}'; document.head.appendChild(st); } catch (e) {} })();

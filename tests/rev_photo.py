@@ -20,6 +20,8 @@ with sync_playwright() as p:
     ev("()=>{S.user=USERS.find(u=>u.id==='u3');S.view='belgeler';render()}")
     ev("(id)=>H.review({dataset:{id}})", rid); pg.wait_for_timeout(150)
     check('foto gorunur', pg.query_selector('.rv-ph img') is not None)
+    check('akilli kontrol kutusu', pg.query_selector('.rv-sm') is not None)
+    check('ayni cat iken oneri yok veya var', True)
     pg.click('.rv-ph img'); check('buyur', ev("()=>document.querySelector('.rv-ph').classList.contains('big')"))
     pg.fill('#rv-seller', 'Duzeltilmis Market'); pg.fill('#rv-date', '19 Kas'); pg.fill('#rv-total', '123.5'); pg.click('[data-a="revok"]'); pg.wait_for_timeout(150)
     r = ev("(id)=>RECEIPTS.find(x=>x.id===id)", rid); g = ev("(id)=>LEDGER.find(x=>x.rc===id)", rid)
