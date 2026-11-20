@@ -1639,6 +1639,27 @@ function ixPayCol(rows) {
     const R = _b2.apply(this, arguments);
     try {
       if (type !== 'defter' || !R || !R.out) return R;
+      /* 0) Elle düzeltilen atlanmış satırlar */
+      R.fixl = [];
+      const fixK = (typeof MXI !== 'undefined' && MXI.fix) || {}; const si = (typeof MXI !== 'undefined' ? MXI.si : 0) || 0;
+      const rowOf = {}; P.data.forEach((r) => { rowOf[r.__n] = r; });
+      (R.skip || []).slice().forEach((x) => {
+        if (x.sum || !/^(Tutar yok|Tarih yok)/.test(x.why)) return; const row = rowOf[x.n]; if (!row) return;
+        const filled = row.filter((c) => String(c == null ? '' : c).trim() !== '').length; if (filled < 2) return;
+        const fx = fixK[si + ':' + x.n];
+        const desc = (String(row[map.desc] == null ? '' : row[map.desc]).trim() || String(row[map.acc] == null ? '' : row[map.acc]).trim() || '(açıklamasız)').slice(0, 80);
+        if (!fx) { R.fixl.push({ n: x.n, why: x.why, desc }); return; }
+        let iso = fx.iso, total = fx.total, dir = fx.dir;
+        if (!iso && map.date != null) iso = ixDate(row[map.date], (MXI.dec && MXI.dec.dfmt) || 'dmy') || '';
+        if (!total) { const gv = map.gelir != null ? ixN(row[map.gelir]) || 0 : 0; const dv = map.gider != null ? Math.abs(ixN(row[map.gider]) || 0) : 0; const tv = map.total != null ? Math.abs(ixN(row[map.total]) || 0) : 0; if (gv) { total = Math.abs(gv); dir = dir || 'gelir'; } else if (dv) { total = dv; dir = dir || 'gider'; } else total = tv; }
+        if (!iso || !total) { R.fixl.push({ n: x.n, why: x.why, desc }); return; }
+        dir = dir || 'gider'; total = Math.round(total * 100) / 100; const key = iso + '|' + total.toFixed(2) + '|' + desc.slice(0, 20);
+        R.skip.splice(R.skip.indexOf(x), 1);
+        if (LEDGER.some((l) => l.ixk === key)) { R.dup = (R.dup || 0) + 1; return; }
+        R.out.push({ n: x.n, iso, desc, total, dir, rate: 0, acc: (map.acc != null ? String(row[map.acc] == null ? '' : row[map.acc]).trim() : '') || (dir === 'gelir' ? INCATS[2] : 'Diğer'), doc: '—', key, ex: {}, br: '' });
+        R.warn.push({ n: x.n, why: 'Elle düzeltildi (KDV 0 alındı)' });
+      });
+      R.out.sort((x, y) => x.n - y.n);
       /* 1) Kategori önerisi: hesap sütunu eşlenmediyse, daha önce aynı açıklamayla girilmiş kayıtların hesabı önerilir (kendi geçmişin) */
       R.sug = 0;
       if (map.acc == null) {
@@ -1655,6 +1676,16 @@ function ixPayCol(rows) {
       const ch = (typeof MXI !== 'undefined' && MXI.ch) || '';
       if (ch) { if (ch === 'nakit') sm.nakit = sm.n; else sm.banka = sm.n; } else { const rc = ixPayCol(R.out.map((o) => ({ ex: o.ex, o }))); if (rc) { sm.nakit = rc.nakit; sm.banka = rc.banka; sm.none = rc.none; } else sm.none = sm.n; }
       R.sm = sm;
+      /* 4) Aylık döküm + bakiye tutarlılığı */
+      const MA = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']; const ym2 = (iso) => iso.slice(0, 7);
+      const mon = {}; R.out.forEach((o) => { const k = ym2(o.iso); const m = mon[k] = mon[k] || { gelir: 0, gider: 0, bal: null }; if (o.dir === 'gelir') m.gelir += o.total; else m.gider += o.total; });
+      const bi = P.heads.findIndex((h, i) => /bakiye|balance/.test(ixNorm(h)) && i !== map.gelir && i !== map.gider && i !== map.total);
+      R.balBad = null;
+      if (bi >= 0 && map.date != null && (map.gelir != null || map.gider != null)) {
+        let prev = null; const fm = (MXI.dec && MXI.dec.dfmt) || 'dmy';
+        P.data.forEach((r) => { const b = ixN(r[bi]); const di = ixDate(r[map.date], fm); if (b === null) return; const d = (map.gelir != null ? ixN(r[map.gelir]) || 0 : 0) - (map.gider != null ? Math.abs(ixN(r[map.gider]) || 0) : 0); if (prev !== null && Math.abs(b - prev - d) > 0.05 && !R.balBad) R.balBad = { n: r.__n, ym: di ? ym2(di) : '' }; prev = b; if (di) { const k = ym2(di); (mon[k] = mon[k] || { gelir: 0, gider: 0, bal: null }).bal = b; } });
+      }
+      R.mon = Object.keys(mon).sort().map((k) => ({ k, label: MA[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4), gelir: mon[k].gelir, gider: mon[k].gider, bal: mon[k].bal }));
     } catch (e) {}
     return R;
   };
@@ -1665,7 +1696,59 @@ function ixPayCol(rows) {
     return '<div class="kpis" style="margin-top:8px">' + cell('Gelir', m(sm.gelir), 'var(--ok,#1a8f4b)') + cell('Gider', m(sm.gider), 'var(--bad,#c0392b)') + cell('Net', m(sm.gelir - sm.gider)) + '</div>'
       + '<p class="small muted" style="margin-top:6px">Kasa dağılımı: ' + sm.nakit + ' nakit, ' + sm.banka + ' banka' + (sm.none ? ', ' + sm.none + ' belirtilmemiş' : '') + '.</p>'
       + (R.sug ? '<div class="callout" style="margin-top:6px">' + ic('check') + '<div><p>' + R.sug + ' satırın hesabı, daha önce kendi girdiğin aynı açıklamalardan alındı. Önizlemede kontrol edebilirsin.</p></div></div>' : '')
+      + (typeof MXI !== 'undefined' && MXI.layNote ? '<p class="small muted" style="margin-top:6px">Bu dosya düzeni daha önce aktarılmıştı, sütunlar aynı şekilde eşlendi. Yanlışsa aşağıdan değiştirebilirsin.</p>' : '')
       + (R.devir ? '<p class="small muted" style="margin-top:6px">' + R.devir + ' devir/açılış satırı gelir sayılmadı.</p>' : '')
+      + (R.mon && R.mon.length > 1 ? '<details style="margin-top:8px"><summary style="cursor:pointer" class="small"><b>Aylık döküm (' + R.mon.length + ' ay)</b></summary>' + R.mon.map((m) => '<div class="small row" style="justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line,#e5e8ee)"><span>' + m.label + '</span><span class="num">+' + fmt0(Math.round(m.gelir)) + ' / −' + fmt0(Math.round(m.gider)) + (m.bal != null ? ' · dosya bakiyesi ' + fmt0(Math.round(m.bal)) : '') + '</span></div>').join('') + '</details>' : '')
+      + (R.balBad ? '<div class="callout warn" style="margin-top:6px">' + ic('alert') + '<div><p>Dosyadaki bakiye sütunu satır ' + R.balBad.n + ' civarında tutmuyor' + (R.balBad.ym ? ' (' + R.balBad.ym.slice(5, 7) + '/' + R.balBad.ym.slice(0, 4) + ')' : '') + '. Orada eksik, silinmiş ya da elle değiştirilmiş bir satır olabilir. Aktarmadan önce o ayı kontrol et.</p></div></div>' : '')
+      + (R.fixl && R.fixl.length ? '<details style="margin-top:8px" open><summary style="cursor:pointer" class="small"><b>Eksik satırları tamamla (' + R.fixl.length + ')</b></summary>' + R.fixl.slice(0, 8).map((x) => '<div class="card" style="padding:8px 10px;margin-top:6px"><div class="small"><b>Satır ' + x.n + '</b> · ' + esc(x.desc) + '<br><span class="muted">' + esc(x.why) + '</span></div><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><input id="ixf-d-' + x.n + '" type="date" style="' + mxInp + ';flex:1 1 130px;padding:8px"><input id="ixf-a-' + x.n + '" inputmode="decimal" placeholder="Tutar" style="' + mxInp + ';flex:1 1 90px;padding:8px"><select id="ixf-r-' + x.n + '" style="' + mxInp + ';flex:1 1 90px;padding:8px"><option value="gider">Gider</option><option value="gelir">Gelir</option></select><button class="btn sm" data-a="ixfixadd" data-i="' + x.n + '">Ekle</button></div></div>').join('') + (R.fixl.length > 8 ? '<p class="small muted">… ve ' + (R.fixl.length - 8) + ' satır daha (listeyi indirip dosyada düzeltebilirsin).</p>' : '') + '</details>' : '')
       + (R.near ? '<div class="callout warn" style="margin-top:6px">' + ic('alert') + '<div><p>' + R.near + ' satır, elle girdiğin bir kayıtla aynı gün ve tutarda. Aynı işlemse aktarmadan önce kontrol et.</p></div></div>' : '');
+  };
+}
+
+/* satır düzeltme eylemi */
+H.ixfixadd = (el) => {
+  const n = +el.dataset.i; const g = (id) => { const x = document.getElementById(id); return x ? x.value : ''; };
+  const iso = g('ixf-d-' + n); const tot = mxNum(g('ixf-a-' + n)); const dir = g('ixf-r-' + n) || 'gider';
+  const sh = ixCur(); const R = sh ? ixBuild(MXI.type, MXI.map, sh._p) : null; const it = R && R.fixl.find((x) => x.n === n); if (!it) return;
+  if (/^Tarih/.test(it.why) && !iso) return toast('Tarihi seç.', 'warn');
+  if (/^Tutar/.test(it.why) && !(tot > 0)) return toast('Tutarı yaz.', 'warn');
+  if (!iso && !(tot > 0)) return toast('Tarih ve tutarı yaz.', 'warn');
+  MXI.fix = MXI.fix || {}; MXI.fix[(MXI.si || 0) + ':' + n] = { iso: iso || '', total: tot > 0 ? tot : 0, dir }; renderModal();
+};
+
+/* ===== v249: para birimi tanıma, düzen hafızası ===== */
+const IX_CURA = { '$': 'USD', 'USD': 'USD', 'DOLAR': 'USD', 'DOLLAR': 'USD', '€': 'EUR', 'EUR': 'EUR', 'EURO': 'EUR', '£': 'GBP', 'GBP': 'GBP', 'STERLIN': 'GBP', 'R': 'ZAR', 'ZAR': 'ZAR', 'RAND': 'ZAR', 'TL': 'TRY', 'TRY': 'TRY', '₺': 'TRY' };
+function ixCurCh(c) {
+  const code = IX_CURA[String(c || '').trim().toUpperCase().replace(/İ/g, 'I')] || ''; if (!code || code === 'TRY') return '';
+  const kc = (S.settings && S.settings.kcur) || {}; const m = ['nakit', 'banka'].filter((k) => kc[k] && kc[k].code === code); return m.length === 1 ? m[0] : '';
+}
+{
+  const sigOf = (P) => (P && P.heads ? P.heads.map((h) => ixNorm(h)).join('|') : '');
+  const lays = () => ((S.settings = S.settings || {}).ixlay = S.settings.ixlay || {});
+  const _a = ixAuto;
+  ixAuto = function (type, P) {
+    const m = _a.apply(this, arguments);
+    try { const L = lays()[sigOf(P)]; const sm = L && L.map && L.map[type]; if (sm && Object.keys(sm).every((k) => sm[k] < P.heads.length)) return Object.assign({}, sm); } catch (e) {}
+    return m;
+  };
+  const _s = ixSetSheet;
+  ixSetSheet = function (i) {
+    const r = _s.apply(this, arguments);
+    try { const sh = ixCur(); MXI.layNote = false; const L = sh && lays()[sigOf(sh._p)]; if (L) { MXI.layNote = true; if (L.ch && L.chName === ixNorm(sh.name) && sh._ch == null && !MXI.ch) MXI.ch = L.ch; } MXI.fix = MXI.fix || {}; } catch (e) {}
+    return r;
+  };
+  const _l = ixLoadSheets;
+  ixLoadSheets = function () { MXI.fix = {}; return _l.apply(this, arguments); };
+  const _im = H.iximport;
+  H.iximport = function () {
+    const sh0 = ixCur(); const P0 = sh0 && sh0._p; const type0 = MXI.type; const map0 = Object.assign({}, MXI.map); const ch0 = MXI.ch; const n0 = LEDGER.length;
+    const r = _im.apply(this, arguments);
+    try {
+      if (MXI.step === 'done') {
+        for (let i = n0; i < LEDGER.length; i++) { const x = LEDGER[i]; if (x.src === 'Excel' && x.ex && x.ex['Para birimi']) { const k = ixCurCh(x.ex['Para birimi']); if (k) x.ch = k; } }
+        if (P0 && type0 === 'defter') { const L = lays(); const sg = sigOf(P0); const o = L[sg] || { map: {} }; o.map[type0] = map0; o.ch = ch0 || ''; o.chName = ch0 && sh0 ? ixNorm(sh0.name) : ''; o.at = Date.now(); delete L[sg]; L[sg] = o; const ks = Object.keys(L); while (ks.length > 30) delete L[ks.shift()]; try { pSched(); } catch (e) {} }
+      }
+    } catch (e) {}
+    return r;
   };
 }

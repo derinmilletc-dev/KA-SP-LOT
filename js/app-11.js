@@ -513,7 +513,7 @@ NEWM.mximp = () => {
     const xl = S.settings && S.settings.xlast;
     return sheet('Excel aktar', `<p class="muted small">Şimdiye kadar Excel'de tuttuğun kayıtları Kais'e taşı. Dosyayı yükle, Kais sütunları kendisi tanır ve eşler. Sen önizlemeyi kontrol edip onaylarsın. Dosya cihazından çıkmaz.</p>
     ${MXI.err ? `<div class="callout warn" style="margin:8px 0">${ic('alert')}<div><p>${esc(MXI.err)}</p></div></div>` : ''}
-    <label class="btn block" style="cursor:pointer;margin-top:10px">${ic('file', 18)} Excel ya da CSV seç<input id="ix-file" type="file" accept=".xlsx,.xls,.csv,.txt" style="display:none"></label>
+    <label class="btn block" style="cursor:pointer;margin-top:10px">${ic('file', 18)} Excel ya da CSV seç<input id="ix-file" type="file" multiple accept=".xlsx,.xls,.csv,.txt" style="display:none"></label>
     <div class="field" style="margin:10px 0 0"><label for="ix-txt">Ya da tabloyu kopyalayıp yapıştır</label><textarea id="ix-txt" rows="4" style="${mxInp}" placeholder="Tarih;Açıklama;Tutar"></textarea></div><button class="btn sec block" style="margin-top:8px" data-a="ixpaste">Yapıştırılanı oku</button>
     <p class="small muted" style="margin-top:10px">Gelir gider hareketleri, faturalar (alacaklar) ve borçlar aktarılabilir. Birden çok sayfa varsa her biri ayrı seçilir. Eski .xls dosyasını .xlsx olarak kaydet.</p>
     ${xl ? `<div class="card" style="margin-top:12px;padding:10px 12px"><div class="small muted">Son aktarım: ${xl.n} kayıt · ${mxDM(xl.t)}</div><button class="btn sm sec" style="margin-top:6px" data-a="ixundo">Son aktarımı geri al</button></div>` : ''}`);
@@ -544,15 +544,15 @@ H.ixpaste = () => { const t = ($('#ix-txt') || {}).value || ''; if (t.trim().len
 document.addEventListener('change', async (e) => {
   const t = e.target; if (!t || !S.modal || S.modal.type !== 'mximp') return;
   if (t.id === 'ix-file' && t.files && t.files[0]) {
-    const f = t.files[0]; MXI.step = 'busy'; renderModal();
-    try {
+    const FL = Array.from(t.files); const ACC = []; const ixLoadSheets = (sheets, fn) => { sheets.forEach((sx) => ACC.push(FL.length > 1 ? Object.assign({}, sx, { name: String(fn).replace(/\.[^.]+$/, '') + ' · ' + sx.name }) : sx)); }; MXI.step = 'busy'; renderModal();
+    try { for (const f of FL) {
       if (/\.xlsx$/i.test(f.name)) {
         const X = await xlLoad(); const wb = new X.Workbook(); await wb.xlsx.load(await f.arrayBuffer()); const sheets = [];
         wb.worksheets.forEach((ws) => { const rows = []; const nfc = {}; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (c.numFmt) nfc[c.numFmt] = (nfc[c.numFmt] || 0) + 1; if (c.isMerged && c.master && c.master.address !== c.address) v = ''; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else v = ''; } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows, cur: ixCurOf(nfc) }); });
         ixLoadSheets(sheets, f.name);
       } else if (/\.xls$/i.test(f.name)) { ixLoadSheets(await ixReadXls(await f.arrayBuffer()), f.name); }
       else { const buf = await f.arrayBuffer(); const u8 = new Uint8Array(buf.slice(0, 4)); if (u8[0] === 0xD0 && u8[1] === 0xCF) ixLoadSheets(await ixReadXls(buf), f.name); else ixLoadSheets([{ name: f.name, rows: mxCsv(ixDecode(buf)) }], f.name); }
-    } catch (x) { MXI.step = 'pick'; MXI.err = /password|encrypt|protect/i.test(String(x && x.message)) ? 'Dosya parolalı görünüyor. Parolayı kaldırıp tekrar yükle.' : 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
+    } globalThis.ixLoadSheets(ACC, FL.length > 1 ? FL.length + ' dosya' : FL[0].name); } catch (x) { MXI.step = 'pick'; MXI.err = /password|encrypt|protect/i.test(String(x && x.message)) ? 'Dosya parolalı görünüyor. Parolayı kaldırıp tekrar yükle.' : 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
     return;
   }
   if (MXI.step !== 'map') return;
@@ -640,7 +640,7 @@ function ixBuild(type, map, P) {
     const n = r.__n; if (ixSumRow(r)) { skip.push({ n, why: 'Toplam satırı (aktarılmaz)', sum: true }); sumRows.push(r); return; }
     amtKeys.forEach((k) => { const v = ixN(g(r, k)); if (v !== null && v !== undefined) colSum[k] = (colSum[k] || 0) + v; });
     const ex = {}; extraI.slice(0, 12).forEach((i) => { const v = ixTxt(r[i]); if (v) ex[ixTxt(P.heads[i]).slice(0, 30)] = v.slice(0, 80); });
-    const cur = ixTxt(g(r, 'cur')).toUpperCase(); if (cur && !/^(TL|TRY|₺|TÜRK)/.test(cur)) { skip.push({ n, why: 'Para birimi ' + cur + ' (TL değil)' }); return; }
+    const cur = ixTxt(g(r, 'cur')).toUpperCase(); if (cur && !/^(TL|TRY|₺|TÜRK)/.test(cur)) { if (typeof ixCurCh === 'function' && ixCurCh(cur)) ex['Para birimi'] = cur; else { skip.push({ n, why: 'Para birimi ' + cur + ' için kasa/banka tanımlı değil (kasanın para birimini ayarla)' }); return; } }
     if (type === 'defter') {
       if (!['gelir', 'gider', 'total', 'matrah'].some((k) => ixN(g(r, k)))) { skip.push({ n, why: 'Tutar yok' }); return; }
       let iso = ixDate(g(r, 'date'), fmt);

@@ -70,6 +70,7 @@ jobs:
       - run: python3 tests/excel_kasa.py
       - run: python3 tests/import_pay.py
       - run: python3 tests/import_smart.py
+      - run: python3 tests/import_v249.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
