@@ -1943,3 +1943,111 @@ function ixsDays(sh) {
   const _n2 = ixsNormalize;
   ixsNormalize = function (sheets) { return _n2(sheets.map((sh) => { try { return ixsDays(ixsBA(ixsTwoHeader(sh))); } catch (e) { return sh; } })); };
 }
+
+/* ===== v251: "Muhasebeye başla" sihirbazı ===== */
+const MB_TPL = {
+  kafe: ['Restoran / kafe', 'Hammadde', ['Hammadde', 'Ambalaj', 'Kira', 'Elektrik', 'Doğalgaz', 'Su', 'Temizlik', 'Telefon / internet', 'Personel', 'Bakım / onarım', 'Reklam', 'Diğer']],
+  market: ['Market / bakkal', 'cart', ['Mal alımı', 'Kira', 'Elektrik', 'Su', 'Telefon / internet', 'Personel', 'Nakliye', 'Poşet / ambalaj', 'Reklam', 'Bakım / onarım', 'Diğer']],
+  atolye: ['Atölye / üretim', 'gear', ['Hammadde', 'Malzeme', 'Akaryakıt', 'Kira', 'Elektrik', 'Doğalgaz', 'Su', 'Personel', 'Bakım / onarım', 'Nakliye', 'Diğer']],
+  hizmet: ['Hizmet / ofis', 'users', ['Kira', 'Elektrik', 'Telefon / internet', 'Yazılım / abonelik', 'Reklam', 'Ulaşım', 'İş yemeği', 'Personel', 'Temizlik', 'Diğer']],
+  perakende: ['Mağaza / perakende', 'tag', ['Mal alımı', 'Kira', 'Elektrik', 'Ambalaj', 'Personel', 'Reklam', 'Nakliye', 'Telefon / internet', 'Diğer']],
+  mevcut: ['Şimdiki liste kalsın', 'check', null],
+};
+const MB_DEFAULT_CATS = CATS.slice();
+const MBS = { step: 0, cur: '₺', nakit: '', banka: '', kdv: '', rate: 20, tpl: '', cats: [], err: '' };
+function mbApplyCats() {
+  const l = S.settings && Array.isArray(S.settings.cats) && S.settings.cats.length ? S.settings.cats.slice() : null; if (!l) return;
+  const used = []; LEDGER.forEach((r) => { if (dirOf(r) !== 'gelir' && r.acc && !l.includes(r.acc) && !used.includes(r.acc)) used.push(r.acc); });
+  const base = l.filter((x) => x !== 'Diğer').concat(used, ['Diğer']); if (base.join('|') !== CATS.join('|')) CATS.splice(0, CATS.length, ...base);
+}
+function mbPool() { const s = new Set(); Object.keys(MB_TPL).forEach((k) => (MB_TPL[k][2] || []).forEach((c) => s.add(c))); MB_DEFAULT_CATS.forEach((c) => s.add(c)); s.delete('Diğer'); return Array.from(s); }
+H.mbopen = () => {
+  if (S.user && S.user.role !== 'patron' && S.user.role !== 'muhasebeci') return toast('Bu sihirbazı patron açar.', 'warn'); if (locked()) return;
+  const kb = (S.settings && S.settings.kbal) || {}; const cs = (S.settings && S.settings.cur) || {};
+  Object.assign(MBS, { step: 0, cur: cs.sym || '₺', nakit: kb.nakit ? String(kb.nakit.v) : '', banka: kb.banka ? String(kb.banka.v) : '', kdv: (S.settings && S.settings.kdvMode) || '', rate: (S.settings && S.settings.kdvRate) || 20, tpl: '', cats: (S.settings && S.settings.cats) || CATS.filter((x) => x !== 'Diğer'), err: '' });
+  S.modal = { type: 'mbasla' }; renderModal();
+};
+function mbRead() {
+  const g = (id) => { const x = document.getElementById(id); return x ? x.value : null; };
+  if (MBS.step === 1) { const n = g('mb-n'), b = g('mb-b'); if (n !== null) MBS.nakit = n; if (b !== null) MBS.banka = b; }
+}
+const mbFmt = (v) => (+v || 0).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+const mbNum = (v) => { const s = String(v == null ? '' : v).trim(); if (s === '') return 0; const x = trNum(s); return isNaN(x) ? null : x; };
+H.mbnext = () => {
+  mbRead(); MBS.err = '';
+  if (MBS.step === 1) { if (mbNum(MBS.nakit) === null || mbNum(MBS.banka) === null) { MBS.err = 'Tutarı sayı olarak yaz. Örnek: 12500 ya da 12.500,50'; return renderModal(); } }
+  if (MBS.step === 2 && !MBS.kdv) { MBS.err = 'Bir seçenek seç. Bilmiyorsan "Sonra karar veririm" de.'; return renderModal(); }
+  MBS.step = Math.min(MBS.step + 1, 4); renderModal();
+};
+H.mbback = () => { mbRead(); MBS.err = ''; MBS.step = Math.max(0, MBS.step - 1); renderModal(); };
+H.mbcur = (el) => { MBS.cur = el.dataset.c; renderModal(); };
+H.mbkdv = (el) => { MBS.kdv = el.dataset.v; MBS.err = ''; renderModal(); };
+H.mbrate = (el) => { MBS.rate = +el.dataset.v; renderModal(); };
+H.mbtpl = (el) => { mbRead(); const k = el.dataset.v; MBS.tpl = k; const t = MB_TPL[k]; MBS.cats = t && t[2] ? t[2].filter((x) => x !== 'Diğer') : ((S.settings && S.settings.cats) || MB_DEFAULT_CATS.filter((x) => x !== 'Diğer')); renderModal(); };
+H.mbcat = (el) => { const c = el.dataset.c; MBS.cats = MBS.cats.includes(c) ? MBS.cats.filter((x) => x !== c) : MBS.cats.concat([c]); renderModal(); };
+H.mbaddcat = () => { const v = ((document.getElementById('mb-new') || {}).value || '').trim().slice(0, 30); if (!v) return; if (!MBS.cats.includes(v) && v !== 'Diğer') MBS.cats = MBS.cats.concat([v]); renderModal(); };
+H.mbfinish = () => {
+  const n = mbNum(MBS.nakit), b = mbNum(MBS.banka); if (n === null || b === null) { MBS.step = 1; MBS.err = 'Tutarı sayı olarak yaz.'; return renderModal(); }
+  if (!S.settings) S.settings = {}; const c = KCURS.find((x) => x[0] === MBS.cur) || KCURS[0];
+  S.settings.cur = { sym: c[0], code: c[1], name: c[2] }; if (S.settings.kcur) { delete S.settings.kcur.nakit; delete S.settings.kcur.banka; }
+  const kb = (S.settings.kbal = S.settings.kbal || {}); const t = fiIso();
+  kb.nakit = { v: n, seq: seq, from: 'Başlangıç', iso: t, t }; kb.banka = { v: b, seq: seq, from: 'Başlangıç', iso: t, t };
+  S.settings.mhOpen = Math.round((n + b) * 100) / 100;
+  S.settings.kdvMode = MBS.kdv; S.settings.kdvRate = MBS.rate; if (MBS.kdv === 'muaf') MXI.defRate = 0; else if (MBS.kdv === 'kdvli') MXI.defRate = MBS.rate;
+  if (MBS.cats.length) S.settings.cats = MBS.cats.slice(); mbApplyCats();
+  S.settings.mbDone = { t, n, b, cur: c[1] }; try { pSched(); } catch (e) {}
+  MBS.step = 5; try { render(); } catch (e) {} renderModal();
+};
+NEWM.mbasla = function () {
+  const st = MBS.step; const seg = [0, 1, 2, 3, 4].map((i) => `<i style="flex:1;height:5px;border-radius:3px;background:${i <= Math.min(st, 4) ? 'var(--brand,#2563eb)' : 'var(--line,#e5e8ee)'}"></i>`).join('');
+  const sel = (on) => (on ? 'box-shadow:0 0 0 2px var(--brand,#2563eb);' : '');
+  const tile = (act, attrs, on, ico, title, sub) => `<button type="button" class="card" data-a="${act}" ${attrs} style="${sel(on)}padding:12px;text-align:left;display:flex;gap:10px;align-items:center;width:100%;margin-top:8px"><span style="flex:none">${ic(ico, 20)}</span><span style="min-width:0"><b>${esc(title)}</b>${sub ? `<br><span class="small muted">${esc(sub)}</span>` : ''}</span></button>`;
+  const err = MBS.err ? `<div class="callout warn" style="margin-top:10px">${ic('alert')}<div><p>${esc(MBS.err)}</p></div></div>` : '';
+  const nav = (next, label) => `<div class="row" style="gap:8px;margin-top:14px">${st > 0 ? '<button class="btn sec" data-a="mbback">Geri</button>' : ''}<button class="btn grow" data-a="${next}">${label}</button></div>`;
+  let body = '';
+  if (st === 0) {
+    const have = LEDGER.length ? `<div class="callout" style="margin:10px 0">${ic('check')}<div><p>Zaten ${LEDGER.length} kaydın var. Bunlar silinmez, bakiyen bugünden itibaren üstüne eklenir.</p></div></div>` : '';
+    body = `<h3 style="margin:2px 0 4px">Muhasebeni baştan doğru kuralım</h3><p class="muted small">4 kısa soru. Sonra her kayıt nakit ve banka olarak ayrı izlenir, Excel'e düzenli çıkar.</p>${have}
+      <div class="field" style="margin-top:12px"><label>Hangi para birimiyle çalışıyorsun?</label><div class="row wrap" style="gap:6px">${KCURS.map((x) => `<button type="button" class="btn sm ${MBS.cur === x[0] ? '' : 'sec'}" data-a="mbcur" data-c="${x[0]}">${x[0]} ${esc(x[2])}</button>`).join('')}</div></div>
+      <p class="small muted" style="margin-top:6px">Sonradan her kasa için ayrı para birimi de seçebilirsin. Farklı para birimleri birbirine eklenmez.</p>${nav('mbnext', 'Başla')}`;
+  } else if (st === 1) {
+    body = `<h3 style="margin:2px 0 4px">Bugün elinde ne kadar var?</h3><p class="muted small">Kasadaki parayı say, banka uygulamandan bakiyeye bak. Bu, bugünkü başlangıç bakiyen olur.</p>
+      <div class="field" style="margin-top:12px"><label for="mb-n">Nakit kasa (${esc(MBS.cur)})</label><input id="mb-n" inputmode="decimal" value="${esc(MBS.nakit)}" placeholder="0" style="${mxInp}"></div>
+      <div class="field"><label for="mb-b">Banka hesabı (${esc(MBS.cur)})</label><input id="mb-b" inputmode="decimal" value="${esc(MBS.banka)}" placeholder="0" style="${mxInp}"></div>
+      <p class="small muted">Hiç yoksa ya da bilmiyorsan boş bırak, 0 sayılır. Sonradan "Nakit ve banka" ekranından düzeltebilirsin.</p>${err}${nav('mbnext', 'Devam')}`;
+  } else if (st === 2) {
+    const rt = MBS.kdv === 'kdvli' ? `<div class="field" style="margin-top:10px"><label>En çok uyguladığın KDV oranı</label><div class="row" style="gap:6px">${[1, 10, 20].map((v) => `<button type="button" class="btn sm ${MBS.rate === v ? '' : 'sec'}" data-a="mbrate" data-v="${v}">%${v}</button>`).join('')}</div><p class="small muted" style="margin-top:6px">Sadece Excel aktarımında önerilen oran olur. Her satırda kendi oranı geçerlidir.</p></div>` : '';
+    body = `<h3 style="margin:2px 0 4px">KDV'li çalışıyor musun?</h3><p class="muted small">Kais vergi tavsiyesi vermez, sadece kayıt biçimini ayarlar. Emin değilsen muhasebecine sor.</p>
+      ${tile('mbkdv', 'data-v="kdvli"', MBS.kdv === 'kdvli', 'receipt', 'Evet, KDV\'liyim', 'Satışlarıma KDV ekliyorum')}${tile('mbkdv', 'data-v="muaf"', MBS.kdv === 'muaf', 'check', 'Hayır, KDV\'siz / muaf', 'Aktarılan satırlar KDV %0 sayılır')}${tile('mbkdv', 'data-v="sonra"', MBS.kdv === 'sonra', 'calendar', 'Sonra karar veririm', 'Excel aktarırken KDV\'yi sana sorarım')}${rt}${err}${nav('mbnext', 'Devam')}`;
+  } else if (st === 3) {
+    const pool = mbPool().concat(MBS.cats.filter((c) => !mbPool().includes(c)));
+    body = `<h3 style="margin:2px 0 4px">Giderlerin hangi başlıklarda toplansın?</h3><p class="muted small">İşletme türünü seç, hazır liste gelsin. Sonra kendine göre aç kapat.</p>
+      <div class="row wrap" style="gap:6px;margin-top:8px">${Object.keys(MB_TPL).map((k) => `<button type="button" class="btn sm ${MBS.tpl === k ? '' : 'sec'}" data-a="mbtpl" data-v="${k}">${esc(MB_TPL[k][0])}</button>`).join('')}</div>
+      <div class="row wrap" style="gap:6px;margin-top:12px">${pool.map((c) => `<button type="button" class="btn sm ${MBS.cats.includes(c) ? '' : 'sec'}" data-a="mbcat" data-c="${esc(c)}">${MBS.cats.includes(c) ? '✓ ' : ''}${esc(c)}</button>`).join('')}</div>
+      <div class="row" style="gap:6px;margin-top:10px"><input id="mb-new" placeholder="Kendi başlığını ekle" style="${mxInp};flex:1;padding:10px"><button class="btn sm sec" data-a="mbaddcat">Ekle</button></div>
+      <p class="small muted" style="margin-top:6px">"Diğer" her zaman listede durur. Eski kayıtlarındaki başlıklar silinmez.</p>${nav('mbnext', 'Devam')}`;
+  } else if (st === 4) {
+    const n = mbNum(MBS.nakit) || 0, b = mbNum(MBS.banka) || 0; const kd = MBS.kdv === 'kdvli' ? 'KDV\'li, önerilen oran %' + MBS.rate : MBS.kdv === 'muaf' ? 'KDV\'siz / muaf' : 'KDV sonra belirlenecek';
+    const row = (l, v) => `<div class="row between" style="padding:8px 0;border-top:1px solid var(--line,#e5e8ee)"><span class="muted small">${l}</span><b class="small" style="text-align:right">${esc(v)}</b></div>`;
+    body = `<h3 style="margin:2px 0 4px">Hazır, bir kontrol edelim</h3><p class="muted small">Başlamadan önce son hali. Yanlış varsa Geri'ye dönüp düzelt.</p>
+      <div style="margin-top:8px">${row('Para birimi', MBS.cur)}${row('Nakit kasa', mbFmt(n) + ' ' + MBS.cur)}${row('Banka hesabı', mbFmt(b) + ' ' + MBS.cur)}${row('Toplam başlangıç', mbFmt(Math.round((n + b) * 100) / 100) + ' ' + MBS.cur)}${row('KDV', kd)}${row('Gider başlıkları', (MBS.cats.length ? MBS.cats.length : CATS.length - 1) + ' başlık + Diğer')}</div>
+      <div class="callout" style="margin-top:10px">${ic('sparkle')}<div><p>Bundan sonra her gelir ve gider nakit ya da banka olarak işlenir. Bakiyelerin kayıtlarla birlikte kendiliğinden güncellenir.</p></div></div>${nav('mbfinish', 'Muhasebeyi başlat')}`;
+  } else {
+    body = `<div style="text-align:center;padding:6px 0 2px"><div style="font-size:38px">${ic('check', 38)}</div><h3 style="margin:6px 0 4px">Muhasebe başladı</h3><p class="muted small">Başlangıç bakiyen kaydedildi. Şimdi ilk kaydını ekleyebilirsin.</p></div>
+      <div class="stack" style="gap:8px;margin-top:10px"><button class="btn block" data-a="upload">${ic('camera', 16)} Fiş fotoğrafı ekle</button><button class="btn sec block" data-a="mximp">${ic('file', 16)} Excel'imi aktar</button><button class="btn sec block" data-a="mxkb">${ic('wallet', 16)} Nakit ve bankayı gör</button><button class="btn sec block" data-a="closemodal">Sonra</button></div>`;
+  }
+  return sheet('Muhasebeye başla', `${st < 5 ? `<div style="display:flex;gap:4px;margin:0 0 12px">${seg}</div>` : ''}${body}`);
+};
+/* açılışta/çizimde: seçilen gider başlıklarını uygula; ilk kurulum listesine adım ekle; boş muhasebe sayfasında davet kartı */
+{
+  const _ss = suSteps;
+  suSteps = function () { const a = _ss.apply(this, arguments); a.unshift({ k: 'muh', ico: 'wallet', t: 'Muhasebeyi başlat', s: 'Nakit, banka ve KDV bilgin 2 dakikada hazır.', done: !!(S.settings && S.settings.mbDone), a: 'mbopen' }); return a; };
+  const _vh2 = viewHTML;
+  viewHTML = function () {
+    try { mbApplyCats(); } catch (e) {}
+    const h = _vh2.apply(this, arguments);
+    try { if (S.view === 'muhasebe' && S.user && S.user.role === 'patron' && !(S.settings && S.settings.mbDone) && !S.modal) { const c = emCard('Muhasebeyi baştan doğru kur', 'Nakit, banka, KDV ve gider başlıklarını 2 dakikada ayarla.', 'mbopen', 'Başla'); const i = h.indexOf('>'); return i < 0 ? c + h : h.slice(0, i + 1) + c + h.slice(i + 1); } } catch (e) {}
+    return h;
+  };
+  const _ss2 = ixSetSheet; ixSetSheet = function () { const r = _ss2.apply(this, arguments); try { const m = S.settings && S.settings.kdvMode; if (m === 'muaf') { MXI.dec = MXI.dec || {}; if (MXI.dec.rate == null) MXI.dec.rate = '0'; } else if (m === 'kdvli' && S.settings.kdvRate) MXI.defRate = S.settings.kdvRate; } catch (e) {} return r; };
+}

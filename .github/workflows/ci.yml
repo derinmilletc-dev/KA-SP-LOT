@@ -73,6 +73,7 @@ jobs:
       - run: python3 tests/import_v249.py
       - run: python3 tests/import_layouts.py
       - run: python3 tests/import_xlsx_layouts.py
+      - run: python3 tests/mbasla.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
