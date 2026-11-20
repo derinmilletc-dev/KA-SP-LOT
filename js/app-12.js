@@ -1696,6 +1696,8 @@ function ixPayCol(rows) {
     return '<div class="kpis" style="margin-top:8px">' + cell('Gelir', m(sm.gelir), 'var(--ok,#1a8f4b)') + cell('Gider', m(sm.gider), 'var(--bad,#c0392b)') + cell('Net', m(sm.gelir - sm.gider)) + '</div>'
       + '<p class="small muted" style="margin-top:6px">Kasa dağılımı: ' + sm.nakit + ' nakit, ' + sm.banka + ' banka' + (sm.none ? ', ' + sm.none + ' belirtilmemiş' : '') + '.</p>'
       + (R.sug ? '<div class="callout" style="margin-top:6px">' + ic('check') + '<div><p>' + R.sug + ' satırın hesabı, daha önce kendi girdiğin aynı açıklamalardan alındı. Önizlemede kontrol edebilirsin.</p></div></div>' : '')
+      + (typeof MXI !== 'undefined' && MXI.nofNote ? '<div class="callout warn" style="margin-top:6px">' + ic('alert') + '<div><p><b>' + MXI.nofNote + ' hücrede formülün sonucu dosyada kayıtlı değil</b>, bu hücreler boş okundu ve satırlar eksik gelebilir. Dosyayı Excel\'de açıp kaydet, sonra yeniden yükle.</p></div></div>' : '')
+      + (typeof MXI !== 'undefined' && MXI.autoDir ? '<p class="small muted" style="margin-top:6px">Gelir/gider yönü ' + esc(MXI.autoDir) + ' anlaşıldı.</p>' : '')
       + (typeof MXI !== 'undefined' && MXI.layNote ? '<p class="small muted" style="margin-top:6px">Bu dosya düzeni daha önce aktarılmıştı, sütunlar aynı şekilde eşlendi. Yanlışsa aşağıdan değiştirebilirsin.</p>' : '')
       + (R.devir ? '<p class="small muted" style="margin-top:6px">' + R.devir + ' devir/açılış satırı gelir sayılmadı.</p>' : '')
       + (R.mon && R.mon.length > 1 ? '<details style="margin-top:8px"><summary style="cursor:pointer" class="small"><b>Aylık döküm (' + R.mon.length + ' ay)</b></summary>' + R.mon.map((m) => '<div class="small row" style="justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line,#e5e8ee)"><span>' + m.label + '</span><span class="num">+' + fmt0(Math.round(m.gelir)) + ' / −' + fmt0(Math.round(m.gider)) + (m.bal != null ? ' · dosya bakiyesi ' + fmt0(Math.round(m.bal)) : '') + '</span></div>').join('') + '</details>' : '')
@@ -1751,4 +1753,193 @@ function ixCurCh(c) {
     } catch (e) {}
     return r;
   };
+}
+
+/* ===== v250: farklı Excel düzenlerini tek biçime çevirme (yan yana tablolar, bölümlü liste, aylık matris) + yön çıkarımı ===== */
+const IXS_MON = { oca: 1, jan: 1, şub: 2, sub: 2, feb: 2, mar: 3, nis: 4, apr: 4, may: 5, haz: 6, jun: 6, tem: 7, jul: 7, ağu: 8, agu: 8, aug: 8, eyl: 9, sep: 9, eki: 10, oct: 10, kas: 11, nov: 11, ara: 12, dec: 12 };
+const IXS_MONL = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+function ixsTxt(v) { return String(v == null ? '' : v).trim(); }
+function ixsMonth(h) { const t = ixNorm(h).replace(/[^a-zçğıöşü0-9 ]/g, ' ').trim(); const w = t.split(' ')[0] || ''; if (w.length < 3 || w.length > 9) return 0; const m = IXS_MON[w.slice(0, 3)]; if (!m) return 0; return /^(oca|jan|şub|sub|feb|mar|nis|apr|may|haz|jun|tem|jul|ağu|agu|aug|eyl|sep|eki|oct|kas|nov|ara|dec)[a-zçğıöşü]*$/.test(w) ? m : 0; }
+/* Sayfa/bölüm adından yön: yalnızca açık kelimeler */
+function ixsDir(txt) {
+  const t = ixNorm(txt); if (!t || /toplam|total|net\b|kâr|zarar|fark|bakiye/.test(t)) return '';
+  const g = /gelir|income|revenue|satış|satis|tahsilat|girdi|giren|sales/.test(t), d = /gider|expense|masraf|maliyet|harcama|çıkan|cikan|ödemeler|odemeler|alışlar|alislar|spending|cost/.test(t);
+  return g && !d ? 'gelir' : d && !g ? 'gider' : '';
+}
+function ixsHeader(rows) {
+  let hi = 0, best = -1; rows.slice(0, 15).forEach((r, i) => { const t = r.filter((c) => { const x = ixsTxt(c); return x && ixN(c) === null && !ixDate(c); }).length; if (t > best && t >= 2) { best = t; hi = i; } }); return best >= 2 ? hi : -1;
+}
+function ixsMk(arr, n) { arr.__n = n; return arr; }
+/* Bölüm başlıklı liste: "GELİRLER" ... satırlar ... "GİDERLER" ... satırlar */
+function ixsSections(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return sh;
+  const H = rows[hi].map(ixsTxt); if (H.some((h) => /^(tür|tur|tip|yön|yon|type)$/i.test(h))) return sh;
+  let cur = '', found = 0; const out = [];
+  rows.slice(hi + 1).forEach((r) => {
+    const ne = r.map((c, i) => [i, ixsTxt(c)]).filter((x) => x[1] !== '');
+    if (ne.length === 1 && ne[0][0] <= 1 && ixN(ne[0][1]) === null) { const d = ixsDir(ne[0][1]); if (d) { cur = d; found++; return; } }
+    out.push(ixsMk(r.concat(new Array(Math.max(0, H.length - r.length)).fill('')).slice(0, H.length).concat([cur === 'gelir' ? 'Gelir' : cur === 'gider' ? 'Gider' : '']), r.__n));
+  });
+  if (!found) return sh;
+  return { name: sh.name, cur: sh.cur, rows: [ixsMk(H.concat(['Tür']), rows[hi].__n)].concat(out) };
+}
+/* Aylık matris: satırlar kalem, sütunlar ay -> hareket satırlarına çevrilir */
+function ixsMatrix(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return [sh];
+  const H = rows[hi].map(ixsTxt); const mi = []; H.forEach((h, i) => { const m = ixsMonth(h); if (m && i >= 1) mi.push([i, m, h]); });
+  if (mi.length < 3 || new Set(mi.map((x) => x[1])).size !== mi.length) return [sh];
+  const above = rows.slice(0, hi + 1).map((r) => r.join(' ')).join(' ') + ' ' + sh.name; let ym = (above.match(/\b(20\d\d)\b/) || [])[1]; let assumed = false; if (!ym) { ym = String(new Date().getFullYear()); assumed = true; }
+  const typI = H.findIndex((h) => /^(tür|tur|tip|yön|yon|type)$/i.test(h));
+  const labI = (() => { let b = 0; for (let i = 0; i < H.length; i++) { if (mi.some((x) => x[0] === i)) continue; b = i; break; } return b; })();
+  const out = [ixsMk(['Tarih', 'Açıklama', 'Tutar', 'Tür'], rows[hi].__n)]; let cur = '';
+  rows.slice(hi + 1).forEach((r) => {
+    const lab = ixsTxt(r[labI]); if (!lab) return;
+    const nums = mi.filter((x) => ixN(r[x[0]]) !== null && ixN(r[x[0]]) !== 0);
+    if (!nums.length) { const d = ixsDir(lab); if (d) cur = d; return; }
+    if (/^(genel\s*)?toplam|^net\b|^(net\s*)?(kâr|kar)\b|^zarar|^fark|^bakiye|^total|^profit|^devir/.test(ixNorm(lab))) return;
+    const d = ixsDir(typI >= 0 ? r[typI] : '') || cur || ixsDir(lab);
+    nums.forEach((x) => out.push(ixsMk(['01.' + String(x[1]).padStart(2, '0') + '.' + ym, lab + ' · ' + IXS_MONL[x[1] - 1], Math.abs(ixN(r[x[0]])) * (ixN(r[x[0]]) < 0 && !d ? -1 : 1), d === 'gelir' ? 'Gelir' : d === 'gider' ? 'Gider' : ''], r.__n)));
+  });
+  if (out.length < 2) return [sh];
+  return [{ name: sh.name + ' (aylık tablo' + (assumed ? ', yıl dosyada yok: ' + ym + ' alındı' : '') + ')', cur: sh.cur, rows: out }];
+}
+/* Yan yana iki tablo: başlık satırında ilk başlık tekrar ediyorsa böl */
+function ixsSplit(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return [sh];
+  const H = rows[hi].map((c) => ixNorm(c)); const first = H.find((x) => x); if (!first) return [sh];
+  const idx = []; H.forEach((h, i) => { if (h === first) idx.push(i); }); if (idx.length < 2) return [sh];
+  const ends = idx.slice(1).concat([H.length]); const parts = [];
+  idx.forEach((s, k) => {
+    const e = ends[k]; const title = rows.slice(0, hi + 1).map((r) => r.slice(s, e).join(' ')).join(' '); const d = ixsDir(title);
+    const body = rows.slice(hi).map((r) => ixsMk(r.slice(s, e), r.__n)).filter((r, j) => j === 0 || r.some((c) => ixsTxt(c) !== ''));
+    if (body.length < 2) return; parts.push({ name: sh.name + ' · ' + (d === 'gelir' ? 'Gelirler' : d === 'gider' ? 'Giderler' : 'Tablo ' + (k + 1)), cur: sh.cur, rows: body });
+  });
+  return parts.length ? parts : [sh];
+}
+function ixsNormalize(sheets) {
+  const out = []; sheets.forEach((sh) => { try { ixsSplit(sh).forEach((s1) => { const s2 = ixsSections(s1); ixsMatrix(s2).forEach((s3) => out.push(s3)); }); } catch (e) { out.push(sh); } }); return out;
+}
+{
+  const _l2 = ixLoadSheets; ixLoadSheets = function (sheets, fn) { try { sheets.forEach((s) => s.rows.forEach((r, i) => { if (r.__n == null) r.__n = i + 1; })); sheets = ixsNormalize(sheets); } catch (e) {} return _l2.call(this, sheets, fn); };
+  /* yön çıkarımı: gelir/gider sütunu ya da Tür yoksa sayfa adından ya da artı/eksi işaretinden; yoksa eskisi gibi sorulur */
+  const _b3 = ixBuild;
+  ixBuild = function (type, map, P) {
+    let saved = null; MXI.autoDir = '';
+    try {
+      if (type === 'defter' && MXI.dec && MXI.dec.dir == null && map.gelir == null && map.gider == null && map.dir == null) {
+        const sh = (MXI.sheets || []).find((s) => s._p === P); let auto = '', why = '';
+        const dn = sh ? ixsDir(sh.name) : ''; if (dn) { auto = dn; why = 'sayfa adından (' + sh.name + ')'; }
+        else if (map.total != null) { const v = P.data.map((r) => ixN(r[map.total])).filter((x) => x !== null && x !== 0); if (v.some((x) => x < 0) && v.some((x) => x > 0)) { auto = 'sign'; why = 'tutarın işaretinden (artı gelir, eksi gider)'; } }
+        if (auto) { saved = MXI.dec; MXI.dec = Object.assign({}, saved, { dir: auto }); MXI.autoDir = why; }
+      }
+    } catch (e) {}
+    try { return _b3.apply(this, arguments); } finally { if (saved) MXI.dec = saved; }
+  };
+}
+
+/* ===== v250b: aynı satırda hem gelir hem gider, sütun adı/değerinden yön, günlük satış (nakit/kart), yevmiye ===== */
+function ixExpandBoth(data, map) {
+  if (map.gelir == null || map.gider == null) return data;
+  let any = false; const out = [];
+  data.forEach((r) => { const a = ixN(r[map.gelir]), b = ixN(r[map.gider]); if (a > 0 && b > 0) { any = true; const x = r.slice(); x[map.gider] = ''; x.__n = r.__n; const y = r.slice(); y[map.gelir] = ''; y.__n = r.__n; out.push(x, y); } else out.push(r); });
+  return any ? out : data;
+}
+{
+  const GPRE = /^(giriş|giris|gelir|giren|tahsilat|alacak|credit|income|para girişi)/, DPRE = /^(çıkış|cikis|gider|çıkan|cikan|ödeme|odeme|borç|borc|debit|expense|para çıkışı)/;
+  const DIRW = /^(gelir|gider|tahsilat|ödeme|odeme|giriş|giris|çıkış|cikis|borç|borc|alacak|income|expense|debit|credit|cr|dr|satış|satis|alış|alis|para girişi|para çıkışı|giren|çıkan|cikan|deposit|withdrawal|payment)$/;
+  const _a2 = ixAuto;
+  ixAuto = function (type, P) {
+    const m = _a2.apply(this, arguments);
+    try {
+      if (type === 'defter') {
+        const hn = P.heads.map(ixNorm);
+        if (m.total != null && m.gelir == null && GPRE.test(hn[m.total]) && !/^(alacak)/.test(hn[m.total]) || (m.total != null && m.gelir == null && m.gider != null && GPRE.test(hn[m.total]))) { m.gelir = m.total; delete m.total; }
+        else if (m.total != null && m.gider == null && DPRE.test(hn[m.total]) && m.gelir != null) { m.gider = m.total; delete m.total; }
+        if (m.dir == null && m.gelir == null && m.gider == null) {
+          const used = new Set(Object.values(m)); let best = -1, bs = 0.8;
+          P.heads.forEach((_, i) => { if (used.has(i)) return; const v = P.data.slice(0, 80).map((r) => ixNorm(r[i])).filter((x) => x); if (v.length < 2) return; const f = v.filter((x) => DIRW.test(x)).length / v.length; if (f >= bs && new Set(v).size <= 8) { bs = f; best = i; } });
+          if (best >= 0) m.dir = best;
+        }
+      }
+    } catch (e) {}
+    return m;
+  };
+}
+/* Günlük satış: Tarih | Nakit | Kredi Kartı | (Toplam) -> her ödeme şekli ayrı satır */
+const IXS_PAYH = /^(nakit|cash|peşin|pesin|kredi\s*kart[ıi]?|kart|k\.?\s*kart[ıi]?|pos|banka|havale|eft|havale\s*\/\s*eft|çek|cek)\b/;
+function ixsPayCols(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return sh;
+  const H = rows[hi].map(ixsTxt); const hn = H.map(ixNorm);
+  if (hn.some((h) => /^(gelir|gider|tutar|borç|borc|alacak|giriş|giris|çıkış|cikis|income|expense|debit|credit|amount)/.test(h))) return sh;
+  const pi = []; hn.forEach((h, i) => { if (IXS_PAYH.test(h)) pi.push(i); }); if (pi.length < 2) return sh;
+  const di = hn.findIndex((h) => /^(tarih|date|gün|gun)/.test(h)); if (di < 0) return sh;
+  const ti = hn.findIndex((h, i) => !pi.includes(i) && /toplam|total|genel|günlük|gunluk|ciro|hasılat|hasilat/.test(h));
+  const ai = hn.findIndex((h) => /açıklama|aciklama|description|not$|detay/.test(h));
+  const hint = ixsDir([sh.name, H.join(' ')].join(' ')) || (/satış|satis|ciro|hasılat|hasilat|sales|tahsilat/.test(ixNorm(sh.name + ' ' + H.join(' '))) ? 'gelir' : '');
+  const out = [ixsMk(['Tarih', 'Açıklama', 'Tutar', 'Ödeme Şekli', 'Tür'], rows[hi].__n)];
+  rows.slice(hi + 1).forEach((r) => {
+    if (!ixsTxt(r[di]) || !ixDate(r[di], 'dmy') && !ixDate(r[di], 'mdy')) return; let sum = 0;
+    pi.forEach((i) => { const v = ixN(r[i]); if (v) { sum += v; out.push(ixsMk([r[di], ai >= 0 && ixsTxt(r[ai]) ? ixsTxt(r[ai]) : (hint === 'gider' ? 'Günlük ödeme' : 'Günlük satış'), v, H[i], hint === 'gelir' ? 'Gelir' : hint === 'gider' ? 'Gider' : ''], r.__n)); } });
+    if (ti >= 0) { const T = ixN(r[ti]); if (T && Math.abs(T - sum) > 0.05) out.push(ixsMk([r[di], 'Toplamdan kalan (ödeme şekli belli değil)', Math.round((T - sum) * 100) / 100, '', hint === 'gelir' ? 'Gelir' : hint === 'gider' ? 'Gider' : ''], r.__n)); }
+  });
+  return out.length > 1 ? { name: sh.name + ' (günlük satış tablosu)', cur: sh.cur, rows: out } : sh;
+}
+/* Yevmiye/mizan: yalnızca 6xx ve 7xx hesapları (gelir/gider); 100 kasa, 102 banka karşı satırından ödeme şekli */
+function ixsJournal(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return sh; const H = rows[hi].map(ixsTxt); const hn = H.map(ixNorm);
+  const ci = hn.findIndex((h) => /^hesap\s*(kodu|no|numarası|numarasi)$|^kod$/.test(h)); const bi = hn.findIndex((h) => /^borç$|^borc$|^debit$/.test(h)); const ai = hn.findIndex((h) => /^alacak$|^credit$/.test(h));
+  if (ci < 0 || bi < 0 || ai < 0) return sh;
+  const fi = hn.findIndex((h) => /fiş\s*no|fis\s*no|yevmiye\s*no|madde\s*no|belge\s*no/.test(h)); const di = hn.findIndex((h) => /^tarih|^date/.test(h));
+  const ni = hn.findIndex((h) => /hesap\s*ad[ıi]|^hesap$/.test(h)); const xi = hn.findIndex((h) => /açıklama|aciklama|description/.test(h));
+  const code = (r) => ixsTxt(r[ci]).replace(/[^0-9]/g, ''); const data = rows.slice(hi + 1).filter((r) => code(r));
+  if (data.length < 2 || data.filter((r) => /^[1-9]\d{2}/.test(code(r))).length / data.length < 0.8) return sh;
+  const chOf = {}; data.forEach((r) => { const k = fi >= 0 ? ixsTxt(r[fi]) : ''; const c = code(r); if (k && /^100/.test(c)) chOf[k] = 'Nakit'; else if (k && /^10[1-2]/.test(c)) chOf[k] = chOf[k] || 'Banka'; });
+  const out = [ixsMk(['Tarih', 'Açıklama', 'Tutar', 'Tür', 'Ödeme Şekli', 'Hesap'], rows[hi].__n)]; let skipped = 0;
+  data.forEach((r) => { const c = code(r); if (!/^[67]/.test(c)) { skipped++; return; } const b = ixN(r[bi]) || 0, a = ixN(r[ai]) || 0; if (!b && !a) return; const net = a - b; const k = fi >= 0 ? ixsTxt(r[fi]) : '';
+    out.push(ixsMk([di >= 0 ? r[di] : '', [ixsTxt(xi >= 0 ? r[xi] : ''), ixsTxt(ni >= 0 ? r[ni] : '')].filter(Boolean).join(' · ') || c, Math.abs(net), net > 0 ? 'Gelir' : 'Gider', chOf[k] || '', c + (ni >= 0 ? ' ' + ixsTxt(r[ni]) : '')], r.__n)); });
+  return out.length > 1 ? { name: sh.name + ' (yevmiye: yalnızca gelir ve gider hesapları, ' + skipped + ' bilanço satırı alınmadı)', cur: sh.cur, rows: out } : sh;
+}
+{
+  const _n = ixsNormalize;
+  ixsNormalize = function (sheets) { return _n(sheets.map((sh) => { try { return ixsJournal(ixsPayCols(sh)); } catch (e) { return sh; } })); };
+}
+
+/* ===== v250c: iki satırlı başlık, günler yatay, B/A işareti ===== */
+function ixsTwoHeader(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0 || hi + 2 >= rows.length) return sh;
+  const top = rows[hi], sub = rows[hi + 1]; const subCells = sub.map((c, i) => [i, ixsTxt(c)]).filter((x) => x[1] !== '');
+  if (subCells.length < 2 || subCells.some((x) => ixN(x[1]) !== null || ixDate(x[1]))) return sh;
+  if (!subCells.some((x) => ixsTxt(top[x[0]]) === '' || /^(tutar|toplam|amount|miktar|tutarlar)$/.test(ixNorm(top[x[0]])))) return sh;
+  const nxt = rows[hi + 2]; if (!nxt || !nxt.some((c) => ixN(c) !== null || ixDate(c))) return sh;
+  const H = top.map((c, i) => { const t = ixsTxt(c), s = ixsTxt(sub[i]); return !s ? t : (!t || /^(tutar|toplam|amount|miktar|tutarlar)$/.test(ixNorm(t))) ? s : t + ' ' + s; });
+  for (let i = top.length; i < sub.length; i++) H[i] = ixsTxt(sub[i]);
+  return { name: sh.name, cur: sh.cur, rows: rows.slice(0, hi).concat([ixsMk(H, top.__n)], rows.slice(hi + 2)) };
+}
+function ixsBA(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return sh;
+  const ci = rows[hi].findIndex((h) => /^(b\s*\/\s*a|a\s*\/\s*b|ba|ab|d\s*\/\s*c|c\s*\/\s*d|dr\s*\/\s*cr|cr\s*\/\s*dr)$/.test(ixNorm(h))); if (ci < 0) return sh;
+  const hdr = ixNorm(rows[hi][ci]); const credit = /^(a|c|cr)$/, debit = /^(b|d|dr)$/;
+  const data = rows.slice(hi + 1); const vals = data.map((r) => ixNorm(r[ci])).filter((x) => x); if (vals.length < 2 || !vals.every((v) => credit.test(v) || debit.test(v))) return sh;
+  return { name: sh.name, cur: sh.cur, rows: rows.slice(0, hi + 1).concat(data.map((r) => { const x = r.slice(); const v = ixNorm(r[ci]); if (v) x[ci] = credit.test(v) ? 'Alacak' : 'Borç'; x.__n = r.__n; return x; })) };
+}
+function ixsDays(sh) {
+  const rows = sh.rows; const hi = ixsHeader(rows); if (hi < 0) return sh;
+  const H = rows[hi].map(ixsTxt); const di = []; H.forEach((h, i) => { if (/^\d{1,2}$/.test(h) && +h >= 1 && +h <= 31) di.push([i, +h]); });
+  if (di.length < 10 || new Set(di.map((x) => x[1])).size !== di.length) return sh;
+  const ctx = rows.slice(0, hi + 1).map((r) => r.join(' ')).join(' ') + ' ' + sh.name; const mm = (ixNorm(ctx).match(/[a-zçğıöşü]+/g) || []).map(ixsMonth).find((x) => x);
+  if (!mm) return sh; let ym = (ctx.match(/\b(20\d\d)\b/) || [])[1]; let assumed = false; if (!ym) { ym = String(new Date().getFullYear()); assumed = true; }
+  const dim = new Date(+ym, mm, 0).getDate(); const labI = H.findIndex((h, i) => !di.some((x) => x[0] === i) && true);
+  const out = [ixsMk(['Tarih', 'Açıklama', 'Tutar', 'Tür'], rows[hi].__n)]; let cur = '';
+  rows.slice(hi + 1).forEach((r) => {
+    const lab = ixsTxt(r[labI]); if (!lab) return; const nums = di.filter((x) => ixN(r[x[0]]) !== null && ixN(r[x[0]]) !== 0 && x[1] <= dim);
+    if (!nums.length) { const d = ixsDir(lab); if (d) cur = d; return; }
+    if (/^(genel\s*)?toplam|^net\b|^(net\s*)?(kâr|kar)\b|^zarar|^fark|^bakiye|^total|^devir/.test(ixNorm(lab))) return;
+    const d = cur || ixsDir(lab);
+    nums.forEach((x) => out.push(ixsMk([String(x[1]).padStart(2, '0') + '.' + String(mm).padStart(2, '0') + '.' + ym, lab, Math.abs(ixN(r[x[0]])), d === 'gelir' ? 'Gelir' : d === 'gider' ? 'Gider' : ''], r.__n)));
+  });
+  return out.length > 1 ? { name: sh.name + ' (günlük tablo' + (assumed ? ', yıl dosyada yok: ' + ym + ' alındı' : '') + ')', cur: sh.cur, rows: out } : sh;
+}
+{
+  const _n2 = ixsNormalize;
+  ixsNormalize = function (sheets) { return _n2(sheets.map((sh) => { try { return ixsDays(ixsBA(ixsTwoHeader(sh))); } catch (e) { return sh; } })); };
 }

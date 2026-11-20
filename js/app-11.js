@@ -544,15 +544,15 @@ H.ixpaste = () => { const t = ($('#ix-txt') || {}).value || ''; if (t.trim().len
 document.addEventListener('change', async (e) => {
   const t = e.target; if (!t || !S.modal || S.modal.type !== 'mximp') return;
   if (t.id === 'ix-file' && t.files && t.files[0]) {
-    const FL = Array.from(t.files); const ACC = []; const ixLoadSheets = (sheets, fn) => { sheets.forEach((sx) => ACC.push(FL.length > 1 ? Object.assign({}, sx, { name: String(fn).replace(/\.[^.]+$/, '') + ' · ' + sx.name }) : sx)); }; MXI.step = 'busy'; renderModal();
+    let NOF = 0; const FL = Array.from(t.files); const ACC = []; const ixLoadSheets = (sheets, fn) => { sheets.forEach((sx) => ACC.push(FL.length > 1 ? Object.assign({}, sx, { name: String(fn).replace(/\.[^.]+$/, '') + ' · ' + sx.name }) : sx)); }; MXI.step = 'busy'; renderModal();
     try { for (const f of FL) {
       if (/\.xlsx$/i.test(f.name)) {
         const X = await xlLoad(); const wb = new X.Workbook(); await wb.xlsx.load(await f.arrayBuffer()); const sheets = [];
-        wb.worksheets.forEach((ws) => { const rows = []; const nfc = {}; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (c.numFmt) nfc[c.numFmt] = (nfc[c.numFmt] || 0) + 1; if (c.isMerged && c.master && c.master.address !== c.address) v = ''; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else v = ''; } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows, cur: ixCurOf(nfc) }); });
+        wb.worksheets.forEach((ws) => { const rows = []; const nfc = {}; ws.eachRow({ includeEmpty: false }, (r) => { const a = []; r.eachCell({ includeEmpty: true }, (c, i) => { let v = c.value; if (c.numFmt) nfc[c.numFmt] = (nfc[c.numFmt] || 0) + 1; if (c.isMerged && c.master && c.master.address !== c.address) v = ''; if (v && typeof v === 'object') { if (v instanceof Date) v = v.toISOString().slice(0, 10); else if (v.result !== undefined) v = v.result instanceof Date ? v.result.toISOString().slice(0, 10) : v.result; else if (v.richText) v = v.richText.map((x) => x.text).join(''); else if (v.text) v = v.text; else if (v.formula && /^[0-9+\-*/(). ]+$/.test(v.formula)) { try { v = Function('return (' + v.formula + ')')(); } catch (e) { v = ''; NOF++; } } else { if (v.formula) NOF++; v = ''; } } a[i - 1] = v == null ? '' : v; }); for (let i = 0; i < a.length; i++) if (a[i] === undefined) a[i] = ''; rows.push(a); }); sheets.push({ name: ws.name, rows, cur: ixCurOf(nfc) }); });
         ixLoadSheets(sheets, f.name);
       } else if (/\.xls$/i.test(f.name)) { ixLoadSheets(await ixReadXls(await f.arrayBuffer()), f.name); }
       else { const buf = await f.arrayBuffer(); const u8 = new Uint8Array(buf.slice(0, 4)); if (u8[0] === 0xD0 && u8[1] === 0xCF) ixLoadSheets(await ixReadXls(buf), f.name); else ixLoadSheets([{ name: f.name, rows: mxCsv(ixDecode(buf)) }], f.name); }
-    } globalThis.ixLoadSheets(ACC, FL.length > 1 ? FL.length + ' dosya' : FL[0].name); } catch (x) { MXI.step = 'pick'; MXI.err = /password|encrypt|protect/i.test(String(x && x.message)) ? 'Dosya parolalı görünüyor. Parolayı kaldırıp tekrar yükle.' : 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
+    } globalThis.ixLoadSheets(ACC, FL.length > 1 ? FL.length + ' dosya' : FL[0].name); MXI.nofNote = NOF; } catch (x) { MXI.step = 'pick'; MXI.err = /password|encrypt|protect/i.test(String(x && x.message)) ? 'Dosya parolalı görünüyor. Parolayı kaldırıp tekrar yükle.' : 'Dosya okunamadı. İnternet bağlantını kontrol et ya da CSV olarak kaydedip dene.'; renderModal(); }
     return;
   }
   if (MXI.step !== 'map') return;
@@ -636,7 +636,7 @@ function ixBuild(type, map, P) {
   const balI = P.heads.findIndex((h, i) => /bakiye|balance|kalan/.test(ixNorm(h)) && !Object.values(map).includes(i)); const bdMap = new Map(); let warnBal = 0;
   if (balI >= 0) { const L = P.data.map((r) => ({ r, b: ixN(r[balI]), iso: map.date != null ? (ixDate(r[map.date], 'dmy') || ixDate(r[map.date], 'mdy')) : null })); const ds = L.filter((x) => x.iso); const desc = ds.length > 1 && ds[0].iso > ds[ds.length - 1].iso; const B = L.filter((x) => x.b !== null); B.forEach((x, i) => { const o = desc ? B[i + 1] : B[i - 1]; if (o) bdMap.set(x.r, x.b - o.b); }); }
   let lastIso = null, ndCount = 0; const firstIso = (() => { for (const r of P.data) { const x = ixDate(g(r, 'date'), fmt); if (x) return x; } return null; })();
-  P.data.forEach((r) => {
+  (typeof ixExpandBoth === 'function' ? ixExpandBoth(P.data, map) : P.data).forEach((r) => {
     const n = r.__n; if (ixSumRow(r)) { skip.push({ n, why: 'Toplam satırı (aktarılmaz)', sum: true }); sumRows.push(r); return; }
     amtKeys.forEach((k) => { const v = ixN(g(r, k)); if (v !== null && v !== undefined) colSum[k] = (colSum[k] || 0) + v; });
     const ex = {}; extraI.slice(0, 12).forEach((i) => { const v = ixTxt(r[i]); if (v) ex[ixTxt(P.heads[i]).slice(0, 30)] = v.slice(0, 80); });
